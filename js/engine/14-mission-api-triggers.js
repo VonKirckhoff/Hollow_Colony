@@ -30,10 +30,13 @@ function makeApi(){
     weakenWall(tag,hp){ for(const e of G.ents) if(e.type==='membrane'&&e.tag===tag&&!e.dead){ e.invuln=false; if(hp){ e.hp=e.maxHp=hp; } } },
     walls:tag=>G.ents.filter(e=>e.type==='membrane'&&e.tag===tag&&!e.dead).length,
     /* airdrop: the dropship flies cargo to the mission's Landing Zone, e.g. g.airdrop([['trooper',2],['pyro',1]], 15). */
-    airdrop(list,delay=15){ const lz=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce); if(!lz) return;
+    /* airdrop: optional rallyAt = point the new troops attack-move to after landing (e.g. to join the squad). */
+    airdrop(list,delay=15,rallyAt){ const lz=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce); if(!lz) return;
       const cargo=[]; for(const [type,n=1] of list) for(let i=0;i<n;i++) cargo.push(type);
       if(lz.flight) lz.flight.cargo.push(...cargo); else lz.flight={ t:Math.max(5,delay), total:Math.max(5,delay), cargo };
-      G.selDirty=true; },
+      if(rallyAt) lz.flight.rally=ptWorld(rallyAt); G.selDirty=true; },
+    /* troops(): living Corps soldiers on the map (all of them, wherever they are). */
+    troops:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.def.convoy).length,
     openWall(tag){ for(const e of G.ents) if((e.type==='membrane'||e.type==='door')&&e.tag===tag&&!e.dead){
         if(e.type==='door'){ e.dead=true; e.hp=0; setBlock(e,0); for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y,vx:rand(-50,50),vy:rand(-60,0),t:0.5,max:0.5,col:'#ffd23f'}); SFX.play('ack',e.x,e.y); }
         else { e.invuln=false; kill(e,null); } } },

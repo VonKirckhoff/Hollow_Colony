@@ -16,9 +16,9 @@ function updateBuilding(b,dt){
     if(b.state==='theirs'){ b.cap=Math.max(0,(b.cap||0)-dt/d.loseTime); if(b.cap<=0 && b.owned){ b.owned=false; SFX.play('alarm'); say('Alert',`${b.label||'Beacon'} lost to the Swarm!`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); } }
   }
   if(d.reinforce && b.flight){ b.flight.t-=dt;
-    if(b.flight.t<=0){ const cargo=b.flight.cargo; b.flight=null;
-      for(const type of cargo){ const u=spawnNearBuilding(type,'corps',b,b.rally); if(!u) continue; fromReserve(u); G.stats.trained++;
-        if(b.rally){ const n=(b.rallyN=(b.rallyN||0)+1), a=n*2.4, r=n===1?0:12+4*Math.sqrt(n), rx=b.rally.x+Math.cos(a)*r, ry=b.rally.y+Math.sin(a)*r; u.order={type:'move',x:walkableP(rx,ry)?rx:b.rally.x,y:walkableP(rx,ry)?ry:b.rally.y}; setPath(u,u.order.x,u.order.y); } else u.home={x:u.x,y:u.y}; }
+    if(b.flight.t<=0){ const cargo=b.flight.cargo, rally=b.flight.rally||b.rally, otype=b.flight.rally?'amove':'move'; b.flight=null; if(rally!==b.rally) b.rallyN=0;
+      for(const type of cargo){ const u=spawnNearBuilding(type,'corps',b,rally); if(!u) continue; fromReserve(u); G.stats.trained++;
+        if(rally){ const n=(b.rallyN=(b.rallyN||0)+1), a=n*2.4, r=n===1?0:12+4*Math.sqrt(n), rx=rally.x+Math.cos(a)*r, ry=rally.y+Math.sin(a)*r; u.order={type:otype,x:walkableP(rx,ry)?rx:rally.x,y:walkableP(rx,ry)?ry:rally.y}; setPath(u,u.order.x,u.order.y); } else u.home={x:u.x,y:u.y}; }
       for(let i=0;i<14;i++) G.fx.push({k:'ember',x:b.x+rand(-40,40),y:b.y+rand(-30,30),vx:rand(-60,60),vy:rand(-50,10),t:0.7,max:0.7,col:'#9aa0ad'});
       SFX.play('complete'); say('Dropship Kestrel',`${cargo.length} reinforcement${cargo.length>1?'s':''} on the ground.`,'sys'); G.selDirty=true; } }
   if(d.trains && b.queue.length){

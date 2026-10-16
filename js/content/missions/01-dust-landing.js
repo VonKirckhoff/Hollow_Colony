@@ -59,8 +59,8 @@ MISSIONS.push(
       // 4. the two hives
       { when:g=>g.vars.open && !g.hiveAt('c'), do:g=>{
           g.complete('nest'); g.unmark('nest'); g.unmark('tunnel');
-          g.say('Cmdr. Varga','The nest burns. But we have a second signature, bigger, in the eastern cavern. Kestrel is bringing a Medic and two rifles to the station pad.');
-          g.airdrop([['trooper',2],['medic',1]],20);
+          g.say('Cmdr. Varga','The nest burns. But we have a second signature, bigger, in the eastern cavern. Kestrel is bringing a Medic and two rifles. They will move up the tunnel to join you.');
+          g.airdrop([['trooper',2],['medic',1]],20,'3');
           g.addObjective('nest2','Destroy the hive in the eastern cavern'); g.marker('nest2','a','Hive'); g.vars.second=true; } },
       { when:g=>g.vars.second && g.time>(g.vars.secondT||(g.vars.secondT=g.time+40)), do:g=>{ g.say('Sgt. Kessler','Movement behind us. They are trying to cut us off!'); g.wave(70,'1'); } },
 
@@ -68,8 +68,10 @@ MISSIONS.push(
       { when:g=>g.vars.second && !g.hiveAt('a'), do:g=>{
           g.complete('nest2'); g.unmark('nest2');
           g.say('Cmdr. Varga','Both nests are ash. Dropship is inbound to Kappa Station. Get back to the pad, and watch your flanks.');
-          g.addObjective('extract','Return to the station landing pad for pickup'); g.marker('ex',{x:46,y:38},'Pickup'); g.vars.extract=true; g.wave(90,'1'); } },
-      { when:g=>g.vars.extract && g.near('corps',{x:46,y:38},3)>0, do:g=>{ g.complete('extract'); g.unmark('ex'); g.win('Squad Dust is aboard. Kappa Station is ours again, for now.'); } }
+          g.addObjective('extract','Everyone back to the landing pad for pickup'); g.marker('ex',{x:46,y:38},'Pickup'); g.vars.extract=true; g.wave(90,'1'); } },
+      // the dropship only leaves with the whole squad aboard
+      { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',`Everyone back to the landing pad for pickup (${Math.min(g.near('corps',{x:46,y:38},5),g.troops())}/${g.troops()})`) },
+      { when:g=>g.vars.extract && g.troops()>0 && g.near('corps',{x:46,y:38},5)>=g.troops(), do:g=>{ g.vars.won=true; g.complete('extract'); g.unmark('ex'); g.win('Squad Dust is aboard. Kappa Station is ours again, for now.'); } }
     ]
   }
 );

@@ -212,7 +212,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 
 | # | Missie | Kaart | Doel |
 |---|---|---|---|
-| 1 | **Dust Landing** | Kappa Canyons | Volg de brede kloven (minstens 7 tegels, zodat een squad in formatie blijft) vanaf de landingsplaats (twee routes) naar Kappa Station en overleef de hinderlaag uit de oostelijke tunnel. Het dropship landt versterking op het platform van het station. Daarna gaan de blast doors naar de noordelijke grotten open: vernietig de hive in de westelijke grot, daarna (met een tweede versterking) die in de oostelijke, en keer terug naar het landingsplatform voor de pickup. Tot de deuren opengaan, zijn de hives onbereikbaar en ver buiten schootsafstand. Je speelt zonder basis. |
+| 1 | **Dust Landing** | Kappa Canyons | Volg de brede kloven (minstens 7 tegels, zodat een squad in formatie blijft) vanaf de landingsplaats (twee routes) naar Kappa Station en overleef de hinderlaag uit de oostelijke tunnel. Het dropship landt versterking op het platform van het station. Daarna gaan de blast doors naar de noordelijke grotten open: vernietig de hive in de westelijke grot en daarna die in de oostelijke. De tweede versterking landt op het platform en loopt zelf door de tunnel naar je squad. Breng daarna **iedereen** terug naar het landingsplatform: het dropship vertrekt pas als de hele squad er staat (de doelenlijst telt mee). Tot de deuren opengaan, zijn de hives onbereikbaar en ver buiten schootsafstand. Je speelt zonder basis. |
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. |
 | 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
@@ -393,7 +393,8 @@ In triggers krijg je een object `g` mee:
 | `g.spawn(type, punt, aantal, {faction, order, prey, truce})` | Eenheden plaatsen. Geeft een lijst terug. Swarm-`order`: `'hunt'` (standaard), `'guard'` of `'boss'`. `prey`: welke factie een Grey Hunter bejaagt. `truce`: met welke factie de eenheid niet vecht. |
 | `g.wall(punt, straal, tag, soort)`, `g.openWall(tag)` | Een tunnel afsluiten (straal 0 = één tegel). `soort` is `'membrane'` (standaard, levend membraan) of `'door'` (blast door van het station). Beide zijn onkwetsbaar. `openWall` laat het membraan wegrotten of schuift de deuren open. |
 | `g.weakenWall(tag, hp)`, `g.walls(tag)` | Het membraan kwetsbaar maken, zodat je troepen het kunnen wegbranden (optioneel met nieuwe hp per tegel); aantal tegels dat nog staat |
-| `g.airdrop([[type, aantal], …], seconden)` | Het dropship vliegt versterking naar de Landing Zone van de missie (zie `landingZone`) |
+| `g.airdrop([[type, aantal], …], seconden, punt)` | Het dropship vliegt versterking naar de Landing Zone van de missie (zie `landingZone`). Met `punt` doen de nieuwe troepen na de landing een attack-move naar dat punt, bv. om bij de squad te komen. |
+| `g.troops()` | Aantal levende Corps-soldaten op de kaart, waar ze ook staan |
 | `g.hiveAt(punt)` | Of er bij dat punt nog een hive staat |
 | `g.uplinks()`, `g.uplinkOwned(punt)` | Aantal veroverde bakens; of het baken bij dat punt van jou is |
 | `g.boss(eenheid, titel)` | Toont de levensbalk van een baas bovenaan |
