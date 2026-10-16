@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hollow Colony Map Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <h1>Hollow Colony <span>Map Editor</span></h1>
+    <div class="grp">
+      <button class="btn" type="button" id="b-new">New</button>
+      <button class="btn" type="button" id="b-open">Open</button>
+      <button class="btn" type="button" id="b-import">Import</button>
+      <button class="btn primary" type="button" id="b-export">Export</button>
+    </div>
+    <div class="grp">
+      <button class="btn" type="button" id="b-undo" title="Ctrl+Z">Undo</button>
+      <button class="btn" type="button" id="b-redo" title="Ctrl+Y">Redo</button>
+    </div>
+    <div class="grp">
+      <button class="btn" type="button" id="b-zout">−</button>
+      <button class="btn" type="button" id="b-fit">Fit</button>
+      <button class="btn" type="button" id="b-zin">+</button>
+      <button class="btn on" type="button" id="b-grid">Grid</button>
+      <button class="btn" type="button" id="b-reach">Unreachable</button>
+    </div>
+    <div class="spacer"></div>
+    <span id="status">—</span>
+  </header>
+  <div id="main">
+    <aside id="left">
+      <div class="sec"><h2>Tools</h2><div class="tools" id="tools"></div>
+        <div id="opt-brush" class="field"><span class="lbl">Brush size</span><div class="seg" id="brush-seg"></div></div>
+        <div id="opt-stamp" class="field" hidden>
+          <span class="lbl">Radius <b id="rad-val">5</b></span><input type="range" id="rad" min="3" max="12" value="5">
+          <span class="lbl">Ramps</span><div class="seg" id="ramp-seg"></div>
+        </div>
+      </div>
+      <div class="sec"><h2>Terrain</h2><div class="tiles" id="pal-terrain"></div></div>
+      <div class="sec"><h2>Markers</h2><div class="tiles" id="pal-markers"></div>
+        <div class="row"><label for="m-num">Waypoint</label><select id="m-num"></select><label for="m-hive">Hive</label><select id="m-hive"></select></div>
+      </div>
+      <p class="hint">A relay pad is 2×2: place it on the top-left tile. Left-drag paints. Right-drag or <kbd>Space</kbd>+drag pans, wheel zooms. Keys: <kbd>B</kbd> brush, <kbd>U</kbd> rectangle, <kbd>F</kbd> fill, <kbd>I</kbd> pick, <kbd>C</kbd> crater, <kbd>L</kbd> plateau.</p>
+    </aside>
+    <div id="stage"><canvas id="cv"></canvas><div id="hover">—</div></div>
+    <aside id="right">
+      <div class="sec"><h2>Map</h2>
+        <div class="field"><label class="lbl" for="p-key">Key (code name)</label><input type="text" id="p-key" spellcheck="false"></div>
+        <div class="field"><label class="lbl" for="p-name">Name</label><input type="text" id="p-name"></div>
+        <div class="field"><label class="lbl" for="p-desc">Description</label><input type="text" id="p-desc"></div>
+        <div class="two"><div class="field"><label class="lbl" for="p-w">Width</label><input type="number" id="p-w" min="24" max="140"></div><div class="field"><label class="lbl" for="p-h">Height</label><input type="number" id="p-h" min="20" max="140"></div></div>
+        <div class="row"><button class="btn" type="button" id="b-resize">Resize</button><button class="btn" type="button" id="b-border">Rock border</button></div>
+      </div>
+      <div class="sec"><h2>Overview</h2><canvas id="mini"></canvas></div>
+      <div class="sec"><h2>Checks</h2><div class="checks" id="checks"></div></div>
+    </aside>
+  </div>
+</div>
+
+<div class="modal" id="m-open" hidden><div class="sheet">
+  <h3>Open a map</h3>
+  <div class="lbl">Maps from the game</div><div class="list" id="open-game"></div>
+  <div class="lbl">Your drafts (saved in this browser)</div><div class="list" id="open-drafts"></div>
+  <div class="row"><button class="btn" type="button" data-close>Close</button></div>
+</div></div>
+
+<div class="modal" id="m-new" hidden><div class="sheet">
+  <h3>New map</h3>
+  <div class="two"><div class="field"><label class="lbl" for="n-w">Width (tiles)</label><input type="number" id="n-w" value="64" min="24" max="140"></div><div class="field"><label class="lbl" for="n-h">Height (tiles)</label><input type="number" id="n-h" value="44" min="20" max="140"></div></div>
+  <div class="field"><span class="lbl">Start from</span><div class="seg" id="n-start"><button type="button" data-v="open" class="on">Open regolith</button><button type="button" data-v="caves">Random caves</button><button type="button" data-v="rock">Solid rock</button></div></div>
+  <p class="hint">Every map needs a player start <kbd>P</kbd>. Hive sites are the letters a–n; in Skirmish every hive site becomes a hive.</p>
+  <div class="row"><button class="btn primary" type="button" id="n-go">Create</button><button class="btn" type="button" data-close>Cancel</button></div>
+</div></div>
+
+<div class="modal" id="m-export" hidden><div class="sheet">
+  <h3>Export</h3>
+  <div class="field"><span class="lbl">1 · Map code: paste in the game under Skirmish → Load map code</span><textarea id="x-json" readonly spellcheck="false"></textarea>
+    <div class="row"><button class="btn primary" type="button" id="x-copy-json">Copy map code</button></div></div>
+  <div class="field"><span class="lbl">2 · Map file for the game: save as <code id="x-fname">js/content/maps/key.js</code></span><textarea id="x-code" readonly spellcheck="false"></textarea>
+    <div class="row"><button class="btn" type="button" id="x-copy-code">Copy file</button><button class="btn" type="button" id="x-download">Download file</button></div>
+    <p class="hint">Then add this line to <code>index.html</code> (with the other maps), and the same line with <code>../</code> before <code>js/</code> to <code>map-editor/index.html</code>:</p>
+    <textarea id="x-tag" class="short" readonly spellcheck="false"></textarea></div>
+  <div class="row"><button class="btn" type="button" id="x-draft">Save as draft</button><button class="btn" type="button" data-close>Close</button></div>
+</div></div>
+
+<div class="modal" id="m-import" hidden><div class="sheet">
+  <h3>Import</h3>
+  <p class="hint">Paste map code from this editor, a map file (<code>MAPS.key = { name, desc, layout:[…] }</code>), or just the rows of a layout.</p>
+  <textarea id="i-text" spellcheck="false"></textarea>
+  <div class="row"><button class="btn primary" type="button" id="i-go">Import</button><button class="btn" type="button" data-close>Cancel</button></div>
+</div></div>
+
+<div id="toast" hidden></div>
+
+<!-- The game's maps: keep this list in step with the map lines in ../index.html -->
+<script src="../js/content/maps/_maps.js"></script>
+<script src="../js/content/maps/kappa.js"></script>
+<script src="../js/content/maps/hollow.js"></script>
+<script src="../js/content/maps/convoy.js"></script>
+<script src="../js/content/maps/depths.js"></script>
+<script src="../js/content/maps/high.js"></script>
+<script src="../js/content/maps/maw.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

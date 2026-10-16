@@ -1,0 +1,80 @@
+'use strict';
+/* ---------- 2d. entities ---------- */
+function makeUnit(type,faction,x,y){
+  const d=UNITS[type]; const hpMul = faction==='swarm' ? G.diff.hp : 1;
+  const u=({ id:NEXT_ID++, kind:'unit', type, def:d, faction, x, y, hp:d.hp*hpMul, maxHp:d.hp*hpMul, r:d.radius||9,
+    order:null, path:null, pi:0, target:null, cd:Math.random()*0.4, acq:Math.random()*0.3, face:Math.random()<.5?1:-1, anim:Math.random()*10, flash:0, moving:false, role:null, home:null });
+  if(faction==='corps' && isSoldierType(type)) u.vet={ id:'v'+Date.now().toString(36)+NEXT_ID, name:freshName(), type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
+  G.ents.push(u); return u;
+}
+/* ---------- veterans ---------- */
+function isSoldierType(type){ return (BUILDINGS.hq.trains||[]).includes(type); }
+function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[]; r.fallen=r.fallen||[];
+  // names that are no longer in SURNAMES are swapped for an unused one from the list
+  const used=new Set(r.active.map(v=>v.name)); for(const v of r.active){ if(!SURNAMES.includes(v.name)){ const n=SURNAMES.find(s=>!used.has(s)); if(n){ used.add(n); v.name=n; } } }
+  for(const v of r.fallen){ if(!SURNAMES.includes(v.name)){ const n=SURNAMES.find(s=>!used.has(s)); if(n){ used.add(n); v.name=n; } } }
+  return r; }
+function saveRoster(){ store.set('hc-roster',ui.roster); }
+function freshName(){ const used=new Set(G.ents.filter(e=>e.vet).map(e=>e.vet.name).concat(ui.roster.active.map(v=>v.name)));
+  const free=SURNAMES.filter(n=>!used.has(n)); return pick(free.length?free:SURNAMES); }
+function rankFor(xp){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp) r=i; }); return r; }
+function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp; u.maxHp=u.def.hp*k.hp; u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; }
+function gainXP(u,amount){
+  if(!u||u.dead||!u.vet||amount<=0) return; u.vet.xp+=amount;
+  const r=rankFor(u.vet.xp); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
+    SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'});
+    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.`,'sys'); (G.promotions=G.promotions||[]).push(`${u.vet.name}: ${RANKS[r].name}`); G.selDirty=true; } }
+function isCampaign(){ return G.mission.id!=='skirmish'; }
+/* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
+   The rest wait in reserve and arrive first whenever you train or order that type. */
+function deployRoster(){
+  G.reserve=[]; G.deployedIds=new Set(); if(!isCampaign()) return;
+  const pool=[...ui.roster.active].sort((a,b)=>b.xp-a.xp);
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; const i=pool.findIndex(v=>v.type===u.type); if(i<0) continue;
+    u.vet={...pool[i]}; pool.splice(i,1); applyRank(u); u.hp=u.maxHp; G.deployedIds.add(u.vet.id); }
+  G.reserve=pool;
+}
+function fromReserve(u){
+  if(!u||!u.vet||!G.reserve) return; const i=G.reserve.findIndex(v=>v.type===u.type); if(i<0) return;
+  u.vet={...G.reserve[i]}; G.reserve.splice(i,1); applyRank(u); u.hp=u.maxHp; G.deployedIds.add(u.vet.id);
+  say('Roster',`${RANKS[u.vet.rank].abbr} ${u.vet.name} rejoins the fight.`,'sys');
+}
+/* After a won campaign mission: survivors with experience go into the roster, fallen veterans into the memorial. */
+function settleRoster(){
+  if(!isCampaign()) return; const R=ui.roster, alive=new Map();
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; alive.set(u.vet.id,u); }
+  const res={ joined:[], fallen:[] };
+  for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ R.fallen.unshift({ name:v.name, type:v.type, rank:v.rank, xp:v.xp, mission:G.mission.title, at:Date.now() }); res.fallen.push(v); } }
+  R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
+  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0 };
+    const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0){ R.active.push(v); res.joined.push(v); } }
+  R.active.sort((a,b)=>b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX; R.fallen=R.fallen.slice(0,60);
+  saveRoster(); G.rosterResult=res;
+}
+function makeBuilding(type,faction,tx,ty,built){
+  const d=BUILDINGS[type], s=d.size;
+  const b={ id:NEXT_ID++, kind:'building', type, def:d, faction, tx, ty, size:s, x:(tx+s/2)*TILE, y:(ty+s/2)*TILE, r:s*TILE*0.42,
+    hp:built?d.hp:d.hp*0.1, maxHp:d.hp, built, progress:built?1:0, queue:[], prodT:0, rally:null, cd:0, angle:0, flash:0, target:null, acq:0 };
+  G.ents.push(b); if(!d.noBlock) setBlock(b,2);
+  if(built && faction==='corps') G.stats.built++;
+  return b;
+}
+function setBlock(b,v){ for(let y=b.ty;y<b.ty+b.size;y++) for(let x=b.tx;x<b.tx+b.size;x++){ const i=y*G.map.w+x; G.block[i]= v ? 2 : (G.map.walk[i]?0:1); } }
+function alive(e){ return e && !e.dead; }
+function spiral(r){ const out=[]; for(let y=-r;y<=r;y++) for(let x=-r;x<=r;x++) out.push({x,y,d:x*x+y*y+Math.random()*0.5}); return out.sort((a,b)=>a.d-b.d); }
+const SPIRAL=spiral(9);
+function freeTilesNear(tx,ty,n){
+  const out=[]; for(const o of SPIRAL){ const x=tx+o.x, y=ty+o.y; if(walkableT(x,y)){ out.push({x,y}); if(out.length>=n) break; } } return out; }
+function spawnAt(type,faction,at,n=1){
+  const p=pt(at); if(!p) return []; const spots=freeTilesNear(p.x,p.y,n);
+  return spots.map(s=>makeUnit(type,faction,(s.x+.5)*TILE+rand(-5,5),(s.y+.5)*TILE+rand(-5,5)));
+}
+function spawnNearBuilding(type,faction,b,toward){
+  const cands=[]; const s=b.size;
+  for(let y=b.ty-1;y<=b.ty+s;y++) for(let x=b.tx-1;x<=b.tx+s;x++){ const inside=x>=b.tx&&x<b.tx+s&&y>=b.ty&&y<b.ty+s; if(inside!==!!b.def.ground) continue; if(walkableT(x,y)) cands.push({x,y}); }
+  let spot;
+  if(!cands.length){ const f=freeTilesNear(b.tx,b.ty,1)[0]; if(!f) return null; spot=f; }
+  else if(toward){ cands.sort((a,c)=>Math.hypot((a.x+.5)*TILE-toward.x,(a.y+.5)*TILE-toward.y)-Math.hypot((c.x+.5)*TILE-toward.x,(c.y+.5)*TILE-toward.y)); spot=cands[0]; }
+  else spot=pick(cands);
+  return makeUnit(type,faction,(spot.x+.5)*TILE+rand(-4,4),(spot.y+.5)*TILE+rand(-4,4));
+}
