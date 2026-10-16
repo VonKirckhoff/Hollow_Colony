@@ -84,6 +84,8 @@ const BUILDINGS = {
                desc:'A marking on the ground. Order reinforcements here and a dropship brings them in. Units can walk over it and the enemy ignores it. Right-click the ground to set where new troops gather.' },
   uplink:    { name:'Uplink Beacon', faction:'corps', size:2, hp:1, sight:3, art:'uplink', noBlock:true, ground:true, capture:true, captureTime:20, loseTime:15,
                desc:'Stand next to it with no Swarm close by to capture it. The Swarm takes it back if it holds the beacon unopposed.' },
+  door:      { name:'Blast Door', faction:'corps', size:1, hp:1, sight:1, art:'door',
+               desc:'A sealed station blast door. Only the mission can open it.' },
   membrane:  { name:'Membrane', faction:'swarm', size:1, hp:600, sight:1, art:'membrane',
                desc:'Living tissue that seals a tunnel. It cannot be harmed while its egg chambers live.' },
   cocoon:    { name:'Cocoon', faction:'swarm', size:1, hp:35, sight:2, hatch:5, art:'cocoon', noBlock:true,

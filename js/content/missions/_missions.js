@@ -14,6 +14,6 @@
      g.has(type)  g.hives()  g.stat(name)  g.reveal(at,radius,seconds)  g.ping(at)  g.marker(id,at,label)  g.unmark(id)  g.give(salvage)
      g.where(at)  g.wave(budget,aim?)  g.setTimer(seconds,label)  g.clearTimer()
      g.uplinks()  g.uplinkOwned(at)  g.swarmCount()  g.diffBudget()
-     g.wall(at,radius,tag)  g.openWall(tag)  g.weakenWall(tag,hp)  g.walls(tag)  g.airdrop(list,seconds)  g.hiveAt(at)  g.boss(unit,title)
+     g.wall(at,radius,tag,kind)  g.openWall(tag)  g.weakenWall(tag,hp)  g.walls(tag)  g.airdrop(list,seconds)  g.hiveAt(at)  g.boss(unit,title)
      g.convoy(list,route)  g.convoyGo()  g.convoyArrived()  g.convoyHalted()  g.convoyLead()  g.timerLeft()  g.win(text)  g.lose(text) */
 const MISSIONS = [];

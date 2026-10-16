@@ -61,6 +61,11 @@ const ART = {
     disc(x,16,16,14,P.k); disc(x,16,16,13,'#3a4150'); disc(x,16,16,9,'#2c323e');
     for(let a=0;a<8;a++){ const ang=a*Math.PI/4; x.fillStyle=a%2?P.y:P.k; x.fillRect(Math.round(16+Math.cos(ang)*11)-1,Math.round(16+Math.sin(ang)*11)-1,3,3); }
     x.fillStyle=P.k; x.fillRect(14,5,4,20); x.fillStyle=P.a; x.fillRect(15,5,2,20); oval(x,16,6,6,3,P.k); oval(x,16,6,5,2,P.a); x.fillStyle=P.v; x.fillRect(15,4,2,2); return c; },
+  door(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
+    x.fillStyle=P.k; x.fillRect(0,0,16,16); x.fillStyle=P.G; x.fillRect(1,1,14,14); x.fillStyle=P.A; x.fillRect(2,2,5,12); x.fillRect(9,2,5,12);
+    x.fillStyle=P.k; x.fillRect(7,1,2,14);
+    for(let i=0;i<4;i++){ x.fillStyle=i%2?P.k:P.y; x.fillRect(2,2+i*3,5,2); x.fillRect(9,3+i*3,5,2); }
+    x.fillStyle=P.v; x.fillRect(7,7,2,2); return c; },
   membrane(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(0,1,16,15); x.fillStyle=P.C; x.fillRect(1,2,14,13); x.fillStyle=P.m; x.fillRect(2,4,5,4); x.fillRect(9,8,5,5);
     x.fillStyle=P.p; x.fillRect(3,3,3,1); x.fillRect(10,7,3,1); x.fillStyle=P.e; x.fillRect(7,3,1,9); x.fillRect(4,11,6,1); x.fillRect(12,4,1,4); return c; },

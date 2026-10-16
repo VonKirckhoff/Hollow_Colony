@@ -23,8 +23,9 @@ function makeApi(){
     marker(id,at,label){ const p=ptWorld(at); if(!p) return; G.markers=G.markers.filter(m=>m.id!==id); G.markers.push({id,x:p.x,y:p.y,label}); },
     unmark(id){ G.markers=G.markers.filter(m=>m.id!==id); },
     give(n){ G.salvage+=n; },
-    wall(at,radius,tag){ const p=pt(at); if(!p) return; const R2=radius*radius; for(let y=p.y-Math.ceil(radius);y<=p.y+Math.ceil(radius);y++) for(let x=p.x-Math.ceil(radius);x<=p.x+Math.ceil(radius);x++){
-        if((x-p.x)**2+(y-p.y)**2>R2||!walkableT(x,y)) continue; const m=makeBuilding('membrane','swarm',x,y,true); m.tag=tag; m.invuln=true; } },
+    /* wall: seal tiles with living membrane (kind 'membrane', default) or a station blast door (kind 'door'). Radius 0 = one tile. */
+    wall(at,radius,tag,kind='membrane'){ const p=pt(at); if(!p) return; const R2=radius*radius; for(let y=p.y-Math.ceil(radius);y<=p.y+Math.ceil(radius);y++) for(let x=p.x-Math.ceil(radius);x<=p.x+Math.ceil(radius);x++){
+        if((x-p.x)**2+(y-p.y)**2>R2||!walkableT(x,y)) continue; const m=makeBuilding(kind,kind==='door'?'corps':'swarm',x,y,true); m.tag=tag; m.invuln=true; if(kind==='door') G.stats.built--; } },
     /* weakenWall: the membrane stays but can now be destroyed (optionally with new hp per tile). walls(tag): tiles still standing. */
     weakenWall(tag,hp){ for(const e of G.ents) if(e.type==='membrane'&&e.tag===tag&&!e.dead){ e.invuln=false; if(hp){ e.hp=e.maxHp=hp; } } },
     walls:tag=>G.ents.filter(e=>e.type==='membrane'&&e.tag===tag&&!e.dead).length,
@@ -33,7 +34,9 @@ function makeApi(){
       const cargo=[]; for(const [type,n=1] of list) for(let i=0;i<n;i++) cargo.push(type);
       if(lz.flight) lz.flight.cargo.push(...cargo); else lz.flight={ t:Math.max(5,delay), total:Math.max(5,delay), cargo };
       G.selDirty=true; },
-    openWall(tag){ for(const e of G.ents) if(e.type==='membrane'&&e.tag===tag&&!e.dead){ e.invuln=false; kill(e,null); } },
+    openWall(tag){ for(const e of G.ents) if((e.type==='membrane'||e.type==='door')&&e.tag===tag&&!e.dead){
+        if(e.type==='door'){ e.dead=true; e.hp=0; setBlock(e,0); for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y,vx:rand(-50,50),vy:rand(-60,0),t:0.5,max:0.5,col:'#ffd23f'}); SFX.play('ack',e.x,e.y); }
+        else { e.invuln=false; kill(e,null); } } },
     swarmCount:()=>swarmCount(),
     diffBudget:()=>G.diff.budget,
     diffInterval:()=>G.diff.interval,

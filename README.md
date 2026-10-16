@@ -211,7 +211,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 
 | # | Missie | Kaart | Doel |
 |---|---|---|---|
-| 1 | **Dust Landing** | Kappa Basin | Bereik Kappa Station en overleef de hinderlaag. Daarna landt het dropship versterking op het platform van het station. Pas dan kan je het membraan in een van de twee passen door de noordelijke bergkam wegbranden. Vernietig de hive in het noorden, daarna (met een tweede versterking) die in het noordoosten, en keer terug naar het station voor de pickup. Je speelt zonder basis. |
+| 1 | **Dust Landing** | Kappa Canyons | Volg de smalle kloven vanaf de landingsplaats (twee routes) naar Kappa Station en overleef de hinderlaag uit de oostelijke tunnel. Het dropship landt versterking op het platform van het station. Daarna gaan de blast doors naar de noordelijke grotten open: vernietig de hive in de westelijke grot, daarna (met een tweede versterking) die in de oostelijke, en keer terug naar het landingsplatform voor de pickup. Tot de deuren opengaan, zijn de hives onbereikbaar en ver buiten schootsafstand. Je speelt zonder basis. |
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. |
 | 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
@@ -231,7 +231,7 @@ De missies zijn nu bewust langer gemaakt. Sentry-limieten per missie: Hold Kappa
 
 `map-editor/index.html` is een aparte app (uitleg in [map-editor/README.md](map-editor/README.md)) om kaarten te tekenen of aan te passen. Hij gebruikt dezelfde terreintypes en markeringen als het spel.
 
-- **Openen:** de zes kaarten van het spel, je eigen kladversies, of **Import** (map code, een kaartbestand, of losse tekstrijen).
+- **Openen:** de kaarten van het spel, je eigen kladversies, of **Import** (map code, een kaartbestand, of losse tekstrijen).
 - **Nieuw:** kies breedte en hoogte, en start van open regolith, willekeurige grotten of massieve rots.
 - **Gereedschap:**
 
@@ -390,7 +390,7 @@ In triggers krijg je een object `g` mee:
 | `g.addObjective(id, tekst, optioneel)` | Nieuw doel toevoegen |
 | `g.complete(id)`, `g.fail(id)`, `g.setText(id, tekst)` | Doel afvinken, laten mislukken of hernoemen |
 | `g.spawn(type, punt, aantal, {faction, order, prey, truce})` | Eenheden plaatsen. Geeft een lijst terug. Swarm-`order`: `'hunt'` (standaard), `'guard'` of `'boss'`. `prey`: welke factie een Grey Hunter bejaagt. `truce`: met welke factie de eenheid niet vecht. |
-| `g.wall(punt, straal, tag)`, `g.openWall(tag)` | Een tunnel afsluiten met onkwetsbaar membraan (straal 0 = één tegel); het membraan weer laten wegrotten |
+| `g.wall(punt, straal, tag, soort)`, `g.openWall(tag)` | Een tunnel afsluiten (straal 0 = één tegel). `soort` is `'membrane'` (standaard, levend membraan) of `'door'` (blast door van het station). Beide zijn onkwetsbaar. `openWall` laat het membraan wegrotten of schuift de deuren open. |
 | `g.weakenWall(tag, hp)`, `g.walls(tag)` | Het membraan kwetsbaar maken, zodat je troepen het kunnen wegbranden (optioneel met nieuwe hp per tegel); aantal tegels dat nog staat |
 | `g.airdrop([[type, aantal], …], seconden)` | Het dropship vliegt versterking naar de Landing Zone van de missie (zie `landingZone`) |
 | `g.hiveAt(punt)` | Of er bij dat punt nog een hive staat |
