@@ -56,7 +56,7 @@ function swarmThink(u,dt){
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;
   if(u.role==='guard'||u.role==='boss'){ if(!u.order && !u.target && u.guardAt) u.order={type:'guard',x:u.guardAt.x,y:u.guardAt.y,wait:0}; return; }
   if((u.role==='hunt'||u.role==='wave') && !u.target && (!u.order||u.order.type!=='amove')){
-    const t=nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground);
+    const t=nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&e.type!=='door');   // blast doors are scenery, not prey
     if(t){ u.order={type:'amove',x:t.x,y:t.y}; setPath(u,t.x,t.y); }
   }
 }

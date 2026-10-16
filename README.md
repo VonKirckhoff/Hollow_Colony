@@ -138,6 +138,7 @@ Selecteer minstens twee eenheden en druk **Z** (cirkel), **X** (wig/speer) of **
 - **Wig:** Pyros komen vooraan, dan Gunners, en Troopers vullen de vleugels. De punt wijst altijd in de looprichting.
 - **Cirkel en vierkant:** elke strijder neemt de dichtstbijzijnde plek op de rand.
 - De squad **houdt de formatie** bij elke verplaatsing en attack-move, en draait mee met de looprichting.
+- **Onderweg in formatie (mars):** bij een verplaatsing van meer dan 5 tegels loopt de squad als één blok. Een onzichtbaar middelpunt volgt een route door het **midden** van gangen, en elke soldaat houdt zijn plaats rond dat punt. Blijft iemand achter, dan wacht de groep. Is een gang te smal, dan schuiven alleen de soldaten die tegen de rotswand zouden lopen naar binnen; daarna gaan ze terug naar hun plek. Aan het doel zet de squad zich in de gewone formatie. Krijgt een soldaat onderweg een ander bevel (of **S**top), dan verlaat hij de mars.
 - Druk dezelfde toets nog eens om de formatie los te laten. Selecteer je een groep met eenheden die niet in de formatie zaten, dan gebruikt die groep de gewone formatie.
 - De vormen staan in `FORMATIONS` en `formationSlots()` in de code. De afstand tussen eenheden volgt `FORMATION.spacing`.
 
@@ -211,7 +212,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 
 | # | Missie | Kaart | Doel |
 |---|---|---|---|
-| 1 | **Dust Landing** | Kappa Canyons | Volg de smalle kloven vanaf de landingsplaats (twee routes) naar Kappa Station en overleef de hinderlaag uit de oostelijke tunnel. Het dropship landt versterking op het platform van het station. Daarna gaan de blast doors naar de noordelijke grotten open: vernietig de hive in de westelijke grot, daarna (met een tweede versterking) die in de oostelijke, en keer terug naar het landingsplatform voor de pickup. Tot de deuren opengaan, zijn de hives onbereikbaar en ver buiten schootsafstand. Je speelt zonder basis. |
+| 1 | **Dust Landing** | Kappa Canyons | Volg de brede kloven (minstens 7 tegels, zodat een squad in formatie blijft) vanaf de landingsplaats (twee routes) naar Kappa Station en overleef de hinderlaag uit de oostelijke tunnel. Het dropship landt versterking op het platform van het station. Daarna gaan de blast doors naar de noordelijke grotten open: vernietig de hive in de westelijke grot, daarna (met een tweede versterking) die in de oostelijke, en keer terug naar het landingsplatform voor de pickup. Tot de deuren opengaan, zijn de hives onbereikbaar en ver buiten schootsafstand. Je speelt zonder basis. |
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. |
 | 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
@@ -418,10 +419,11 @@ Een `punt` is een kaartteken (`'P'`, `'1'`, `'a'`) of een tegelcoördinaat `{x, 
 
 ## Instelbare waarden
 
-De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` staat in `js/engine/19-commands.js`, `CONVOY` en `HP_ZONES` in `js/engine/09-unit-behaviour.js`, `DIFFICULTY` in `js/content/difficulty.js`, en de missiewaarden in het bestand van die missie.
+De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` en `MARCH` staan in `js/engine/19-commands.js`, `CONVOY` en `HP_ZONES` in `js/engine/09-unit-behaviour.js`, `DIFFICULTY` in `js/content/difficulty.js`, en de missiewaarden in het bestand van die missie.
 
 | Waar | Waarde | Betekenis |
 |---|---|---|
+| `MARCH` (19-commands.js) | `minDist` (5), `wantClear` (4), `wallCost` (1.6), `turnRate` (2.4), `maxLag` (2.2) | Mars in formatie: vanaf welke afstand (tegels), hoe ver van de wand de route wil blijven en hoe sterk ze dat probeert, hoe snel de formatie draait (rad/s), en hoeveel achterstand (tegels) de groep laat wachten |
 | `FORMATION` | `maxRadius` (4.5) | Hoe ver (in tegels) een groep uit elkaar mag staan voor ze samenschuift |
 | | `spacing` (24) | Afstand in pixels tussen eenheden in een blokformatie |
 | | `minGap` (14) | Staan eenheden dichter bij elkaar dan dit, dan worden ze in een blok gezet |
