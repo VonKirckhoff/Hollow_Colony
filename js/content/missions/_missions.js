@@ -1,7 +1,8 @@
 'use strict';
 /* 1g. MISSIONS — one file per mission; the campaign order is the order of the <script> lines in index.html.
    start:     what is on the map at t=0 (points refer to map markers)
-   landingZone: optional { tx, ty, max, delay }: a pad where reinforcements are ordered and flown in; max = troop cap
+   landingZone: optional { tx, ty, max, delay }: a pad where reinforcements are ordered and flown in; max = troop cap.
+                scripted:true = no order buttons; only the mission sends the dropship, with g.airdrop([[type,n],…], seconds)
    noTraining: true = the Command Post does not train in this mission
    limits:    optional cap per building type, e.g. { sentry:3 } (packed-up sentries do not count)
    swarm:     AI tuning. waves:null means no attack waves.
@@ -13,6 +14,6 @@
      g.has(type)  g.hives()  g.stat(name)  g.reveal(at,radius,seconds)  g.ping(at)  g.marker(id,at,label)  g.unmark(id)  g.give(salvage)
      g.where(at)  g.wave(budget,aim?)  g.setTimer(seconds,label)  g.clearTimer()
      g.uplinks()  g.uplinkOwned(at)  g.swarmCount()  g.diffBudget()
-     g.wall(at,radius,tag)  g.openWall(tag)  g.hiveAt(at)  g.boss(unit,title)
+     g.wall(at,radius,tag)  g.openWall(tag)  g.weakenWall(tag,hp)  g.walls(tag)  g.airdrop(list,seconds)  g.hiveAt(at)  g.boss(unit,title)
      g.convoy(list,route)  g.convoyGo()  g.convoyArrived()  g.convoyHalted()  g.convoyLead()  g.timerLeft()  g.win(text)  g.lose(text) */
 const MISSIONS = [];

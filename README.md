@@ -161,11 +161,12 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - **Hives groeien terug** (6 hp per seconde) als ze 12 seconden niet geraakt zijn. Even aanvallen en weglopen helpt dus niet; doorduwen wel. Instelbaar met `regen` en `regenDelay` bij `BUILDINGS.hive`.
 - **Cocons:** elke levende eenheid die door de Swarm sterft, wordt een cocon die na 5 seconden uitkomt. Een gesneuvelde Gunner of Pyro wordt een Drone, de rest een Crawler. Pyros doen drievoudige schade aan cocons.
 
-### Landing Zone en troepenlimiet (missie 6 en 7)
+### Landing Zone en troepenlimiet (missie 1, 6 en 7)
 - Bij de basis ligt een **Landing Zone**: een markering op de grond met een grote H. Eenheden lopen er gewoon over, de vijand negeert ze en kan ze niet beschadigen, en je kan er niets op bouwen. Klik erop om ze te selecteren. Selecteer ze om versterkingen te bestellen: Trooper, Gunner, Medic, Pyro of Engineer, met dezelfde prijs en sneltoetsen als bij de Command Post.
 - Een **dropship** brengt ze na 25 seconden. Bestellingen tijdens de vlucht gaan mee, tot 6 per vlucht. Je ziet het toestel landen, de nieuwe soldaten staan op het platform, en in het selectiepaneel staan de lading en de resterende tijd.
 - Rechtsklik op de grond met de Landing Zone geselecteerd om een verzamelpunt te zetten.
 - **Troepenlimiet:** je kan nooit meer dan **15 man** tegelijk hebben. Eenheden op het veld en alles wat onderweg is tellen mee. Je kan dus enkel verliezen aanvullen. De bovenbalk toont `Troops 12/15`.
+- In **Dust Landing** ligt de Landing Zone op het platform van Kappa Station. Daar bestel je niets: het verhaal stuurt het dropship (`landingZone:{ …, scripted:true }` en `g.airdrop()`).
 - In **Brood Mother** traint de Command Post niet; alles komt via de Landing Zone (max. 15 man).
 - In **High Ground** ligt de Landing Zone naast de Command Post en kan je op beide plaatsen versterkingen krijgen, samen max. **24 man**.
 - In missies met een Landing Zone vervangt de troepenlimiet de supply: Supply is daar verborgen.
@@ -210,7 +211,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 
 | # | Missie | Kaart | Doel |
 |---|---|---|---|
-| 1 | **Dust Landing** | Kappa Basin | Bereik Kappa Station, overleef de hinderlaag, vernietig de hive in het noorden en daarna een tweede in het noordoosten, en keer terug naar het station voor de pickup. Je speelt zonder basis. |
+| 1 | **Dust Landing** | Kappa Basin | Bereik Kappa Station en overleef de hinderlaag. Daarna landt het dropship versterking op het platform van het station. Pas dan kan je het membraan in een van de twee passen door de noordelijke bergkam wegbranden. Vernietig de hive in het noorden, daarna (met een tweede versterking) die in het noordoosten, en keer terug naar het station voor de pickup. Je speelt zonder basis. |
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. |
 | 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
@@ -345,6 +346,7 @@ MISSIONS.push({
           waves:{ first:120, every:80, budget:70, growth:30 } },    // waves:null = geen golven
   limits:{ sentry:3 },                                              // optioneel: max. aantal per gebouwtype
   landingZone:{ tx:16, ty:44, max:15, delay:25 },                   // optioneel: Landing Zone + troepenlimiet
+                                                                    // scripted:true = geen bestelknoppen, enkel g.airdrop()
   noTraining:true,                                                  // optioneel: Command Post traint niet
   objectives:[ { id:'doel', text:'Destroy all hives' }, { id:'extra', text:'Find crates', optional:true } ],
   triggers:[
@@ -388,7 +390,9 @@ In triggers krijg je een object `g` mee:
 | `g.addObjective(id, tekst, optioneel)` | Nieuw doel toevoegen |
 | `g.complete(id)`, `g.fail(id)`, `g.setText(id, tekst)` | Doel afvinken, laten mislukken of hernoemen |
 | `g.spawn(type, punt, aantal, {faction, order, prey, truce})` | Eenheden plaatsen. Geeft een lijst terug. Swarm-`order`: `'hunt'` (standaard), `'guard'` of `'boss'`. `prey`: welke factie een Grey Hunter bejaagt. `truce`: met welke factie de eenheid niet vecht. |
-| `g.wall(punt, straal, tag)`, `g.openWall(tag)` | Een tunnel afsluiten met onkwetsbaar membraan; het membraan weer laten wegrotten |
+| `g.wall(punt, straal, tag)`, `g.openWall(tag)` | Een tunnel afsluiten met onkwetsbaar membraan (straal 0 = één tegel); het membraan weer laten wegrotten |
+| `g.weakenWall(tag, hp)`, `g.walls(tag)` | Het membraan kwetsbaar maken, zodat je troepen het kunnen wegbranden (optioneel met nieuwe hp per tegel); aantal tegels dat nog staat |
+| `g.airdrop([[type, aantal], …], seconden)` | Het dropship vliegt versterking naar de Landing Zone van de missie (zie `landingZone`) |
 | `g.hiveAt(punt)` | Of er bij dat punt nog een hive staat |
 | `g.uplinks()`, `g.uplinkOwned(punt)` | Aantal veroverde bakens; of het baken bij dat punt van jou is |
 | `g.boss(eenheid, titel)` | Toont de levensbalk van een baas bovenaan |

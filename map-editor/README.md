@@ -76,7 +76,7 @@ Een kaart is een lijst tekstrijen; elk teken is één tegel van 32×32 pixels in
 | `S` | Salvage-krat |
 | `W` | Kudde Grazers (neutrale fauna) |
 | `0`–`9` | Benoemde punten voor missiescripts |
-| `a`–`n` (geen `o`) | Hive-plekken. In Skirmish wordt elke hive-plek een hive. |
+| `a`–`n` (geen `o`) | Hive-plekken. In Skirmish wordt elke hive-plek een hive. In een missie staat er alleen een hive op de plekken die de missie noemt (`hives:['a','c']`). |
 
 De volledige legende staat ook bovenaan `js/content/maps/_maps.js`.
 

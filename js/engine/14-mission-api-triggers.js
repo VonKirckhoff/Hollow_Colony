@@ -25,6 +25,14 @@ function makeApi(){
     give(n){ G.salvage+=n; },
     wall(at,radius,tag){ const p=pt(at); if(!p) return; const R2=radius*radius; for(let y=p.y-Math.ceil(radius);y<=p.y+Math.ceil(radius);y++) for(let x=p.x-Math.ceil(radius);x<=p.x+Math.ceil(radius);x++){
         if((x-p.x)**2+(y-p.y)**2>R2||!walkableT(x,y)) continue; const m=makeBuilding('membrane','swarm',x,y,true); m.tag=tag; m.invuln=true; } },
+    /* weakenWall: the membrane stays but can now be destroyed (optionally with new hp per tile). walls(tag): tiles still standing. */
+    weakenWall(tag,hp){ for(const e of G.ents) if(e.type==='membrane'&&e.tag===tag&&!e.dead){ e.invuln=false; if(hp){ e.hp=e.maxHp=hp; } } },
+    walls:tag=>G.ents.filter(e=>e.type==='membrane'&&e.tag===tag&&!e.dead).length,
+    /* airdrop: the dropship flies cargo to the mission's Landing Zone, e.g. g.airdrop([['trooper',2],['pyro',1]], 15). */
+    airdrop(list,delay=15){ const lz=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce); if(!lz) return;
+      const cargo=[]; for(const [type,n=1] of list) for(let i=0;i<n;i++) cargo.push(type);
+      if(lz.flight) lz.flight.cargo.push(...cargo); else lz.flight={ t:Math.max(5,delay), total:Math.max(5,delay), cargo };
+      G.selDirty=true; },
     openWall(tag){ for(const e of G.ents) if(e.type==='membrane'&&e.tag===tag&&!e.dead){ e.invuln=false; kill(e,null); } },
     swarmCount:()=>swarmCount(),
     diffBudget:()=>G.diff.budget,
