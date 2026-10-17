@@ -9,21 +9,30 @@ function makeUnit(type,faction,x,y){
 }
 /* ---------- veterans ---------- */
 function isSoldierType(type){ return (BUILDINGS.hq.trains||[]).includes(type); }
+/* Every soldier name is unique: across the roster, the fallen and everyone fielded in this mission.
+   When the surname list runs out, an initial is added ("J. Torres"). */
+const NAME_INITIALS='ABCDEFGHJKLMNPRSTVW';
+function validName(n){ const m=/^[A-Z]\. (.+)$/.exec(n); return SURNAMES.includes(m?m[1]:n); }
+function uniqueName(taken){
+  const free=SURNAMES.filter(n=>!taken.has(n)); if(free.length) return pick(free);
+  for(const L of NAME_INITIALS){ const f=SURNAMES.filter(n=>!taken.has(`${L}. ${n}`)); if(f.length) return `${L}. ${pick(f)}`; }
+  for(let i=2;;i++){ const n=`${pick(SURNAMES)} ${i}`; if(!taken.has(n)) return n; } }
 function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[]; r.fallen=r.fallen||[];
-  // names that are no longer in SURNAMES are swapped for an unused one from the list
-  const used=new Set(r.active.map(v=>v.name)); for(const v of r.active){ if(!SURNAMES.includes(v.name)){ const n=SURNAMES.find(s=>!used.has(s)); if(n){ used.add(n); v.name=n; } } }
-  for(const v of r.fallen){ if(!SURNAMES.includes(v.name)){ const n=SURNAMES.find(s=>!used.has(s)); if(n){ used.add(n); v.name=n; } } }
+  // names no longer in SURNAMES, and doubles, get a fresh unique name
+  const all=[...r.active,...r.fallen], taken=new Set();
+  for(const v of all){ if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
   return r; }
 function saveRoster(){ store.set('hc-roster',ui.roster); }
-function freshName(){ const used=new Set(G.ents.filter(e=>e.vet).map(e=>e.vet.name).concat(ui.roster.active.map(v=>v.name)));
-  const free=SURNAMES.filter(n=>!used.has(n)); return pick(free.length?free:SURNAMES); }
+function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
+  for(const v of ui.roster.active) t.add(v.name); for(const v of ui.roster.fallen) t.add(v.name); return t; }
+function freshName(){ const n=uniqueName(takenNames()); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
 function rankFor(xp){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp) r=i; }); return r; }
 function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp; u.maxHp=u.def.hp*k.hp; u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; }
 function gainXP(u,amount){
   if(!u||u.dead||!u.vet||amount<=0) return; u.vet.xp+=amount;
   const r=rankFor(u.vet.xp); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'});
-    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.`,'sys'); (G.promotions=G.promotions||[]).push(`${u.vet.name}: ${RANKS[r].name}`); G.selDirty=true; } }
+    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
 function isCampaign(){ return G.mission.id!=='skirmish'; }
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */
@@ -44,7 +53,11 @@ function settleRoster(){
   if(!isCampaign()) return; const R=ui.roster, alive=new Map();
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; alive.set(u.vet.id,u); }
   const res={ joined:[], fallen:[] };
-  for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ R.fallen.unshift({ name:v.name, type:v.type, rank:v.rank, xp:v.xp, mission:G.mission.title, at:Date.now() }); res.fallen.push(v); } }
+  const P=G.promoted||{};
+  for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const rank=Math.max(v.rank,P[v.id]?P[v.id].rank:0);
+    R.fallen.unshift({ name:v.name, type:v.type, rank, xp:v.xp, mission:G.mission.title, at:Date.now() }); res.fallen.push({...v,rank}); } }
+  // promotions of soldiers who made it out, highest rank only
+  res.promoted=Object.entries(P).filter(([id])=>alive.has(id)).map(([,p])=>p);
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
   for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0 };
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0){ R.active.push(v); res.joined.push(v); } }

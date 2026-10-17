@@ -89,7 +89,8 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - Bij een promotie meldt de radio het, verschijnt "PROMOTED" en krijgt de soldaat een kwart van zijn levenspunten terug. Het rangteken staat boven de soldaat en in het selectiepaneel; daar zie je ook naam, XP, kills en aantal missies.
 - **Rooster:** win je een campagnemissie, dan gaan alle overlevenden met XP naar het rooster (max. 30, de meest ervarenen eerst). In de volgende campagnemissie vervangen ze startsoldaten van hetzelfde type. Wie niet meteen een plaats heeft, staat in **reserve** en komt als eerste zodra je dat type traint of via de dropship bestelt.
 - **Gesneuveld is gesneuveld:** een veteraan die sterft in een missie die je wint, verdwijnt van het rooster en komt op de gedenklijst. Verlies je de missie, dan verandert het rooster niet (je kan opnieuw proberen).
-- De knop **Veterans** in de campagnelijst toont het rooster, de rangen en de gedenklijst. De briefing toont wie meegaat, het eindscherm toont promoties, nieuwkomers en gesneuvelden.
+- De knop **Veterans** in de campagnelijst toont het rooster, de rangen en de gedenklijst. De briefing toont wie meegaat. Het eindscherm toont promoties (per soldaat alleen de hoogste rang die hij haalde, en alleen van wie de missie overleefde), nieuwkomers en gesneuvelden (met de rang die ze op het moment van hun dood hadden).
+- **Unieke namen:** geen twee soldaten hebben dezelfde naam: niet in het rooster, niet op de gedenklijst en niet in de lopende missie. Pas als alle namen uit `SURNAMES` op zijn, krijgt een nieuwe soldaat een voorletter ("J. Torres"). Een bewaard rooster met dubbele namen wordt bij het laden rechtgezet.
 - **Reset campaign** wist ook het rooster. In skirmish wordt niets bewaard.
 - Instelbaar bovenaan in de code: `RANKS`, `VET_XP`, `ROSTER_MAX` en de namenlijst `SURNAMES`.
 

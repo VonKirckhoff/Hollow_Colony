@@ -87,7 +87,7 @@ function showEnd(){
   $('#e-text').textContent=o.text;
   if(o.win && m.id!=='skirmish'){ const r=ui.progress.results[m.id], pb=G.prevBest, up=pb&&DIFF_RANK[G.diffKey]>DIFF_RANK[pb.diff];
     $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; }
-  const ev=$('#e-vets'); const rr=G.rosterResult; const promos=G.promotions||[];
+  const ev=$('#e-vets'); const rr=G.rosterResult; const promos=(rr&&rr.promoted||[]).map(p=>`${p.name}: ${RANKS[p.rank].name}`);
   if(o.win && m.id!=='skirmish' && (promos.length||(rr&&(rr.joined.length||rr.fallen.length)))){ ev.hidden=false;
     ev.innerHTML=(promos.length?`<div><span class="lbl">Promotions</span> ${promos.join(' · ')}</div>`:'')+
       (rr&&rr.joined.length?`<div><span class="lbl">New on the roster</span> ${rr.joined.map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(' · ')}</div>`:'')+

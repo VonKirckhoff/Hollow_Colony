@@ -15,4 +15,7 @@ const ROSTER_MAX = 30;
 const SURNAMES = ['Reyes','Lindqvist','Novak','Tanaka','Moreau','Kowalski','Silva','Brandt','Ivanova','Castillo','Nakamura','Duarte',
   'Fischer','Sorensen','Petrov','Mendes','Larsen','Vargas','Chen','Dubois','Kim','Janssens','Verbeke','Peeters','Wouters',
   'Rossi','Haugen','Ortega','Sato','Kovac','Ferreira','Nyberg','Becker','Torres','Lindgren','Varga','Quinn',
-  'Van Kerckhove','Van Damme','Vikernes','Claes','De Smet','Maes','Vermeulen','Goossens','Mertens','Lambrecht','Hendrickx','Aerts'];
+  'Van Kerckhove','Van Damme','Vikernes','Claes','De Smet','Maes','Vermeulen','Goossens','Mertens','Lambrecht','Hendrickx','Aerts',
+  'Jacobs','Willems','Dupont','Lemaire','Hermans','Stevens','Michiels','Dewitte','Vandenberghe','Coppens','Smets','Bauer','Keller','Hoffmann','Wagner','Andersen','Holm','Berg','Eriksen','Dahl','Virtanen','Korhonen','Nowak','Zielinski','Horvat','Popescu','Romano','Bianchi','Marino','Navarro','Romero','Costa','Almeida','Murphy','Byrne','Walsh','Harper','Ito','Watanabe','Park'];
+/* Names are unique: nobody in the roster, among the fallen or in the current mission shares a name.
+   Only when all of these are taken does a soldier get an initial ("J. Torres"). */
