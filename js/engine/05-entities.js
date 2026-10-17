@@ -20,7 +20,8 @@ function uniqueName(taken){
 function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[]; r.fallen=r.fallen||[];
   // names no longer in SURNAMES, and doubles, get a fresh unique name
   const all=[...r.active,...r.fallen], taken=new Set();
-  for(const v of all){ if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
+  all.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0));
+  for(const v of all){ if(v.hero&&!taken.has(v.name)){ taken.add(v.name); continue; } if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
   return r; }
 function saveRoster(){ store.set('hc-roster',ui.roster); }
 function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
@@ -39,6 +40,11 @@ function isCampaign(){ return G.mission.id!=='skirmish'; }
 function deployRoster(){
   G.reserve=[]; G.deployedIds=new Set(); if(!isCampaign()) return;
   const pool=[...ui.roster.active].sort((a,b)=>b.xp-a.xp);
+  // your own soldier always goes in: he takes the place of a starting soldier of his type, or joins the squad as an extra
+  const hi=pool.findIndex(v=>v.hero);
+  if(hi>=0){ const h=pool.splice(hi,1)[0]; let u=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.vet&&e.type===h.type&&!G.deployedIds.has(e.vet.id));
+    if(!u){ const first=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.vet); const p=first?{x:Math.floor(first.x/TILE),y:Math.floor(first.y/TILE)}:pt(G.mission.start.camera||'P'); u=(spawnAt(h.type,'corps',p,1)||[])[0]; if(u) u.home={x:u.x,y:u.y}; }
+    if(u){ u.vet={...h}; applyRank(u); u.hp=u.maxHp; G.deployedIds.add(h.id); } }
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; const i=pool.findIndex(v=>v.type===u.type); if(i<0) continue;
     u.vet={...pool[i]}; pool.splice(i,1); applyRank(u); u.hp=u.maxHp; G.deployedIds.add(u.vet.id); }
   G.reserve=pool;
@@ -56,7 +62,7 @@ function settleRoster(){
   const P=G.promoted||{};
   const FV=G.fallenVets||{}, ids=new Set(R.active.map(v=>v.id));
   for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
-    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now() };
+    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined };
     R.fallen.unshift(rec); res.fallen.push(rec); } }
   // soldiers who earned a rank in this mission and fell are remembered too
   for(const [id,f] of Object.entries(FV)){ if(ids.has(id)||!(f.rank>=1)) continue;
@@ -65,9 +71,9 @@ function settleRoster(){
   // promotions of soldiers who made it out, highest rank only
   res.promoted=Object.entries(P).filter(([id])=>alive.has(id)).map(([,p])=>p);
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
-  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0 };
-    const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0){ R.active.push(v); res.joined.push(v); } }
-  R.active.sort((a,b)=>b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX; R.fallen=R.fallen.slice(0,60);
+  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined };
+    const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
+  R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
   saveRoster(); G.rosterResult=res;
 }
 function makeBuilding(type,faction,tx,ty,built){
@@ -96,4 +102,19 @@ function spawnNearBuilding(type,faction,b,toward){
   else if(toward){ cands.sort((a,c)=>Math.hypot((a.x+.5)*TILE-toward.x,(a.y+.5)*TILE-toward.y)-Math.hypot((c.x+.5)*TILE-toward.x,(c.y+.5)*TILE-toward.y)); spot=cands[0]; }
   else spot=pick(cands);
   return makeUnit(type,faction,(spot.x+.5)*TILE+rand(-4,4),(spot.y+.5)*TILE+rand(-4,4));
+}
+
+/* ---- your own soldier: a named recruit you create on the campaign screen ---- */
+const HERO_TYPES=['trooper','gunner','pyro','medic','engineer'];
+function heroOf(){ return ui.roster.active.find(v=>v.hero)||null; }
+function setHero(name,type){
+  name=String(name||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,18);
+  if(name.length<2) return 'Give your soldier a name of at least 2 letters.';
+  if(!HERO_TYPES.includes(type)) return 'Pick a type.';
+  const others=new Set([...ui.roster.active.filter(v=>!v.hero).map(v=>v.name),...ui.roster.fallen.map(v=>v.name)]);
+  if(others.has(name)) return 'That name is already taken by another soldier (or on the memorial).';
+  const h=heroOf();
+  if(h){ if(h.type!==type && (h.missions||0)>0) return 'Your soldier has seen action: his type can no longer change.'; h.name=name; h.type=type; }
+  else ui.roster.active.unshift({ id:'hero-'+Date.now().toString(36), name, type, rank:0, xp:0, kills:0, missions:0, hero:true });
+  saveRoster(); return null;
 }

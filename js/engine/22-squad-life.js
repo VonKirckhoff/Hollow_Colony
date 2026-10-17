@@ -6,7 +6,8 @@ const SQUAD = {
   cover:{ factor:0.6 },                                              // ranged damage taken in cover (×)
   suppress:{ time:1.4, slow:0.55 },                                  // seconds, speed factor
   flare:{ light:6, time:45, range:9, perMission:3, perDarkMission:6 },
-  voice:{ gap:1.6 }                                                  // seconds between two voice lines
+  voice:{ gap:1.6 },                                                 // seconds between two voice lines
+  moveFire:{ rate:1.35 }                                             // firing on the move: time between shots ×
 };
 
 /* ---- motion tracker: blips for everything that moves within range of your squad, faster beeps when closer ---- */
@@ -154,7 +155,7 @@ function obituary(u){
   (G.fallenVets=G.fallenVets||{})[u.vet.id]={...u.vet};
   const near=G.ents.filter(e=>!e.dead&&e!==u&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&Math.hypot(e.x-u.x,e.y-u.y)<9*TILE);
   if(near.length) bark(pick(near),'down',u.vet.name);
-  if(u.vet.rank>=1||(u.vet.missions||0)>=1){
+  if(u.vet.hero||u.vet.rank>=1||(u.vet.missions||0)>=1){
     const m=u.vet.missions||0;
     say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
 }
@@ -198,3 +199,11 @@ function initVoiceVolume(){ const r=$('#voice-vol'); if(!r) return; r.value=Math
   r.addEventListener('input',()=>{ ui.voiceVol=r.value/100; store.set('hc-voice-vol',ui.voiceVol); });
   r.addEventListener('change',()=>{ if(!window.speechSynthesis||SFX.muted||!ui.voices) return; try{ speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance('Radio check.'); if(VOICES_EN.length) ut.voice=VOICES_EN[0]; ut.volume=ui.voiceVol; speechSynthesis.speak(ut); }catch(e){} });
   r.addEventListener('pointerdown',e=>e.stopPropagation()); }
+
+/* ---- firing on the move: a soldier with a move order keeps walking, but shoots at enemies in range on the way ---- */
+function snapFire(u,dt){
+  const d=u.def; u.snapT=(u.snapT||0)-dt;
+  if(u.snapT<=0){ u.snapT=0.25; const t=findTarget(u,d.range,true); u.snap=(t&&dist(u,t)<=d.range*TILE+t.r+u.r*0.5)?t:null; }
+  const t=u.snap; if(!t||t.dead||!validTarget(u,t)) { u.snap=null; return; }
+  if(u.cd<=0){ fire(u,t); u.cd*=SQUAD.moveFire.rate; }
+}

@@ -40,6 +40,7 @@ function updateUnit(u,dt){
   }
   if(!o) return;
   if((o.type==='move'||o.type==='amove') && !u.path){ setPath(u,o.x,o.y); }
+  if(o.type==='move' && u.faction==='corps' && d.damage) snapFire(u,dt);   /* keep walking, but shoot back on the way */
   if(o.type==='move'||o.type==='amove'){ if(stepMove(u,dt)){ u.order=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; } }
   else if(o.type==='guard'){ if(stepMove(u,dt)){ o.wait=(o.wait||0)-dt; if(o.wait<=0){ o.wait=rand(3,8); const a=rand(0,Math.PI*2), r=rand(1,3.5)*TILE; setPath(u,o.x+Math.cos(a)*r,o.y+Math.sin(a)*r); } } }
 }
@@ -131,6 +132,7 @@ function medicThink(u,dt){
     else if(!ok(u.healTarget)) u.healTarget=null; }
   const t=ok(u.healTarget)?u.healTarget:null;
   const inRange = t && dist(u,t) <= d.healRange*TILE;
+  if(!t && d.damage) snapFire(u,dt);   /* healing always comes first; only then the sidearm */
   if(inRange){ const hh=Math.min(t.maxHp-t.hp,d.heal*(u.dmgMul||1)*dt); t.hp+=hh; if(u.vet){ u.vet.healed=(u.vet.healed||0)+hh; u.vet.hb=(u.vet.hb||0)+hh; if(u.vet.hb>=VET_XP.healPerXp){ u.vet.hb-=VET_XP.healPerXp; gainXP(u,1); } } u.beam=t; SFX.play('heal',u.x,u.y); if(Math.abs(t.x-u.x)>2) u.face=t.x>u.x?1:-1;
     if(Math.random()<dt*3) G.fx.push({k:'text',x:t.x+rand(-6,6),y:t.y-14,t:0.7,max:0.7,txt:'+',col:'#7dffbf'}); }
   if(u.order && u.order.type==='attack') u.order={type:'support',squad:G.ents.filter(e=>e.kind==='unit'&&e.faction===u.faction&&!e.dead&&!e.def.heal&&dist(e,u)<6*TILE)};

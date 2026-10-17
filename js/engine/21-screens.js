@@ -13,11 +13,31 @@ function goMenu(name){
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(b) goMenu(b.dataset.go); });
 function isUnlocked(i){ return i===0 || isDone(MISSIONS[i-1].id); }
 function buildCampaign(){
+  buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`;
   const doneN=MISSIONS.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${MISSIONS.length} missions complete`;
   $('#mission-list').innerHTML=MISSIONS.map((m,i)=>{ const res=ui.progress.results[m.id], done=!!res, un=isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':'aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"'}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
+/* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
+let heroEdit=false, heroType=null;
+function buildHero(){
+  const el=$('#hero-card'), h=heroOf();
+  if(h && !heroEdit){ el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><img alt="" src="${iconUrl(h.type)}" style="width:28px;height:28px;image-rendering:pixelated"><span class="hname">★ ${RANKS[h.rank].abbr} ${h.name}</span><span class="rdim">${UNITS[h.type].name} · ${h.missions||0} mission${h.missions===1?'':'s'} · ${h.kills||0} kills</span><span style="flex:1"></span><button class="btn" type="button" id="hero-edit">Edit</button></div>`; return; }
+  heroType=heroType||(h?h.type:'trooper'); const locked=h&&(h.missions||0)>0;
+  el.innerHTML=`<div class="lbl">${h?'Edit your soldier':'Enlist your own soldier'}</div>
+    <p class="lede" style="margin:0">${h?'Rename him any time. His type is fixed once he has been on a mission.':'Give him a name and pick his job. He goes on every campaign mission, marked with a gold star, and earns rank like any veteran. If he falls, you can enlist a new one.'}</p>
+    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" value="${h?h.name:''}" aria-label="Soldier name"></div>
+    <div class="hrow">${HERO_TYPES.map(t=>`<button type="button" class="htype ${t===heroType?'on':''}" data-htype="${t}" ${locked&&t!==h.type?'disabled':''}><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</button>`).join('')}</div>
+    <div class="hrow"><button class="btn primary" type="button" id="hero-save">${h?'Save':'Enlist'}</button>${h?'<button class="btn" type="button" id="hero-cancel">Cancel</button>':''}</div>`;
+}
+$('#hero-card').addEventListener('click',e=>{
+  if(e.target.closest('#hero-edit')){ heroEdit=true; heroType=null; buildHero(); const i=$('#hero-name'); if(i) i.focus(); return; }
+  if(e.target.closest('#hero-cancel')){ heroEdit=false; buildHero(); return; }
+  const t=e.target.closest('[data-htype]'); if(t&&!t.disabled){ heroType=t.dataset.htype; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; return; }
+  if(e.target.closest('#hero-save')){ const err=setHero($('#hero-name').value,heroType||'trooper'); if(err){ toast(err); return; } heroEdit=false; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
+});
+$('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return; if(b.getAttribute('aria-disabled')==='true' && !e.shiftKey){ toast('Finish the previous mission first. Shift-click to play it anyway.',true); return; } openBriefing(+b.dataset.mission); });
 function buildVeterans(){
   const R=ui.roster;

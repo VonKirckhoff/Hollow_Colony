@@ -114,6 +114,7 @@ function drawUnit(u){
   if(u.flash>0){ ctx.globalAlpha=(u.def.scale||2)>=3?0.25:0.8; ctx.drawImage(u.face>0?sp.flash:sp.flashFlip,x,y,w,h); ctx.globalAlpha=1; }
   if(u.vet && u.vet.rank>0){ ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; const mk=RANKS[u.vet.rank].mark; ctx.fillStyle='#000'; ctx.fillText(mk,u.x+1,y-7); ctx.fillStyle=u.vet.rank>=3?'#ffe2a8':'#ffb347'; ctx.fillText(mk,u.x,y-8); }
   if(u.order&&u.order.type==='hold'&&G.sel.includes(u)){ ctx.fillStyle='#ffb347'; ctx.fillRect(Math.round(u.x)-3,y-6,6,2); }
+  if(u.vet&&u.vet.hero){ const yy=Math.round(u.y-(SPR[u.def.sprite].h*(u.def.scale||2))-12); ctx.fillStyle='#000'; ctx.fillRect(Math.round(u.x)-3,yy-1,7,7); ctx.fillStyle='#ffd23f'; ctx.fillRect(Math.round(u.x)-1,yy,3,5); ctx.fillRect(Math.round(u.x)-2,yy+1,5,3); }
   if(u.suppressT>0 && isVisible(u)){ ctx.fillStyle='rgba(159,211,255,.85)'; for(let k=0;k<2;k++){ const yy=Math.round(u.y-30+k*4); ctx.fillRect(Math.round(u.x)-3,yy,2,2); ctx.fillRect(Math.round(u.x)+1,yy,2,2); ctx.fillRect(Math.round(u.x)-1,yy+2,2,2); } }
 }
 function drawBuilding(b,now){
