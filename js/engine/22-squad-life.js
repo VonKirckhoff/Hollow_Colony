@@ -132,7 +132,7 @@ function speak(u,line,kind){
     if(speechSynthesis.speaking){ if(!urgent) return; speechSynthesis.cancel(); }
     const ut=new SpeechSynthesisUtterance(line.replace(/\.\.\./g,','));
     const h=nameHash(u.vet?u.vet.name:u.id); if(VOICES_EN.length) ut.voice=VOICES_EN[h%VOICES_EN.length];
-    ut.pitch=0.8+(h%7)*0.06; ut.rate=urgent?1.25:1.1; ut.volume=0.9;
+    ut.pitch=0.8+(h%7)*0.06; ut.rate=urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
     setTimeout(()=>{ try{ speechSynthesis.speak(ut); }catch(e){} },90);   // after the radio click
   }catch(e){}
 }
@@ -192,3 +192,9 @@ function drawShips(now){
     else if(s.phase==='takeoff'){ const k=1-s.t/3, a=s.out, D=820*k*k, alt=260*Math.min(1,k*1.3);
       drawShip(b.x+Math.cos(a)*D,b.y+Math.sin(a)*D,alt,(a)*Math.min(1,k*1.5),1+0.35*k,true,false,now); } }
 }
+
+/* Voice volume slider in the top bar (0–100%), remembered in this browser. Releasing it plays a test line. */
+function initVoiceVolume(){ const r=$('#voice-vol'); if(!r) return; r.value=Math.round(ui.voiceVol*100);
+  r.addEventListener('input',()=>{ ui.voiceVol=r.value/100; store.set('hc-voice-vol',ui.voiceVol); });
+  r.addEventListener('change',()=>{ if(!window.speechSynthesis||SFX.muted||!ui.voices) return; try{ speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance('Radio check.'); if(VOICES_EN.length) ut.voice=VOICES_EN[0]; ut.volume=ui.voiceVol; speechSynthesis.speak(ut); }catch(e){} });
+  r.addEventListener('pointerdown',e=>e.stopPropagation()); }

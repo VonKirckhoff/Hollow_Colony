@@ -12,7 +12,7 @@ function recordWin(id,diff,time){ const r=ui.progress.results[id];
   else if(diff===r.diff && (r.time==null||time<r.time)) r.time=time;
   store.set('hc-progress',ui.progress); }
 const ui={ mode:'menu', mouse:{x:0,y:0,wx:0,wy:0,inWin:false}, drag:null, pan:null, placing:null, amove:false, keys:{}, dpr:1, vw:0, vh:0, hudH:0,
-  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
+  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.6), skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
 let NEXT_ID=1;
 
 function newGame(mission, diffKey){

@@ -70,6 +70,8 @@ button{font:inherit;color:inherit;}
 .cmd .glyph{font-family:var(--f-display);font-size:18px;color:var(--ink);pointer-events:none;}
 .cmd .key{position:absolute;left:3px;top:2px;font-family:var(--f-display);font-size:12px;line-height:1;color:var(--corps);text-shadow:0 1px 0 #000;pointer-events:none;}
 .cmd .cost{position:absolute;right:3px;bottom:2px;font-family:var(--f-display);font-size:12px;line-height:1;color:#e8ecf2;text-shadow:0 1px 0 #000,0 0 2px #000;pointer-events:none;}
+.tb-vol{display:flex;align-items:center;gap:6px;padding:0 4px;}
+.tb-vol input{width:78px;accent-color:var(--corps);cursor:pointer;}
 .cmd:hover,.cmd:focus-visible{border-color:var(--corps);outline:none;}
 .cmd.off{opacity:.38;}
 .cmd.active{border-color:var(--corps);background:#2a2216;}
