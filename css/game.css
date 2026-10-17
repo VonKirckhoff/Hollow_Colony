@@ -109,10 +109,10 @@ button{font:inherit;color:inherit;}
 #toast{position:fixed;left:50%;bottom:220px;transform:translateX(-50%);background:rgba(17,19,26,.95);border:1px solid var(--danger);color:var(--ink);padding:6px 14px;z-index:9;font-family:var(--f-display);font-size:11px;letter-spacing:.06em;}
 
 /* ---------- screens ---------- */
-.screen{position:fixed;inset:0;z-index:10;overflow:auto;display:flex;align-items:center;
+.screen{position:fixed;inset:0;z-index:10;overflow:auto;display:flex;align-items:flex-start;
   padding-block:48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   background:linear-gradient(90deg,rgba(7,8,12,.96) 0%,rgba(7,8,12,.86) 46%,rgba(7,8,12,.35) 100%);}
-.sheet{width:100%;max-width:640px;margin-left:clamp(0px,6vw,96px);display:grid;gap:22px;}
+.sheet{width:100%;max-width:640px;margin-left:clamp(0px,6vw,96px);margin-block:auto;display:grid;gap:22px;}   /* margin-block:auto centres short pages but lets tall ones scroll to the very top */
 .eyebrow{font-family:var(--f-display);font-size:11px;letter-spacing:.22em;color:var(--corps);}
 h1.title{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(40px,8.5vw,84px);line-height:.95;letter-spacing:.02em;text-wrap:balance;}
 h1.title span{color:var(--corps);text-shadow:4px 4px 0 var(--corps-deep);}

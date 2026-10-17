@@ -25,7 +25,7 @@ function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[];
 function saveRoster(){ store.set('hc-roster',ui.roster); }
 function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
   for(const v of ui.roster.active) t.add(v.name); for(const v of ui.roster.fallen) t.add(v.name); return t; }
-function freshName(){ const n=uniqueName(takenNames()); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
+function freshName(){ const t=takenNames(), n=STARTER_NAMES.find(x=>!t.has(x))||uniqueName(t); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
 function rankFor(xp){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp) r=i; }); return r; }
 function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp; u.maxHp=u.def.hp*k.hp; u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; }
 function gainXP(u,amount){

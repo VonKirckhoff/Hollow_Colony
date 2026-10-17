@@ -28,6 +28,10 @@ function buildVeterans(){
   $('#fallen-wrap').hidden=!R.fallen.length;
   $('#fallen-list').innerHTML=R.fallen.map(v=>`<div class="memorial"><b>${RANKS[v.rank].abbr} ${v.name}</b><i>${UNITS[v.type]?UNITS[v.type].name:''} · fell in ${v.mission}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}${v.at?` · ${new Date(v.at).toLocaleDateString()}`:''}</i></div>`).join('');
 }
+let vetArm=null;
+$('#btn-reset-vets').addEventListener('click',()=>{ const b=$('#btn-reset-vets');
+  if(!vetArm){ b.classList.add('armed'); b.textContent='Click again to erase all veterans'; vetArm=setTimeout(()=>{ vetArm=null; b.classList.remove('armed'); b.textContent='Reset veterans'; },4000); return; }
+  clearTimeout(vetArm); vetArm=null; ui.roster={active:[],fallen:[]}; saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the memorial erased.',true); });
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }
