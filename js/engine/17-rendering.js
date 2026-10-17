@@ -78,9 +78,7 @@ function render(now){
     const y=e.kind==='building'?e.y+e.size*TILE/2+14:e.y-34; ctx.fillStyle='#000'; ctx.fillText(e.status.txt,e.x+1,y+1); ctx.fillStyle=e.status.col; ctx.fillText(e.status.txt,e.x,y); }
   drawBarks();
   for(const p of G.pings){ const r=10+p.t*28; ctx.strokeStyle=p.col; ctx.globalAlpha=Math.max(0,1-p.t/3); ctx.lineWidth=2; ctx.strokeRect(p.x-r,p.y-r,r*2,r*2); ctx.globalAlpha=1; }
-  for(const b of G.ents){ if(!b.dead&&b.def&&b.def.reinforce&&b.flight&&b.flight.t<4&&inView(b)){ const k=b.flight.t/4, art=ARTC.dropship, w=art.width*3, h=art.height*3;
-      drawShadow(b.x,b.y+10,50*(1-k*0.5),18*(1-k*0.5)); ctx.globalAlpha=Math.min(1,1.4-k); ctx.drawImage(art,Math.round(b.x-w/2),Math.round(b.y-h/2-20-k*260),w,h); ctx.globalAlpha=1;
-      if(Math.random()<0.5) G.fx.push({k:'ember',x:b.x+rand(-50,50),y:b.y+rand(-20,30),vx:rand(-80,80),vy:rand(-30,10),t:0.5,max:0.5,col:'#8a8f9c'}); } }
+  drawShips(now);
   drawPlacement();
   for(const mk of G.markers){ const bob=Math.sin(now/250)*3, y=mk.y-30+bob;
     ctx.strokeStyle='#ffb347'; ctx.lineWidth=2; ctx.globalAlpha=0.6+0.4*Math.sin(now/250); ctx.strokeRect(mk.x-TILE*1.5,mk.y-TILE*1.5,TILE*3,TILE*3); ctx.globalAlpha=1;
@@ -142,6 +140,7 @@ function drawFx(){
       case 'flame': { const sz=Math.round(4+(1-a)*8); ctx.fillStyle=a>0.6?'#ffe08a':a>0.3?'#ff8a2a':'rgba(120,50,20,.6)'; ctx.fillRect(Math.round(f.x-sz/2),Math.round(f.y-sz/2),sz,sz); break; }
       case 'slash': ctx.strokeStyle=`rgba(255,255,255,${a})`; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(f.x-8*f.face,f.y-6); ctx.lineTo(f.x+8*f.face,f.y+6); ctx.stroke(); break;
       case 'boom': { const r=f.r*(1-a*0.6); ctx.globalAlpha=a*0.55; ctx.fillStyle=f.col||'#ffa03c'; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; break; }
+      case 'dust': { const r=f.r0+(1-a)*f.r1; ctx.globalAlpha=a*0.5; ctx.fillStyle=f.col; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; break; }
       case 'text': ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(f.txt,f.x+1,f.y-(1-a)*18+1); ctx.fillStyle=f.col; ctx.fillText(f.txt,f.x,f.y-(1-a)*18); break;
     } }
 }

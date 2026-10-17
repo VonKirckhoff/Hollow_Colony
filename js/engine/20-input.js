@@ -68,11 +68,11 @@ $('#selection').addEventListener('pointerdown',e=>{ const q=e.target.closest('[d
   const o=e.target.closest('[data-only]'); if(o){ const ent=G.sel.find(x=>x.id===+o.dataset.only); if(ent){ selectEntities([ent],false); if(e.detail>1) centerOn(ent.x,ent.y); } } });
 $('#btn-menu').addEventListener('click',()=>pause(true));
 const soundLabel=()=>{ $('#btn-sound').textContent=SFX.muted?'Sound off':'Sound on'; };
-$('#btn-sound').addEventListener('click',()=>{ SFX.toggle(); soundLabel(); }); soundLabel();
+$('#btn-sound').addEventListener('click',()=>{ SFX.toggle(); soundLabel(); if(SFX.muted&&window.speechSynthesis) speechSynthesis.cancel(); }); soundLabel();
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
 function toggleFollow(){ ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
 $('#btn-follow').addEventListener('click',toggleFollow); followLabel();
-$('#btn-tracker').addEventListener('click',()=>toggleTracker());   /* label set at boot (23-main-loop.js) */
+$('#btn-tracker').addEventListener('click',()=>toggleTracker()); $('#btn-voices').addEventListener('click',()=>toggleVoices());   /* label set at boot (23-main-loop.js) */
 $('#btn-speed').addEventListener('click',()=>{ if(!G) return; G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
 function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.target.closest('[data-tip]'); if(!el){ tip.hidden=true; return; }
   const [t,b]=el.dataset.tip.split('|'); tip.innerHTML=`<b>${t}</b>${b||''}`; tip.hidden=false; const r=tip.getBoundingClientRect();
@@ -87,6 +87,7 @@ window.addEventListener('keydown',e=>{
   if(k==='p'){ pause(true); return; }
   if(k==='c' && !e.ctrlKey && !e.metaKey){ toggleFollow(); return; }
   if(k==='k' && !e.ctrlKey && !e.metaKey){ toggleTracker(); return; }
+  if(k==='o' && !e.ctrlKey && !e.metaKey){ toggleVoices(); return; }
   if(/^[1-5]$/.test(e.key)){ if(e.ctrlKey||e.metaKey){ e.preventDefault(); G.groups[e.key]=[...G.sel]; toast(`Group ${e.key} saved.`,true); } else { const g=(G.groups[e.key]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); if(again) centerOn(g[0].x,g[0].y); } } return; }
   if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;

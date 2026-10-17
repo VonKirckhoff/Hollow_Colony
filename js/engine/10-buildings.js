@@ -18,12 +18,15 @@ function updateBuilding(b,dt){
     if(b.state==='ours'){ b.cap=Math.min(1,(b.cap||0)+dt/d.captureTime); if(b.cap>=1 && !b.owned){ b.owned=true; SFX.play('complete'); say('Uplink',`${b.label||'Beacon'} secured.`,'sys'); G.pings.push({x:b.x,y:b.y,t:0,col:'#5fe3b0'}); } }
     if(b.state==='theirs'){ b.cap=Math.max(0,(b.cap||0)-dt/d.loseTime); if(b.cap<=0 && b.owned){ b.owned=false; SFX.play('alarm'); say('Alert',`${b.label||'Beacon'} lost to the Swarm!`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); } }
   }
-  if(d.reinforce && b.flight){ b.flight.t-=dt;
-    if(b.flight.t<=0){ const cargo=b.flight.cargo, rally=b.flight.rally||b.rally, otype=b.flight.rally?'amove':'move'; b.flight=null; if(rally!==b.rally) b.rallyN=0;
+  if(d.reinforce) updateShip(b,dt);
+  if(d.reinforce && b.flight){ b.flight.t-=dt; if(b.flight.ang===undefined) b.flight.ang=rand(-2.7,-0.45);
+    if(b.flight.t<5 && !b.flight.heard){ b.flight.heard=true; SFX.play('engine',b.x,b.y); }
+    if(b.flight.t<1.6 && Math.random()<dt*30) dustPuff(b.x,b.y,1);
+    if(b.flight.t<=0){ const cargo=b.flight.cargo, rally=b.flight.rally||b.rally, otype=b.flight.rally?'amove':'move', pickup=b.flight.pickup, ang=b.flight.ang; b.flight=null; if(rally!==b.rally) b.rallyN=0;
+      b.ship={ phase:pickup?'parked':'ground', t:2.6, ang }; dustPuff(b.x,b.y,22); SFX.play('land',b.x,b.y);
       for(const type of cargo){ const u=spawnNearBuilding(type,'corps',b,rally); if(!u) continue; fromReserve(u); G.stats.trained++;
         if(rally){ const n=(b.rallyN=(b.rallyN||0)+1), a=n*2.4, r=n===1?0:12+4*Math.sqrt(n), rx=rally.x+Math.cos(a)*r, ry=rally.y+Math.sin(a)*r; u.order={type:otype,x:walkableP(rx,ry)?rx:rally.x,y:walkableP(rx,ry)?ry:rally.y}; setPath(u,u.order.x,u.order.y); } else u.home={x:u.x,y:u.y}; }
-      for(let i=0;i<14;i++) G.fx.push({k:'ember',x:b.x+rand(-40,40),y:b.y+rand(-30,30),vx:rand(-60,60),vy:rand(-50,10),t:0.7,max:0.7,col:'#9aa0ad'});
-      SFX.play('complete'); say('Dropship Kestrel',`${cargo.length} reinforcement${cargo.length>1?'s':''} on the ground.`,'sys'); G.selDirty=true; } }
+      if(cargo.length){ SFX.play('complete'); say('Dropship Kestrel',`${cargo.length} reinforcement${cargo.length>1?'s':''} on the ground.`,'sys'); } G.selDirty=true; } }
   if(d.trains && b.queue.length){
     b.prodT+=dt; const type=b.queue[0];
     if(b.prodT>=UNITS[type].buildTime){

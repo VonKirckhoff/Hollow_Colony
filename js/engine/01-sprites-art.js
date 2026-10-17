@@ -53,10 +53,29 @@ const ART = {
     for(let i=0;i<11;i++){ x.fillStyle=i%2?P.k:P.y; x.fillRect(2+i*4,2,4,2); x.fillRect(2+i*4,44,4,2); x.fillRect(2,2+i*4,2,4); x.fillRect(44,2+i*4,2,4); }
     disc(x,24,24,14,'#2c323e'); disc(x,24,24,12,'#4a5366'); x.fillStyle=P.y; x.fillRect(17,15,3,18); x.fillRect(28,15,3,18); x.fillRect(17,22,14,3);
     x.fillStyle=P.v; x.fillRect(6,6,2,2); x.fillRect(40,6,2,2); x.fillRect(6,40,2,2); x.fillRect(40,40,2,2); return c; },
-  dropship(){ const [c,x]=pxCtx(40,26); const P=PALETTE;
-    x.fillStyle=P.k; x.fillRect(4,6,32,14); x.fillRect(0,10,40,6); x.fillStyle=P.A; x.fillRect(5,7,30,12); x.fillStyle=P.a; x.fillRect(6,8,28,4);
-    x.fillStyle=P.k; x.fillRect(1,11,38,4); x.fillStyle=P.G; x.fillRect(2,12,36,2); x.fillStyle=P.v; x.fillRect(30,9,4,3); x.fillStyle=P.y; x.fillRect(8,16,4,2); x.fillRect(28,16,4,2);
-    x.fillStyle=P.o; x.fillRect(9,20,3,4); x.fillRect(28,20,3,4); x.fillStyle=P.y; x.fillRect(10,21,1,3); x.fillRect(29,21,1,3); return c; },
+  dropship(){ const [c,x]=pxCtx(56,40); const P=PALETTE;
+    const poly=(col,pts)=>{ x.fillStyle=col; x.beginPath(); pts.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b)); x.closePath(); x.fill(); };
+    const R=(col,a,b,w,h)=>{ x.fillStyle=col; x.fillRect(a,b,w,h); };
+    // swept wings (outline, then plate)
+    poly(P.k,[[35,12],[29,2],[15,2],[21,12],[21,28],[15,38],[29,38],[35,28]]);
+    poly(P.G,[[33,13],[28,4],[17,4],[22,13],[22,27],[17,36],[28,36],[33,27]]);
+    poly(P.A,[[31,13],[27,6],[20,6],[24,13],[24,27],[20,34],[27,34],[31,27]]);
+    // engine pods on the wing tips, exhaust glow at the back
+    for(const y of [0,33]){ R(P.k,13,y,20,7); R(P.G,14,y+1,18,5); R(P.a,15,y+1,16,2); R(P.g,14,y+5,18,1); R(P.k,11,y+1,3,5); R(P.o,11,y+2,2,3); R(P.y,30,y+2,2,3); }
+    // twin tail fins
+    poly(P.k,[[3,9],[11,11],[11,15],[3,13]]); poly(P.k,[[3,31],[11,29],[11,25],[3,27]]); R(P.G,4,10,6,2); R(P.G,4,28,6,2);
+    // fuselage: wide armoured body tapering to a blunt nose
+    poly(P.k,[[2,15],[8,11],[40,11],[50,14],[54,18],[54,22],[50,26],[40,29],[8,29],[2,25]]);
+    poly(P.A,[[4,16],[9,13],[40,13],[49,16],[52,19],[52,21],[49,24],[40,27],[9,27],[4,24]]);
+    poly(P.a,[[6,15],[10,14],[40,14],[48,17],[50,19],[10,19]]);                         // lit top
+    R(P.g,9,23,32,3);                                                                   // shadow side
+    R(P.k,18,13,1,14); R(P.k,30,13,1,14); R(P.k,10,19,30,1);                            // panel lines
+    R(P.G,20,15,9,8); R(P.k,21,16,7,6); R(P.g,22,17,5,4);                                // roof hatch
+    for(let i=0;i<4;i++){ R(i%2?P.k:P.y,33+i*2,22,2,3); }                                // hazard stripe
+    poly(P.k,[[42,15],[49,17],[51,20],[49,23],[42,25]]); poly(P.q,[[43,16],[48,18],[49,20],[48,22],[43,24]]); R(P.w,45,18,2,1);   // cockpit
+    R(P.k,1,16,3,8); R(P.g,0,17,2,6); R(P.y,0,17,1,1); R(P.y,0,22,1,1);                  // rear ramp
+    R(P.v,12,24,4,1); R(P.v,12,15,4,1);                                                 // markings
+    return c; },
   uplink(){ const [c,x]=pxCtx(32,32); const P=PALETTE;
     disc(x,16,16,14,P.k); disc(x,16,16,13,'#3a4150'); disc(x,16,16,9,'#2c323e');
     for(let a=0;a<8;a++){ const ang=a*Math.PI/4; x.fillStyle=a%2?P.y:P.k; x.fillRect(Math.round(16+Math.cos(ang)*11)-1,Math.round(16+Math.sin(ang)*11)-1,3,3); }

@@ -9,10 +9,11 @@ MISSIONS.push(
     briefing:[
       'The data core Dr. Maas carried out holds years of seismic readings. To make sense of them she needs the survey array in Mare Colony, and Mare Colony has been dark for a week.',
       'The town has four generators, one in each corner. All four must run at the same time to wake the array. Your Engineers can repair them, but in the dark your troops see half as far as usual.',
-      'A running generator lights its streets, and the Swarm is drawn to light. Get one running and they will come for it. Hold the Command Post in the square.'
+      'A running generator lights its streets, and the Swarm is drawn to light. Get one running and they will come for it. Hold the Command Post in the square. The landing pad beside it brings in replacements for anyone you lose.'
     ],
     dark:{ sight:0.5 },                 // darkness: sight × 0.5, explored ground fades to black
     limits:{ sentry:4 },
+    landingZone:{ tx:44, ty:44, max:11, delay:25 },   // pad next to the Command Post: order replacements, never more than the 11 you start with
     start:{ salvage:250, camera:'P',
       units:[ ['engineer','P',3], ['trooper','P',6], ['pyro','P',1], ['medic','P',1] ],
       buildings:[ ['hq','P'], ['generator','1'], ['generator','2'], ['generator','3'], ['generator','4'] ],

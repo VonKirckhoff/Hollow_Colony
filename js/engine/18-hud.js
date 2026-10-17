@@ -72,7 +72,7 @@ function cmdButtons(){
         act:()=>{ ui.picking='pack'; ui.placing=null; ui.amove=false; cv.classList.add('amove'); G.selDirty=true; }}); }
     return out; }
   if(blds.length){ const b=blds[0];
-    if(b.def.reinforce && b.built && !(G.mission.landingZone||{}).scripted){ const cap=troopCap(), full=troopCount()>=cap, fl=b.flight;
+    if(b.def.reinforce && b.built && !b.noOrders && !(G.mission.landingZone||{}).scripted){ const cap=troopCap(), full=troopCount()>=cap, fl=b.flight;
       for(const t of b.def.orders){ const d=UNITS[t]; out.push({row:'Dropship',key:d.key,img:iconUrl(t),cost:d.cost,off:G.salvage<d.cost||full||(fl&&fl.cargo.length>=(b.def.cargo||6)),
         tip:`Order ${d.name}|${d.desc} Cost ${d.cost}. Delivered by dropship.${cap<Infinity?` Troops: ${troopCount()}/${cap}.`:''}`,act:()=>orderDrop(b,t)}); } }
     if(b.def.trains && b.built && !G.mission.noTraining){ const s=supply(); for(const t of b.def.trains){ const d=UNITS[t];

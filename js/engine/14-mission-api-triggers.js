@@ -31,7 +31,7 @@ function makeApi(){
     walls:tag=>G.ents.filter(e=>e.type==='membrane'&&e.tag===tag&&!e.dead).length,
     /* airdrop: the dropship flies cargo to the mission's Landing Zone, e.g. g.airdrop([['trooper',2],['pyro',1]], 15). */
     /* airdrop: optional rallyAt = point the new troops attack-move to after landing (e.g. to join the squad). */
-    airdrop(list,delay=15,rallyAt){ const lz=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce); if(!lz) return;
+    airdrop(list,delay=15,rallyAt){ const lz=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&!e.noOrders); if(!lz) return;
       const cargo=[]; for(const [type,n=1] of list) for(let i=0;i<n;i++) cargo.push(type);
       if(lz.flight) lz.flight.cargo.push(...cargo); else lz.flight={ t:Math.max(5,delay), total:Math.max(5,delay), cargo };
       if(rallyAt) lz.flight.rally=ptWorld(rallyAt); G.selDirty=true; },
@@ -55,6 +55,9 @@ function makeApi(){
         const m=makeBuilding('rubble','none',x,y,true); m.tag=tag; m.invuln=true; }
       for(let i=0;i<40;i++) G.fx.push({k:'ember',x:w.x+rand(-60,60),y:w.y+rand(-50,50),vx:rand(-90,90),vy:rand(-120,0),t:rand(.6,1.2),max:1.2,col:pick(['#8a8f9c','#5d6170','#3a3b44'])});
       digOut(pt('P')); },
+    /* pad(at, tag): an extra landing pad (no orders), e.g. for a pickup. landShip(tag, seconds): a dropship lands there and waits. */
+    pad(at,tag){ const p=pt(at); if(!p) return; const b=makeBuilding('lz','corps',p.x-1,p.y-1,true); b.flight=null; b.invuln=true; b.r=TILE*1.5; b.noOrders=true; b.tag=tag; G.stats.built--; return b; },
+    landShip(tag,seconds=60){ const b=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&e.tag===tag); if(b) b.flight={ t:seconds, total:seconds, cargo:[], pickup:true }; },
     troops:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps').length,
     openWall(tag){ for(const e of G.ents) if((e.type==='membrane'||e.def&&e.def.scenery)&&e.tag===tag&&!e.dead){
         if(e.def.scenery){ e.dead=true; e.hp=0; setBlock(e,0); for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y,vx:rand(-50,50),vy:rand(-60,0),t:0.5,max:0.5,col:'#ffd23f'}); SFX.play('ack',e.x,e.y); }

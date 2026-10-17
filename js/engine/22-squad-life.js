@@ -2,7 +2,7 @@
 /* ---------- 2v. squad life: motion tracker, acid blood, voices, cover, suppression, flares, obituaries ---------- */
 const SQUAD = {
   tracker:{ range:20, size:64 },                                     // range in tiles, radius on screen in px
-  acid:{ splash:1.2, splashDmg:6, pool:5, poolDps:5, poolR:14 },     // tiles / hp / seconds / hp per second / px
+  acid:{ splash:1.2, splashDmg:6, pool:3, poolDps:5, poolR:14 },     // tiles / hp / seconds / hp per second / px
   cover:{ factor:0.6 },                                              // ranged damage taken in cover (×)
   suppress:{ time:1.4, slow:0.55 },                                  // seconds, speed factor
   flare:{ light:6, time:45, range:9, perMission:3, perDarkMission:6 },
@@ -117,8 +117,27 @@ function bark(u,kind,arg){
   G.barkNext=now+SQUAD.voice.gap;
   let line=pick(VOICE[kind]); if(arg) line=line.replace('{name}',arg);
   G.barks=G.barks.filter(b=>b.u!==u); G.barks.push({u,text:line,t:2.2});
-  if(G.barks.length>3) G.barks.shift(); SFX.play('chirp');
+  if(G.barks.length>3) G.barks.shift(); SFX.play('chirp'); speak(u,line,kind);
 }
+/* Spoken lines with the browser's own speech voices (no sound files needed). Every soldier keeps his own voice and pitch.
+   Follows the Sound button, and can be switched off on its own with the Voices button (key O). */
+let VOICES_EN=[];
+function loadVoices(){ try{ const all=speechSynthesis.getVoices(); VOICES_EN=all.filter(v=>/^en(-|_|$)/i.test(v.lang)); if(!VOICES_EN.length) VOICES_EN=all; }catch(e){ VOICES_EN=[]; } }
+if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+function nameHash(n){ let h=0; for(const c of String(n)) h=(h*31+c.charCodeAt(0))>>>0; return h; }
+function speak(u,line,kind){
+  if(!window.speechSynthesis||SFX.muted||!ui.voices||G.paused) return;
+  try{
+    const urgent=kind==='down'||kind==='contact'||kind==='hurt';
+    if(speechSynthesis.speaking){ if(!urgent) return; speechSynthesis.cancel(); }
+    const ut=new SpeechSynthesisUtterance(line.replace(/\.\.\./g,','));
+    const h=nameHash(u.vet?u.vet.name:u.id); if(VOICES_EN.length) ut.voice=VOICES_EN[h%VOICES_EN.length];
+    ut.pitch=0.8+(h%7)*0.06; ut.rate=urgent?1.25:1.1; ut.volume=0.9;
+    setTimeout(()=>{ try{ speechSynthesis.speak(ut); }catch(e){} },90);   // after the radio click
+  }catch(e){}
+}
+function toggleVoices(){ ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices&&window.speechSynthesis) speechSynthesis.cancel(); toast(ui.voices?'Voices on.':'Voices off.',true); }
+const voicesLabel=()=>{ const b=$('#btn-voices'); if(b) b.textContent=ui.voices?'Voices on':'Voices off'; };
 function updateBarks(dt){ for(const b of G.barks) b.t-=dt; G.barks=G.barks.filter(b=>b.t>0&&!b.u.dead); }
 function drawBarks(){
   ctx.font='11px "Chakra Petch", sans-serif'; ctx.textAlign='center';
@@ -138,4 +157,38 @@ function obituary(u){
   if(u.vet.rank>=1||(u.vet.missions||0)>=1){
     const m=u.vet.missions||0;
     say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
+}
+
+/* ---------- dropship: flies in from off the map, settles on the pad in a cloud of dust, unloads and lifts off again ---------- */
+function dustPuff(x,y,n){ for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2), sp=rand(40,160);
+  G.fx.push({k:'dust',x:x+Math.cos(a)*rand(8,40),y:y+Math.sin(a)*rand(6,26),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.6,t:rand(1.2,2.6),max:2.6,r0:rand(10,16),r1:rand(22,40),col:pick(['#b3a58f','#a4967f','#c2b49c'])}); } }
+function updateShip(b,dt){
+  const s=b.ship; if(!s) return;
+  if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); } }
+  else if(s.phase==='takeoff'){ s.t-=dt; if(s.t>2.2&&Math.random()<dt*30) dustPuff(b.x,b.y,1); if(s.t<=0) b.ship=null; }
+}
+function drawShip(gx,gy,alt,heading,scale,lights,ramp,now){
+  const art=ARTC.dropship, w=art.width*2.6*scale, h=art.height*2.6*scale;
+  // shadow on the ground, smaller and softer the higher the ship
+  ctx.save(); ctx.translate(gx+alt*0.28,gy+alt*0.42); ctx.rotate(heading); ctx.globalAlpha=Math.max(0.12,0.42-alt/700);
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(0,0,w*0.46,h*0.34,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.translate(gx,gy-alt*0.35); ctx.rotate(heading);
+  ctx.drawImage(art,Math.round(-w/2),Math.round(-h/2),Math.round(w),Math.round(h));
+  if(lights){ const f=0.55+0.45*Math.sin(now/40), u=3*scale;
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,150,60,${0.55*f})`;
+    for(const py of [-16.5,16.5]){ ctx.beginPath(); ctx.arc(-15*u/3*2.6/3*3,py*u*2.6/3,4*u*f,0,Math.PI*2); ctx.fill(); }
+    ctx.globalCompositeOperation='source-over'; }
+  if(Math.floor(now/400)%2===0){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(-w*0.02),Math.round(-h/2),3,3); ctx.fillStyle='#5fe3b0'; ctx.fillRect(Math.round(-w*0.02),Math.round(h/2-3),3,3); }
+  if(ramp){ ctx.fillStyle='rgba(30,32,40,.9)'; ctx.fillRect(Math.round(-w/2-10*scale),Math.round(-9*scale),Math.round(12*scale),Math.round(18*scale)); }
+  ctx.restore();
+}
+function drawShips(now){
+  for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue;
+    if(b.flight && b.flight.t<5 && b.flight.ang!==undefined){ const k=b.flight.t/5, a=b.flight.ang, D=820*k*k, alt=260*k;
+      const gx=b.x+Math.cos(a)*D, gy=b.y+Math.sin(a)*D; let hd=a+Math.PI; const want=0; let dd=want-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI;
+      hd+=dd*Math.min(1,(1-k)*1.4); drawShip(gx,gy,alt,hd,1+0.35*k,true,false,now); }
+    const s=b.ship; if(!s) continue;
+    if(s.phase==='ground'||s.phase==='parked') drawShip(b.x,b.y,0,0,1,s.phase==='parked',true,now);
+    else if(s.phase==='takeoff'){ const k=1-s.t/3, a=s.out, D=820*k*k, alt=260*Math.min(1,k*1.3);
+      drawShip(b.x+Math.cos(a)*D,b.y+Math.sin(a)*D,alt,(a)*Math.min(1,k*1.5),1+0.35*k,true,false,now); } }
 }

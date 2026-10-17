@@ -54,10 +54,11 @@ De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets 
 | **Z** / **X** / **V** | Formatie: cirkel / wig (speer) / vierkant. Nog eens drukken = formatie loslaten |
 | **C** | Camera volgen aan/uit |
 | **K** | Motion tracker aan/uit |
+| **O** | Gesproken stemmen aan/uit |
 | **L** + klik | Fakkel gooien (met een Trooper, Gunner of Pyro geselecteerd) |
 | **U** / **D** | Engineer: Sentry Gun inpakken / opstellen |
 | **P** / **Esc** | Pauzemenu (Esc annuleert ook plaatsen, inpakken en attack-move) |
-| Knoppen bovenaan | **Follow** (camera), **Tracker** (motion tracker), **Sound** (geluid), **1×/1.5×/2×** (spelsnelheid), **Menu** |
+| Knoppen bovenaan | **Follow** (camera), **Tracker** (motion tracker), **Voices** (stemmen), **Sound** (geluid), **1×/1.5×/2×** (spelsnelheid), **Menu** |
 
 **Trainen bij de Command Post:** T = Trooper, G = Gunner, M = Medic, F = Pyro, E = Engineer.
 **Bouwen met een Engineer:** R = Relay Tower, T = Sentry Gun, B = Barricade.
@@ -164,11 +165,13 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - **Hives groeien terug** (6 hp per seconde) als ze 12 seconden niet geraakt zijn. Even aanvallen en weglopen helpt dus niet; doorduwen wel. Instelbaar met `regen` en `regenDelay` bij `BUILDINGS.hive`.
 - **Cocons:** elke levende eenheid die door de Swarm sterft, wordt een cocon die na 5 seconden uitkomt. Een gesneuvelde Gunner of Pyro wordt een Drone, de rest een Crawler. Pyros doen drievoudige schade aan cocons.
 
-### Landing Zone en troepenlimiet (missie 1, 6, 7 en 8)
+### Landing Zone en troepenlimiet (missie 1, 5, 6, 7 en 8)
 - Bij de basis ligt een **Landing Zone**: een markering op de grond met een grote H. Eenheden lopen er gewoon over, de vijand negeert ze en kan ze niet beschadigen, en je kan er niets op bouwen. Klik erop om ze te selecteren. Selecteer ze om versterkingen te bestellen: Trooper, Gunner, Medic, Pyro of Engineer, met dezelfde prijs en sneltoetsen als bij de Command Post.
 - Een **dropship** brengt ze na 25 seconden. Bestellingen tijdens de vlucht gaan mee, tot 6 per vlucht. Je ziet het toestel landen, de nieuwe soldaten staan op het platform, en in het selectiepaneel staan de lading en de resterende tijd.
 - Rechtsklik op de grond met de Landing Zone geselecteerd om een verzamelpunt te zetten.
 - **Troepenlimiet:** je kan nooit meer dan **15 man** tegelijk hebben. Eenheden op het veld en alles wat onderweg is tellen mee. Je kan dus enkel verliezen aanvullen. De bovenbalk toont `Troops 12/15`.
+- In **Blackout** ligt de Landing Zone naast de Command Post, en in **Dead Signal** op de plek waar je start. In beide is het maximum het aantal soldaten waarmee je de missie begint (11): je kan dus enkel verliezen aanvullen. In Dead Signal landt de pickup op een tweede platform in het oosten (`g.pad()` en `g.landShip()`).
+- **Het dropship** komt schuin van buiten de kaart aangevlogen, met een schaduw die kleiner en scherper wordt naarmate het daalt. Het zet zich met een stofwolk neer op het platform, laat de troepen uitstappen (laadklep open), blijft even staan en vliegt dan weer weg. Bij een pickup blijft het staan tot iedereen aan boord is.
 - In **Dust Landing** ligt de Landing Zone op het platform van Kappa Station. Daar bestel je niets: het verhaal stuurt het dropship (`landingZone:{ …, scripted:true }` en `g.airdrop()`).
 - In **Brood Mother** traint de Command Post niet; alles komt via de Landing Zone (max. 15 man).
 - In **High Ground** ligt de Landing Zone naast de Command Post en kan je op beide plaatsen versterkingen krijgen, samen max. **24 man**.
@@ -207,11 +210,11 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 
 ### Sfeer en tactiek
 - **Motion tracker** (rechtsonder, aan/uit met **K** of de knop *Tracker*): een radar rond je geselecteerde squad (of het midden van het scherm als je niets selecteert). Alles van de Swarm dat binnen 20 tegels beweegt, verschijnt als stip, ook in het donker of achter rotsen. Onderaan staat de afstand tot het dichtstbijzijnde contact in meter (rood onder 12 m). Hoe dichter, hoe sneller en hoger de piep. Een gecamoufleerde Grey zie je er niet op.
-- **Zuurbloed:** een Swarm-wezen dat sterft, spat zuur op soldaten binnen 1,2 tegels (6 schade, Brute meer, Brood Mother veel meer) en laat een plas achter die 5 seconden blijft branden. Wie erin staat, verliest hp. Afstand houden loont, Pyros lopen meer risico.
+- **Zuurbloed:** een Swarm-wezen dat sterft, spat zuur op soldaten binnen 1,2 tegels (6 schade, Brute meer, Brood Mother veel meer) en laat een plas achter die 3 seconden blijft branden. Wie erin staat, verliest hp. Afstand houden loont, Pyros lopen meer risico.
 - **Dekking:** staat er rots of een gebouw tussen een soldaat en een vijand die van ver schiet (Spitter, Grey Hunter), dan krijgt die soldaat 40% minder schade. Af en toe zie je "COVER". Tegen beten en klauwen helpt dekking niet.
 - **Onderdrukkingsvuur:** een vijand die door een **Gunner** geraakt wordt, loopt 1,4 seconden bijna half zo snel (blauwe pijltjes boven het wezen). Gunners houden zo een stormloop op.
 - **Fakkels** (**L**, dan klik): een Trooper, Gunner of Pyro gooit een fakkel tot 9 tegels ver. Ze brandt 45 seconden en verlicht een straal van 6 tegels. Je hebt er 3 per missie, 6 in donkere missies (instelbaar per missie met `flares:`).
-- **Stemmen:** soldaten zeggen iets bij selecteren, bewegen, aanvallen, het eerste contact, bij zware verwondingen, wanneer een kameraad sneuvelt (met zijn naam), bij genezen, bouwen en fakkels. Een tekstballon met een radioklikje, nooit meer dan één keer per 1,6 seconden. De zinnen staan in `VOICE` (js/content/veterans.js).
+- **Stemmen:** soldaten zeggen iets bij selecteren, bewegen, aanvallen, het eerste contact, bij zware verwondingen, wanneer een kameraad sneuvelt (met zijn naam), bij genezen, bouwen en fakkels. Een tekstballon met een radioklikje, en de zin wordt ook **uitgesproken** met de spraakstemmen van je browser (elke soldaat zijn eigen stem en toonhoogte). Aan/uit met **O** of de knop *Voices*; *Sound off* zet ze ook stil. Nooit meer dan één zin per 1,6 seconden. De zinnen staan in `VOICE` (js/content/veterans.js).
 - **Een Swarm met een plan:** een golf van minstens 6 wezens kiest een aanpak: **recht op je af**, **lokaas** (de snelste paar komen eerst, de rest wacht 9 seconden en valt aan terwijl jij achter het lokaas aan zit) of **flank** (de helft maakt een boog en komt van opzij). De eerste keer waarschuwt Kessler of Dr. Maas je. Verhouding instelbaar in `TACTICS` (js/engine/12-swarm-director.js).
 - **Persoonlijke veteranen:** sneuvelt een soldaat met een rang of met missies achter de rug, dan meldt de radio het: *"Sgt. Van Damme has fallen. 4 missions, 37 kills."* Op het eindscherm en op de gedenklijst (knop *Veterans*) staan bij elke gesneuvelde zijn type, de missie waarin hij viel, zijn aantal missies en kills, en de datum. Ook wie pas in die missie een rang haalde, komt op de gedenklijst.
 - Alle getallen staan samen in `SQUAD` bovenaan js/engine/22-squad-life.js.
@@ -421,6 +424,7 @@ In triggers krijg je een object `g` mee:
 | `g.hiveAt(punt)` | Of er bij dat punt nog een hive staat |
 | `g.online()`, `g.generatorAt(punt)` | Aantal generatoren dat nu draait; de generator op dat punt (bv. om `label` te zetten) |
 | `g.chargeSite(punt, tag)`, `g.charge(tag)`, `g.chargeFuse(tag)` | Seismische ladingplek maken; toestand `'site'`, `'arming'`, `'armed'` of `'blown'`; seconden tot de ontploffing |
+| `g.pad(punt, tag)`, `g.landShip(tag, seconden)` | Extra landingsplatform zonder bestellingen; een dropship laat daar landen en laten wachten (pickup) |
 | `g.bury(punt, straal, tag)` | Instorting: hives bij het punt sterven, puin op de grond, afgesneden soldaten worden uitgegraven |
 | `g.uplinks()`, `g.uplinkOwned(punt)` | Aantal veroverde bakens; of het baken bij dat punt van jou is |
 | `g.boss(eenheid, titel)` | Toont de levensbalk van een baas bovenaan |

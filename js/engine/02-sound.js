@@ -44,6 +44,8 @@ const SFX=(()=>{
     trk3:    [0.1, ()=>tone(1860,1860,0.05,'sine',0.07)],
     chirp:   [0.25,()=>{ noise(0.05,3000,'bandpass',4,0.06); tone(1500,1100,0.04,'square',0.025,0.05); }],
     flare:   [0.4, ()=>{ noise(0.5,2200,'highpass',0.5,0.12,0.15,6000); tone(220,180,0.08,'triangle',0.08); }],
+    engine:  [3,   v=>{ noise(2.6,220,'lowpass',0.8,0.35*v,0,420); tone(70,95,2.6,'sawtooth',0.05*v); }],
+    land:    [1,   v=>{ noise(0.9,700,'lowpass',0.6,0.4*v,0,120); tone(120,60,0.5,'triangle',0.15*v); }],
     radio:   [0.3, ()=>{ noise(0.08,2500,'bandpass',3,0.1); tone(1200,1200,0.03,'sine',0.05,0.08); }],
     win:     [1,   ()=>[523,659,784,1047].forEach((f,i)=>tone(f,f,0.25,'triangle',0.2,i*0.14))],
     lose:    [1,   ()=>[392,330,262,196].forEach((f,i)=>tone(f,f*0.98,0.35,'triangle',0.2,i*0.2))]
