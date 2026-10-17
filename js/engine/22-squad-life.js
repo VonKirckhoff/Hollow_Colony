@@ -116,7 +116,7 @@ function bark(u,kind,arg){
   if(!u||u.dead||!G||!VOICE[kind]) return;
   const now=G.time; if(now<(G.barkNext||0) && kind!=='down') return;
   G.barkNext=now+SQUAD.voice.gap;
-  let line=pick(VOICE[kind]); if(arg) line=line.replace('{name}',arg);
+  const pool=(u.vet&&u.vet.risen&&VOICE_RISEN[kind])||VOICE[kind]; let line=pick(pool); if(arg) line=line.replace('{name}',arg);
   G.barks=G.barks.filter(b=>b.u!==u); G.barks.push({u,text:line,t:2.2});
   if(G.barks.length>3) G.barks.shift(); SFX.play('chirp'); speak(u,line,kind);
 }
@@ -133,7 +133,7 @@ function speak(u,line,kind){
     if(speechSynthesis.speaking){ if(!urgent) return; speechSynthesis.cancel(); }
     const ut=new SpeechSynthesisUtterance(line.replace(/\.\.\./g,','));
     const h=nameHash(u.vet?u.vet.name:u.id); if(VOICES_EN.length) ut.voice=VOICES_EN[h%VOICES_EN.length];
-    ut.pitch=0.8+(h%7)*0.06; ut.rate=urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
+    const z=u.vet&&u.vet.risen; ut.pitch=z?0.1:0.8+(h%7)*0.06; ut.rate=z?0.7:urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
     setTimeout(()=>{ try{ speechSynthesis.speak(ut); }catch(e){} },90);   // after the radio click
   }catch(e){}
 }
@@ -157,6 +157,7 @@ function obituary(u){
   if(near.length) bark(pick(near),'down',u.vet.name);
   if(u.vet.hero||u.vet.rank>=1||(u.vet.missions||0)>=1){
     const m=u.vet.missions||0;
+    if(u.leader) captainDown(u);
     say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
 }
 
@@ -203,7 +204,38 @@ function initVoiceVolume(){ const r=$('#voice-vol'); if(!r) return; r.value=Math
 /* ---- firing on the move: a soldier with a move order keeps walking, but shoots at enemies in range on the way ---- */
 function snapFire(u,dt){
   const d=u.def; u.snapT=(u.snapT||0)-dt;
-  if(u.snapT<=0){ u.snapT=0.25; const t=findTarget(u,d.range,true); u.snap=(t&&dist(u,t)<=d.range*TILE+t.r+u.r*0.5)?t:null; }
+  if(u.snapT<=0){ u.snapT=0.25; const rg=d.range+(u.rangeBonus||0), t=findTarget(u,rg,true); u.snap=(t&&dist(u,t)<=rg*TILE+t.r+u.r*0.5)?t:null; }
   const t=u.snap; if(!t||t.dead||!validTarget(u,t)) { u.snap=null; return; }
-  if(u.cd<=0){ fire(u,t); u.cd*=SQUAD.moveFire.rate; }
+  if(u.cd<=0){ fire(u,t); if(!(u.type==='gunner'&&hasPerk(u))) u.cd*=SQUAD.moveFire.rate; }   /* Lieutenant Gunner: steady aim */
+}
+
+/* ---- the Captain's leadership: nearby soldiers fire faster and take less damage; if he falls, the squad wavers ---- */
+function updateAura(dt){
+  G.auraScan=(G.auraScan||0)-dt; if(G.auraScan>0) return; G.auraScan=0.3;
+  for(const c of G.ents){ if(c.dead||!c.leader||c.kind!=='unit') continue;
+    for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.faction!==c.faction||Math.hypot(e.x-c.x,e.y-c.y)>AURA.radius*TILE) continue; e.auraT=0.5; } }
+}
+function captainDown(c){
+  const near=G.ents.filter(e=>!e.dead&&e!==c&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-c.x,e.y-c.y)<AURA.waver.radius*TILE);
+  for(const e of near) e.waverT=AURA.waver.time;
+  if(near.length){ G.barkNext=0; bark(pick(near),'waver'); }
+}
+function drawAura(u,now){
+  const R=AURA.radius*TILE, a=0.10+0.05*Math.sin(now/300);
+  ctx.strokeStyle=`rgba(255,210,63,${a})`; ctx.lineWidth=2; ctx.setLineDash([4,6]); ctx.lineDashOffset=-now/80;
+  ctx.beginPath(); ctx.ellipse(u.x,u.y+2,R,R*0.55,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+}
+/* ---- the risen: a green, dead-eyed copy of the sprite, made once per sprite ---- */
+function risenSprite(sp){
+  let r=sp.risen; if(r) return r; r={};
+  for(const k of ['img','flip']){ const c=document.createElement('canvas'); c.width=sp[k].width; c.height=sp[k].height; const x=c.getContext('2d');
+    x.drawImage(sp[k],0,0); x.globalCompositeOperation='source-atop'; x.fillStyle='rgba(70,170,60,.55)'; x.fillRect(0,0,c.width,c.height);
+    x.globalCompositeOperation='multiply'; x.fillStyle='rgba(150,190,140,1)'; x.fillRect(0,0,c.width,c.height); x.globalCompositeOperation='destination-in'; x.drawImage(sp[k],0,0); r[k]=c; }
+  return sp.risen=r;
+}
+function drawRisenGlow(u,now){
+  const p=0.5+0.5*Math.sin(now/260+u.id); ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(u.x,u.y-10,2,u.x,u.y-10,22); g.addColorStop(0,`rgba(120,255,90,${0.16+0.1*p})`); g.addColorStop(1,'rgba(120,255,90,0)');
+  ctx.fillStyle=g; ctx.fillRect(u.x-24,u.y-34,48,48); ctx.globalCompositeOperation='source-over';
+  if(Math.random()<0.04) G.fx.push({k:'spark',x:u.x+rand(-6,6),y:u.y-rand(4,20),vx:rand(-8,8),vy:rand(-40,-20),t:0.8,max:0.8,col:'#9dff6a'});
 }

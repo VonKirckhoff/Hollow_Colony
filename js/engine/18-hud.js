@@ -34,7 +34,10 @@ function renderSelection(){
     else { if(d.supply) stats+=`<span>Supply <b>+${d.supply}</b></span>`; if(d.income) stats+=`<span>Income <b>${d.income}/s</b></span>`; if(d.damage) stats+=`<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span>`;
       if(e.type==='cocoon') stats+=`<span>Hatches in <b>${Math.max(0,e.hatchT).toFixed(1)}s</b></span>`; if(!e.built) stats+=`<span>Built <b>${Math.floor(e.progress*100)}%</b></span>`; }
     if(e.vet&&e.vet.hero) stats+=`<span><b style="color:#ffd23f">★ Your soldier</b></span>`;
-    if(e.vet){ const nx=RANKS[e.vet.rank+1]; stats+=`<span>Rank <b>${RANKS[e.vet.rank].name}</b></span><span>XP <b>${e.vet.xp}${nx?' / '+nx.xp:''}</b></span><span>Kills <b>${e.vet.kills}</b></span>${e.vet.missions?`<span>Missions <b>${e.vet.missions}</b></span>`:''}`; }
+    if(e.vet&&e.vet.risen) stats+=`<span><b style="color:#9dff6a">☠ Risen</b></span>`;
+    if(hasPerk(e)&&PERKS[e.type]) stats+=`<span>Ability <b>${PERKS[e.type].name}</b></span>`;
+    if(e.leader) stats+=`<span><b style="color:#ffd23f">Leads the squad</b></span>`;
+    if(e.vet){ const nx=nextRank(e.vet); stats+=`<span>Rank <b>${RANKS[e.vet.rank].name}</b></span><span>XP <b>${e.vet.xp}${nx?' / '+nx.xp:''}</b></span><span>Kills <b>${e.vet.kills}</b></span>${e.vet.missions?`<span>Missions <b>${e.vet.missions}</b></span>`:''}`; }
     if(e.def.generator) stats+=`<span>Status <b>${e.powered?'Online':'Offline: repair to 100%'}</b></span>`;
     if(e.def.fuse) stats+=`<span>Detonates in <b>${Math.ceil(e.fuse)}s</b></span>`;
     if(e.def.armTime) stats+=`<span>Armed <b>${Math.floor((e.arm||0)*100)}%</b></span>`;
@@ -82,7 +85,7 @@ function cmdButtons(){
 }
 let CMDS=[];
 const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sentry','relay','barricade'];
-function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name} · ${e.def.name}` : e.def.name; }
+function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
 const CMD_ROWS=['Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();

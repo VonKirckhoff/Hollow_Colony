@@ -62,7 +62,7 @@
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
     <div class="missions" id="mission-list"></div>
-    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
+    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
   </div>
 </section>
 
@@ -126,7 +126,7 @@
     <div class="factions">
       <div class="faction"><b style="color:var(--corps)">Lunar Corps</b>Earn salvage from Relay Towers built on relay pads and from crates on the field. Each tower also adds supply. Engineers build, Medics heal.</div>
       <div class="faction"><b style="color:var(--swarm)">The Swarm</b>Grows from hives. Anything living it kills becomes a cocoon that hatches into new Swarm. Destroy cocoons fast; Pyros do triple damage to them.</div>
-      <div class="faction"><b style="color:var(--corps)">Veterans</b>Every soldier has a name and earns XP by killing (Medics by healing, Engineers by building). Ranks Corporal, Sergeant and Veteran add HP, damage and rate of fire. Survivors carry over to the next campaign mission; the fallen are gone for good.</div>
+      <div class="faction"><b style="color:var(--corps)">Veterans</b>Every soldier has a name and earns XP by killing (Medics by healing, Engineers by building). Ranks Corporal, Sergeant, Veteran and Lieutenant add HP, damage and rate of fire, and a Lieutenant gains an ability of his type (Trooper grenade, Gunner steady aim on the move, Pyro long flame, Medic heals everyone around him, Engineer works twice as fast). Your own soldier can go one step further, to Captain: soldiers close to him fire faster and take less damage. Survivors carry over to the next campaign mission; the fallen go on the Cenotaph. In zombie mode you can raise them from there.</div>
       <div class="faction"><b style="color:var(--dim)">The Grey</b>Hunters who earn renown through honourable kills. Not yet deployable in this version.</div>
     </div>
     <div class="row"><button class="btn" type="button" data-go="menu">Back</button></div>
@@ -151,11 +151,22 @@
   <div class="sheet" style="max-width:760px">
     <div class="eyebrow">LUNAR CORPS · ROSTER</div>
     <h2 class="h">Veterans</h2>
-    <p class="lede">Soldiers who survive a campaign mission with experience stay on the roster. At the start of the next mission they replace soldiers of the same type, and the rest arrive first when you train or order that type. A veteran who falls is gone for good.</p>
+    <p class="lede">Soldiers who survive a campaign mission with experience stay on the roster. At the start of the next mission they replace soldiers of the same type, and the rest arrive first when you train or order that type. A veteran who falls goes on the Cenotaph.</p>
     <div class="roster" id="roster-list"></div>
     <div><div class="lbl" style="margin-bottom:6px">Ranks</div><div class="ranks" id="rank-list"></div></div>
-    <div id="fallen-wrap"><div class="lbl" style="margin-bottom:6px">In memory</div><div class="fallen-list" id="fallen-list"></div></div>
-    <div class="row" style="justify-content:space-between"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn danger" type="button" id="btn-reset-vets" data-tip="Reset veterans|Removes every veteran from the roster and clears the memorial. Campaign progress stays.">Reset veterans</button></div>
+    <div class="row" style="justify-content:space-between"><div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno2">Cenotaph</button></div><button class="btn danger" type="button" id="btn-reset-vets" data-tip="Reset veterans|Removes every veteran from the roster and clears the Cenotaph. Campaign progress stays.">Reset veterans</button></div>
+  </div>
+</section>
+
+<!-- CENOTAPH -->
+<section class="screen" id="s-cenotaph" hidden>
+  <div class="sheet" style="max-width:760px">
+    <div class="eyebrow">LUNAR CORPS · TYCHO MEMORIAL</div>
+    <h2 class="h">Cenotaph</h2>
+    <p class="lede">An empty tomb for the soldiers who never came home. Every name is cut into the stone, with the mission where it fell.</p>
+    <div class="zombie-row" id="zombie-row"></div>
+    <div class="cenotaph" id="cenotaph"></div>
+    <div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="veterans">Veterans</button></div>
   </div>
 </section>
 

@@ -2,7 +2,8 @@
 /* ---------- 2h. unit behaviour ---------- */
 function updateUnit(u,dt){
   const d=u.def;
-  u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
+  u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
+  if(u.vet&&u.vet.risen&&u.hp<u.maxHp) u.hp=Math.min(u.maxHp,u.hp+RISEN.regen*dt);   /* the risen knit themselves back together */ u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
   if(d.passive){ wildThink(u,dt); return; }
   if(d.escort){ escortThink(u,dt); return; }
   if(d.cloak && greyThink(u,dt)) return;
@@ -22,8 +23,8 @@ function updateUnit(u,dt){
   // Priority rule: enemy units that can fight back always come before structures.
   if(!o || o.type!=='move'){ u.acq-=dt; if(u.acq<=0){ u.acq=0.25+Math.random()*0.1;
       const hold=o&&o.type==='hold';
-      const cur=u.target, curD=cur ? dist(u,cur)-cur.r : Infinity, inRange=curD<=d.range*TILE+8;
-      const r = hold ? d.range+0.3 : explicit ? d.range+1.5 : d.sight;
+      const cur=u.target, curD=cur ? dist(u,cur)-cur.r : Infinity, inRange=curD<=(d.range+(u.rangeBonus||0))*TILE+8;
+      const rg=d.range+(u.rangeBonus||0), r = hold ? rg+0.3 : explicit ? rg+1.5 : Math.max(d.sight,rg);
       if(!cur || cur.kind!=='unit' || cur.def.boss || !inRange){
         const tu=findTarget(u,r,true);
         if(tu){ if(!cur && u.faction==='corps') SFX.play('contact',u.x,u.y); u.target=tu; }
@@ -46,7 +47,7 @@ function updateUnit(u,dt){
 }
 function engage(u,dt,hold){
   const t=u.target, d=u.def;
-  const reach=d.range*TILE + t.r + u.r*0.5, dd=dist(u,t);
+  const reach=(d.range+(u.rangeBonus||0))*TILE + t.r + u.r*0.5, dd=dist(u,t);
   if(Math.abs(t.x-u.x)>2) u.face=t.x>=u.x?1:-1;
   if(dd<=reach){ u.path=null; u.goal=null; if(u.cd<=0) fire(u,t); }
   else if(hold){ u.target=null; }
@@ -126,7 +127,7 @@ function medicThink(u,dt){
   // move on to them; then orange, then top up the rest.
   if(u.healT<=0){ u.healT=0.3;
     const R=(u.order&&u.order.type==='move'?d.healRange:d.sight)*TILE;
-    const cands=G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===u.faction&&e.def.bio&&e!==u&&e.hp<e.maxHp&&dist(u,e)<R);
+    const cands=G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===u.faction&&e.def.bio&&!(e.vet&&e.vet.risen)&&e!==u&&e.hp<e.maxHp&&dist(u,e)<R);   /* the risen cannot be healed */
     if(cands.length){ const worst=Math.min(...cands.map(hpZone)); const cur=ok(u.healTarget)?u.healTarget:null;
       if(!cur || hpZone(cur)>worst){ u.healTarget=cands.filter(e=>hpZone(e)===worst).reduce((a,b)=>dist(u,a)<=dist(u,b)?a:b); if(u.healTarget!==cur&&Math.random()<0.4) bark(u,'heal'); } }
     else if(!ok(u.healTarget)) u.healTarget=null; }
@@ -134,7 +135,9 @@ function medicThink(u,dt){
   const inRange = t && dist(u,t) <= d.healRange*TILE;
   if(!t && d.damage) snapFire(u,dt);   /* healing always comes first; only then the sidearm */
   if(inRange){ const hh=Math.min(t.maxHp-t.hp,d.heal*(u.dmgMul||1)*dt); t.hp+=hh; if(u.vet){ u.vet.healed=(u.vet.healed||0)+hh; u.vet.hb=(u.vet.hb||0)+hh; if(u.vet.hb>=VET_XP.healPerXp){ u.vet.hb-=VET_XP.healPerXp; gainXP(u,1); } } u.beam=t; SFX.play('heal',u.x,u.y); if(Math.abs(t.x-u.x)>2) u.face=t.x>u.x?1:-1;
-    if(Math.random()<dt*3) G.fx.push({k:'text',x:t.x+rand(-6,6),y:t.y-14,t:0.7,max:0.7,txt:'+',col:'#7dffbf'}); }
+    if(Math.random()<dt*3) G.fx.push({k:'text',x:t.x+rand(-6,6),y:t.y-14,t:0.7,max:0.7,txt:'+',col:'#7dffbf'});
+    if(hasPerk(u)){ for(const e of G.ents){ if(e===t||e===u||e.dead||e.kind!=='unit'||e.faction!==u.faction||!e.def.bio||(e.vet&&e.vet.risen)||e.hp>=e.maxHp||dist(u,e)>d.healRange*TILE) continue;   /* Lieutenant Medic: everyone around him */
+        e.hp=Math.min(e.maxHp,e.hp+d.heal*PERKS.medic.share*(u.dmgMul||1)*dt); if(Math.random()<dt*2) G.fx.push({k:'text',x:e.x+rand(-6,6),y:e.y-14,t:0.7,max:0.7,txt:'+',col:'#7dffbf'}); } } }
   if(u.order && u.order.type==='attack') u.order={type:'support',squad:G.ents.filter(e=>e.kind==='unit'&&e.faction===u.faction&&!e.dead&&!e.def.heal&&dist(e,u)<6*TILE)};
   if(u.order && u.order.type==='support'){
     const squad=(u.order.squad||[]).filter(alive);
@@ -179,8 +182,9 @@ function builderThink(u,dt){
   if(Math.random()<dt*8) G.fx.push({k:'spark',x:b.x+rand(-b.r,b.r)*0.6,y:b.y+rand(-b.r,b.r)*0.6,vx:rand(-50,50),vy:rand(-70,-10),t:0.3,max:0.3,col:'#ffe2a8'});
   if(!done){
     const bd=b.def;
-    if(b.deploy){ b.progress+=dt/bd.deployTime; b.hp=b.carryHp*(0.3+0.7*Math.min(1,b.progress)); }
-    else { b.progress+=dt/bd.buildTime; b.hp=Math.min(b.maxHp,b.hp+bd.hp*0.9*dt/bd.buildTime); }
+    const sp=hasPerk(u)?PERKS.engineer.speed:1;   /* Lieutenant Engineer: twice as fast */
+    if(b.deploy){ b.progress+=dt*sp/bd.deployTime; b.hp=b.carryHp*(0.3+0.7*Math.min(1,b.progress)); }
+    else { b.progress+=dt*sp/bd.buildTime; b.hp=Math.min(b.maxHp,b.hp+bd.hp*0.9*dt*sp/bd.buildTime); }
     if(b.progress>=1){ b.built=true; b.progress=1; if(!b.deploy){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; SFX.play('complete'); say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }
-  } else { const rr=Math.min(b.maxHp-b.hp,d.repair*dt); b.hp+=rr; if(u.vet){ u.vet.repaired=(u.vet.repaired||0)+rr; u.vet.rb=(u.vet.rb||0)+rr; if(u.vet.rb>=VET_XP.repairPerXp){ u.vet.rb-=VET_XP.repairPerXp; gainXP(u,1); } } }
+  } else { const rr=Math.min(b.maxHp-b.hp,d.repair*dt*(hasPerk(u)?PERKS.engineer.speed:1)); b.hp+=rr; if(u.vet){ u.vet.repaired=(u.vet.repaired||0)+rr; u.vet.rb=(u.vet.rb||0)+rr; if(u.vet.rb>=VET_XP.repairPerXp){ u.vet.rb-=VET_XP.repairPerXp; gainXP(u,1); } } }
 }

@@ -1,12 +1,13 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
-const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans'];
+const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph'];
 function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name; }
 function goMenu(name){
   if(name==='menu'){ ui.mode='menu'; G=null; $('#hud').hidden=true; resize(); }
   if(name==='campaign') buildCampaign();
   if(name==='skirmish') buildSkirmish();
   if(name==='veterans') buildVeterans();
+  if(name==='cenotaph') buildCenotaph();
   show(name); syncDiff();
   const first=$('#s-'+name+' button'); if(first) first.focus({preventScroll:true});
 }
@@ -14,7 +15,7 @@ document.addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if
 function isUnlocked(i){ return i===0 || isDone(MISSIONS[i-1].id); }
 function buildCampaign(){
   buildHero();
-  $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`;
+  $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
   const doneN=MISSIONS.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${MISSIONS.length} missions complete`;
   $('#mission-list').innerHTML=MISSIONS.map((m,i)=>{ const res=ui.progress.results[m.id], done=!!res, un=isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':'aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"'}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
@@ -42,16 +43,31 @@ $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data
 function buildVeterans(){
   const R=ui.roster;
   $('#roster-list').innerHTML = R.active.length ? `<div class="rrow rhead"><span>Rank</span><span>Name</span><span>Role</span><span>XP</span><span>Kills</span><span>Missions</span></div>`+
-    R.active.map(v=>{ const nx=RANKS[v.rank+1]; return `<div class="rrow"><span class="rmark">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.name}</span><span class="rdim"><img alt="" src="${iconUrl(v.type)}">${UNITS[v.type].name}</span><span>${v.xp}${nx?`<i class="rdim"> / ${nx.xp}</i>`:''}</span><span>${v.kills||0}</span><span>${v.missions||0}</span></div>`; }).join('')
+    R.active.map(v=>{ const nx=nextRank(v); return `<div class="rrow"><span class="rmark">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'★ ':''}${v.name}${v.risen?' <i class="risen">☠ risen</i>':''}</span><span class="rdim"><img alt="" src="${iconUrl(v.type)}">${UNITS[v.type].name}</span><span>${v.xp}${nx?`<i class="rdim"> / ${nx.xp}</i>`:''}</span><span>${v.kills||0}</span><span>${v.missions||0}</span></div>`; }).join('')
     : '<p class="lede">No veterans yet. Win a campaign mission and your experienced survivors will be listed here.</p>';
-  $('#rank-list').innerHTML=RANKS.map(k=>`<div><b>${k.mark||'·'} ${k.name}</b><span>${k.xp} XP</span><span>${k.hp>1?`+${Math.round((k.hp-1)*100)}% HP, +${Math.round((k.dmg-1)*100)}% damage, +${Math.round((k.rate-1)*100)}% rate`:'base'}</span></div>`).join('');
-  $('#fallen-wrap').hidden=!R.fallen.length;
-  $('#fallen-list').innerHTML=R.fallen.map(v=>`<div class="memorial"><b>${RANKS[v.rank].abbr} ${v.name}</b><i>${UNITS[v.type]?UNITS[v.type].name:''} · fell in ${v.mission}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}${v.at?` · ${new Date(v.at).toLocaleDateString()}`:''}</i></div>`).join('');
+  $('#rank-list').innerHTML=RANKS.map(k=>`<div><b>${k.mark||'·'} ${k.name}</b><span>${k.xp} XP${k.heroOnly?' · your own soldier only':''}</span><span>${k.hp>1?`+${Math.round((k.hp-1)*100)}% HP, +${Math.round((k.dmg-1)*100)}% damage, +${Math.round((k.rate-1)*100)}% rate`:'base'}</span>${k.perk&&!k.aura?`<span>Ability: ${HERO_TYPES.map(t=>`${UNITS[t].name} ${PERKS[t].name.toLowerCase()}`).join(', ')}</span>`:''}${k.aura?`<span>Leads: soldiers within ${AURA.radius} tiles fire ${Math.round((AURA.rate-1)*100)}% faster and take ${Math.round(AURA.armor*100)}% less damage. If he falls, the squad wavers.</span>`:''}</div>`).join('');
+  $('#btn-ceno2').textContent=`Cenotaph (${R.fallen.length})`;
 }
 let vetArm=null;
 $('#btn-reset-vets').addEventListener('click',()=>{ const b=$('#btn-reset-vets');
   if(!vetArm){ b.classList.add('armed'); b.textContent='Click again to erase all veterans'; vetArm=setTimeout(()=>{ vetArm=null; b.classList.remove('armed'); b.textContent='Reset veterans'; },4000); return; }
-  clearTimeout(vetArm); vetArm=null; ui.roster={active:[],fallen:[]}; saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the memorial erased.',true); });
+  clearTimeout(vetArm); vetArm=null; ui.roster={active:[],fallen:[]}; saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased.',true); });
+/* The Cenotaph: every fallen veteran's name in stone. In zombie mode (Halloween) the fallen can be raised again. */
+function buildCenotaph(){
+  const R=ui.roster, z=ui.zombie;
+  $('#s-cenotaph').classList.toggle('zombie',z);
+  $('#zombie-row').innerHTML=`<button class="btn ${z?'on':''}" type="button" id="btn-zombie" aria-pressed="${z}">${z?'☠ Zombie mode on':'Zombie mode off'}</button>
+    <p>${z?`Halloween: raise a fallen soldier and he rejoins the roster with his rank and kills. The risen have ${Math.round((RISEN.hp-1)*100)}% more health and heal themselves, but they shamble, a Medic cannot help them, and if they fall a second time they rest for good.`:'Halloween is coming. Switch on zombie mode to raise your fallen soldiers from the stone.'}</p>`;
+  $('#cenotaph').innerHTML=`<div class="cap">THEY DID NOT COME HOME</div>`+(R.fallen.length?`<div class="names">${R.fallen.map((v,i)=>`<div class="name"><b>${v.hero?'<span class="star">★</span> ':''}${(RANKS[v.rank]||RANKS[0]).abbr} ${v.name}</b>
+      <i>${UNITS[v.type]?UNITS[v.type].name:''} · fell in ${v.mission}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}${v.at?`<br>${new Date(v.at).toLocaleDateString()}`:''}</i>
+      ${v.risen?'<span class="gone">FELL TWICE · AT REST</span>':z&&UNITS[v.type]?`<button class="btn-raise" type="button" data-raise="${i}">☠ Raise</button>`:''}</div>`).join('')}</div>`
+    :'<p class="empty">No names yet. Keep it that way.</p>');
+}
+$('#s-cenotaph').addEventListener('click',e=>{
+  if(e.target.closest('#btn-zombie')){ setZombie(!ui.zombie); buildCenotaph(); toast(ui.zombie?'Zombie mode on. The dead are restless.':'Zombie mode off.',true); return; }
+  const b=e.target.closest('[data-raise]'); if(!b) return; const rec=ui.roster.fallen[+b.dataset.raise]; const err=raiseFallen(+b.dataset.raise); if(err){ toast(err); return; }
+  SFX.play('squelch'); buildCenotaph(); toast(`${rec.name} rises from the stone and rejoins the roster.`,true);
+});
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }

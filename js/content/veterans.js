@@ -8,8 +8,23 @@ const RANKS = [
   { name:'Private',  abbr:'Pvt.', xp:0,  mark:'',   hp:1.00, dmg:1.00, rate:1.00 },
   { name:'Corporal', abbr:'Cpl.', xp:4,  mark:'›',  hp:1.15, dmg:1.10, rate:1.05 },
   { name:'Sergeant', abbr:'Sgt.', xp:10, mark:'»',  hp:1.30, dmg:1.20, rate:1.10 },
-  { name:'Veteran',  abbr:'Vet.', xp:20, mark:'★',  hp:1.50, dmg:1.30, rate:1.15 }
+  { name:'Veteran',  abbr:'Vet.', xp:20, mark:'★',  hp:1.50, dmg:1.30, rate:1.15 },
+  { name:'Lieutenant', abbr:'Lt.', xp:40, mark:'★★', hp:1.75, dmg:1.45, rate:1.20, perk:true },              /* every type gets its own ability (PERKS) */
+  { name:'Captain',  abbr:'Capt.', xp:60, mark:'✪', hp:1.85, dmg:1.55, rate:1.25, perk:true, aura:true, heroOnly:true }   /* only your own soldier: leads the squad (AURA) */
 ];
+/* Lieutenant abilities, one per type */
+const PERKS = {
+  trooper:  { name:'Grenade',      text:'Throws a grenade at groups of enemies', every:9, damage:55, radius:1.5, range:6 },
+  gunner:   { name:'Steady aim',   text:'No slower fire while on the move' },
+  pyro:     { name:'Long flame',   text:'Flamer reaches further', range:1.5 },
+  medic:    { name:'Field triage', text:'Heals everyone around him at once', share:0.6 },
+  engineer: { name:'Quick hands',  text:'Builds, repairs and arms charges twice as fast', speed:2 }
+};
+/* Captain's leadership: soldiers close to him fire faster and take less damage. If he falls, the squad wavers. */
+const AURA = { radius:4, rate:1.10, armor:0.10, waver:{ radius:9, time:10, rate:1.15 } };
+/* Zombie mode (Halloween): raise a fallen soldier from the Cenotaph. The risen are tougher and heal themselves,
+   but shamble, cannot be healed by a Medic, and rest for good if they fall a second time. */
+const RISEN = { hp:1.25, speed:0.85, regen:2 };
 const VET_XP = { kill:1, spitter:2, brute:4, hive:5, broodmother:10, healPerXp:60, repairPerXp:250, build:1 };
 const ROSTER_MAX = 30;
 const STARTER_NAMES = ['Van Kerckhove','Heem','Van Damme','Vikernes','Verstappen'];
@@ -38,5 +53,17 @@ const VOICE = {
   hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!'],
   heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.'],
   build:   ['On it.','Building.','Give me a minute.','Setting it up.'],
-  flare:   ['Flare out!','Lighting it up!','Light incoming!']
+  flare:   ['Flare out!','Lighting it up!','Light incoming!'],
+  grenade: ['Frag out!','Grenade!','Fire in the hole!'],
+  waver:   ['The Captain is down!','Who is in charge now?!','We lost the Captain!']
+};
+/* what the risen say instead */
+const VOICE_RISEN = {
+  select:  ['...still here.','I... remember.','Command... me.','...cold.'],
+  move:    ['...coming.','Walking...','Always... walking.','...yes.'],
+  attack:  ['...feed.','They will... fall.','Join... us.','...hungry.'],
+  contact: ['...fresh meat.','I smell... them.','...they come.'],
+  hurt:    ['...does not... hurt.','...again?'],
+  heal:    ['...hold still.'],
+  build:   ['...building.','Hands... remember.']
 };

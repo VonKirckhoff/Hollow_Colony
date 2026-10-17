@@ -88,15 +88,27 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 | Corporal (›) | 4 | +15% HP, +10% schade, +5% vuursnelheid |
 | Sergeant (») | 10 | +30% HP, +20% schade, +10% vuursnelheid |
 | Veteran (★) | 20 | +50% HP, +30% schade, +15% vuursnelheid |
+| Lieutenant (★★) | 40 | +75% HP, +45% schade, +20% vuursnelheid, plus een **vaardigheid** van zijn type |
+| Captain (✪) | 60 | Alleen **je eigen soldaat**: +85% HP, +55% schade, +25% vuursnelheid, plus de vaardigheid en **leiderschap** |
+
+- **Vaardigheden van een Lieutenant** (`PERKS` in js/content/veterans.js):
+  - Trooper, *Grenade*: om de 9 s een granaat (55 schade, straal 1,5 tegel) naar de dichtste groep vijanden rond zijn doelwit. Op één klein beest gooit hij er geen.
+  - Gunner, *Steady aim*: schiet tijdens het lopen even snel als stilstaand.
+  - Pyro, *Long flame*: zijn vlammenwerper reikt 1,5 tegel verder.
+  - Medic, *Field triage*: geneest naast zijn patiënt ook iedereen rondom zich (aan 60% van zijn snelheid).
+  - Engineer, *Quick hands*: bouwt, herstelt en zet ladingen twee keer zo snel.
+- **Leiderschap van de Captain** (`AURA`): soldaten binnen 4 tegels schieten 10% sneller en krijgen 10% minder schade; een gestippelde gouden cirkel toont het bereik. Sneuvelt hij, dan **wankelt** de groep: wie binnen 9 tegels stond, schiet 10 seconden lang 15% trager.
 
 - Bij een promotie meldt de radio het, verschijnt "PROMOTED" en krijgt de soldaat een kwart van zijn levenspunten terug. Het rangteken staat boven de soldaat en in het selectiepaneel; daar zie je ook naam, XP, kills en aantal missies.
 - **Rooster:** win je een campagnemissie, dan gaan alle overlevenden met XP naar het rooster (max. 30, de meest ervarenen eerst). In de volgende campagnemissie vervangen ze startsoldaten van hetzelfde type. Wie niet meteen een plaats heeft, staat in **reserve** en komt als eerste zodra je dat type traint of via de dropship bestelt.
-- **Gesneuveld is gesneuveld:** een veteraan die sterft in een missie die je wint, verdwijnt van het rooster en komt op de gedenklijst. Verlies je de missie, dan verandert het rooster niet (je kan opnieuw proberen).
-- De knop **Veterans** in de campagnelijst toont het rooster, de rangen en de gedenklijst. De briefing toont wie meegaat. Het eindscherm toont promoties (per soldaat alleen de hoogste rang die hij haalde, en alleen van wie de missie overleefde), nieuwkomers en gesneuvelden (met de rang die ze op het moment van hun dood hadden).
+- **Gesneuveld is gesneuveld:** een veteraan die sterft in een missie die je wint, verdwijnt van het rooster en komt op de **Cenotaph**. Verlies je de missie, dan verandert het rooster niet (je kan opnieuw proberen).
+- De knop **Veterans** in de campagnelijst toont het rooster en de rangen; de knop **Cenotaph** toont de gesneuvelden. De briefing toont wie meegaat. Het eindscherm toont promoties (per soldaat alleen de hoogste rang die hij haalde, en alleen van wie de missie overleefde), nieuwkomers en gesneuvelden (met de rang die ze op het moment van hun dood hadden).
 - **Namen:** alleen Nederlandstalige familienamen (`SURNAMES` in js/content/veterans.js). De eerste soldaten van een nieuwe campagne heten altijd, in deze volgorde, **Van Kerckhove, Heem, Van Damme, Vikernes en Verstappen** (`STARTER_NAMES`), zolang die namen vrij zijn. Een bewaard rooster met namen die niet in de lijst staan, krijgt bij het laden nieuwe namen.
-- **Je eigen soldaat:** bovenaan het campagnescherm staat *Enlist your own soldier*. Geef een naam (2 tot 18 tekens, uniek) en kies een type (Trooper, Gunner, Pyro, Medic of Engineer). Hij gaat mee op elke campagnemissie (hij vervangt een starter van zijn type, of komt er extra bij), draagt een **gouden ster** boven zijn hoofd en verdient rang zoals elke veteraan. Na zijn eerste missie ligt zijn type vast; de naam kan je altijd wijzigen met *Edit*. Sneuvelt hij, dan komt hij op de gedenklijst en kan je een nieuwe soldaat inlijven.
-- **Reset veterans** (knop op het Veterans-scherm, twee keer klikken) wist het rooster en de gedenklijst, maar niet je campagnevoortgang. **Reset campaign** wist allebei.
-- **Unieke namen:** geen twee soldaten hebben dezelfde naam: niet in het rooster, niet op de gedenklijst en niet in de lopende missie. Pas als alle namen uit `SURNAMES` op zijn, krijgt een nieuwe soldaat een voorletter ("J. Torres"). Een bewaard rooster met dubbele namen wordt bij het laden rechtgezet.
+- **Je eigen soldaat:** bovenaan het campagnescherm staat *Enlist your own soldier*. Geef een naam (2 tot 18 tekens, uniek) en kies een type (Trooper, Gunner, Pyro, Medic of Engineer). Hij gaat mee op elke campagnemissie (hij vervangt een starter van zijn type, of komt er extra bij), draagt een **gouden ster** boven zijn hoofd en verdient rang zoals elke veteraan. Na zijn eerste missie ligt zijn type vast; de naam kan je altijd wijzigen met *Edit*. Sneuvelt hij, dan komt hij op de Cenotaph en kan je een nieuwe soldaat inlijven. Alleen hij kan Captain worden.
+- **Cenotaph** (knop op het campagnescherm en het Veterans-scherm): een grafsteen met de naam van elke gesneuvelde, met rang, type, de missie waarin hij viel, missies, kills en datum. Je eigen soldaat staat er met zijn ster.
+- **Zombie mode** (Halloween, aan/uit op de Cenotaph, onthouden in je browser): met *Raise* haal je een gesneuvelde terug naar het rooster, met zijn rang, XP en kills. Een **risen** soldaat is groen, gloeit, en praat traag en hol. Hij heeft 25% meer levenspunten en geneest zichzelf (2 HP per seconde), maar loopt 15% trager, een Medic kan hem niet genezen, en de Swarm kan hem niet in een cocon stoppen. Sneuvelt hij een tweede keer, dan blijft hij voorgoed rusten (*Fell twice · at rest*). Was het je eigen soldaat en heb je nog geen nieuwe, dan wordt hij weer je eigen soldaat. Instellingen in `RISEN`.
+- **Reset veterans** (knop op het Veterans-scherm, twee keer klikken) wist het rooster en de Cenotaph, maar niet je campagnevoortgang. **Reset campaign** wist allebei.
+- **Unieke namen:** geen twee soldaten hebben dezelfde naam: niet in het rooster, niet op de Cenotaph en niet in de lopende missie. Pas als alle namen uit `SURNAMES` op zijn, krijgt een nieuwe soldaat een voorletter ("J. Torres"). Een bewaard rooster met dubbele namen wordt bij het laden rechtgezet.
 - **Reset campaign** wist ook het rooster. In skirmish wordt niets bewaard.
 - Instelbaar bovenaan in de code: `RANKS`, `VET_XP`, `ROSTER_MAX` en de namenlijst `SURNAMES`.
 
@@ -220,7 +232,7 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - **Stemmen:** soldaten zeggen iets bij selecteren, bewegen, aanvallen, het eerste contact, bij zware verwondingen, wanneer een kameraad sneuvelt (met zijn naam), bij genezen, bouwen en fakkels. Een tekstballon met een radioklikje, en de zin wordt ook **uitgesproken** met de spraakstemmen van je browser (elke soldaat zijn eigen stem en toonhoogte). Aan/uit met **O** of de knop *Voices*, het volume met de schuif *Vol* ernaast (standaard 30%, onthouden in je browser); *Sound off* zet ze ook stil. Nooit meer dan één zin per 1,6 seconden. De zinnen staan in `VOICE` (js/content/veterans.js).
 - **Een Swarm met een plan:** een golf van minstens 6 wezens kiest een aanpak: **recht op je af**, **lokaas** (de snelste paar komen eerst, de rest wacht 9 seconden en valt aan terwijl jij achter het lokaas aan zit) of **flank** (de helft maakt een boog en komt van opzij). De eerste keer waarschuwt Kessler of Dr. Maas je. Verhouding instelbaar in `TACTICS` (js/engine/12-swarm-director.js).
 - **Vuren onderweg:** een soldaat met een **verplaatsbevel** blijft lopen, maar schiet onderweg op vijanden binnen zijn bereik, wel 1,35× trager dan stilstaand (`SQUAD.moveFire.rate`). Wil je dat ze stoppen en vechten, gebruik dan een aanvalsbeweging (A + klik).
-- **Persoonlijke veteranen:** sneuvelt een soldaat met een rang of met missies achter de rug, dan meldt de radio het: *"Sgt. Van Damme has fallen. 4 missions, 37 kills."* Op het eindscherm en op de gedenklijst (knop *Veterans*) staan bij elke gesneuvelde zijn type, de missie waarin hij viel, zijn aantal missies en kills, en de datum. Ook wie pas in die missie een rang haalde, komt op de gedenklijst.
+- **Persoonlijke veteranen:** sneuvelt een soldaat met een rang of met missies achter de rug, dan meldt de radio het: *"Sgt. Van Damme has fallen. 4 missions, 37 kills."* Op het eindscherm en op de Cenotaph staan bij elke gesneuvelde zijn type, de missie waarin hij viel, zijn aantal missies en kills, en de datum. Ook wie pas in die missie een rang haalde, komt op de Cenotaph.
 - Alle getallen staan samen in `SQUAD` bovenaan js/engine/22-squad-life.js.
 
 ### Camera volgen
@@ -485,7 +497,7 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 - **Vergrendelde missie spelen:** houd **Shift** ingedrukt en klik op de missie in de campagnelijst.
 - **Spelsnelheid** 1,5× of 2× via de knop bovenaan, handig om te testen.
 - **Opgeslagen in de browser** (`localStorage`):
-  - `hc-roster`: het veteranenrooster en de gedenklijst
+  - `hc-roster`: het veteranenrooster en de Cenotaph; `hc-zombie`: zombie mode aan of uit
   - `hc-progress`: per gewonnen missie de hoogste moeilijkheidsgraad, de beste tijd en de datum
   - `hc-diff`: moeilijkheidsgraad
   - `hc-mute`: geluid aan/uit

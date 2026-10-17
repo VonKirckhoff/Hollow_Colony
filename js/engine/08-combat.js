@@ -15,7 +15,8 @@ function findTarget(u,rangeTiles,unitsOnly){
   return best;
 }
 function fire(u,t){
-  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1); const dm=u.dmgMul||1;
+  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1); const dm=u.dmgMul||1;
+  if(u.type==='trooper'&&hasPerk(u)&&t.kind==='unit') throwGrenade(u,t);
   if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,'contact'); G.lastFight=G.time; }
   const ang=Math.atan2(t.y-u.y,t.x-u.x); u.angle=ang;
   const mx = u.kind==='building' ? u.x+Math.cos(ang)*12 : u.x+u.face*12, my = u.kind==='building' ? u.y-4+Math.sin(ang)*12 : u.y-8;
@@ -27,7 +28,7 @@ function fire(u,t){
     if(Math.random()<0.35) G.fx.push({k:'spark',x:hx,y:hy,vx:rand(-40,40),vy:rand(-60,0),t:0.25,max:0.25,col:'#ffe2a8'});
     damage(t,d.damage*dm,u); if(u.type==='gunner') suppress(t);
   } else if(d.attack==='flame'){
-    for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
+    for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200)*(1+(u.rangeBonus||0)/(d.range||1)*0.8); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
     for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)&&e!==t) continue; if(dist(e,t)<=R+e.r*0.5){ damage(e,d.damage*dm*((d.bonus&&d.bonus[e.type])||1),u); } }
   } else if(d.attack==='plasma'){
@@ -48,6 +49,7 @@ function damage(t,amt,src){
   t.calm=0;
   if(t.def.armor) amt*=1-t.def.armor;
   amt=coverDamage(t,amt,src);
+  if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */
   const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction==='corps' && src && src.faction==='swarm') raiseAlert(t);
@@ -82,7 +84,7 @@ function kill(e,src){
     if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
-    if(e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){
+    if(e.def.bio && !(e.vet&&e.vet.risen) && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){
       const c=makeBuilding('cocoon','swarm',Math.floor(e.x/TILE),Math.floor(e.y/TILE),true); c.x=e.x; c.y=e.y; c.r=9;
       c.hatchT=BUILDINGS.cocoon.hatch; c.hatchType=(e.def.supply||1)>=2?'drone':'crawler'; G.swarm.biomass+=12; G.stats.cocoons++;
     }
@@ -93,3 +95,13 @@ function addDecal(x,y,r,col){ G.decals.push({x,y,r,col,seed:Math.random()*1000,t
 function raiseAlert(t){ if(G.time-G.alertT<10) return; G.alertT=G.time; G.alert={x:t.x,y:t.y}; G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); SFX.play('alarm');
   say('Alert', t.kind==='building' ? `${t.def.name} under attack.` : 'Our forces are under attack.', 'alert'); }
 function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&dist(e,h)<12*TILE) e.target=src; } }
+/* Lieutenant Trooper: a grenade now and then, aimed at the thickest group near his target */
+function throwGrenade(u,t){
+  const P=PERKS.trooper; if(G.time<(u.nadeAt||0)) return; if(dist(u,t)>P.range*TILE) return;
+  let best=t, bn=0; for(const e of G.ents){ if(e.dead||e.kind!=='unit'||!hostile(u.faction,e.faction)||dist(e,t)>3*TILE) continue;
+    let n=0; for(const o of G.ents) if(!o.dead&&o.kind==='unit'&&hostile(u.faction,o.faction)&&Math.hypot(o.x-e.x,o.y-e.y)<P.radius*TILE) n++; if(n>bn){ bn=n; best=e; } }
+  if(bn<2 && !(t.def.supply>=2)) return;   /* not worth a grenade on a single small target */
+  u.nadeAt=G.time+P.every; const dd=dist(u,best);
+  G.shots.push({k:'grenade',sx:u.x,sy:u.y-10,tx:best.x,ty:best.y,t:0,dur:dd/260+0.25,src:u,dmg:P.damage*(u.dmgMul||1),splash:P.radius*TILE,faction:u.faction});
+  bark(u,'grenade');
+}

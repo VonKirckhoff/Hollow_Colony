@@ -54,7 +54,7 @@ function updateGenerator(b,dt){
 function updateChargeSite(b,dt){
   const eng=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.def.builder&&!e.moving&&Math.hypot(e.x-b.x,e.y-b.y)<1.6*TILE);
   const C=G.charges&&G.charges[b.tag];
-  if(eng){ b.arm+=dt/b.def.armTime; if(C) C.state='arming'; eng.face=b.x>eng.x?1:-1; if(Math.random()<dt*6) G.fx.push({k:'spark',x:b.x+rand(-6,6),y:b.y-4,vx:rand(-30,30),vy:rand(-50,-10),t:0.3,max:0.3,col:'#ffd23f'}); }
+  if(eng){ b.arm+=dt*(hasPerk(eng)?PERKS.engineer.speed:1)/b.def.armTime; if(C) C.state='arming'; eng.face=b.x>eng.x?1:-1; if(Math.random()<dt*6) G.fx.push({k:'spark',x:b.x+rand(-6,6),y:b.y-4,vx:rand(-30,30),vy:rand(-50,-10),t:0.3,max:0.3,col:'#ffd23f'}); }
   else if(C && C.state==='arming' && b.arm>0) C.state='site';
   b.status={ txt: b.arm>0 ? `ARMING ${Math.floor(b.arm*100)}%` : 'CHARGE SITE', col:'#ff9a3c' };
   if(b.arm>=1){ b.dead=true; const c=makeBuilding('charge','corps',b.tx,b.ty,true); c.tag=b.tag; c.fuse=c.def.fuse; G.stats.built--;

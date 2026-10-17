@@ -20,20 +20,25 @@ function uniqueName(taken){
 function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[]; r.fallen=r.fallen||[];
   // names no longer in SURNAMES, and doubles, get a fresh unique name
   const all=[...r.active,...r.fallen], taken=new Set();
-  all.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0));
-  for(const v of all){ if(v.hero&&!taken.has(v.name)){ taken.add(v.name); continue; } if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
+  all.sort((a,b)=>(b.hero||b.risen?1:0)-(a.hero||a.risen?1:0));
+  for(const v of all){ if((v.hero||v.risen)&&!taken.has(v.name)){ taken.add(v.name); continue; } if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
   return r; }
 function saveRoster(){ store.set('hc-roster',ui.roster); }
 function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
   for(const v of ui.roster.active) t.add(v.name); for(const v of ui.roster.fallen) t.add(v.name); return t; }
 function freshName(){ const t=takenNames(), n=STARTER_NAMES.find(x=>!t.has(x))||uniqueName(t); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
-function rankFor(xp){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp) r=i; }); return r; }
-function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp; u.maxHp=u.def.hp*k.hp; u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; }
+function rankFor(xp,hero){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp&&(!k.heroOnly||hero)) r=i; }); return r; }
+/* the next rank this soldier can reach (Captain is for your own soldier only) */
+function nextRank(v){ const k=RANKS[v.rank+1]; return k&&(!k.heroOnly||v.hero)?k:null; }
+function hasPerk(u){ return !!(u&&u.vet&&RANKS[u.vet.rank].perk); }
+function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp, z=u.vet.risen;
+  u.maxHp=u.def.hp*k.hp*(z?RISEN.hp:1); u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; u.speedMul=z?RISEN.speed:1;
+  u.rangeBonus=(hasPerk(u)&&PERKS[u.type]&&PERKS[u.type].range)||0; u.leader=!!k.aura; }
 function gainXP(u,amount){
   if(!u||u.dead||!u.vet||amount<=0) return; u.vet.xp+=amount;
-  const r=rankFor(u.vet.xp); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
+  const r=rankFor(u.vet.xp,u.vet.hero); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'});
-    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
+    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?' The squad rallies around him.':''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
 function isCampaign(){ return G.mission.id!=='skirmish'; }
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */
@@ -45,7 +50,7 @@ function deployRoster(){
   if(hi>=0){ const h=pool.splice(hi,1)[0]; let u=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.vet&&e.type===h.type&&!G.deployedIds.has(e.vet.id));
     if(!u){ const first=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.vet); const p=first?{x:Math.floor(first.x/TILE),y:Math.floor(first.y/TILE)}:pt(G.mission.start.camera||'P'); u=(spawnAt(h.type,'corps',p,1)||[])[0]; if(u) u.home={x:u.x,y:u.y}; }
     if(u){ u.vet={...h}; applyRank(u); u.hp=u.maxHp; G.deployedIds.add(h.id); } }
-  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; const i=pool.findIndex(v=>v.type===u.type); if(i<0) continue;
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet||G.deployedIds.has(u.vet.id)) continue;   /* never overwrite your own soldier */ const i=pool.findIndex(v=>v.type===u.type); if(i<0) continue;
     u.vet={...pool[i]}; pool.splice(i,1); applyRank(u); u.hp=u.maxHp; G.deployedIds.add(u.vet.id); }
   G.reserve=pool;
 }
@@ -62,7 +67,7 @@ function settleRoster(){
   const P=G.promoted||{};
   const FV=G.fallenVets||{}, ids=new Set(R.active.map(v=>v.id));
   for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
-    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined };
+    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined, risen:v.risen||undefined };
     R.fallen.unshift(rec); res.fallen.push(rec); } }
   // soldiers who earned a rank in this mission and fell are remembered too
   for(const [id,f] of Object.entries(FV)){ if(ids.has(id)||!(f.rank>=1)) continue;
@@ -71,7 +76,7 @@ function settleRoster(){
   // promotions of soldiers who made it out, highest rank only
   res.promoted=Object.entries(P).filter(([id])=>alive.has(id)).map(([,p])=>p);
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
-  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined };
+  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, risen:u.vet.risen||undefined };
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
   saveRoster(); G.rosterResult=res;
@@ -112,9 +117,21 @@ function setHero(name,type){
   if(name.length<2) return 'Give your soldier a name of at least 2 letters.';
   if(!HERO_TYPES.includes(type)) return 'Pick a type.';
   const others=new Set([...ui.roster.active.filter(v=>!v.hero).map(v=>v.name),...ui.roster.fallen.map(v=>v.name)]);
-  if(others.has(name)) return 'That name is already taken by another soldier (or on the memorial).';
+  if(others.has(name)) return 'That name is already taken by another soldier (or on the Cenotaph).';
   const h=heroOf();
   if(h){ if(h.type!==type && (h.missions||0)>0) return 'Your soldier has seen action: his type can no longer change.'; h.name=name; h.type=type; }
   else ui.roster.active.unshift({ id:'hero-'+Date.now().toString(36), name, type, rank:0, xp:0, kills:0, missions:0, hero:true });
   saveRoster(); return null;
+}
+
+/* ---- zombie mode: raise a fallen soldier from the Cenotaph ---- */
+function setZombie(on){ ui.zombie=!!on; store.set('hc-zombie',ui.zombie); }
+function canRaise(rec){ return ui.zombie && !rec.risen && !!UNITS[rec.type]; }
+function raiseFallen(i){
+  const R=ui.roster, rec=R.fallen[i]; if(!rec||!canRaise(rec)) return 'This soldier rests for good.';
+  if(R.active.length>=ROSTER_MAX) return 'The roster is full.';
+  const hero=!!rec.hero && !heroOf();
+  const v={ id:'risen-'+Date.now().toString(36), name:rec.name, type:rec.type, rank:rec.rank||0, xp:rec.xp||0, kills:rec.kills||0, missions:rec.missions||0, healed:0, repaired:0, risen:true, hero:hero||undefined };
+  if(v.rank>=RANKS.length || (RANKS[v.rank].heroOnly&&!hero)) v.rank=rankFor(v.xp,hero);
+  R.fallen.splice(i,1); if(hero) R.active.unshift(v); else R.active.push(v); saveRoster(); return null;
 }
