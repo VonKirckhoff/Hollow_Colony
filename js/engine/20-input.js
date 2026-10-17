@@ -21,6 +21,7 @@ cv.addEventListener('pointerdown',e=>{
 });
 function attackMoveAt(wx,wy){ const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits();
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
+  for(const u of squad) if(u.def.damage&&!u.def.heal) u.stance='attack';   /* the attack stance stays on for later moves */
   if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
   for(const u of medics){ if(squad.length){ u.order={type:'support',squad}; u.path=null; } else moveGroup([u],wx,wy,'move'); }
   SFX.play('attack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.4,col:'#ff5a4f'}); ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }
@@ -66,6 +67,10 @@ $('#cmdcard').addEventListener('pointerdown',e=>{ const b=e.target.closest('[dat
 $('#selection').addEventListener('pointerdown',e=>{ const q=e.target.closest('[data-cancel]'); if(q){ const b=G.sel[0]; if(b) cancelTrain(b,+q.dataset.cancel); return; }
   const gh=e.target.closest('[data-type]'); if(gh){ selectEntities(G.sel.filter(x=>!x.dead&&x.type===gh.dataset.type),false); return; }
   const o=e.target.closest('[data-only]'); if(o){ const ent=G.sel.find(x=>x.id===+o.dataset.only); if(ent){ selectEntities([ent],false); if(e.detail>1) centerOn(ent.x,ent.y); } } });
+/* hovering a soldier in the selection panel lights him up on the map (a group header lights up the whole group) */
+$('#selection').addEventListener('pointerover',e=>{ if(!G) return; const o=e.target.closest('[data-only]'), gh=e.target.closest('[data-type]');
+  ui.hover = o ? {id:+o.dataset.only} : gh ? {type:gh.dataset.type} : null; });
+$('#selection').addEventListener('pointerleave',()=>{ ui.hover=null; });
 $('#btn-menu').addEventListener('click',()=>pause(true));
 const soundLabel=()=>{ $('#btn-sound').textContent=SFX.muted?'Sound off':'Sound on'; };
 $('#btn-sound').addEventListener('click',()=>{ SFX.toggle(); soundLabel(); if(SFX.muted&&window.speechSynthesis) speechSynthesis.cancel(); }); soundLabel();

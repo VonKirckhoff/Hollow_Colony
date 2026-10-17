@@ -1,8 +1,12 @@
 'use strict';
 /* ---------- 2r. commands ---------- */
 function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead); }
-function cmdStop(){ for(const u of myUnits()){ u.order=null; u.target=null; u.path=null; u.home={x:u.x,y:u.y}; } }
-function cmdHold(){ for(const u of myUnits()){ u.order={type:'hold'}; u.target=null; u.path=null; } }
+/* Stances stay with a soldier until you change them: 'attack' (every move becomes an attack-move) or 'hold' (after every move he holds the new spot).
+   Cancel order (S) clears both the current order and the stance. */
+function cmdStop(){ for(const u of myUnits()){ u.order=null; u.target=null; u.path=null; u.home={x:u.x,y:u.y}; u.stance=null; } toast('Orders cancelled.',true); }
+function cmdHold(){ for(const u of myUnits()){ u.order={type:'hold'}; u.target=null; u.path=null; u.stance='hold'; } }
+function stanceType(u,type){ return type==='move'&&u.stance==='attack'&&u.def.damage&&!u.def.heal ? 'amove' : type; }
+function stanceOf(units){ const s=units[0]&&units[0].stance; return s&&units.every(u=>u.stance===s)?s:null; }
 function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }
 function tryPlace(keep){
   const s=placementSpot(), d=BUILDINGS[ui.placing.type];
@@ -87,7 +91,7 @@ function placeFormation(units,wx,wy,dir,type){
   for(const [u,p] of assign){ let {x,y}=p;
     if(!walkableP(x,y)||!lineClear(wx,wy,x,y)){ const tx=Math.floor(wx/TILE), ty=Math.floor(wy/TILE);
       for(const o of SPIRAL){ const k=(tx+o.x)+','+(ty+o.y); if(taken.has(k)||!walkableT(tx+o.x,ty+o.y)) continue; taken.add(k); x=(tx+o.x+.5)*TILE; y=(ty+o.y+.5)*TILE; break; } }
-    u.order={type,x,y,pace}; u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
+    u.order={type:stanceType(u,type),x,y,pace}; u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
 }
 function setFormation(shape){
   const us=myUnits(); if(us.length<2){ toast('Select at least two units for a formation.',true); return; }
@@ -99,7 +103,7 @@ function setFormation(shape){
 }
 function moveGroup(units,wx,wy,type){
   const n=units.length; if(!n) return;
-  if(units.some(u=>u.faction==='corps')) anyBarker(units,type==='amove'?'attack':'move');
+  if(units.some(u=>u.faction==='corps')) anyBarker(units,type==='amove'||stanceOf(units)==='attack'?'attack':'move');
   const cx=units.reduce((s,u)=>s+u.x,0)/n, cy=units.reduce((s,u)=>s+u.y,0)/n;
   const form=units[0].formation;
   if(n>1 && form && units.every(u=>u.formation===form)){
@@ -121,6 +125,6 @@ function moveGroup(units,wx,wy,type){
     if(!walkableP(x,y)||!lineClear(wx,wy,x,y)){ // slot blocked: nearest free spot around the click
       const tx=Math.floor(wx/TILE), ty=Math.floor(wy/TILE);
       for(const s of SPIRAL){ const k=(tx+s.x)+','+(ty+s.y); if(taken.has(k)||!walkableT(tx+s.x,ty+s.y)) continue; taken.add(k); x=(tx+s.x+.5)*TILE+rand(-4,4); y=(ty+s.y+.5)*TILE+rand(-4,4); break; } }
-    const u=o.u; u.order={type,x,y,pace:n>1?pace:null}; u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
+    const u=o.u; u.order={type:stanceType(u,type),x,y,pace:n>1?pace:null}; u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
 }
 function selectEntities(list,add){ if(!add) stopFollow(); G.sel = add ? [...new Set([...G.sel,...list])] : list; G.selDirty=true; if(list.length){ SFX.play('select'); if(Math.random()<0.5) anyBarker(list,'select'); } }

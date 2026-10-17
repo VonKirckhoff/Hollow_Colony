@@ -4,6 +4,7 @@ function updateUnit(u,dt){
   const d=u.def;
   u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
   if(u.vet&&u.vet.risen&&u.hp<u.maxHp) u.hp=Math.min(u.maxHp,u.hp+RISEN.regen*dt);   /* the risen knit themselves back together */ u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
+  if(u.stance==='hold' && !u.order) u.order={type:'hold'};   /* defensive stance: hold wherever the last order left him */
   if(d.passive){ wildThink(u,dt); return; }
   if(d.escort){ escortThink(u,dt); return; }
   if(d.cloak && greyThink(u,dt)) return;

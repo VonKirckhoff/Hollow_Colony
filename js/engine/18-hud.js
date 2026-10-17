@@ -59,9 +59,10 @@ function cmdButtons(){
   const {units,blds}=primaryGroup(); const out=[];
   if(ui.placing){ out.push({row:'Placing',key:'Esc',glyph:'✕',tip:'Cancel|Stop placing the building.',act:()=>{ui.placing=null;G.selDirty=true;}}); return out; }
   if(units.length){
-    out.push({row:'Orders',key:'A',glyph:'⚔',tip:'Attack-move|Move and engage any enemy on the way.',act:()=>{ui.amove=true;cv.classList.add('amove');G.selDirty=true;},active:ui.amove});
-    out.push({row:'Orders',key:'S',glyph:'■',tip:'Stop|Cancel current orders.',act:cmdStop});
-    out.push({row:'Orders',key:'H',glyph:'⛉',tip:'Hold position|Stay put and only fire at targets in range.',act:cmdHold});
+    const st=stanceOf(units);
+    out.push({row:'Orders',key:'A',glyph:'⚔',tip:'Attack|Click a spot or an enemy: the squad moves and engages anything on the way. They stay aggressive on later moves until you cancel.',act:()=>{ui.amove=true;cv.classList.add('amove');G.selDirty=true;},active:ui.amove||st==='attack'});
+    out.push({row:'Orders',key:'H',glyph:'⛉',tip:'Defensive|Hold position and only fire at targets in range. After every move they hold the new spot, until you cancel.',act:cmdHold,active:st==='hold'});
+    out.push({row:'Orders',key:'S',glyph:'■',tip:'Cancel order|Stop, and drop the attack or defensive stance.',act:cmdStop});
     if(flareThrowers().length) out.push({row:'Orders',key:'L',glyph:'✶',cost:`${G.flares}`,off:!G.flares,tip:`Flare|A soldier throws a flare up to ${SQUAD.flare.range} tiles. It lights the ground for ${SQUAD.flare.time} seconds. ${G.flares} left this mission.`,act:startFlare,active:ui.flare});
     if(units.length>1){ const cur=units[0].formation, all=cur&&units.every(u=>u.formation===cur);
       for(const [shape,f] of Object.entries(FORMATIONS)) out.push({row:'Formation',key:f.key,glyph:f.glyph,active:all&&cur.shape===shape,
