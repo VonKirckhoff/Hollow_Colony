@@ -20,6 +20,7 @@
     <div class="spacer"></div>
     <span id="clock">00:00</span>
     <button class="tb-btn" id="btn-follow" type="button" data-tip="Camera follow|The camera moves along with your squad after an order. Key C.">Follow on</button>
+    <button class="tb-btn hide-sm" id="btn-tracker" type="button" data-tip="Motion tracker|Shows moving Swarm near your selected squad and beeps faster as they close in. Key K.">Tracker on</button>
     <button class="tb-btn" id="btn-sound" type="button">Sound on</button>
     <button class="tb-btn hide-sm" id="btn-speed" type="button">1×</button>
     <button class="tb-btn" id="btn-menu" type="button">Menu</button>
@@ -106,7 +107,16 @@
       <dt>Z / X / V</dt><dd>Formation for the selected squad: circle, wedge or square. Medics and Engineers go in the centre, Pyros and Gunners take the tip of the wedge. The squad keeps the shape when it moves. Press the same key again to release it.</dd>
       <dt>U / D</dt><dd>Engineer: pack up a Sentry Gun (or right-click an undamaged one) and deploy it again somewhere else. A carrying Engineer walks at 60% speed.</dd>
       <dt>C</dt><dd>Camera follow on/off. When on, the camera moves along with your squad after each order. Scrolling yourself pauses it until the next order.</dd>
+      <dt>K</dt><dd>Motion tracker on/off. It shows Swarm moving near your selected squad, even in the dark, and beeps faster as they close in.</dd>
+      <dt>L + click</dt><dd>Throw a flare (a Trooper, Gunner or Pyro must be selected). It lights the ground for 45 seconds. Three per mission, six in the dark.</dd>
       <dt>P / Esc</dt><dd>Pause menu. Esc also cancels building placement.</dd>
+    </dl>
+    <h2 class="h">Field notes</h2>
+    <dl class="manual">
+      <dt>Cover</dt><dd>Rock or a building between a soldier and a Spitter or Hunter cuts the damage he takes by 40%.</dd>
+      <dt>Suppression</dt><dd>Anything a Gunner hits slows down for a moment.</dd>
+      <dt>Acid blood</dt><dd>Swarm bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for a few seconds.</dd>
+      <dt>Swarm tactics</dt><dd>Big waves may send bait first or split up and come at you from the side.</dd>
     </dl>
     <h2 class="h">Factions</h2>
     <div class="factions">
@@ -210,6 +220,7 @@
 <script src="js/engine/19-commands.js"></script>
 <script src="js/engine/20-input.js"></script>
 <script src="js/engine/21-screens.js"></script>
-<script src="js/engine/22-main-loop.js"></script>
+<script src="js/engine/22-squad-life.js"></script>
+<script src="js/engine/23-main-loop.js"></script>
 </body>
 </html>

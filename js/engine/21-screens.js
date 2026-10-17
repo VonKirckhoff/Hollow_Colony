@@ -26,7 +26,7 @@ function buildVeterans(){
     : '<p class="lede">No veterans yet. Win a campaign mission and your experienced survivors will be listed here.</p>';
   $('#rank-list').innerHTML=RANKS.map(k=>`<div><b>${k.mark||'·'} ${k.name}</b><span>${k.xp} XP</span><span>${k.hp>1?`+${Math.round((k.hp-1)*100)}% HP, +${Math.round((k.dmg-1)*100)}% damage, +${Math.round((k.rate-1)*100)}% rate`:'base'}</span></div>`).join('');
   $('#fallen-wrap').hidden=!R.fallen.length;
-  $('#fallen-list').innerHTML=R.fallen.map(v=>`<span>${RANKS[v.rank].abbr} ${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}, ${v.mission}</i></span>`).join('');
+  $('#fallen-list').innerHTML=R.fallen.map(v=>`<div class="memorial"><b>${RANKS[v.rank].abbr} ${v.name}</b><i>${UNITS[v.type]?UNITS[v.type].name:''} · fell in ${v.mission}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}${v.at?` · ${new Date(v.at).toLocaleDateString()}`:''}</i></div>`).join('');
 }
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
@@ -91,7 +91,7 @@ function showEnd(){
   if(o.win && m.id!=='skirmish' && (promos.length||(rr&&(rr.joined.length||rr.fallen.length)))){ ev.hidden=false;
     ev.innerHTML=(promos.length?`<div><span class="lbl">Promotions</span> ${promos.join(' · ')}</div>`:'')+
       (rr&&rr.joined.length?`<div><span class="lbl">New on the roster</span> ${rr.joined.map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(' · ')}</div>`:'')+
-      (rr&&rr.fallen.length?`<div class="fallen"><span class="lbl">Fallen</span> ${rr.fallen.map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(' · ')}</div>`:''); }
+      (rr&&rr.fallen.length?`<div class="fallen"><span class="lbl">Fallen</span> ${rr.fallen.map(v=>`${RANKS[v.rank].abbr} ${v.name}${v.kills!=null?` <i>(${v.missions?`${v.missions} mission${v.missions>1?'s':''}, `:''}${v.kills} kill${v.kills===1?'':'s'})</i>`:''}`).join(' · ')}</div>`:''); }
   else ev.hidden=true;
   const S=G.stats; $('#e-stats').innerHTML=[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Losses',S.lost],['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]].map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
   const idx=MISSIONS.indexOf(m); let btns='';

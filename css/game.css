@@ -148,6 +148,8 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .ranks b{font-family:var(--f-display);font-weight:400;font-size:12px;color:var(--corps);}
 .fallen-list{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--dim);font-size:13px;}
 .fallen-list i{font-size:11px;}
+.fallen-list .memorial{display:flex;flex-direction:column;gap:2px;min-width:180px;padding:6px 10px;border-left:2px solid #6b2a26;background:rgba(17,19,26,.6);}
+.fallen-list .memorial b{color:var(--text,#e8ecf2);font-weight:600;}
 .vetnote{display:grid;gap:6px;background:rgba(17,19,26,.85);border:1px solid var(--line);padding:10px 14px;line-height:1.5;}
 .vetnote .fallen{color:var(--danger);}
 @media (max-width:640px){ .rrow{grid-template-columns:110px minmax(0,1fr) 50px;} .rrow>span:nth-child(3),.rrow>span:nth-child(5),.rrow>span:nth-child(6){display:none;} }

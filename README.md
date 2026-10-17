@@ -53,9 +53,11 @@ De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets 
 | **Spatie** | Naar de laatste melding springen |
 | **Z** / **X** / **V** | Formatie: cirkel / wig (speer) / vierkant. Nog eens drukken = formatie loslaten |
 | **C** | Camera volgen aan/uit |
+| **K** | Motion tracker aan/uit |
+| **L** + klik | Fakkel gooien (met een Trooper, Gunner of Pyro geselecteerd) |
 | **U** / **D** | Engineer: Sentry Gun inpakken / opstellen |
 | **P** / **Esc** | Pauzemenu (Esc annuleert ook plaatsen, inpakken en attack-move) |
-| Knoppen bovenaan | **Follow** (camera), **Sound** (geluid), **1×/1.5×/2×** (spelsnelheid), **Menu** |
+| Knoppen bovenaan | **Follow** (camera), **Tracker** (motion tracker), **Sound** (geluid), **1×/1.5×/2×** (spelsnelheid), **Menu** |
 
 **Trainen bij de Command Post:** T = Trooper, G = Gunner, M = Medic, F = Pyro, E = Engineer.
 **Bouwen met een Engineer:** R = Relay Tower, T = Sentry Gun, B = Barricade.
@@ -203,6 +205,17 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - `g.bury(punt, straal)` laat de grond **instorten**: hives bij dat punt sterven en er komt puin (onbegaanbaar) op de grond, behalve onder soldaten. Wie daardoor afgesneden raakt van het startpunt, wordt automatisch uitgegraven naar de dichtstbijzijnde open grond.
 - Instelbaar in `BUILDINGS.chargesite` (`armTime`) en `BUILDINGS.charge` (`hp`, `fuse`, `blast`, `blastDamage`).
 
+### Sfeer en tactiek
+- **Motion tracker** (rechtsonder, aan/uit met **K** of de knop *Tracker*): een radar rond je geselecteerde squad (of het midden van het scherm als je niets selecteert). Alles van de Swarm dat binnen 20 tegels beweegt, verschijnt als stip, ook in het donker of achter rotsen. Onderaan staat de afstand tot het dichtstbijzijnde contact in meter (rood onder 12 m). Hoe dichter, hoe sneller en hoger de piep. Een gecamoufleerde Grey zie je er niet op.
+- **Zuurbloed:** een Swarm-wezen dat sterft, spat zuur op soldaten binnen 1,2 tegels (6 schade, Brute meer, Brood Mother veel meer) en laat een plas achter die 5 seconden blijft branden. Wie erin staat, verliest hp. Afstand houden loont, Pyros lopen meer risico.
+- **Dekking:** staat er rots of een gebouw tussen een soldaat en een vijand die van ver schiet (Spitter, Grey Hunter), dan krijgt die soldaat 40% minder schade. Af en toe zie je "COVER". Tegen beten en klauwen helpt dekking niet.
+- **Onderdrukkingsvuur:** een vijand die door een **Gunner** geraakt wordt, loopt 1,4 seconden bijna half zo snel (blauwe pijltjes boven het wezen). Gunners houden zo een stormloop op.
+- **Fakkels** (**L**, dan klik): een Trooper, Gunner of Pyro gooit een fakkel tot 9 tegels ver. Ze brandt 45 seconden en verlicht een straal van 6 tegels. Je hebt er 3 per missie, 6 in donkere missies (instelbaar per missie met `flares:`).
+- **Stemmen:** soldaten zeggen iets bij selecteren, bewegen, aanvallen, het eerste contact, bij zware verwondingen, wanneer een kameraad sneuvelt (met zijn naam), bij genezen, bouwen en fakkels. Een tekstballon met een radioklikje, nooit meer dan één keer per 1,6 seconden. De zinnen staan in `VOICE` (js/content/veterans.js).
+- **Een Swarm met een plan:** een golf van minstens 6 wezens kiest een aanpak: **recht op je af**, **lokaas** (de snelste paar komen eerst, de rest wacht 9 seconden en valt aan terwijl jij achter het lokaas aan zit) of **flank** (de helft maakt een boog en komt van opzij). De eerste keer waarschuwt Kessler of Dr. Maas je. Verhouding instelbaar in `TACTICS` (js/engine/12-swarm-director.js).
+- **Persoonlijke veteranen:** sneuvelt een soldaat met een rang of met missies achter de rug, dan meldt de radio het: *"Sgt. Van Damme has fallen. 4 missions, 37 kills."* Op het eindscherm en op de gedenklijst (knop *Veterans*) staan bij elke gesneuvelde zijn type, de missie waarin hij viel, zijn aantal missies en kills, en de datum. Ook wie pas in die missie een rang haalde, komt op de gedenklijst.
+- Alle getallen staan samen in `SQUAD` bovenaan js/engine/22-squad-life.js.
+
 ### Camera volgen
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
 
@@ -276,7 +289,8 @@ js/content/                     SECTION 1 — CONTENT: alles wat je normaal aanp
   missions/NN-<id>.js           één missie per bestand: MISSIONS.push({ … })
   skirmish.js                   startopstelling voor skirmish
 js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
-  00-core.js … 22-main-loop.js  basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
+  00-core.js … 23-main-loop.js  basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
+                                (22-squad-life.js: tracker, zuur, dekking, fakkels, stemmen, gedenkteksten)
                                 pathfinding, beweging, gevecht, gedrag, gebouwen, economie,
                                 Swarm-AI, fog of war, mission API, update, berichten, tekenen,
                                 HUD, bevelen, invoer, schermen, hoofdlus
@@ -288,7 +302,7 @@ map-editor/                     de kaarteditor (leest de kaarten uit js/content/
 1. eerst de content, dan de engine;
 2. `_maps.js` vóór de kaarten en `_missions.js` vóór de missies;
 3. de volgorde van de missieregels is de volgorde van de campagne (de nummers in de bestandsnamen zijn er enkel voor het overzicht);
-4. de engineblokken in hun nummervolgorde. Code die meteen bij het laden iets uitvoert (niet in een functie) mag alleen dingen gebruiken uit eerdere bestanden; het opstarten zelf gebeurt helemaal op het einde, in `22-main-loop.js`.
+4. de engineblokken in hun nummervolgorde. Code die meteen bij het laden iets uitvoert (niet in een functie) mag alleen dingen gebruiken uit eerdere bestanden; het opstarten zelf gebeurt helemaal op het einde, in `23-main-loop.js`.
 
 ---
 
@@ -357,6 +371,7 @@ MISSIONS.push({
                                                                     // scripted:true = geen bestelknoppen, enkel g.airdrop()
   noTraining:true,                                                  // optioneel: Command Post traint niet
   dark:{ sight:0.5 },                                               // optioneel: missie in het donker (zie Duisternis)
+  flares:4,                                                         // optioneel: aantal fakkels (standaard 3, in het donker 6)
   objectives:[ { id:'doel', text:'Destroy all hives' }, { id:'extra', text:'Find crates', optional:true } ],
   triggers:[
     { when:g=>g.time>1, do:g=>g.say('Cmdr. Varga','Go!') },

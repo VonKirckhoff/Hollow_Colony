@@ -16,6 +16,7 @@ function findTarget(u,rangeTiles,unitsOnly){
 }
 function fire(u,t){
   const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1); const dm=u.dmgMul||1;
+  if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,'contact'); G.lastFight=G.time; }
   const ang=Math.atan2(t.y-u.y,t.x-u.x); u.angle=ang;
   const mx = u.kind==='building' ? u.x+Math.cos(ang)*12 : u.x+u.face*12, my = u.kind==='building' ? u.y-4+Math.sin(ang)*12 : u.y-8;
   if(u.faction==='corps'||isVisible(u)) SFX.play(d.attack==='bullet'?(u.type==='gunner'?'gunner':u.type==='sentry'?'sentry':'rifle'):d.attack==='flame'?'flame':d.attack==='acid'?'spit':d.attack==='plasma'?'plasma':'slash',u.x,u.y);
@@ -24,7 +25,7 @@ function fire(u,t){
     G.fx.push({k:'tracer',x1:mx,y1:my,x2:hx,y2:hy,t:0.06,max:0.06});
     G.fx.push({k:'flash',x:mx,y:my,t:0.05,max:0.05});
     if(Math.random()<0.35) G.fx.push({k:'spark',x:hx,y:hy,vx:rand(-40,40),vy:rand(-60,0),t:0.25,max:0.25,col:'#ffe2a8'});
-    damage(t,d.damage*dm,u);
+    damage(t,d.damage*dm,u); if(u.type==='gunner') suppress(t);
   } else if(d.attack==='flame'){
     for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
@@ -46,7 +47,9 @@ function damage(t,amt,src){
   if(t.bossState) t.bossState.calm=0;
   t.calm=0;
   if(t.def.armor) amt*=1-t.def.armor;
-  t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07; if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
+  amt=coverDamage(t,amt,src);
+  const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
+  if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction==='corps' && src && src.faction==='swarm') raiseAlert(t);
   if(t.kind==='unit' && src && !src.dead){
     if(t.def.passive){ const a=Math.atan2(t.y-src.y,t.x-src.x); t.order={type:'move',x:t.x+Math.cos(a)*120,y:t.y+Math.sin(a)*120}; setPath(t,t.order.x,t.order.y); }
@@ -75,6 +78,8 @@ function kill(e,src){
     if(e.faction==='corps'||isVisible(e)) SFX.play(e.faction==='swarm'?'squelch':'death',e.x,e.y);
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
     if(e.faction==='corps') G.stats.lost++;
+    if(e.faction==='corps') obituary(e);
+    if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
     if(e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){

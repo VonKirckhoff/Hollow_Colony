@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 2f. movement ---------- */
-function speedOf(u){ return u.def.speed*(u.carry?(u.def.carrySpeed||0.6):1)*(u.speedMul||1); }
+function speedOf(u){ return u.def.speed*(u.carry?(u.def.carrySpeed||0.6):1)*(u.speedMul||1)*(u.suppressT>0?SQUAD.suppress.slow:1); }
 function setPath(u,x,y){ u.path=findPath(u.x,u.y,x,y); u.pi=0; u.goal={x,y}; u.repathAt=G.time+1.2; }
 function stepMove(u,dt){
   if(!u.path||u.pi>=u.path.length) return true;

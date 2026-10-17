@@ -11,6 +11,7 @@ function computeFog(){
     if(e.def.generator&&e.powered) r=Math.max(r,e.def.light); else if(dk) r=Math.max(2,r*dk.sight);
     if(r>0) mark(e.x,e.y,r); }
   G.reveals=G.reveals.filter(r=>r.until>G.time); for(const r of G.reveals) mark(r.x,r.y,r.r);
+  for(const f of G.flareList) if(flareLit(f)) mark(f.x,f.y,SQUAD.flare.light);
 }
 let fogCanvas=null, fogCtx=null, fogImg=null;
 function paintFog(){

@@ -2,7 +2,7 @@
 /* ---------- 2h. unit behaviour ---------- */
 function updateUnit(u,dt){
   const d=u.def;
-  u.cd-=dt; u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
+  u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
   if(d.passive){ wildThink(u,dt); return; }
   if(d.escort){ escortThink(u,dt); return; }
   if(d.cloak && greyThink(u,dt)) return;
@@ -52,6 +52,7 @@ function engage(u,dt,hold){
   else goTo(u,t.x,t.y,dt,0.5);
 }
 function swarmThink(u,dt){
+  if(u.role==='wave' && tacticThink(u,dt)) return;
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;
   if(u.role==='guard'||u.role==='boss'){ if(!u.order && !u.target && u.guardAt) u.order={type:'guard',x:u.guardAt.x,y:u.guardAt.y,wait:0}; return; }
   if((u.role==='hunt'||u.role==='wave') && !u.target && (!u.order||u.order.type!=='amove')){
@@ -126,7 +127,7 @@ function medicThink(u,dt){
     const R=(u.order&&u.order.type==='move'?d.healRange:d.sight)*TILE;
     const cands=G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===u.faction&&e.def.bio&&e!==u&&e.hp<e.maxHp&&dist(u,e)<R);
     if(cands.length){ const worst=Math.min(...cands.map(hpZone)); const cur=ok(u.healTarget)?u.healTarget:null;
-      if(!cur || hpZone(cur)>worst) u.healTarget=cands.filter(e=>hpZone(e)===worst).reduce((a,b)=>dist(u,a)<=dist(u,b)?a:b); }
+      if(!cur || hpZone(cur)>worst){ u.healTarget=cands.filter(e=>hpZone(e)===worst).reduce((a,b)=>dist(u,a)<=dist(u,b)?a:b); if(u.healTarget!==cur&&Math.random()<0.4) bark(u,'heal'); } }
     else if(!ok(u.healTarget)) u.healTarget=null; }
   const t=ok(u.healTarget)?u.healTarget:null;
   const inRange = t && dist(u,t) <= d.healRange*TILE;
@@ -156,7 +157,7 @@ function builderThink(u,dt){
   if(o.type==='build' && !o.site){
     const bd=BUILDINGS[o.btype], cx=(o.tx+bd.size/2)*TILE, cy=(o.ty+bd.size/2)*TILE;
     if(Math.hypot(u.x-cx,u.y-cy) <= bd.size*TILE/2+u.r+18){
-      if(o.deploy && fielded(o.btype)>=limitOf(o.btype)){ toast(limitMsg(o.btype)); u.order=null; return; }
+      if(o.deploy && fielded(o.btype)-1>=limitOf(o.btype)){ toast(limitMsg(o.btype)); u.order=null; return; }   /* -1: fielded() already counts this Engineer's own order */
       if(!canPlace(o.btype,o.tx,o.ty,true)){ if(!o.deploy) G.salvage+=bd.cost; toast('Construction site is blocked.'); u.order=null; return; }
       if(o.deploy && !u.carry){ u.order=null; return; }
       const site=makeBuilding(o.btype,'corps',o.tx,o.ty,false);

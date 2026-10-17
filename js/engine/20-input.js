@@ -8,11 +8,13 @@ cv.addEventListener('pointerdown',e=>{
   const w=toWorld(e.clientX,e.clientY);
   if(e.pointerType==='touch'){ ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,touch:true,cam:{...G.cam}}; return; }
   if(e.button===1){ ui.pan={x:e.clientX,y:e.clientY,cam:{...G.cam}}; e.preventDefault(); return; }
+  if(e.button===2&&ui.flare){ ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.button===2){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; return; } if(ui.placing){ ui.placing=null; G.selDirty=true; return; } if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; return; } smartCommand(w.x,w.y); return; }
   if(e.button===0){
     if(ui.placing){ tryPlace(e.shiftKey); return; }
     if(ui.picking){ const s=entityAt(w.x,w.y,x=>x.faction==='corps'&&x.kind==='building'&&x.def.portable&&x.built); ui.picking=null; cv.classList.remove('amove'); G.selDirty=true;
       if(s) packSentry(s); else toast('Click one of your Sentry Guns.'); return; }
+    if(ui.flare){ throwFlare(w.x,w.y); return; }
     if(ui.amove){ attackMoveAt(w.x,w.y); return; }
     ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,box:false,shift:e.shiftKey};
   }
@@ -70,6 +72,7 @@ $('#btn-sound').addEventListener('click',()=>{ SFX.toggle(); soundLabel(); }); s
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
 function toggleFollow(){ ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
 $('#btn-follow').addEventListener('click',toggleFollow); followLabel();
+$('#btn-tracker').addEventListener('click',()=>toggleTracker());   /* label set at boot (23-main-loop.js) */
 $('#btn-speed').addEventListener('click',()=>{ if(!G) return; G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
 function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.target.closest('[data-tip]'); if(!el){ tip.hidden=true; return; }
   const [t,b]=el.dataset.tip.split('|'); tip.innerHTML=`<b>${t}</b>${b||''}`; tip.hidden=false; const r=tip.getBoundingClientRect();
@@ -79,9 +82,11 @@ window.addEventListener('keydown',e=>{
   ui.keys[e.key]=true;
   if(G.over) return;
   const k=e.key.toLowerCase();
+  if(e.key==='Escape'&&ui.flare){ ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.key==='Escape'){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; } else if(ui.placing){ ui.placing=null; G.selDirty=true; } else if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; } else pause(true); return; }
   if(k==='p'){ pause(true); return; }
   if(k==='c' && !e.ctrlKey && !e.metaKey){ toggleFollow(); return; }
+  if(k==='k' && !e.ctrlKey && !e.metaKey){ toggleTracker(); return; }
   if(/^[1-5]$/.test(e.key)){ if(e.ctrlKey||e.metaKey){ e.preventDefault(); G.groups[e.key]=[...G.sel]; toast(`Group ${e.key} saved.`,true); } else { const g=(G.groups[e.key]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); if(again) centerOn(g[0].x,g[0].y); } } return; }
   if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;

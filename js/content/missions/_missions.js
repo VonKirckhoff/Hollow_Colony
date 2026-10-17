@@ -7,6 +7,7 @@
    limits:    optional cap per building type, e.g. { sentry:3 } (packed-up sentries do not count)
    swarm:     AI tuning. waves:null means no attack waves.
    dark:      optional { sight }: the mission plays in the dark (sight × sight; running generators give light)
+   flares:    optional number of flares (default 3, or 6 in a dark mission)
    objectives: shown in the HUD. optional:true = not required.
    triggers:  { when:g=>bool, do:g=>{...}, repeat:true? } checked 4× per second.
    The mission API (g) — see makeApi() in the engine:

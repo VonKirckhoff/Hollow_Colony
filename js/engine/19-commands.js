@@ -11,7 +11,7 @@ function tryPlace(keep){
     if(!s.ok){ toast('Cannot deploy there.'); return; }
     const carriers=myUnits().filter(u=>u.carry&&u.carry.type===ui.placing.type&&!(u.order&&u.order.deploy)); if(!carriers.length){ ui.placing=null; G.selDirty=true; return; }
     const cx=(s.tx+d.size/2)*TILE, cy=(s.ty+d.size/2)*TILE; carriers.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy));
-    const u=carriers[0]; SFX.play('place'); u.order={type:'build',btype:ui.placing.type,tx:s.tx,ty:s.ty,deploy:true}; u.target=null; u.path=null; u.goal=null;
+    const u=carriers[0]; SFX.play('place'); bark(u,'build'); u.order={type:'build',btype:ui.placing.type,tx:s.tx,ty:s.ty,deploy:true}; u.target=null; u.path=null; u.goal=null;
     G.fx.push({k:'boom',x:cx,y:cy,t:0.3,max:0.3,r:14,col:'#ffe2a8'}); if(!keep||carriers.length<2){ ui.placing=null; } G.selDirty=true; return; }
   if(G.salvage<d.cost){ toast('Not enough salvage.'); return; }
   if(!s.ok){ toast(d.needsSite?'Relay Towers must be built on a free, explored relay pad.':'Cannot build there.'); return; }
@@ -20,7 +20,7 @@ function tryPlace(keep){
   eng.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy));
   const u=eng.find(e=>!e.order||e.order.type!=='build')||eng[0];
   if(u.order&&u.order.type==='build'&&!u.order.site) G.salvage+=BUILDINGS[u.order.btype].cost;
-  SFX.play('place'); G.salvage-=d.cost; u.order={type:'build',btype:ui.placing.type,tx:s.tx,ty:s.ty}; u.target=null; u.path=null; u.goal=null;
+  SFX.play('place'); bark(u,'build'); G.salvage-=d.cost; u.order={type:'build',btype:ui.placing.type,tx:s.tx,ty:s.ty}; u.target=null; u.path=null; u.goal=null;
   G.fx.push({k:'boom',x:cx,y:cy,t:0.3,max:0.3,r:14,col:'#ffe2a8'});
   if(!keep){ ui.placing=null; G.selDirty=true; }
 }
@@ -99,6 +99,7 @@ function setFormation(shape){
 }
 function moveGroup(units,wx,wy,type){
   const n=units.length; if(!n) return;
+  if(units.some(u=>u.faction==='corps')) anyBarker(units,type==='amove'?'attack':'move');
   const cx=units.reduce((s,u)=>s+u.x,0)/n, cy=units.reduce((s,u)=>s+u.y,0)/n;
   const form=units[0].formation;
   if(n>1 && form && units.every(u=>u.formation===form)){
@@ -122,4 +123,4 @@ function moveGroup(units,wx,wy,type){
       for(const s of SPIRAL){ const k=(tx+s.x)+','+(ty+s.y); if(taken.has(k)||!walkableT(tx+s.x,ty+s.y)) continue; taken.add(k); x=(tx+s.x+.5)*TILE+rand(-4,4); y=(ty+s.y+.5)*TILE+rand(-4,4); break; } }
     const u=o.u; u.order={type,x,y,pace:n>1?pace:null}; u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
 }
-function selectEntities(list,add){ if(!add) stopFollow(); G.sel = add ? [...new Set([...G.sel,...list])] : list; G.selDirty=true; if(list.length) SFX.play('select'); }
+function selectEntities(list,add){ if(!add) stopFollow(); G.sel = add ? [...new Set([...G.sel,...list])] : list; G.selDirty=true; if(list.length){ SFX.play('select'); if(Math.random()<0.5) anyBarker(list,'select'); } }

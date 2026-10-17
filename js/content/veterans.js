@@ -19,3 +19,16 @@ const SURNAMES = ['Reyes','Lindqvist','Novak','Tanaka','Moreau','Kowalski','Silv
   'Jacobs','Willems','Dupont','Lemaire','Hermans','Stevens','Michiels','Dewitte','Vandenberghe','Coppens','Smets','Bauer','Keller','Hoffmann','Wagner','Andersen','Holm','Berg','Eriksen','Dahl','Virtanen','Korhonen','Nowak','Zielinski','Horvat','Popescu','Romano','Bianchi','Marino','Navarro','Romero','Costa','Almeida','Murphy','Byrne','Walsh','Harper','Ito','Watanabe','Park'];
 /* Names are unique: nobody in the roster, among the fallen or in the current mission shares a name.
    Only when all of these are taken does a soldier get an initial ("J. Torres"). */
+
+/* Voice lines: shown in a speech bubble over a soldier. {name} is filled in where it makes sense. */
+const VOICE = {
+  select:  ['Ready.','Sir?','Go ahead.','Standing by.','Waiting on you.','Talk to me.'],
+  move:    ['Moving out.','On my way.','Copy that.','Moving.','Roger.','You got it.'],
+  attack:  ['Weapons free!','Engaging!','Let\'s go!','Light them up!','Going hot!'],
+  contact: ['Contact!','Movement, front!','Here they come!','Eyes up!','Hostiles!'],
+  down:    ['Man down!','We lost {name}!','{name} is down!','No! {name}!','Medic! ...too late.'],
+  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!'],
+  heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.'],
+  build:   ['On it.','Building.','Give me a minute.','Setting it up.'],
+  flare:   ['Flare out!','Lighting it up!','Light incoming!']
+};

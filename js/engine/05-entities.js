@@ -54,8 +54,14 @@ function settleRoster(){
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; alive.set(u.vet.id,u); }
   const res={ joined:[], fallen:[] };
   const P=G.promoted||{};
-  for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const rank=Math.max(v.rank,P[v.id]?P[v.id].rank:0);
-    R.fallen.unshift({ name:v.name, type:v.type, rank, xp:v.xp, mission:G.mission.title, at:Date.now() }); res.fallen.push({...v,rank}); } }
+  const FV=G.fallenVets||{}, ids=new Set(R.active.map(v=>v.id));
+  for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
+    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now() };
+    R.fallen.unshift(rec); res.fallen.push(rec); } }
+  // soldiers who earned a rank in this mission and fell are remembered too
+  for(const [id,f] of Object.entries(FV)){ if(ids.has(id)||!(f.rank>=1)) continue;
+    const rec={ name:f.name, type:f.type, rank:f.rank, xp:f.xp, kills:f.kills||0, missions:f.missions||0, mission:G.mission.title, at:Date.now() };
+    R.fallen.unshift(rec); res.fallen.push(rec); }
   // promotions of soldiers who made it out, highest rank only
   res.promoted=Object.entries(P).filter(([id])=>alive.has(id)).map(([,p])=>p);
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
