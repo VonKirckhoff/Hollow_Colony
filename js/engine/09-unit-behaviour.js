@@ -5,14 +5,13 @@ function updateUnit(u,dt){
   u.cd-=dt; u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
   if(d.passive){ wildThink(u,dt); return; }
   if(d.escort){ escortThink(u,dt); return; }
-  if(d.convoy){ convoyThink(u,dt); return; }
   if(d.cloak && greyThink(u,dt)) return;
   if(d.boss) bossThink(u,dt);
   if(u.faction==='swarm') swarmThink(u,dt);
   if(d.heal){ medicThink(u,dt); return; }
   if(d.builder && !u.order){ u.repScan=(u.repScan||0)-dt; if(u.repScan<=0){ u.repScan=0.5;
       // Idle engineers repair damaged structures (and finish construction sites) nearby on their own.
-      const b=nearestOf(u,e=>((e.kind==='building'&&!e.def.noBlock)||(e.kind==='unit'&&e.def.vehicle))&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&dist(u,e)<d.autoRepair*TILE);
+      const b=nearestOf(u,e=>e.kind==='building'&&!e.def.noBlock&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&dist(u,e)<d.autoRepair*TILE);
       if(b){ u.order={type:'repair',target:b,auto:true}; u.target=null; u.path=null; u.goal=null; } } }
   if(d.builder && u.order && (u.order.type==='build'||u.order.type==='repair'||u.order.type==='pack')){ builderThink(u,dt); return; }
   let o=u.order;
@@ -61,23 +60,6 @@ function swarmThink(u,dt){
   }
 }
 function nearestOf(from,filter){ let best=null, bd=Infinity; for(const e of G.ents){ if(e.dead||!filter(e)) continue; const d=dist(from,e); if(d<bd){ bd=d; best=e; } } return best; }
-/* Convoy vehicles drive the mission route on their own, in single file.
-   They halt while any hostile is within CONVOY.haltRange tiles, so the player has to clear the road. */
-const CONVOY={ haltRange:3.5, gap:1.2, arriveRange:1.5, padSpacing:2.4 };
-function convoyThink(u,dt){
-  const C=G.convoy; u.halted=false; u.waiting=false;
-  if(!C||!C.go||u.arrived){ u.threat=false; return; }
-  u.threat=!!nearestOf(u,e=>e.kind==='unit'&&(e.faction==='swarm'||e.faction==='grey')&&dist(e,u)<CONVOY.haltRange*TILE);
-  // the whole convoy stops when any vehicle is threatened, so it never gets strung out
-  if(C.units.some(o=>!o.dead&&!o.arrived&&o.threat)){ u.halted=true; return; }
-  const pred=C.units[u.convoyIdx-1];
-  if(pred && !pred.dead && !pred.arrived && dist(u,pred)<u.r+pred.r+CONVOY.gap*TILE){ u.waiting=true; return; }
-  const last=u.wp>=C.route.length-1, wp=C.route[u.wp];
-  // at the pad the first vehicle drives to the centre, the next ones park behind it
-  const ahead=C.units.filter(o=>o!==u&&!o.dead&&o.arrived).length;
-  if(dist(u,wp)<(last?0.8+ahead*CONVOY.padSpacing:CONVOY.arriveRange)*TILE){ if(last){ u.arrived=true; u.path=null; G.selDirty=true; return; } u.wp++; u.path=null; u.goal=null; return; }
-  goTo(u,wp.x,wp.y,dt,1.5);
-}
 /* The Brood Mother: wakes when your troops come close, lays eggs, sprays acid, calls her brood at
    75/50/25% health (and gets faster each time) and regenerates when nobody has hurt her for a while. */
 function layEgg(x,y,type){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(!walkableT(tx,ty)) return;

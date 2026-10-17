@@ -45,9 +45,6 @@ const UNITS = {
     hp:140, speed:60, radius:9, sight:6, range:0, bio:true, escort:true, supply:0,
     desc:'Carries the data core. Follows your nearest soldier unless you give her an order. She must survive.' },
 
-  habitat: { name:'Mobile Habitat', faction:'corps', sprite:'habitat', role:'Tracked evacuation module', scale:3,
-    hp:900, speed:14, radius:26, sight:5, range:0, convoy:true, vehicle:true, supply:0, armor:0.5,
-    desc:'A huge, slow tracked module packed with miners. Drives the route on its own and stops when the Swarm is close. Engineers can repair it.' },
 
   hunter: { name:'Grey Hunter', faction:'grey', sprite:'hunter', role:'Unknown hunter',
     hp:720, speed:88, radius:10, sight:9, range:4.5, damage:26, cooldown:1.6, attack:'plasma',

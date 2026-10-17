@@ -33,7 +33,7 @@ De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets 
 | **The Swarm** (biologische zwerm) | nee (AI) | Groeit vanuit hives. Wat de Swarm doodt, wordt een cocon die uitkomt als nieuwe Swarm. |
 | **The Grey** (jagers) | nee (AI, vanaf missie 4) | Gecamoufleerde jagers die op de sterkste prooi jagen en zich terugtrekken als ze verliezen. |
 
-**Spelvormen:** een campagne van 7 missies en skirmish (kies een kaart en vernietig alle hives). Er zijn drie moeilijkheidsgraden: Easy, Normal en Hard.
+**Spelvormen:** een campagne van 6 missies (missie 5 wordt vervangen) en skirmish (kies een kaart en vernietig alle hives). Er zijn drie moeilijkheidsgraden: Easy, Normal en Hard.
 
 ---
 
@@ -189,14 +189,6 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - Onder 45% levenspunten trekt hij zich terug en verdwijnt (`retreatAt`).
 - In missie 6 duikt er een op met een **wapenstilstand**: hij negeert jou en jaagt op de Brood Mother. Dat doet hij voor de trofee, niet om jou te helpen.
 
-### Konvooi (missie 5)
-- **Mobile Habitats** zijn reusachtige, trage rupsvoertuigen (ongeveer drie keer zo groot als een soldaat) met zware bepantsering (ze krijgen maar de helft van de schade). Je bestuurt ze niet zelf: ze kruipen in colonne de oranje gestippelde route (ook op de minimap).
-- Komt de Swarm binnen 3,5 tegels van één voertuig, dan stopt het **hele konvooi** ("HALTED" boven de voertuigen), zodat het niet uit elkaar valt. Ruim de weg op en ze rijden verder.
-- Voertuigen houden onderling afstand ("WAIT"). Op het platform rijdt het eerste naar het midden en parkeren de volgende erachter.
-- **Engineers repareren de voertuigen**, automatisch of met rechtsklik. Medics kunnen ze niet genezen.
-- Aanvalsgolven in deze missie komen van de hives het dichtst bij het voorste voertuig.
-- Instelbaar in `CONVOY` in de code: `haltRange`, `gap`, `arriveRange`, `padSpacing`.
-
 ### Camera volgen
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
 
@@ -216,7 +208,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. |
 | 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
-| 5 | **Last Convoy** | Ridgeback Canyon | Begeleid drie trage Mobile Habitats met mijnwerkers van Ridgeback Mine naar het lanceerplatform in het oosten. Je hebt anderhalve minuut voorbereiding en maximaal 3 Sentry Guns tegelijk. Minstens 2 habitats moeten aankomen. |
+| 5 | *nieuwe missie, nog te maken* | | Vervangt Last Convoy. Tot ze er is, speel je meteen van The Hollow Colony door naar Brood Mother. |
 | 6 | **Brood Mother** | Maw Depths | Lange missie in de grotten onder Tycho Maw. Bouw een basis bij de grotingang, brand drie zwaar bewaakte eierkamers plat (ze groeien terug als je ze met rust laat) en dood daarna de Brood Mother in haar lair. Het levende membraan voor de lair verdwijnt pas als alle kamers weg zijn. Maximaal 15 man; verliezen vul je aan via de Landing Zone. |
 | 7 | **High Ground** | Selene Highlands | Verover drie uplink-bakens op plateaus die je enkel via hellingen bereikt, en houd daarna alle drie tegelijk vast tot de upload van 6 minuten klaar is. Verlies je er één, dan stopt de upload. Tijdens de upload komt er ongeveer elke 35 seconden een golf op een baken (om de derde op twee bakens), maar nooit zolang er al veel Swarm op het veld is. Je start met twee Sentry Guns bij de basis. Versterkingen via de Command Post of de Landing Zone ernaast, max. 24 man. |
 
@@ -224,7 +216,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 - De campagnelijst toont bij elke gewonnen missie de **moeilijkheidsgraad** (Easy, Normal of Hard) en je beste tijd. Win je later op een hogere moeilijkheidsgraad, dan wordt die bewaard. Ook de briefing en het eindscherm tonen het.
 - **Reset campaign** onderaan de campagnelijst wist alle voortgang. Je moet twee keer klikken binnen 4 seconden, zodat het niet per ongeluk gebeurt.
 
-De missies zijn nu bewust langer gemaakt. Sentry-limieten per missie: Hold Kappa 4, Burn the Brood 5, The Hollow Colony 1, Last Convoy 3, Brood Mother 6, High Ground 8 (waarvan 2 al bij de start). Een missie wordt vrijgegeven als je de vorige wint. De voortgang wordt in de browser bewaard.
+De missies zijn nu bewust langer gemaakt. Sentry-limieten per missie: Hold Kappa 4, Burn the Brood 5, The Hollow Colony 1, Brood Mother 6, High Ground 8 (waarvan 2 al bij de start). Een missie wordt vrijgegeven als je de vorige wint. De voortgang wordt in de browser bewaard.
 
 ---
 
@@ -372,7 +364,7 @@ MISSIONS.push({
    - `attack`: `'bullet'`, `'flame'`, `'acid'`, `'plasma'` of `'melee'`
    - Corps: `cost`, `supply`, `buildTime`, `key` (sneltoets)
    - Swarm: `biomass`, `weight`, `unlock`
-   - Speciale vlaggen: `bio` (kan cocon worden, kan genezen worden), `heal`, `builder`, `escort`, `convoy` (rijdt zelf een route), `vehicle` (Engineers kunnen repareren), `armor` (0–1, deel van de schade dat geblokkeerd wordt), `boss`, `cloak`, `passive`, `scale`, `bonus:{type:factor}`
+   - Speciale vlaggen: `bio` (kan cocon worden, kan genezen worden), `heal`, `builder`, `escort`, `armor` (0–1, deel van de schade dat geblokkeerd wordt), `boss`, `cloak`, `passive`, `scale`, `bonus:{type:factor}`
 3. Wil je de eenheid kunnen trainen, voeg ze dan toe aan `trains` van de `hq` in `BUILDINGS`.
 
 ### Een nieuw gebouw
@@ -410,8 +402,6 @@ In triggers krijg je een object `g` mee:
 | `g.give(salvage)` | Salvage geven |
 | `g.wave(budget, doel)` | Meteen een Swarm-golf sturen. Optioneel `doel` (punt of eenheid): de golf komt dan van de twee dichtstbijzijnde hives en loopt naar dat doel. |
 | `g.setTimer(seconden, label)`, `g.timerLeft()`, `g.clearTimer()` | Aftelklok in de bovenbalk |
-| `g.convoy(lijst, route)`, `g.convoyGo()` | Eenheden als konvooi een route laten volgen (lijst van punten), en het vertrek starten |
-| `g.convoyArrived()`, `g.convoyHalted()`, `g.convoyLead()` | Aantal aangekomen voertuigen; of het konvooi stilstaat; het voorste voertuig |
 | `g.win(tekst)`, `g.lose(tekst)` | Missie winnen of verliezen |
 
 Een `punt` is een kaartteken (`'P'`, `'1'`, `'a'`) of een tegelcoördinaat `{x, y}`.
@@ -420,7 +410,7 @@ Een `punt` is een kaartteken (`'P'`, `'1'`, `'a'`) of een tegelcoördinaat `{x, 
 
 ## Instelbare waarden
 
-De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` staat in `js/engine/19-commands.js`, `CONVOY` en `HP_ZONES` in `js/engine/09-unit-behaviour.js`, `DIFFICULTY` in `js/content/difficulty.js`, en de missiewaarden in het bestand van die missie.
+De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` staat in `js/engine/19-commands.js`, `HP_ZONES` in `js/engine/09-unit-behaviour.js`, `DIFFICULTY` in `js/content/difficulty.js`, en de missiewaarden in het bestand van die missie.
 
 | Waar | Waarde | Betekenis |
 |---|---|---|
@@ -431,8 +421,6 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 | `HP_ZONES` | `red` (0.25), `orange` (0.5) | Grenzen voor de kleuren van de levensbalk en de triage van de Medic |
 | `MAX_SUPPLY` | 50 | Maximale supply |
 | missie `limits` | bv. `{ sentry:3 }` | Maximum aantal van een gebouwtype tegelijk in het veld |
-| `CONVOY` | `haltRange` (3.5), `gap` (1.2), `arriveRange` (1.5), `padSpacing` (2.4) | Konvooi: stopafstand tot vijanden, vrije ruimte tussen voertuigen, wanneer een routepunt bereikt is, en parkeerafstand op het platform (in tegels) |
-| `UNITS.habitat` | `hp` (900), `speed` (14), `armor` (0.5), `scale` (3) | Levenspunten, snelheid, bepantsering (deel van de schade dat geblokkeerd wordt) en grootte van de Mobile Habitats |
 | `DIFFICULTY` | `hp`, `budget`, `interval` | Factoren voor Swarm-levenspunten, golfgrootte en tijd tussen golven |
 | `UNITS.engineer` | `autoRepair` (7) | Straal in tegels voor automatische reparatie |
 | | `carrySpeed` (0.6) | Snelheidsfactor tijdens het dragen |

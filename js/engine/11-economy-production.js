@@ -2,7 +2,7 @@
 /* ---------- 2j. economy & production ---------- */
 /* Optional per-mission troop cap (landingZone.max): units on the field + everything ordered or in training. */
 function troopCount(){ let n=0; for(const e of G.ents){ if(e.dead||e.faction!=='corps') continue;
-    if(e.kind==='unit'&&!e.def.convoy&&!e.def.escort) n++; if(e.kind==='building'){ n+=e.queue.length; if(e.flight) n+=e.flight.cargo.length; } } return n; }
+    if(e.kind==='unit'&&!e.def.escort) n++; if(e.kind==='building'){ n+=e.queue.length; if(e.flight) n+=e.flight.cargo.length; } } return n; }
 function troopCap(){ const lz=G.mission.landingZone; return lz&&lz.max?lz.max:Infinity; }
 function supply(){ let used=0, cap=0;
   for(const e of G.ents){ if(e.dead||e.faction!=='corps') continue;

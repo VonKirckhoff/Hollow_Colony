@@ -36,7 +36,7 @@ function makeApi(){
       if(lz.flight) lz.flight.cargo.push(...cargo); else lz.flight={ t:Math.max(5,delay), total:Math.max(5,delay), cargo };
       if(rallyAt) lz.flight.rally=ptWorld(rallyAt); G.selDirty=true; },
     /* troops(): living Corps soldiers on the map (all of them, wherever they are). */
-    troops:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.def.convoy).length,
+    troops:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps').length,
     openWall(tag){ for(const e of G.ents) if((e.type==='membrane'||e.type==='door')&&e.tag===tag&&!e.dead){
         if(e.type==='door'){ e.dead=true; e.hp=0; setBlock(e,0); for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y,vx:rand(-50,50),vy:rand(-60,0),t:0.5,max:0.5,col:'#ffd23f'}); SFX.play('ack',e.x,e.y); }
         else { e.invuln=false; kill(e,null); } } },
@@ -50,12 +50,6 @@ function makeApi(){
     where:at=>ptWorld(at),
     wave:(budget,aim)=>launchWave(budget*G.diff.budget, typeof aim==='string'?ptWorld(aim):aim),
     clearTimer(){ G.timer=null; },
-    convoy(list,route){ G.convoy={ units:list, route:route.map(ptWorld), go:false };
-      list.forEach((u,i)=>{ u.wp=0; u.convoyIdx=i; }); },
-    convoyGo(){ if(G.convoy) G.convoy.go=true; },
-    convoyArrived:()=>G.convoy?G.convoy.units.filter(u=>!u.dead&&u.arrived).length:0,
-    convoyHalted:()=>G.convoy?G.convoy.units.some(u=>!u.dead&&u.halted):false,
-    convoyLead(){ if(!G.convoy) return null; const al=G.convoy.units.filter(u=>!u.dead&&!u.arrived); return al.sort((a,b)=>b.wp-a.wp)[0]||null; },
     setTimer(seconds,label){ G.timer={end:G.time+seconds,label}; },
     timerLeft:()=>G.timer?Math.max(0,G.timer.end-G.time):Infinity,
     win:text=>endGame(true,text), lose:text=>endGame(false,text)

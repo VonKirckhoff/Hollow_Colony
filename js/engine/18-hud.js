@@ -6,7 +6,7 @@ function hudTick(){
   const s=supply();
   $('#r-salvage').textContent=Math.floor(G.salvage);
   const bb=$('#bossbar'), B=G.boss; if(B && !B.dead && B.awake){ bb.hidden=false; $('#boss-name').textContent=`${G.bossTitle.toUpperCase()}${B.bossState&&B.bossState.phase?' · PHASE '+(B.bossState.phase+1):''}`; $('#boss-hp').style.width=(clamp(B.hp/B.maxHp,0,1)*100)+'%'; } else bb.hidden=true;
-  const mine=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.def.convoy); const capT=troopCap(); $('#r-troops').textContent=capT<Infinity?`${troopCount()}/${capT}`:mine.length; $('#r-troops').classList.toggle('warn',capT<Infinity&&troopCount()>=capT);
+  const mine=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'); const capT=troopCap(); $('#r-troops').textContent=capT<Infinity?`${troopCount()}/${capT}`:mine.length; $('#r-troops').classList.toggle('warn',capT<Infinity&&troopCount()>=capT);
   const per={}; for(const u of mine) per[u.def.name]=(per[u.def.name]||0)+1;
   $('#r-troops-wrap').dataset.tip='Troops on the field|'+(Object.entries(per).map(([k,v])=>`${v}× ${k}`).join(', ')||'None');
   $('#r-supply-wrap').hidden=!!(G.mission.noTraining||G.mission.landingZone);   // with a Landing Zone the troop limit replaces supply
@@ -21,7 +21,7 @@ function hudTick(){
   renderMinimap();
 }
 function primaryGroup(){
-  const units=G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.convoy), blds=G.sel.filter(e=>e.kind==='building'&&e.faction==='corps');
+  const units=G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'), blds=G.sel.filter(e=>e.kind==='building'&&e.faction==='corps');
   return {units,blds};
 }
 function renderSelection(){
@@ -30,7 +30,7 @@ function renderSelection(){
   if(sel.length===1){ const e=sel[0], d=e.def, img=iconUrl(e.type), f=clamp(e.hp/e.maxHp,0,1);
     let stats='';
     if(e.kind==='unit'){ stats = d.heal ? `<span>Heal <b>${d.heal}/s</b></span><span>Range <b>${d.healRange}</b></span>` : d.damage ? `<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span><span>Rate <b>${(1/d.cooldown).toFixed(1)}/s</b></span>` : '';
-      stats+=`<span>Speed <b>${Math.round(speedOf(e))}</b></span>`; if(e.def.convoy) stats+=`<span>Status <b>${e.arrived?'Arrived':!G.convoy||!G.convoy.go?'Waiting to depart':e.halted?'Halted, enemies near':e.waiting?'Keeping distance':'Driving'}</b></span>`; if(e.carry) stats+=`<span>Carrying <b>${BUILDINGS[e.carry.type].name}</b></span>`; }
+      stats+=`<span>Speed <b>${Math.round(speedOf(e))}</b></span>`; if(e.carry) stats+=`<span>Carrying <b>${BUILDINGS[e.carry.type].name}</b></span>`; }
     else { if(d.supply) stats+=`<span>Supply <b>+${d.supply}</b></span>`; if(d.income) stats+=`<span>Income <b>${d.income}/s</b></span>`; if(d.damage) stats+=`<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span>`;
       if(e.type==='cocoon') stats+=`<span>Hatches in <b>${Math.max(0,e.hatchT).toFixed(1)}s</b></span>`; if(!e.built) stats+=`<span>Built <b>${Math.floor(e.progress*100)}%</b></span>`; }
     if(e.vet){ const nx=RANKS[e.vet.rank+1]; stats+=`<span>Rank <b>${RANKS[e.vet.rank].name}</b></span><span>XP <b>${e.vet.xp}${nx?' / '+nx.xp:''}</b></span><span>Kills <b>${e.vet.kills}</b></span>${e.vet.missions?`<span>Missions <b>${e.vet.missions}</b></span>`:''}`; }
@@ -76,7 +76,7 @@ function cmdButtons(){
   return out;
 }
 let CMDS=[];
-const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','habitat','sentry','relay','barricade'];
+const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sentry','relay','barricade'];
 function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name} · ${e.def.name}` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
 const CMD_ROWS=['Orders','Formation','Build','Sentry','Train','Dropship','Placing'];

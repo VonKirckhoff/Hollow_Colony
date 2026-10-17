@@ -9,7 +9,7 @@ function updateBuilding(b,dt){
   if(d.income) G.salvage+=d.income*dt;
   if(d.capture){
     const R1=2.5*TILE, R2=3.5*TILE;
-    const ours=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.def.convoy&&dist(e,b)<R1);
+    const ours=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&dist(e,b)<R1);
     const theirs=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&dist(e,b)<R2);
     b.state = ours&&theirs ? 'contested' : ours ? 'ours' : theirs ? 'theirs' : 'idle';
     if(b.state==='ours'){ b.cap=Math.min(1,(b.cap||0)+dt/d.captureTime); if(b.cap>=1 && !b.owned){ b.owned=true; SFX.play('complete'); say('Uplink',`${b.label||'Beacon'} secured.`,'sys'); G.pings.push({x:b.x,y:b.y,t:0,col:'#5fe3b0'}); } }
