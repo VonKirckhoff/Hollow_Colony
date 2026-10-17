@@ -33,7 +33,7 @@ De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets 
 | **The Swarm** (biologische zwerm) | nee (AI) | Groeit vanuit hives. Wat de Swarm doodt, wordt een cocon die uitkomt als nieuwe Swarm. |
 | **The Grey** (jagers) | nee (AI, vanaf missie 4) | Gecamoufleerde jagers die op de sterkste prooi jagen en zich terugtrekken als ze verliezen. |
 
-**Spelvormen:** een campagne van 6 missies (missie 5 wordt vervangen) en skirmish (kies een kaart en vernietig alle hives). Er zijn drie moeilijkheidsgraden: Easy, Normal en Hard.
+**Spelvormen:** een campagne van 8 missies en skirmish (kies een kaart en vernietig alle hives). Er zijn drie moeilijkheidsgraden: Easy, Normal en Hard.
 
 ---
 
@@ -107,7 +107,7 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 ### Plateaus
 - Plateaus zijn verhoogde vlaktes, omringd door **kliffen** waar je niet over kan. De enige weg naar boven is een gestreepte **helling**. Dat maakt ze makkelijk te verdedigen en traag om te bereiken, voor beide kanten.
 
-### Uplink-bakens (missie 7)
+### Uplink-bakens (missie 8)
 - Ga met eenheden naast een baken staan zonder Swarm in de buurt: na 20 seconden is het van jou (ring wordt groen).
 - Staat de Swarm er alleen bij, dan loopt de ring terug en verlies je het baken na 15 seconden (rood). Zijn beide partijen er, dan is het betwist (oranje).
 - Bakens zijn markeringen op de grond: je kan erover lopen en de vijand kan ze niet vernietigen.
@@ -162,7 +162,7 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - **Hives groeien terug** (6 hp per seconde) als ze 12 seconden niet geraakt zijn. Even aanvallen en weglopen helpt dus niet; doorduwen wel. Instelbaar met `regen` en `regenDelay` bij `BUILDINGS.hive`.
 - **Cocons:** elke levende eenheid die door de Swarm sterft, wordt een cocon die na 5 seconden uitkomt. Een gesneuvelde Gunner of Pyro wordt een Drone, de rest een Crawler. Pyros doen drievoudige schade aan cocons.
 
-### Landing Zone en troepenlimiet (missie 1, 6 en 7)
+### Landing Zone en troepenlimiet (missie 1, 6, 7 en 8)
 - Bij de basis ligt een **Landing Zone**: een markering op de grond met een grote H. Eenheden lopen er gewoon over, de vijand negeert ze en kan ze niet beschadigen, en je kan er niets op bouwen. Klik erop om ze te selecteren. Selecteer ze om versterkingen te bestellen: Trooper, Gunner, Medic, Pyro of Engineer, met dezelfde prijs en sneltoetsen als bij de Command Post.
 - Een **dropship** brengt ze na 25 seconden. Bestellingen tijdens de vlucht gaan mee, tot 6 per vlucht. Je ziet het toestel landen, de nieuwe soldaten staan op het platform, en in het selectiepaneel staan de lading en de resterende tijd.
 - Rechtsklik op de grond met de Landing Zone geselecteerd om een verzamelpunt te zetten.
@@ -173,7 +173,7 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - In missies met een Landing Zone vervangt de troepenlimiet de supply: Supply is daar verborgen.
 - Instellen per missie: `landingZone:{ tx, ty, max, delay }` (positie linksboven, limiet, vliegtijd) en `noTraining:true`. De lading per vlucht staat in `BUILDINGS.lz.cargo`.
 
-### De Brood Mother (missie 6)
+### De Brood Mother (missie 7)
 - Ze is reusachtig, staat meestal stil en spuwt zuur. Elke paar seconden **chargeert** ze in je linies ("CHARGE!"): trek je mensen dan terug.
 - Ze legt eieren die uitkomen als Crawlers of Drones. Brand ze met Pyros voor ze uitkomen.
 - Bij 75%, 50% en 25% roept ze haar broed op en wordt ze telkens sneller.
@@ -183,11 +183,25 @@ De Medic is ongewapend. Bij een aanvalsbevel volgt hij de groep op korte afstand
 - Je soldaten pakken eerst de kleinere vijanden rond haar aan en schieten daarna op haar.
 - Instelbaar bij `UNITS.broodmother`: `hp`, `damage`, `regen`, `eggEvery`, `eggs`, `spitEvery`, `spit`, `spitDamage`, `chargeEvery`, `chargeTime`, `chargeSpeed`, `rootSpeed`.
 
-### The Grey Hunter (missie 4 en 6)
+### The Grey Hunter (missie 4 en 7)
 - Hij is gecamoufleerd: in je zichtveld zie je alleen een flikkering. Je kan hem pas aanvallen wanneer hij net gevuurd heeft, geraakt werd of dichtbij komt.
 - Hij jaagt op je sterkste eenheid met plasmaschoten en valt ook de Swarm aan.
 - Onder 45% levenspunten trekt hij zich terug en verdwijnt (`retreatAt`).
-- In missie 6 duikt er een op met een **wapenstilstand**: hij negeert jou en jaagt op de Brood Mother. Dat doet hij voor de trofee, niet om jou te helpen.
+- In missie 7 duikt er een op met een **wapenstilstand**: hij negeert jou en jaagt op de Brood Mother. Dat doet hij voor de trofee, niet om jou te helpen.
+
+### Duisternis en generatoren (missie 5)
+- Een missie met `dark:{ sight:0.5 }` speelt **in het donker**: alle eenheden en gebouwen zien maar de helft zo ver (minstens 2 tegels), en wat je eerder zag, zakt bijna helemaal weg in het zwart.
+- **Generatoren** zijn missiegebouwen. Ze starten kapot (5% hp). Engineers herstellen ze (automatisch in de buurt of met rechtsklik). Op 100% gaan ze **online**: ze geven licht in een straal van 9 tegels, en dat gebied zie je dan gewoon.
+- Licht trekt de Swarm aan: in Blackout komt er 10 seconden nadat een generator aanslaat een golf op af, en daarna elke 45 seconden zolang hij draait (niet als er al 40 of meer Swarm op het veld zijn).
+- Zakt een generator onder **60%**, dan valt hij uit. Kapot gaan kan hij niet: hij blijft op minstens 1 hp en moet weer helemaal hersteld worden.
+- Boven elke generator staat ONLINE of OFFLINE met het percentage. Instelbaar in `BUILDINGS.generator`: `hp`, `startHp`, `failAt`, `light`.
+
+### Seismische ladingen en instortingen (missie 6)
+- Een **ladingplek** (rood-zwart kader) maak je met `g.chargeSite(punt, tag)`. Een Engineer die er **stil op staat**, maakt de lading scherp in 20 seconden (ARMING %). Loopt hij weg, dan blijft de voortgang staan.
+- De **lading** zelf (320 hp) ontploft na 75 seconden. Boven de lading telt de tijd af. Engineers kunnen ze repareren. Wordt ze vernietigd, dan komt de plek terug en moet je opnieuw beginnen.
+- De ontploffing doet 450 schade aan alle vijanden binnen 4,5 tegels en laat het beeld schudden.
+- `g.bury(punt, straal)` laat de grond **instorten**: hives bij dat punt sterven en er komt puin (onbegaanbaar) op de grond, behalve onder soldaten. Wie daardoor afgesneden raakt van het startpunt, wordt automatisch uitgegraven naar de dichtstbijzijnde open grond.
+- Instelbaar in `BUILDINGS.chargesite` (`armTime`) en `BUILDINGS.charge` (`hp`, `fuse`, `blast`, `blastDamage`).
 
 ### Camera volgen
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
@@ -208,9 +222,10 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. |
 | 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
-| 5 | *nieuwe missie, nog te maken* | | Vervangt Last Convoy. Tot ze er is, speel je meteen van The Hollow Colony door naar Brood Mother. |
-| 6 | **Brood Mother** | Maw Depths | Lange missie in de grotten onder Tycho Maw. Bouw een basis bij de grotingang, brand drie zwaar bewaakte eierkamers plat (ze groeien terug als je ze met rust laat) en dood daarna de Brood Mother in haar lair. Het levende membraan voor de lair verdwijnt pas als alle kamers weg zijn. Maximaal 15 man; verliezen vul je aan via de Landing Zone. |
-| 7 | **High Ground** | Selene Highlands | Verover drie uplink-bakens op plateaus die je enkel via hellingen bereikt, en houd daarna alle drie tegelijk vast tot de upload van 6 minuten klaar is. Verlies je er één, dan stopt de upload. Tijdens de upload komt er ongeveer elke 35 seconden een golf op een baken (om de derde op twee bakens), maar nooit zolang er al veel Swarm op het veld is. Je start met twee Sentry Guns bij de basis. Versterkingen via de Command Post of de Landing Zone ernaast, max. 24 man. |
+| 5 | **Blackout** | Mare Colony | Mijnstadje zonder stroom, **in het donker**. Je ziet maar half zo ver. Herstel met je Engineers de vier generatoren in de hoeken; een draaiende generator verlicht zijn straten maar trekt de Swarm aan, en valt uit onder 60%. Je wint als ze **alle vier tegelijk** draaien. De Command Post in het plein moet overleven. |
+| 6 | **Dead Signal** | Ridgeback Canyon | Kleine squad zonder basis. Maak naast drie nesten een **seismische lading** scherp (een Engineer staat 20 s op de plek) en houd elke lading 75 s heel tot ze ontploft; elke ontploffing begraaft het nest. Na elke lading brengt het dropship twee schutters naar je toe. Daarna: iedereen naar het lanceerplatform in het oosten, waar de pickup 90 s later landt. |
+| 7 | **Brood Mother** | Maw Depths | Lange missie in de grotten onder Tycho Maw. Bouw een basis bij de grotingang, brand drie zwaar bewaakte eierkamers plat (ze groeien terug als je ze met rust laat) en dood daarna de Brood Mother in haar lair. Het levende membraan voor de lair verdwijnt pas als alle kamers weg zijn. Maximaal 15 man; verliezen vul je aan via de Landing Zone. |
+| 8 | **High Ground** | Selene Highlands | Verover drie uplink-bakens op plateaus die je enkel via hellingen bereikt, en houd daarna alle drie tegelijk vast tot de upload van 6 minuten klaar is. Verlies je er één, dan stopt de upload. Tijdens de upload komt er ongeveer elke 35 seconden een golf op een baken (om de derde op twee bakens), maar nooit zolang er al veel Swarm op het veld is. Je start met twee Sentry Guns bij de basis. Versterkingen via de Command Post of de Landing Zone ernaast, max. 24 man. |
 
 **Voortgang:**
 - De campagnelijst toont bij elke gewonnen missie de **moeilijkheidsgraad** (Easy, Normal of Hard) en je beste tijd. Win je later op een hogere moeilijkheidsgraad, dan wordt die bewaard. Ook de briefing en het eindscherm tonen het.
@@ -341,6 +356,7 @@ MISSIONS.push({
   landingZone:{ tx:16, ty:44, max:15, delay:25 },                   // optioneel: Landing Zone + troepenlimiet
                                                                     // scripted:true = geen bestelknoppen, enkel g.airdrop()
   noTraining:true,                                                  // optioneel: Command Post traint niet
+  dark:{ sight:0.5 },                                               // optioneel: missie in het donker (zie Duisternis)
   objectives:[ { id:'doel', text:'Destroy all hives' }, { id:'extra', text:'Find crates', optional:true } ],
   triggers:[
     { when:g=>g.time>1, do:g=>g.say('Cmdr. Varga','Go!') },
@@ -383,11 +399,14 @@ In triggers krijg je een object `g` mee:
 | `g.addObjective(id, tekst, optioneel)` | Nieuw doel toevoegen |
 | `g.complete(id)`, `g.fail(id)`, `g.setText(id, tekst)` | Doel afvinken, laten mislukken of hernoemen |
 | `g.spawn(type, punt, aantal, {faction, order, prey, truce})` | Eenheden plaatsen. Geeft een lijst terug. Swarm-`order`: `'hunt'` (standaard), `'guard'` of `'boss'`. `prey`: welke factie een Grey Hunter bejaagt. `truce`: met welke factie de eenheid niet vecht. |
-| `g.wall(punt, straal, tag, soort)`, `g.openWall(tag)` | Een tunnel afsluiten (straal 0 = één tegel). `soort` is `'membrane'` (standaard, levend membraan) of `'door'` (blast door van het station). Beide zijn onkwetsbaar. `openWall` laat het membraan wegrotten of schuift de deuren open. |
+| `g.wall(punt, straal, tag, soort)`, `g.openWall(tag)` | Een tunnel afsluiten (straal 0 = één tegel). `soort` is `'membrane'` (standaard, levend membraan), `'door'` (blast door van het station) of `'rubble'` (puin). Beide zijn onkwetsbaar. `openWall` laat het membraan wegrotten of schuift de deuren open. |
 | `g.weakenWall(tag, hp)`, `g.walls(tag)` | Het membraan kwetsbaar maken, zodat je troepen het kunnen wegbranden (optioneel met nieuwe hp per tegel); aantal tegels dat nog staat |
 | `g.airdrop([[type, aantal], …], seconden, punt)` | Het dropship vliegt versterking naar de Landing Zone van de missie (zie `landingZone`). Met `punt` doen de nieuwe troepen na de landing een attack-move naar dat punt, bv. om bij de squad te komen. |
 | `g.troops()` | Aantal levende Corps-soldaten op de kaart, waar ze ook staan |
 | `g.hiveAt(punt)` | Of er bij dat punt nog een hive staat |
+| `g.online()`, `g.generatorAt(punt)` | Aantal generatoren dat nu draait; de generator op dat punt (bv. om `label` te zetten) |
+| `g.chargeSite(punt, tag)`, `g.charge(tag)`, `g.chargeFuse(tag)` | Seismische ladingplek maken; toestand `'site'`, `'arming'`, `'armed'` of `'blown'`; seconden tot de ontploffing |
+| `g.bury(punt, straal, tag)` | Instorting: hives bij het punt sterven, puin op de grond, afgesneden soldaten worden uitgegraven |
 | `g.uplinks()`, `g.uplinkOwned(punt)` | Aantal veroverde bakens; of het baken bij dat punt van jou is |
 | `g.boss(eenheid, titel)` | Toont de levensbalk van een baas bovenaan |
 | `g.alive(lijst)` | Aantal levende eenheden in een lijst |
@@ -400,7 +419,7 @@ In triggers krijg je een object `g` mee:
 | `g.ping(punt)` | Ping op kaart en minimap |
 | `g.marker(id, punt, label)`, `g.unmark(id)` | Doelmarkering met pijl plaatsen of weghalen |
 | `g.give(salvage)` | Salvage geven |
-| `g.wave(budget, doel)` | Meteen een Swarm-golf sturen. Optioneel `doel` (punt of eenheid): de golf komt dan van de twee dichtstbijzijnde hives en loopt naar dat doel. |
+| `g.wave(budget, doel)` | Meteen een Swarm-golf sturen. Optioneel `doel` (kaartpunt, tegel `{x, y}` of eenheid): de golf komt dan van de twee dichtstbijzijnde hives en loopt naar dat doel. |
 | `g.setTimer(seconden, label)`, `g.timerLeft()`, `g.clearTimer()` | Aftelklok in de bovenbalk |
 | `g.win(tekst)`, `g.lose(tekst)` | Missie winnen of verliezen |
 

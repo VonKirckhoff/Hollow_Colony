@@ -46,7 +46,7 @@ function damage(t,amt,src){
   if(t.bossState) t.bossState.calm=0;
   t.calm=0;
   if(t.def.armor) amt*=1-t.def.armor;
-  t.hp-=amt; t.flash=0.07; if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
+  t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07; if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction==='corps' && src && src.faction==='swarm') raiseAlert(t);
   if(t.kind==='unit' && src && !src.dead){
     if(t.def.passive){ const a=Math.atan2(t.y-src.y,t.x-src.x); t.order={type:'move',x:t.x+Math.cos(a)*120,y:t.y+Math.sin(a)*120}; setPath(t,t.order.x,t.order.y); }
@@ -64,6 +64,7 @@ function kill(e,src){
     for(let i=0;i<(e.size*10);i++) G.fx.push({k:'ember',x:e.x+rand(-big/3,big/3),y:e.y+rand(-big/3,big/3),vx:rand(-60,60),vy:rand(-90,-10),t:rand(.4,1),max:1,col:e.faction==='swarm'?'#a6ff4a':pick(['#ff8a2a','#ffd23f','#ffffff'])});
     G.fx.push({k:'boom',x:e.x,y:e.y,t:0.5,max:0.5,r:big*0.8});
     addDecal(e.x,e.y,big*0.55,e.faction==='swarm'?'rgba(48,90,20,.55)':'rgba(10,10,12,.6)');
+    if(e.type==='charge' && e.tag) chargeLost(e);
     if(e.type==='hive') G.stats.hives++;
     if(e.type==='hive' && src && src.faction==='corps') gainXP(src,VET_XP.hive);
     if(e.faction==='corps') G.stats.lost++;

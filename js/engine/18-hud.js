@@ -34,6 +34,9 @@ function renderSelection(){
     else { if(d.supply) stats+=`<span>Supply <b>+${d.supply}</b></span>`; if(d.income) stats+=`<span>Income <b>${d.income}/s</b></span>`; if(d.damage) stats+=`<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span>`;
       if(e.type==='cocoon') stats+=`<span>Hatches in <b>${Math.max(0,e.hatchT).toFixed(1)}s</b></span>`; if(!e.built) stats+=`<span>Built <b>${Math.floor(e.progress*100)}%</b></span>`; }
     if(e.vet){ const nx=RANKS[e.vet.rank+1]; stats+=`<span>Rank <b>${RANKS[e.vet.rank].name}</b></span><span>XP <b>${e.vet.xp}${nx?' / '+nx.xp:''}</b></span><span>Kills <b>${e.vet.kills}</b></span>${e.vet.missions?`<span>Missions <b>${e.vet.missions}</b></span>`:''}`; }
+    if(e.def.generator) stats+=`<span>Status <b>${e.powered?'Online':'Offline: repair to 100%'}</b></span>`;
+    if(e.def.fuse) stats+=`<span>Detonates in <b>${Math.ceil(e.fuse)}s</b></span>`;
+    if(e.def.armTime) stats+=`<span>Armed <b>${Math.floor((e.arm||0)*100)}%</b></span>`;
     if(e.def.capture) stats+=`<span>Status <b>${e.owned?'Secured':'Not secured'}</b></span><span>Control <b>${Math.round((e.cap||0)*100)}%</b></span><span>Now <b>${({ours:'capturing',theirs:'Swarm taking it',contested:'contested',idle:'quiet'})[e.state||'idle']}</b></span>`;
     if(e.def.reinforce){ const fl=e.flight; stats+= fl ? `<span>Dropship <b>${fl.cargo.length} aboard, ${Math.ceil(fl.t)}s</b></span>` : `<span>Dropship <b>standing by</b></span>`; if(troopCap()<Infinity) stats+=`<span>Troops <b>${troopCount()}/${troopCap()}</b></span>`; }
     if(e.def.reinforce && e.flight){ stats+='<div class="queue">'+e.flight.cargo.map(t=>`<div class="qslot" data-tip="${UNITS[t].name}|On the dropship."><img alt="" src="${iconUrl(t)}"><i style="width:${Math.floor((1-e.flight.t/e.flight.total)*100)}%"></i></div>`).join('')+'</div>'; }

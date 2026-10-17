@@ -61,6 +61,20 @@ const ART = {
     disc(x,16,16,14,P.k); disc(x,16,16,13,'#3a4150'); disc(x,16,16,9,'#2c323e');
     for(let a=0;a<8;a++){ const ang=a*Math.PI/4; x.fillStyle=a%2?P.y:P.k; x.fillRect(Math.round(16+Math.cos(ang)*11)-1,Math.round(16+Math.sin(ang)*11)-1,3,3); }
     x.fillStyle=P.k; x.fillRect(14,5,4,20); x.fillStyle=P.a; x.fillRect(15,5,2,20); oval(x,16,6,6,3,P.k); oval(x,16,6,5,2,P.a); x.fillStyle=P.v; x.fillRect(15,4,2,2); return c; },
+  generator(){ const [c,x]=pxCtx(32,32); const P=PALETTE;
+    x.fillStyle=P.k; x.fillRect(2,5,28,25); x.fillStyle=P.G; x.fillRect(3,6,26,23); x.fillStyle=P.A; x.fillRect(5,8,22,10);
+    for(let i=0;i<5;i++){ x.fillStyle=P.k; x.fillRect(7+i*4,9,2,8); }
+    x.fillStyle=P.g; x.fillRect(5,20,22,7); x.fillStyle=P.y; x.fillRect(6,21,3,5); x.fillRect(23,21,3,5);
+    x.fillStyle=P.k; x.fillRect(12,1,8,6); x.fillStyle=P.a; x.fillRect(13,2,6,4); x.fillStyle=P.k; x.fillRect(11,22,10,4); return c; },
+  chargesite(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
+    for(let i=0;i<8;i++){ x.fillStyle=i%2?P.k:P.r; x.fillRect(i*2,0,2,2); x.fillRect(i*2,14,2,2); x.fillRect(0,i*2,2,2); x.fillRect(14,i*2,2,2); }
+    x.fillStyle=P.r; x.fillRect(7,4,2,8); x.fillRect(4,7,8,2); return c; },
+  charge(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
+    x.fillStyle=P.k; x.fillRect(3,4,10,11); x.fillStyle=P.O; x.fillRect(4,5,8,9); x.fillStyle=P.o; x.fillRect(4,5,8,2);
+    x.fillStyle=P.k; x.fillRect(5,9,6,3); x.fillStyle=P.r; x.fillRect(6,10,4,1); x.fillStyle=P.k; x.fillRect(7,1,2,4); x.fillStyle=P.r; x.fillRect(7,0,2,2); return c; },
+  rubble(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
+    x.fillStyle=P.k; x.fillRect(1,6,14,9); x.fillRect(4,3,8,4); x.fillStyle='#3a3b44'; x.fillRect(2,7,6,7); x.fillRect(5,4,6,4); x.fillStyle='#4c4e58'; x.fillRect(8,8,6,6); x.fillRect(6,4,3,2);
+    x.fillStyle='#2a2b33'; x.fillRect(3,12,4,2); x.fillRect(10,12,3,2); return c; },
   door(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(0,0,16,16); x.fillStyle=P.G; x.fillRect(1,1,14,14); x.fillStyle=P.A; x.fillRect(2,2,5,12); x.fillRect(9,2,5,12);
     x.fillStyle=P.k; x.fillRect(7,1,2,14);

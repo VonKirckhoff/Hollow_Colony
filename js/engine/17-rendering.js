@@ -18,7 +18,7 @@ function render(now){
   ctx.setTransform(ui.dpr,0,0,ui.dpr,0,0); ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#07080c'; ctx.fillRect(0,0,ui.vw,ui.vh);
   if(ui.mode==='menu'||!G){ renderMenuBg(now); return; }
-  const cam={x:Math.round(G.cam.x),y:Math.round(G.cam.y)}, m=G.map;
+  const sh=(G.shake||0)*10, cam={x:Math.round(G.cam.x+(sh?rand(-sh,sh):0)),y:Math.round(G.cam.y+(sh?rand(-sh,sh):0))}, m=G.map;
   drawStars(cam);
   ctx.drawImage(m.ground,0,0,m.ground.width,m.ground.height,-cam.x,-cam.y,m.w*TILE,m.h*TILE);
   ctx.save(); ctx.translate(-cam.x,-cam.y);
@@ -56,6 +56,12 @@ function render(now){
   for(const s of G.shots){ if(s.t<0) continue; const t=s.t/s.dur; if(s.k==='plasma'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t; ctx.fillStyle='#1a8fa0'; ctx.fillRect(Math.round(x)-4,Math.round(y)-4,8,8); ctx.fillStyle='#d8feff'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,4,4); continue; }
     const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*40; ctx.fillStyle='#4fae22'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#a6ff4a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,3,3); }
   drawFx();
+  // light from running generators
+  ctx.globalCompositeOperation='lighter';
+  for(const e of G.ents){ if(e.dead||!e.def||!e.def.generator||!e.powered) continue; const R=e.def.light*TILE*0.9, fl=0.9+0.1*Math.sin(now/90+e.id);
+    const g=ctx.createRadialGradient(e.x,e.y,8,e.x,e.y,R); g.addColorStop(0,`rgba(255,214,120,${0.22*fl})`); g.addColorStop(0.5,`rgba(255,190,90,${0.08*fl})`); g.addColorStop(1,'rgba(255,180,80,0)');
+    ctx.fillStyle=g; ctx.fillRect(e.x-R,e.y-R,R*2,R*2); }
+  ctx.globalCompositeOperation='source-over';
   // fog
   paintFog(); ctx.imageSmoothingEnabled=true; ctx.drawImage(fogCanvas,0,0,m.w,m.h,0,0,m.w*TILE,m.h*TILE); ctx.imageSmoothingEnabled=false;
   // bars
@@ -65,6 +71,10 @@ function render(now){
     const f=clamp(e.hp/e.maxHp,0,1); ctx.fillStyle=e.faction!=='corps'?'#ff5a4f':hpColor(f); ctx.fillRect(x,y,Math.round(w*f),3);
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*e.progress),2); }
     if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/BUILDINGS.cocoon.hatch)),2); } }
+  // status labels of mission objects (generators, charges)
+  ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
+  for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!=='corps'&&!isVisible(e)) continue;
+    const y=e.kind==='building'?e.y+e.size*TILE/2+14:e.y-34; ctx.fillStyle='#000'; ctx.fillText(e.status.txt,e.x+1,y+1); ctx.fillStyle=e.status.col; ctx.fillText(e.status.txt,e.x,y); }
   for(const p of G.pings){ const r=10+p.t*28; ctx.strokeStyle=p.col; ctx.globalAlpha=Math.max(0,1-p.t/3); ctx.lineWidth=2; ctx.strokeRect(p.x-r,p.y-r,r*2,r*2); ctx.globalAlpha=1; }
   for(const b of G.ents){ if(!b.dead&&b.def&&b.def.reinforce&&b.flight&&b.flight.t<4&&inView(b)){ const k=b.flight.t/4, art=ARTC.dropship, w=art.width*3, h=art.height*3;
       drawShadow(b.x,b.y+10,50*(1-k*0.5),18*(1-k*0.5)); ctx.globalAlpha=Math.min(1,1.4-k); ctx.drawImage(art,Math.round(b.x-w/2),Math.round(b.y-h/2-20-k*260),w,h); ctx.globalAlpha=1;

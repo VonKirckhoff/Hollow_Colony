@@ -2,7 +2,7 @@
 /* ---------- 2n. main update ---------- */
 function update(dt){
   G.time+=dt;
-  updateMarches(dt);   // squads marching in formation (19-commands.js)
+  if(G.shake) G.shake=Math.max(0,G.shake-dt);
   for(let i=0;i<G.ents.length;i++){ const e=G.ents[i]; if(e.dead) continue; if(e.kind==='unit') updateUnit(e,dt); else if(e.kind==='building') updateBuilding(e,dt); }
   separate();
   for(const s of G.shots){ s.t+=dt; if(s.t>=s.dur){ s.done=true;

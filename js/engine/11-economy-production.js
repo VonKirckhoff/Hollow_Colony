@@ -72,3 +72,14 @@ function rescueTrapped(){
     let best=null, bd=Infinity; for(let r=1;r<20&&!best;r++) for(let y=ty-r;y<=ty+r;y++) for(let x=tx-r;x<=tx+r;x++){ if(x<0||y<0||x>=W||y>=H) continue; const k=comp[y*W+x]; if(k<0||sizes[k]<30) continue; const d=(x-tx)**2+(y-ty)**2; if(d<bd){ bd=d; best={x,y}; } }
     if(best){ u.x=(best.x+.5)*TILE; u.y=(best.y+.5)*TILE; u.path=null; u.goal=null; G.fx.push({k:'boom',x:u.x,y:u.y,t:0.3,max:0.3,r:14,col:'#5fe3b0'}); } }
 }
+
+/* After a collapse: every Corps unit that can no longer reach the anchor tile is moved to the nearest tile that can. */
+function digOut(anchor){
+  if(!anchor) return; const W=G.map.w, H=G.map.h, N=W*H, ok=new Uint8Array(N), q=new Int32Array(N); let h=0,t=0;
+  let a=anchor; if(!walkableT(a.x,a.y)) a=nearestWalkable(a.x,a.y); if(!a) return;
+  q[t++]=a.y*W+a.x; ok[q[0]]=1;
+  while(h<t){ const i=q[h++], x=i%W, y=i/W|0; for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+dx, ny=y+dy; if(!walkableT(nx,ny)) continue; const ni=ny*W+nx; if(ok[ni]) continue; ok[ni]=1; q[t++]=ni; } }
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='corps') continue; const tx=Math.floor(u.x/TILE), ty=Math.floor(u.y/TILE); if(ok[ty*W+tx]) continue;
+    let best=null; for(let r=1;r<40&&!best;r++) for(let y=ty-r;y<=ty+r&&!best;y++) for(let x=tx-r;x<=tx+r;x++){ if(x<0||y<0||x>=W||y>=H) continue; if(Math.max(Math.abs(x-tx),Math.abs(y-ty))!==r) continue; if(ok[y*W+x]){ best={x,y}; break; } }
+    if(best){ u.x=(best.x+.5)*TILE; u.y=(best.y+.5)*TILE; u.path=null; u.goal=null; u.order=null; G.fx.push({k:'boom',x:u.x,y:u.y,t:0.3,max:0.3,r:14,col:'#5fe3b0'}); } }
+}
