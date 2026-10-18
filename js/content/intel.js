@@ -26,7 +26,7 @@ const INTEL_NOTES = {
   spitter:  'Acid artillery at range 4.6: it outreaches Pyros and Medics. Its acid leaves a burning pool for a few seconds.',
   brute:    'Armoured siege beast that goes for walls and structures. Focus fire and keep your distance.',
   broodmother:'Boss. Rooted most of the time, but charges into your lines, lays eggs and sprays acid. Regenerates when left alone.',
-  hive:     'Spawns the Swarm and calls guards when hit. Regrows when left alone, so finish it.',
+  hive:     'Every hit makes it scream and birth defenders that go for the attacker. Badly hurt, it calls the other hives. Regrows when left alone. Bring a squad, not a hero.',
   cocoon:   'A fallen soldier being turned. Hatches in seconds unless you burn it.',
   membrane: 'Organic wall that seals tunnels. Has to be burned or shot through.',
   hunter:   'Cloaked. Visible only when it fires, is hit or comes close. Retreats when wounded and hunts your strongest soldier.',

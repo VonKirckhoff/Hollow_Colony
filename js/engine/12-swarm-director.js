@@ -87,3 +87,20 @@ function tacticThink(u,dt){
   if(u.viaGoal && !u.target && (!u.order||Math.hypot(u.order.x-u.x,u.order.y-u.y)<2*TILE)){ u.order={type:'amove',x:u.viaGoal.x,y:u.viaGoal.y}; setPath(u,u.order.x,u.order.y); u.viaGoal=null; }
   return false;
 }
+
+/* ---------- a hive defends itself ----------
+   Every hit makes it scream (at most once per `cooldown` seconds): it births an emergency brood that goes straight for the attacker.
+   Below `helpAt` of its health it calls the other hives once, and they send a wave to it.
+   Missions can make this fiercer with swarm.hiveRage (Hold Kappa: the hives there are not meant to be destroyed). */
+const HIVE_DEFENCE = { cooldown:12, brood:45, helpAt:0.6, help:70 };
+function hiveScream(h,src){
+  if(h.dead||G.time<(h.screamAt||0)) return; const D=G.diff, rage=G.swarm.cfg.hiveRage||1;
+  h.screamAt=G.time+HIVE_DEFENCE.cooldown*D.interval/Math.sqrt(rage);
+  let left=HIVE_DEFENCE.brood*D.budget*rage, guard=0; const out=[];
+  while(left>=15 && guard++<20){ const type=pickSwarmType(left); if(!type) break; const u=spawnNearBuilding(type,'swarm',h); if(!u) break; left-=UNITS[type].biomass;
+    u.role='hunt'; if(src&&src.kind==='unit'&&!src.dead){ u.target=src; u.order={type:'amove',x:src.x,y:src.y}; setPath(u,src.x,src.y); } out.push(u); }
+  if(out.length){ G.fx.push({k:'boom',x:h.x,y:h.y,t:0.35,max:0.35,r:28,col:'#a6ff4a'}); if(isVisible(h)) SFX.play('hatch',h.x,h.y);
+    if(!G.saidScream && isVisible(h)){ G.saidScream=true; say('Dr. Maas','The hive is screaming. It is birthing defenders as fast as it can!'); } }
+  if(!h.calledHelp && h.hp<h.maxHp*HIVE_DEFENCE.helpAt && hives().length>1){ h.calledHelp=true;
+    const w=launchWave(HIVE_DEFENCE.help*D.budget*rage,{x:h.x,y:h.y}); if(w.length) say('Sgt. Kessler','The other hives heard that. Everything is converging on the nest you are hitting!','alert'); }
+}

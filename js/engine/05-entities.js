@@ -4,6 +4,7 @@ function makeUnit(type,faction,x,y){
   const d=UNITS[type]; const hpMul = faction==='swarm' ? G.diff.hp : 1;
   const u=({ id:NEXT_ID++, kind:'unit', type, def:d, faction, x, y, hp:d.hp*hpMul, maxHp:d.hp*hpMul, r:d.radius||9,
     order:null, path:null, pi:0, target:null, cd:Math.random()*0.4, acq:Math.random()*0.3, face:Math.random()<.5?1:-1, anim:Math.random()*10, flash:0, moving:false, role:null, home:null });
+  if(faction==='swarm') u.dmgMul=(G&&G.diff&&G.diff.dmg)||1;   /* difficulty: Swarm damage */
   if(faction==='corps' && isSoldierType(type)) u.vet={ id:'v'+Date.now().toString(36)+NEXT_ID, name:freshName(), type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
   G.ents.push(u); return u;
 }

@@ -7,13 +7,14 @@ MISSIONS.push(
     briefing:[
       'A Command Post has been dropped at Kappa Station. A supply convoy is fifteen minutes out.',
       'Three hives surround the basin, and they know you are here. Build Relay Towers on the marked pads to fund your defence, and use Sentry Guns and Barricades to cover the approaches.',
+      'Do not go after the hives. They are far too big to burn with what you have, and every hit makes them scream for more. Dig in and hold.',
       'If the Command Post falls, the operation is over.'
     ],
     start:{ salvage:250, camera:'Q',
       units:[ ['engineer','Q',2], ['trooper','Q',4], ['gunner','Q',1], ['medic','Q',1] ],
-      buildings:[ ['hq','Q'] ], hives:['a','b','c'] },
+      buildings:[ ['hq','Q'] ], hives:['a','b','c'], hiveHp:4 },
     limits:{ sentry:4 },
-    swarm:{ biomass:60, rate:0.45, guardMax:4, guardEvery:14, waves:{ first:100, every:70, budget:70, growth:28 } },
+    swarm:{ biomass:60, rate:0.45, guardMax:5, guardEvery:12, hiveRage:1.8, waves:{ first:100, every:70, budget:70, growth:28 } },
     objectives:[
       { id:'relays', text:'Build 2 Relay Towers (0/2)' },
       { id:'hold',   text:'Hold the station until the convoy arrives' },

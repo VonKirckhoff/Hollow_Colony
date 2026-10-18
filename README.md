@@ -35,6 +35,16 @@ De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets 
 
 **Spelvormen:** een campagne van 8 missies en skirmish (kies een kaart en vernietig alle hives). Er zijn drie moeilijkheidsgraden: Easy, Normal en Hard.
 
+| | Easy | Normal | Hard |
+|---|---|---|---|
+| Levenspunten Swarm | ×0,85 | ×1 | ×1,25 |
+| Schade Swarm | ×0,85 | ×1 | ×1,15 |
+| Grootte van golven en van het noodbroed | ×0,7 | ×1 | ×1,4 |
+| Tijd tussen golven en hive-kreten | ×1,25 | ×1 | ×0,8 |
+| Levenspunten hives | ×0,85 | ×1 | ×1,35 |
+
+**Een hive verdedigt zich.** Elke treffer laat hem *krijsen* (hoogstens om de 12 seconden): hij baart meteen een noodbroed dat recht op de aanvaller afgaat. Zakt hij onder 60%, dan roept hij één keer de andere hives, en die sturen een golf naar hem toe. In *Hold Kappa* zijn de hives vier keer zo sterk en krijsen ze feller (`hiveRage`): daar is het de bedoeling dat je standhoudt, niet dat je ze aanvalt. Instellingen: `HIVE_DEFENCE` in `js/engine/12-swarm-director.js`.
+
 ---
 
 ## Besturing
@@ -107,7 +117,7 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - **Je eigen soldaat:** bovenaan het campagnescherm staat *Enlist your own soldier*. Geef een naam (2 tot 18 tekens, uniek) en kies een type (Trooper, Gunner, Pyro, Medic of Engineer). Hij gaat mee op elke campagnemissie (hij vervangt een starter van zijn type, of komt er extra bij), draagt een **gouden ster** boven zijn hoofd en verdient rang zoals elke veteraan. Na zijn eerste missie ligt zijn type vast; de naam kan je altijd wijzigen met *Edit*. Sneuvelt hij, dan komt hij op de Cenotaph en kan je een nieuwe soldaat inlijven. Alleen hij kan Captain worden.
 - **Intel** (knop in het hoofdmenu en op het campagnescherm): een overzicht met tabbladen **Lunar Corps**, **Structures**, **Swarm** en **Other**. Per eenheid of gebouw een kaart met figuurtje, beschrijving, een korte veldnotitie, en de cijfers: HP, schade per seconde, bereik, snelheid (tegels per seconde), zicht, kostprijs of XP per kill, pantser, wanneer de vijand verschijnt, en de Lieutenant-vaardigheid. De cijfers komen rechtstreeks uit `UNITS` en `BUILDINGS`, dus pas je die aan, dan klopt Intel vanzelf. Welke eenheden op welk tabblad staan en de veldnotities staan in `js/content/intel.js`. Pijltjestoetsen links/rechts wisselen van tabblad.
 - **Cenotaph** (knop op het campagnescherm en het Veterans-scherm): een grafsteen met de naam van elke gesneuvelde, met rang, type, de missie waarin hij viel, missies, kills en datum. Je eigen soldaat staat er met zijn ster.
-- **Zombie mode** (Halloween, aan/uit op de Cenotaph, onthouden in je browser): met *Raise* haal je een gesneuvelde terug naar het rooster, met zijn rang, XP en kills. Een **risen** soldaat is groen, gloeit, en praat traag en hol. Hij heeft 25% meer levenspunten en geneest zichzelf (2 HP per seconde), maar loopt 15% trager, een Medic kan hem niet genezen, en de Swarm kan hem niet in een cocon stoppen. Sneuvelt hij een tweede keer, dan blijft hij voorgoed rusten (*Fell twice · at rest*). Was het je eigen soldaat en heb je nog geen nieuwe, dan wordt hij weer je eigen soldaat. Instellingen in `RISEN`.
+- **Zombie mode** (Halloween, aan/uit op de Cenotaph, onthouden in je browser): met *Raise* haal je een gesneuvelde terug naar het rooster, met zijn rang, XP en kills. Een **risen** soldaat is groen, gloeit, en praat traag en hol. Hij heeft 25% meer levenspunten en geneest zichzelf (2 HP per seconde, maar pas na 4 seconden zonder treffer), maar loopt 15% trager, een Medic kan hem niet genezen, en de Swarm kan hem niet in een cocon stoppen. Sneuvelt hij een tweede keer, dan blijft hij voorgoed rusten (*Fell twice · at rest*). Was het je eigen soldaat en heb je nog geen nieuwe, dan wordt hij weer je eigen soldaat. Instellingen in `RISEN`.
 - **Reset veterans** (knop op het Veterans-scherm, twee keer klikken) wist het rooster en de Cenotaph, maar niet je campagnevoortgang. **Reset campaign** wist allebei.
 - **Unieke namen:** geen twee soldaten hebben dezelfde naam: niet in het rooster, niet op de Cenotaph en niet in de lopende missie. Pas als alle namen uit `SURNAMES` op zijn, krijgt een nieuwe soldaat een voorletter ("J. Torres"). Een bewaard rooster met dubbele namen wordt bij het laden rechtgezet.
 - **Reset campaign** wist ook het rooster. In skirmish wordt niets bewaard.
@@ -507,7 +517,8 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 | `HP_ZONES` | `red` (0.25), `orange` (0.5) | Grenzen voor de kleuren van de levensbalk en de triage van de Medic |
 | `MAX_SUPPLY` | 50 | Maximale supply |
 | missie `limits` | bv. `{ sentry:3 }` | Maximum aantal van een gebouwtype tegelijk in het veld |
-| `DIFFICULTY` | `hp`, `budget`, `interval` | Factoren voor Swarm-levenspunten, golfgrootte en tijd tussen golven |
+| `DIFFICULTY` | `hp`, `dmg`, `budget`, `interval`, `hiveHp` | Factoren voor Swarm-levenspunten, Swarm-schade, golfgrootte (en noodbroed), tijd tussen golven (en hive-kreten) en hive-levenspunten |
+| `HIVE_DEFENCE` | `cooldown` (12), `brood` (45), `helpAt` (0,6), `help` (70) | Hoe vaak een hive krijst, hoeveel biomassa zijn noodbroed krijgt, wanneer hij hulp roept en hoe groot die hulpgolf is |
 | `UNITS.engineer` | `autoRepair` (7) | Straal in tegels voor automatische reparatie |
 | | `carrySpeed` (0.6) | Snelheidsfactor tijdens het dragen |
 | | `packTime` (2) | Seconden om een Sentry in te klappen |

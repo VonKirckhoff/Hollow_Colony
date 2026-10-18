@@ -62,7 +62,7 @@ function buildCenotaph(){
   const R=ui.roster, z=ui.zombie;
   $('#s-cenotaph').classList.toggle('zombie',z);
   $('#zombie-row').innerHTML=`<button class="btn ${z?'on':''}" type="button" id="btn-zombie" aria-pressed="${z}">${z?'☠ Zombie mode on':'Zombie mode off'}</button>
-    <p>${z?`Halloween: raise a fallen soldier and he rejoins the roster with his rank and kills. The risen have ${Math.round((RISEN.hp-1)*100)}% more health and heal themselves, but they shamble, a Medic cannot help them, and if they fall a second time they rest for good.`:'Halloween is coming. Switch on zombie mode to raise your fallen soldiers from the stone.'}</p>`;
+    <p>${z?`Halloween: raise a fallen soldier and he rejoins the roster with his rank and kills. The risen have ${Math.round((RISEN.hp-1)*100)}% more health and heal themselves out of combat, but they shamble, a Medic cannot help them, and if they fall a second time they rest for good.`:'Halloween is coming. Switch on zombie mode to raise your fallen soldiers from the stone.'}</p>`;
   $('#cenotaph').innerHTML=`<div class="cap">THEY DID NOT COME HOME</div>`+(R.fallen.length?`<div class="names">${R.fallen.map((v,i)=>`<div class="name"><b>${v.hero?'<span class="star">★</span> ':''}${(RANKS[v.rank]||RANKS[0]).abbr} ${v.name}</b>
       <i>${UNITS[v.type]?UNITS[v.type].name:''} · fell in ${v.mission}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}${v.at?`<br>${new Date(v.at).toLocaleDateString()}`:''}</i>
       ${v.risen?'<span class="gone">FELL TWICE · AT REST</span>':z&&UNITS[v.type]?`<button class="btn-raise" type="button" data-raise="${i}">☠ Raise</button>`:''}</div>`).join('')}</div>`

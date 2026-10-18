@@ -46,7 +46,7 @@ function damage(t,amt,src){
   if(t.def.ground) return;
   if(t.invuln){ if(Math.random()<0.05) G.fx.push({k:'text',x:t.x,y:t.y-12,t:0.8,max:0.8,txt:'SEALED',col:'#ff9a3c'}); return; }
   if(t.bossState) t.bossState.calm=0;
-  t.calm=0;
+  t.calm=0; t.hitAt=G.time;
   if(t.def.armor) amt*=1-t.def.armor;
   amt=coverDamage(t,amt,src);
   if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */
@@ -94,7 +94,7 @@ function kill(e,src){
 function addDecal(x,y,r,col){ G.decals.push({x,y,r,col,seed:Math.random()*1000,t:0}); if(G.decals.length>180) G.decals.shift(); }
 function raiseAlert(t){ if(G.time-G.alertT<10) return; G.alertT=G.time; G.alert={x:t.x,y:t.y}; G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); SFX.play('alarm');
   say('Alert', t.kind==='building' ? `${t.def.name} under attack.` : 'Our forces are under attack.', 'alert'); }
-function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&dist(e,h)<12*TILE) e.target=src; } }
+function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&dist(e,h)<12*TILE) e.target=src; } hiveScream(h,src); }
 /* Lieutenant Trooper: a grenade now and then, aimed at the thickest group near his target */
 function throwGrenade(u,t){
   const P=PERKS.trooper; if(G.time<(u.nadeAt||0)) return; if(dist(u,t)>P.range*TILE) return;

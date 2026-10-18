@@ -30,7 +30,7 @@ function newGame(mission, diffKey){
   for(const [type,at] of st.buildings||[]){ const p=pt(at); const s=BUILDINGS[type].size; makeBuilding(type,'corps',p.x-Math.floor(s/2),p.y-Math.floor(s/2),true); }
   for(const [at,label] of st.uplinks||[]){ const p=pt(at); const u=makeBuilding('uplink','corps',p.x-1,p.y-1,true); u.invuln=true; u.r=TILE; u.label=label; u.cap=0; u.owned=false; u.point=at; }
   if(mission.landingZone){ const L=mission.landingZone; const lz=makeBuilding('lz','corps',L.tx,L.ty,true); lz.flight=null; lz.invuln=true; lz.r=TILE*1.5; }
-  for(const at of st.hives||[]){ const p=pt(at); if(!p) continue; const h=makeBuilding('hive','swarm',p.x-1,p.y-1,true); h.spawnT=rand(2,6); h.hp=h.maxHp=BUILDINGS.hive.hp*(st.hiveHp||1); }
+  for(const at of st.hives||[]){ const p=pt(at); if(!p) continue; const h=makeBuilding('hive','swarm',p.x-1,p.y-1,true); h.spawnT=rand(2,6); h.hp=h.maxHp=BUILDINGS.hive.hp*(st.hiveHp||1)*(G.diff.hiveHp||1); }
   G.reserve=[]; G.deployedIds=new Set();
   for(const [type,at,n,opt] of st.units||[]) spawnAt(type,'corps',at,n).forEach(u=>{ u.home={x:u.x,y:u.y}; if(opt&&opt.carry) u.carry={type:opt.carry,hp:BUILDINGS[opt.carry].hp}; });
   for(const [type,at,n] of st.swarmUnits||[]) spawnAt(type,'swarm',at,n).forEach(u=>{ u.role='guard'; u.guardAt={x:u.x,y:u.y}; u.order={type:'guard',x:u.x,y:u.y,wait:rand(0,4)}; });
