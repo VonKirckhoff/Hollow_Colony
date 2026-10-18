@@ -17,7 +17,8 @@ const MUSIC=(()=>{
   const D2=73.42, N=s=>D2*Math.pow(2,(s+TR)/12);   // semitones above D2 (D=0, Eb=1, F=3, G=5, A=7, Bb=8, C=10, D3=12), shifted by the track's key
   function setTempo(trk){ BEAT=60/trk.bpm; S16=BEAT/4; BAR=BEAT*4; TR=trk.tr||0; }
   let ac=null, noiseBuf=null, irBuf=null, shapeHeavy=null, shapeLead=null, crushCurve=null;
-  let on=store.get('hc-music',true), vol=store.get('hc-music-vol',0.3), menuTrack=store.get('hc-music-track','hollow'), shuffle=store.get('hc-music-shuffle',false);
+  let on=store.get('hc-music',true), vol=store.get('hc-music-vol',0.3), menuTrack=store.get('hc-music-track','hollow'), shuffle=store.get('hc-music-shuffle',false), autoplay=store.get('hc-music-auto',false);
+  if(shuffle&&autoplay) autoplay=false;
   if(menuTrack==='shuffle'){ menuTrack='hollow'; store.set('hc-music-track',menuTrack); }   /* older saves kept shuffle as a track; shuffle is now its own switch, off by default */
   let S=null, timer=null, preview=null;          // S = the running session (own buses, so stopping cuts everything cleanly)
 
@@ -277,19 +278,20 @@ const MUSIC=(()=>{
 
   /* ---------- transport ---------- */
   function tick(){ if(!S) return; scheduleUntil(ac.currentTime+0.7);
-    if(S && S.shuffleNext){ const nx=S.shuffleNext; S.shuffleNext=null; start(nx,{shuffle:true}); } }
+    if(S && S.shuffleNext){ const nx=S.shuffleNext, o={shuffle:S.shuffle,auto:S.auto}; S.shuffleNext=null; start(nx,o); } }
   function scheduleUntil(limit){ setTempo(S.track);
     while(S.next < limit){
       if(!S.queue.length){
         if(S.shuffle && S.cycle>0){ const pool=MENU_TRACKS.filter(t=>t.id!==S.track.id); S.shuffleNext=pick(pool).id; return; }   // next track, crossfaded
+        if(S.auto && S.cycle>0){ const i=MENU_TRACKS.findIndex(t=>t.id===S.track.id); S.shuffleNext=MENU_TRACKS[(i+1)%MENU_TRACKS.length].id; return; }   // autoplay: the next one in the list
         S.queue=S.track.plan(S.cycle).map(x=>x.slice()); S.cycle++; newPass(S.next,0); }
       const cur=S.queue[0]; try{ SECTIONS[cur[0]](S.next,S.bar); }catch(e){ console.error(e); }
       S.next+=BAR; S.bar++; if(S.bar>=cur[1]){ S.queue.shift(); S.bar=0; }
     } }
   function start(id,opt={}){ if(!ctx()) return; if(ac.state==='suspended') ac.resume();
-    const trk=TRACK[id]||TRACK.hollow; if(S && S.track===trk && !!S.shuffle===!!opt.shuffle && opt.from==null) return;
+    const trk=TRACK[id]||TRACK.hollow; if(S && S.track===trk && !!S.shuffle===!!opt.shuffle && !!S.auto===!!opt.auto && opt.from==null) return;
     if(S) stop(opt.from!=null?1.2:3);                                          // crossfade into a fresh session
-    setTempo(trk); S=buildSession(trk); S.track=trk; S.shuffle=!!opt.shuffle; S.queue=[]; S.bar=0; S.cycle=0; S.next=ac.currentTime+0.15;
+    setTempo(trk); S=buildSession(trk); S.track=trk; S.shuffle=!!opt.shuffle; S.auto=!!opt.auto; S.queue=[]; S.bar=0; S.cycle=0; S.next=ac.currentTime+0.15;
     if(opt.from!=null && opt.plan){ S.queue=opt.plan.map(x=>x.slice()); S.cycle=opt.cycle||1; newPass(S.next,opt.from); S.queue.splice(0,opt.from); }   // jump to a section
     S.out.gain.setValueAtTime(0.0001,ac.currentTime); S.out.gain.exponentialRampToValueAtTime(level(),ac.currentTime+(opt.fast?1.5:4));
     clearInterval(timer); timer=setInterval(tick,60); tick(); refreshPanel(); }
@@ -300,17 +302,22 @@ const MUSIC=(()=>{
   const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', brief:'brief', cenotaph:'requiem', end:'end' };
   let scene='menu', armed=false;                 /* browsers only allow sound after the first click or key press */
   function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu';   /* victory: your menu music; defeat: the Cenotaph piece */
-    if(m!=='menu') return m; return shuffle ? (S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id) : menuTrack; }
-  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:!TRACK[id].screen&&shuffle}); }
+    if(m!=='menu') return m; if(shuffle) return S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id;
+    if(autoplay) return S&&S.auto&&!S.track.screen?S.track.id:menuTrack; return menuTrack; }
+  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:!TRACK[id].screen&&shuffle, auto:!TRACK[id].screen&&autoplay}); }
   function setScene(name){ scene=name; if(!MOODS[name]){ preview=null; stop(name==null?1.2:2.5); closePanel(); return; } applyScene(); }
   function setOn(v){ on=!!v; store.set('hc-music',on); if(on){ armed=true; applyScene(); } else { preview=null; stop(0.8); } label(); }
   function setVol(v){ vol=clamp(+v,0,1); store.set('hc-music-vol',vol); if(S) S.out.gain.setTargetAtTime(level(),ac.currentTime,0.1); }
   function playPreview(id){ armed=true; if(!on){ on=true; store.set('hc-music',true); label(); } preview=id; start(id,{fast:true}); }
   function stopPreview(){ preview=null; if(S) stop(1); applyScene(); refreshPanel(); }
   function setMenuTrack(id){ menuTrack=id; store.set('hc-music-track',id); setShuffle(false,true); preview=null; if(S&&S.track.id===id&&MOODS[scene]==='menu'){ S.shuffle=false; refreshPanel(); return; } applyScene(); refreshPanel(); }
-  function setShuffle(v,quiet){ shuffle=!!v; store.set('hc-music-shuffle',shuffle); shuffleLabel(); if(quiet) return; preview=null;
-    if(S&&MOODS[scene]==='menu'&&!S.track.screen){ S.shuffle=shuffle; if(!shuffle&&S.track.id!==menuTrack) applyScene(); } else applyScene(); refreshPanel(); }
+  function setShuffle(v,quiet){ shuffle=!!v; store.set('hc-music-shuffle',shuffle); if(shuffle&&autoplay){ autoplay=false; store.set('hc-music-auto',false); } shuffleLabel(); if(quiet) return; preview=null;
+    if(S&&MOODS[scene]==='menu'&&!S.track.screen){ S.shuffle=shuffle; S.auto=autoplay; if(!shuffle&&!autoplay&&S.track.id!==menuTrack) applyScene(); } else applyScene(); refreshPanel(); }
+  /* autoplay: when a track has played through once, the next one in the list follows (and after the last, the first again) */
+  function setAutoplay(v){ autoplay=!!v; store.set('hc-music-auto',autoplay); if(autoplay&&shuffle){ shuffle=false; store.set('hc-music-shuffle',false); } shuffleLabel(); preview=null;
+    if(S&&MOODS[scene]==='menu'&&!S.track.screen){ S.auto=autoplay; S.shuffle=shuffle; } else applyScene(); refreshPanel(); }
   function shuffleLabel(){ const b=document.getElementById('btn-shuffle'); if(b){ b.textContent=shuffle?'⤨ Shuffle on':'⤨ Shuffle off'; b.setAttribute('aria-pressed',shuffle); }
+    const a=document.getElementById('btn-auto'); if(a){ a.textContent=autoplay?'▶▶ Autoplay on':'▶▶ Autoplay off'; a.setAttribute('aria-pressed',autoplay); }
     const c=document.getElementById('music-shuffle'); if(c) c.checked=shuffle; }
 
   /* ---------- timeline: one pass through a track's plan ---------- */
@@ -320,7 +327,7 @@ const MUSIC=(()=>{
     S.pass={ id:(S.pass?S.pass.id+1:1), parts, bars:parts.reduce((a,p)=>a+p.b,0), bar:BAR, start:at0-pre*BAR, plan:parts.map(p=>[p.n,p.b]), cycle:S.cycle }; }
   function passLen(trk){ setTempo(trk); const L=[]; for(let k=0;k<12;k++) L.push(trk.plan(0).reduce((a,p)=>a+p[1],0)*BAR); if(S) setTempo(S.track); return [Math.min(...L),Math.max(...L)]; }
   const mmss=x=>{ x=Math.max(0,Math.round(x)); return Math.floor(x/60)+':'+String(x%60).padStart(2,'0'); };
-  function seek(k){ if(!S||!S.pass) return; const p=S.pass; start(S.track.id,{from:k,plan:p.plan,cycle:p.cycle,shuffle:S.shuffle,fast:true}); if(preview) preview=S.track.id; }
+  function seek(k){ if(!S||!S.pass) return; const p=S.pass; start(S.track.id,{from:k,plan:p.plan,cycle:p.cycle,shuffle:S.shuffle,auto:S.auto,fast:true}); if(preview) preview=S.track.id; }
 
   /* ---------- the music player (fold-out panel) ---------- */
   const $id=x=>document.getElementById(x);
@@ -329,7 +336,7 @@ const MUSIC=(()=>{
   function closePanel(){ openPanel(false); }
   function refreshPanel(){ const list=$id('music-list'); if(!list||$id('music-panel').hidden) return;
     const playing=S&&S.track.id;
-    $id('music-now').innerHTML=playing?`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span> ${S.track.title}${preview?' · preview':S.shuffle?' · shuffle':''}`:'Silent';
+    $id('music-now').innerHTML=playing?`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span> ${S.track.title}${preview?' · preview':S.shuffle?' · shuffle':S.auto?' · autoplay':''}`:'Silent';
     list.innerHTML=TRACKS.map(t=>{ const isP=playing===t.id, isM=menuTrack===t.id;
       return `<li class="trk ${isP?'playing':''}"><button type="button" class="play" data-mplay="${t.id}" aria-label="${isP?'Stop':'Play'} ${t.title}">${isP?'■':'▶'}</button>
         <div class="ti"><b>${t.title}</b><span class="st">${t.style} · ${t.bpm} BPM · ${(()=>{ const [lo,hi]=passLen(t); return hi-lo>1?`${mmss(lo)}–${mmss(hi)}`:mmss(lo); })()}</span><span class="ds">${t.desc}</span></div>
@@ -348,7 +355,8 @@ const MUSIC=(()=>{
     const b=$id('btn-music'); if(b) b.addEventListener('click',()=>setOn(!on)); label();
     const tb=$id('btn-tracks'); if(tb) tb.addEventListener('click',()=>openPanel($id('music-panel').hidden));
     const np=$id('music-np'); if(np) np.addEventListener('click',()=>openPanel(true));
-    const sb=$id('btn-shuffle'); if(sb) sb.addEventListener('click',()=>setShuffle(!shuffle)); shuffleLabel();
+    const sb=$id('btn-shuffle'); if(sb) sb.addEventListener('click',()=>setShuffle(!shuffle));
+    const ab=$id('btn-auto'); if(ab) ab.addEventListener('click',()=>setAutoplay(!autoplay)); shuffleLabel();
     initBoot();
     const p=$id('music-panel'); if(!p) return;
     p.addEventListener('click',e=>{ const pl=e.target.closest('[data-mplay]'), mm=e.target.closest('[data-mmenu]');

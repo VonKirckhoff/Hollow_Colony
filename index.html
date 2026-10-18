@@ -121,6 +121,7 @@
     <label class="mp-shuffle"><input type="checkbox" id="music-shuffle"> Shuffle all tracks on the menu screens</label>
   </div>
   <button class="np" type="button" id="music-np" hidden aria-label="Now playing, open the music player"></button>
+  <button class="tb-btn" type="button" id="btn-auto" aria-pressed="false" data-tip="Autoplay|Play the tracks on the menu screens one after the other, in the order of the list.">▶▶ Autoplay off</button>
   <button class="tb-btn" type="button" id="btn-shuffle" aria-pressed="false" data-tip="Shuffle|Play all tracks on the menu screens, one after the other, in random order.">⤨ Shuffle off</button>
   <button class="tb-btn" type="button" id="btn-tracks" aria-expanded="false" aria-controls="music-panel">♫ Tracks</button>
   <button class="tb-btn" type="button" id="btn-music" aria-pressed="true" data-tip="Music|“Hollow Light”, generated live. Only on the menu screens, never during a mission.">♪ Music on</button>
@@ -218,13 +219,15 @@
 
 <!-- VETERANS -->
 <section class="screen" id="s-veterans" hidden>
-  <div class="sheet" style="max-width:760px">
+  <div class="sheet vets">
+   <div class="vets-l">
     <div class="eyebrow">LUNAR CORPS · ROSTER</div>
     <h2 class="h">Veterans</h2>
     <p class="lede">Soldiers who survive a campaign mission with experience stay on the roster. At the start of the next mission they replace soldiers of the same type, and the rest arrive first when you train or order that type. A veteran who falls goes on the Cenotaph.</p>
     <div class="roster" id="roster-list"></div>
-    <div><div class="lbl" style="margin-bottom:6px">Ranks</div><div class="ranks" id="rank-list"></div></div>
-    <div class="row" style="justify-content:space-between"><div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno2">Cenotaph</button></div><button class="btn danger" type="button" id="btn-reset-vets" data-tip="Reset veterans|Removes every veteran from the roster and clears the Cenotaph. Campaign progress stays.">Reset veterans</button></div>
+    <div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno2">Cenotaph</button></div>
+   </div>
+   <div class="vets-r"><div class="lbl">Ranks</div><div class="ranks" id="rank-list"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn danger" type="button" id="btn-reset-vets" data-tip="Reset veterans|Removes every veteran from the roster and clears the Cenotaph. Campaign progress stays.">Reset veterans</button></div></div>
   </div>
 </section>
 
