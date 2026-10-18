@@ -97,6 +97,12 @@
 
 <!-- MUSIC (menu screens only) -->
 <div class="music-ctl" id="music-ctl" hidden>
+  <div class="music-panel" id="music-panel" role="dialog" aria-label="Soundtrack" hidden>
+    <div class="mp-head"><div><div class="lbl">Soundtrack</div><div class="mp-now" id="music-now" aria-live="polite"></div></div><button class="tb-btn" type="button" id="music-close" aria-label="Close">✕</button></div>
+    <ul class="mp-list" id="music-list"></ul>
+    <label class="mp-shuffle"><input type="checkbox" id="music-shuffle"> Shuffle all tracks on the menu screens</label>
+  </div>
+  <button class="tb-btn" type="button" id="btn-tracks" aria-expanded="false" aria-controls="music-panel">♫ Tracks</button>
   <button class="tb-btn" type="button" id="btn-music" aria-pressed="true" data-tip="Music|“Hollow Light”, generated live. Only on the menu screens, never during a mission.">♪ Music on</button>
   <label class="tb-vol">Vol <input type="range" id="music-vol" min="0" max="100" step="5" aria-label="Music volume"></label>
 </div>

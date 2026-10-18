@@ -248,13 +248,23 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
 
 ### Geluid
-**Muziek: "Hollow Light".** Op de menuschermen speelt zacht een soundtrack die, net als de geluiden, live in de browser wordt opgewekt (Web Audio, geen audiobestanden). D frygisch, 72 BPM. Vier delen van elk 8 maten wisselen af in een telkens andere volgorde:
-- *Ruins*: een diepe drone, een monnikenkoor dat van "oe" naar "aa" opengaat, verre aambeelden, radioruis.
-- *Doom*: een muur van gestemde gitaren (twee sporen, links en rechts), halftempo drums, de Eb die pijn doet.
-- *Black*: een tremolo-gepikte melodie ver weg in de galm, dubbele basdrum, koor erboven.
-- *Machine*: industrial: aambeeld en zuiger, een cyberpunk-arpeggio door een delay, een sequencer-bas, glitches.
+**Muziek.** Op de menuschermen speelt zacht een soundtrack die, net als de geluiden, live in de browser wordt opgewekt (Web Audio, geen audiobestanden). Tijdens een missie zwijgt ze. Rechtsonder op de menuschermen: **♫ Tracks** (de muziekspeler), *Music on/off* en een volumeschuif (standaard 30%). De muziek start bij je eerste klik (browserregel).
 
-Elk scherm heeft een eigen stemming: bij de **briefing** een hartslag, ruis en een spaarzame arpeggio; op de **Cenotaph** een doodsklok en een koor; in **zombie mode** speelt daar ook een speeldoos die net niet zuiver is. Tijdens een missie zwijgt de muziek. Rechtsonder op de menuschermen: *Music on/off* en een volumeschuif (standaard 30%, onthouden als `hc-music` en `hc-music-vol`). De muziek start bij je eerste klik (browserregel). Code: `js/engine/24-music.js`.
+**De muziekspeler** (*♫ Tracks*) klapt een venster open met alle stukken. Met ▶ beluister je er een (het blijft spelen tot je ■ drukt, ook als je van scherm wisselt); met *☆ Menu* kies je wat er op de menuschermen speelt; *Shuffle* laat alle stukken afwisselen, met een overgang na elk stuk. Je keuze wordt onthouden (`hc-music-track`). Esc of ✕ sluit het venster.
+
+| Stuk | Stijl | Tempo | Wat je hoort |
+|---|---|---|---|
+| Hollow Light | doom, black, industrial | 72 | Het origineel: Ruins (drone, koor), Doom (gitaarmuur, de Eb die pijn doet), Black (tremolo in de galm), Machine (aambeeld, arpeggio, glitches), telkens in een andere volgorde |
+| Hollow Light: Drowned | variant, funeral doom | 60 | Trager, een hele toon lager, veel dieper in de galm; geen machine, de lead zingt over de riff |
+| Iron Psalm | variant, industrial metal | 84 | De machinekant: palm-muted chugs met Eb- en F-accenten, aambeelden en zuigers |
+| Event Horizon | space black metal | 68 | Synth-nevels en sterren, dan een muur van tremologitaar met blastbeats ver weg, en een trage drift |
+| Selene's Silence | ambient black metal | 60 | Clean gitaararpeggio's in de wind; een storm die aanzwelt, losbarst en weer wegebt |
+| Cold Quarters | depressive black metal | 58 | Lo-fi (cassette, gekraak): een eenzaam pianomotief, een huilende lead, slepende drums |
+| Dead Satellite | dark ambient | 50 | Geen drums: pulsartikken, morse (SOS, LUNAR, DUST), een drijvende pad |
+| Funeral Orbit | funeral doom | 48 | Een processie onder luidende klokken; het zwaarste op de Maan |
+| Briefing / Cenotaph | schermstukken | 72 | Hartslag en radioruis bij de briefing; doodsklok en koor op de Cenotaph, in zombie mode met een valse speeldoos |
+
+Elk stuk is een lijst secties (`TRACKS` in `js/engine/24-music.js`) met eigen tempo (`bpm`), toonhoogte (`tr`, in halve tonen), galm (`rev`) en volume (`gain`); `lofi:true` zet er een cassettefilter op. Een eigen stuk toevoegen: schrijf secties in `SECTIONS` en zet ze in een `plan`.
 
 Alle geluiden worden in de browser opgewekt met de Web Audio API; er zijn geen audiobestanden nodig. Het gaat om wapens, de Medic die geneest, het radarpiepje bij vijandelijk contact, bevelen, alarmen, golven, bouwen en herstellen, cocons, kratten, berichten en een melodietje bij winst of verlies. Geluiden ver buiten beeld klinken zachter. Het geluid start na je eerste klik (een browserregel). Met de knop **Sound** zet je alles uit.
 
