@@ -153,6 +153,7 @@ function medicThink(u,dt){
 }
 function builderThink(u,dt){
   const o=u.order, d=u.def;
+  if(d.damage) snapFire(u,dt);   /* keeps building, repairing or packing, but shoots back at anything in range */
   if(o.type==='pack'){ // fold up a portable turret and carry it
     const s=o.target; if(!alive(s)||!s.built||!s.def.portable||u.carry){ u.order=null; return; }
     if(dist(u,s)>s.size*TILE/2+u.r+18){ goTo(u,s.x,s.y,dt); return; }

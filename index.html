@@ -49,6 +49,7 @@
       <button class="menu-btn" type="button" data-go="campaign">Campaign <small>Lunar Corps operations</small></button>
       <button class="menu-btn" type="button" data-go="skirmish">Skirmish <small>Pick a map, destroy every hive</small></button>
       <button class="menu-btn" type="button" data-go="manual">Field manual <small>Controls and factions</small></button>
+      <button class="menu-btn" type="button" data-go="intel">Intel <small>Every soldier, structure and enemy</small></button>
     </div>
     <div class="foot">Prototype v0.1 · The Grey are not yet deployable.</div>
   </div>
@@ -62,7 +63,7 @@
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
     <div class="missions" id="mission-list"></div>
-    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
+    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
   </div>
 </section>
 
@@ -160,6 +161,18 @@
   </div>
 </section>
 
+<!-- INTEL -->
+<section class="screen" id="s-intel" hidden>
+  <div class="sheet" style="max-width:860px">
+    <div class="eyebrow">LUNAR CORPS · INTEL</div>
+    <h2 class="h">Intel</h2>
+    <p class="lede">What every soldier, structure and enemy can do. Range and sight are in tiles, speed in tiles per second; damage per second is before rank bonuses.</p>
+    <div class="intel-tabs" role="tablist" id="intel-tabs"></div>
+    <div class="intel-grid" id="intel-grid" role="tabpanel"></div>
+    <div class="row"><button class="btn" type="button" id="intel-back">Back</button></div>
+  </div>
+</section>
+
 <!-- CENOTAPH -->
 <section class="screen" id="s-cenotaph" hidden>
   <div class="sheet" style="max-width:760px">
@@ -188,6 +201,7 @@
 <script src="js/content/sprites.js"></script>
 <script src="js/content/units.js"></script>
 <script src="js/content/veterans.js"></script>
+<script src="js/content/intel.js"></script>
 <script src="js/content/difficulty.js"></script>
 
 <!-- Maps: one file per map. New map? Add its line here (and in map-editor/index.html). -->

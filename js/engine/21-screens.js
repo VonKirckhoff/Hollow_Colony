@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
-const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph'];
+const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel'];
 function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name; }
 function goMenu(name){
   if(name==='menu'){ ui.mode='menu'; G=null; $('#hud').hidden=true; resize(); }
@@ -8,6 +8,7 @@ function goMenu(name){
   if(name==='skirmish') buildSkirmish();
   if(name==='veterans') buildVeterans();
   if(name==='cenotaph') buildCenotaph();
+  if(name==='intel'){ const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='intel') ui.intelFrom=cur; buildIntel(); }
   show(name); syncDiff();
   const first=$('#s-'+name+' button'); if(first) first.focus({preventScroll:true});
 }
@@ -68,6 +69,52 @@ $('#s-cenotaph').addEventListener('click',e=>{
   const b=e.target.closest('[data-raise]'); if(!b) return; const rec=ui.roster.fallen[+b.dataset.raise]; const err=raiseFallen(+b.dataset.raise); if(err){ toast(err); return; }
   SFX.play('squelch'); buildCenotaph(); toast(`${rec.name} rises from the stone and rejoins the roster.`,true);
 });
+/* Intel: a card per unit or structure, numbers straight from UNITS / BUILDINGS, tips from INTEL_NOTES */
+let intelTab='corps';
+const ATTACK_NAME={ bullet:'Gunfire', flame:'Flame, hits a group', acid:'Lobbed acid, splash', plasma:'Plasma bolt', melee:'Melee' };
+const fmt1=n=>Math.round(n*10)/10;
+function intelStat(k,v){ return `<div><dt>${k}</dt><dd>${v}</dd></div>`; }
+function intelUnit(t){ const d=UNITS[t]; if(!d) return ''; const st=[], tags=[];
+  st.push(intelStat('HP',d.hp));
+  if(d.damage) st.push(intelStat('Damage/s',fmt1(d.damage/d.cooldown)));
+  if(d.heal) st.push(intelStat('Heals/s',d.heal));
+  if(d.range) st.push(intelStat('Range',d.range));
+  st.push(intelStat('Speed',fmt1(d.speed/TILE)));
+  st.push(intelStat('Sight',d.sight));
+  if(d.faction==='corps'&&d.cost) st.push(intelStat('Cost',d.cost));
+  if(d.faction==='swarm') st.push(intelStat('XP per kill',VET_XP[t]||VET_XP.kill));
+  if(d.armor) st.push(intelStat('Armour',Math.round(d.armor*100)+'%'));
+  if(d.attack) tags.push(ATTACK_NAME[d.attack]||d.attack);
+  if(d.bonus) tags.push(Object.entries(d.bonus).map(([k,v])=>`×${v} vs ${(BUILDINGS[k]||UNITS[k]||{name:k}).name.toLowerCase()}s`).join(', '));
+  if(d.key&&d.faction==='corps') tags.push(`Train: ${d.key}`);
+  if(d.unlock) tags.push(`Appears after ${Math.floor(d.unlock/60)}:${String(d.unlock%60).padStart(2,'0')}`);
+  if(d.cloak) tags.push('Cloaked'); if(d.boss) tags.push('Boss'); if(d.escort) tags.push('Escort'); if(d.regen) tags.push(`Regenerates ${d.regen} HP/s`);
+  const perk=PERKS[t]?`<span class="perk">Lieutenant: ${PERKS[t].name}, ${PERKS[t].text.toLowerCase()}</span>`:'';
+  return intelCard(iconUrl(t),d.name,d.role,d.faction,d.desc,INTEL_NOTES[t],st,tags,perk); }
+function intelBuilding(t){ const d=BUILDINGS[t]; if(!d) return ''; const st=[], tags=[];
+  if(d.hp>1) st.push(intelStat('HP',d.hp));
+  if(d.damage) st.push(intelStat('Damage/s',fmt1(d.damage/d.cooldown)));
+  if(d.range) st.push(intelStat('Range',d.range));
+  if(d.cost) st.push(intelStat('Cost',d.cost));
+  if(d.buildTime) st.push(intelStat('Build time',d.buildTime+' s'));
+  if(d.supply) st.push(intelStat('Supply',`+${d.supply}`));
+  if(d.income) st.push(intelStat('Salvage/s',d.income));
+  if(d.hatch) st.push(intelStat('Hatches in',d.hatch+' s'));
+  if(d.fuse) st.push(intelStat('Fuse',d.fuse+' s'));
+  if(d.key&&d.cost) tags.push(`Build: ${d.key}`); if(d.portable) tags.push('Portable'); if(d.regen) tags.push(`Regrows ${d.regen} HP/s`); if(d.needsSite) tags.push('Relay pad only');
+  return intelCard(iconUrl(t),d.name,`${d.size}×${d.size} structure`,d.faction,d.desc,INTEL_NOTES[t],st,tags,''); }
+function intelCard(img,name,role,fac,desc,note,st,tags,perk){
+  return `<article class="icard f-${fac}"><div class="pic"><img alt="" src="${img}"></div><h3>${name}</h3><div class="role">${role||''}</div>
+    <p>${desc||''}</p>${note?`<p class="note">${note}</p>`:''}<dl>${st.join('')}</dl><div class="tags">${tags.filter(Boolean).map(x=>`<span>${x}</span>`).join('')}${perk}</div></article>`; }
+function buildIntel(){
+  $('#intel-tabs').innerHTML=INTEL_TABS.map(t=>`<button type="button" role="tab" class="${t.id==='swarm'?'swarm':''}" data-itab="${t.id}" aria-selected="${t.id===intelTab}">${t.name}</button>`).join('');
+  const T=INTEL_TABS.find(t=>t.id===intelTab)||INTEL_TABS[0];
+  $('#intel-grid').innerHTML=(T.units||[]).map(intelUnit).join('')+(T.buildings||[]).map(intelBuilding).join('');
+}
+$('#intel-tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-itab]'); if(!b) return; intelTab=b.dataset.itab; buildIntel(); $(`[data-itab="${intelTab}"]`).focus(); });
+$('#intel-tabs').addEventListener('keydown',e=>{ if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return; const i=INTEL_TABS.findIndex(t=>t.id===intelTab), n=INTEL_TABS.length;
+  intelTab=INTEL_TABS[(i+(e.key==='ArrowRight'?1:n-1))%n].id; buildIntel(); $(`[data-itab="${intelTab}"]`).focus(); });
+$('#intel-back').addEventListener('click',()=>goMenu(ui.intelFrom||'menu'));
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }

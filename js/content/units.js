@@ -23,10 +23,10 @@ const UNITS = {
     cost:60, supply:1, buildTime:8, key:'M', bio:true,
     desc:'Heals nearby infantry automatically. Carries a light sidearm, but only fires when nobody nearby needs healing.' },
   engineer: { name:'Engineer', faction:'corps', sprite:'engineer', role:'Combat engineer',
-    hp:50, speed:62, radius:9, sight:6, range:3.5, damage:3, cooldown:1.0, attack:'bullet',
+    hp:50, speed:62, radius:9, sight:7, range:5, damage:4, cooldown:1.0, attack:'bullet',
     cost:60, supply:1, buildTime:8, key:'E', bio:true, builder:true, repair:22, autoRepair:7, carrySpeed:0.6, packTime:2,
     builds:['relay','sentry','barricade'],
-    desc:'Builds relay towers, sentry guns and barricades. Repairs damaged structures nearby on its own.' },
+    desc:'Builds relay towers, sentry guns and barricades. Repairs damaged structures nearby on its own. His carbine reaches as far as a rifle, and he shoots back while he works.' },
 
   crawler: { name:'Crawler', faction:'swarm', sprite:'crawler', role:'Swarm runner',
     hp:30, speed:100, radius:7, sight:6, range:0.6, damage:5, cooldown:0.55, attack:'melee',
