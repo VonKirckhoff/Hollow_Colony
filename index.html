@@ -69,7 +69,8 @@
 
 <!-- CAMPAIGN -->
 <section class="screen" id="s-campaign" hidden>
-  <div class="sheet">
+  <div class="sheet camp">
+   <div class="camp-l">
     <div class="eyebrow">CAMPAIGN · LUNAR CORPS</div>
     <h2 class="h">Operation Hollow Light</h2>
     <div class="lbl" id="camp-progress"></div>
@@ -77,8 +78,9 @@
     <div class="defeat-row" id="defeat-row"><span class="lbl">On defeat</span><div class="seg" role="radiogroup" aria-label="On defeat">
       <button type="button" role="radio" data-rd="0">Retry with the same soldiers</button><button type="button" role="radio" data-rd="1">☠ Real death</button></div>
       <p class="rd-note" id="rd-note"></p></div>
-    <div class="missions" id="mission-list"></div>
     <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
+   </div>
+   <div class="camp-r"><div class="lbl">Missions</div><div class="missions" id="mission-list"></div></div>
   </div>
 </section>
 
