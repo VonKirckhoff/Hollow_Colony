@@ -164,6 +164,7 @@ Een groep die je verplaatst houdt zijn vorm: elke eenheid bewaart haar positie t
 
 ### Tactische formaties
 Selecteer minstens twee eenheden en druk **Z** (cirkel), **X** (wig/speer) of **V** (vierkant). Dezelfde knoppen staan ook op de commandokaart.
+- **Kleine groepen:** heeft een cirkel of vierkant minder dan vier strijders, dan staan Medics en Engineers mee op de rand (afwisselend met de strijders); anders zou de groep in een rechte lijn staan.
 - **Ondersteuning in het midden:** Medics, Engineers en escortes (zoals Dr. Maas) staan beschermd in het centrum. Bij de wig staan ze net achter de punt.
 - **Wig:** Pyros komen vooraan, dan Gunners, en Troopers vullen de vleugels. De punt wijst altijd in de looprichting.
 - **Cirkel en vierkant:** elke strijder neemt de dichtstbijzijnde plek op de rand.

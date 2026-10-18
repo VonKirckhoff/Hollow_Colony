@@ -89,7 +89,11 @@ function formationSlots(shape,nf,ns,sp){
 function placeFormation(units,wx,wy,dir,type){
   const sup=units.filter(isSupport); let fig=units.filter(u=>!isSupport(u));
   if(!fig.length){ fig=sup.splice(0); }
-  const shape=units[0].formation.shape, sp=FORMATION.spacing*1.15, slots=formationSlots(shape,fig.length,sup.length,sp);
+  const shape0=units[0].formation.shape;
+  /* a circle or square needs at least 4 points on its outline: with fewer fighters, support takes a place on the outline too
+     (otherwise 2 fighters + support in the middle make a straight line) */
+  if(shape0!=='wedge' && fig.length<4 && sup.length){ const all=[]; while(fig.length||sup.length){ if(fig.length) all.push(fig.shift()); if(sup.length) all.push(sup.shift()); } fig=all; }
+  const shape=shape0, sp=FORMATION.spacing*1.15, slots=formationSlots(shape,fig.length,sup.length,sp);
   const c=Math.cos(dir), s=Math.sin(dir), toWorld=o=>({x:wx+o.x*c-o.y*s, y:wy+o.x*s+o.y*c});
   const pace=Math.min(...units.map(speedOf)), assign=[];
   // fighters: wedge fills the tip by rank; other shapes take the nearest free slot
