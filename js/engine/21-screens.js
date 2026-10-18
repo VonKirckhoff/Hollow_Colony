@@ -179,12 +179,13 @@ function showEnd(){
   if(o.win && m.id!=='skirmish'){ const r=ui.progress.results[m.id], pb=G.prevBest, up=pb&&DIFF_RANK[G.diffKey]>DIFF_RANK[pb.diff];
     $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; }
   const ev=$('#e-vets'); const rr=G.rosterResult, promoted=(rr&&rr.promoted)||[], hero=heroOf();
-  if(o.win && m.id!=='skirmish' && (promoted.length||(rr&&(rr.joined.length||rr.fallen.length)))){ ev.hidden=false;
+  const fallenAll=(rr&&(rr.fallenAll||rr.fallen))||[];
+  if(o.win && m.id!=='skirmish' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length)))){ ev.hidden=false;
     const star=n=>hero&&hero.name===n?'<span class="vstar">★</span> ':'';
     // one row per rank, highest first; names alphabetical within a rank
     const byRank=list=>{ const m2=new Map(); for(const v of list){ if(!m2.has(v.rank)) m2.set(v.rank,[]); m2.get(v.rank).push(v.name); }
       return [...m2.entries()].sort((a,b)=>b[0]-a[0]).map(([r,ns])=>`<div class="vrow"><span class="vrank">${RANKS[r].mark||'·'} ${RANKS[r].name}</span><span>${ns.sort((a,b)=>a.localeCompare(b)).map(n=>star(n)+n).join(', ')}</span></div>`).join(''); };
-    const fallen=(rr&&rr.fallen||[]).slice().sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
+    const fallen=fallenAll.slice().sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
     ev.innerHTML=(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
       (rr&&rr.joined.length?`<div class="vsec"><span class="lbl">New on the roster</span>${byRank(rr.joined)}</div>`:'')+
       (fallen.length?`<div class="vsec fallen"><span class="lbl">Fallen</span>${fallen.map(v=>`<div class="vrow"><span class="vrank">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'<span class="vstar">★</span> ':''}${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}</i></span></div>`).join('')}</div>`:''); }

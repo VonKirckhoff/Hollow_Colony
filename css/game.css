@@ -350,3 +350,5 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .np.new{animation:hc-np 2.4s ease;}
 @keyframes hc-np{0%,30%{border-color:var(--corps);box-shadow:0 0 14px rgba(255,179,71,.35);}100%{border-color:transparent;box-shadow:none;}}
 @media (max-width:640px){ .np .nbar{display:none;} .np{max-width:200px;} }
+.music-ctl .tb-btn[aria-pressed="true"]#btn-shuffle{border-color:var(--corps);color:var(--corps);}
+#btn-shuffle[aria-pressed="false"]{color:var(--dim);}

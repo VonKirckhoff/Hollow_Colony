@@ -17,7 +17,8 @@ const MUSIC=(()=>{
   const D2=73.42, N=s=>D2*Math.pow(2,(s+TR)/12);   // semitones above D2 (D=0, Eb=1, F=3, G=5, A=7, Bb=8, C=10, D3=12), shifted by the track's key
   function setTempo(trk){ BEAT=60/trk.bpm; S16=BEAT/4; BAR=BEAT*4; TR=trk.tr||0; }
   let ac=null, noiseBuf=null, irBuf=null, shapeHeavy=null, shapeLead=null, crushCurve=null;
-  let on=store.get('hc-music',true), vol=store.get('hc-music-vol',0.3), menuTrack=store.get('hc-music-track','hollow');
+  let on=store.get('hc-music',true), vol=store.get('hc-music-vol',0.3), menuTrack=store.get('hc-music-track','hollow'), shuffle=store.get('hc-music-shuffle',false);
+  if(menuTrack==='shuffle'){ menuTrack='hollow'; store.set('hc-music-track',menuTrack); }   /* older saves kept shuffle as a track; shuffle is now its own switch, off by default */
   let S=null, timer=null, preview=null;          // S = the running session (own buses, so stopping cuts everything cleanly)
 
   /* ---------- set-up ---------- */
@@ -299,14 +300,18 @@ const MUSIC=(()=>{
   const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', brief:'brief', cenotaph:'requiem', end:'end' };
   let scene='menu', armed=false;                 /* browsers only allow sound after the first click or key press */
   function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu';   /* victory: your menu music; defeat: the Cenotaph piece */
-    if(m!=='menu') return m; return menuTrack==='shuffle' ? (S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id) : menuTrack; }
-  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:!TRACK[id].screen&&menuTrack==='shuffle'}); }
+    if(m!=='menu') return m; return shuffle ? (S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id) : menuTrack; }
+  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:!TRACK[id].screen&&shuffle}); }
   function setScene(name){ scene=name; if(!MOODS[name]){ preview=null; stop(name==null?1.2:2.5); closePanel(); return; } applyScene(); }
   function setOn(v){ on=!!v; store.set('hc-music',on); if(on){ armed=true; applyScene(); } else { preview=null; stop(0.8); } label(); }
   function setVol(v){ vol=clamp(+v,0,1); store.set('hc-music-vol',vol); if(S) S.out.gain.setTargetAtTime(level(),ac.currentTime,0.1); }
   function playPreview(id){ armed=true; if(!on){ on=true; store.set('hc-music',true); label(); } preview=id; start(id,{fast:true}); }
   function stopPreview(){ preview=null; if(S) stop(1); applyScene(); refreshPanel(); }
-  function setMenuTrack(id){ menuTrack=id; store.set('hc-music-track',id); preview=null; if(S&&S.track.id===id&&MOODS[scene]==='menu'){ S.shuffle=false; refreshPanel(); return; } applyScene(); refreshPanel(); }
+  function setMenuTrack(id){ menuTrack=id; store.set('hc-music-track',id); setShuffle(false,true); preview=null; if(S&&S.track.id===id&&MOODS[scene]==='menu'){ S.shuffle=false; refreshPanel(); return; } applyScene(); refreshPanel(); }
+  function setShuffle(v,quiet){ shuffle=!!v; store.set('hc-music-shuffle',shuffle); shuffleLabel(); if(quiet) return; preview=null;
+    if(S&&MOODS[scene]==='menu'&&!S.track.screen){ S.shuffle=shuffle; if(!shuffle&&S.track.id!==menuTrack) applyScene(); } else applyScene(); refreshPanel(); }
+  function shuffleLabel(){ const b=document.getElementById('btn-shuffle'); if(b){ b.textContent=shuffle?'⤨ Shuffle on':'⤨ Shuffle off'; b.setAttribute('aria-pressed',shuffle); }
+    const c=document.getElementById('music-shuffle'); if(c) c.checked=shuffle; }
 
   /* ---------- timeline: one pass through a track's plan ---------- */
   const SECTION_NAME={ ruins:'Ruins', doom:'Doom', doomLead:'Doom', black:'Black', machine:'Machine', forge:'Forge', void:'Void', nebula:'Nebula', drift:'Drift',
@@ -329,7 +334,7 @@ const MUSIC=(()=>{
       return `<li class="trk ${isP?'playing':''}"><button type="button" class="play" data-mplay="${t.id}" aria-label="${isP?'Stop':'Play'} ${t.title}">${isP?'■':'▶'}</button>
         <div class="ti"><b>${t.title}</b><span class="st">${t.style} · ${t.bpm} BPM · ${(()=>{ const [lo,hi]=passLen(t); return hi-lo>1?`${mmss(lo)}–${mmss(hi)}`:mmss(lo); })()}</span><span class="ds">${t.desc}</span></div>
         ${t.screen?'<span class="pin dim">screen</span>':`<button type="button" class="pin ${isM?'on':''}" data-mmenu="${t.id}" aria-pressed="${isM}" title="Play this on the menu screens">${isM?'★ Menu':'☆ Menu'}</button>`}</li>`; }).join('');
-    $id('music-shuffle').checked=menuTrack==='shuffle'; drawTimeline(true); }
+    shuffleLabel(); drawTimeline(true); }
   let tlPass=null, tlTimer=null;
   function drawTimeline(rebuild){ const el=$id('music-tl'); if(!el) return;
     if(!S||!S.pass){ el.hidden=true; tlPass=null; return; } el.hidden=false; const p=S.pass;
@@ -343,6 +348,7 @@ const MUSIC=(()=>{
     const b=$id('btn-music'); if(b) b.addEventListener('click',()=>setOn(!on)); label();
     const tb=$id('btn-tracks'); if(tb) tb.addEventListener('click',()=>openPanel($id('music-panel').hidden));
     const np=$id('music-np'); if(np) np.addEventListener('click',()=>openPanel(true));
+    const sb=$id('btn-shuffle'); if(sb) sb.addEventListener('click',()=>setShuffle(!shuffle)); shuffleLabel();
     initBoot();
     const p=$id('music-panel'); if(!p) return;
     p.addEventListener('click',e=>{ const pl=e.target.closest('[data-mplay]'), mm=e.target.closest('[data-mmenu]');
@@ -350,7 +356,7 @@ const MUSIC=(()=>{
       if(pl){ const id=pl.dataset.mplay; if(S&&S.track.id===id) stopPreview(); else playPreview(id); const nb=p.querySelector(`[data-mplay="${id}"]`); if(nb) nb.focus({preventScroll:true}); return; }
       if(mm){ setMenuTrack(mm.dataset.mmenu); return; }
       const sk=e.target.closest('[data-mseek]'); if(sk){ seek(+sk.dataset.mseek); drawTimeline(true); return; } });
-    $id('music-shuffle').addEventListener('change',e=>setMenuTrack(e.target.checked?'shuffle':(MENU_TRACKS[0].id)));
+    $id('music-shuffle').addEventListener('change',e=>setShuffle(e.target.checked));
     p.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.stopPropagation(); closePanel(); $id('btn-tracks').focus(); } }); }
   /* the now-playing chip next to the buttons: title, section and progress; it flashes when the track changes (shuffle) */
   let npTrack=null;

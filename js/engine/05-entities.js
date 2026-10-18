@@ -75,6 +75,8 @@ function settleRoster(){
     R.fallen.unshift(rec); res.fallen.push(rec); }
   // promotions of soldiers who made it out, highest rank only
   res.promoted=Object.entries(P).filter(([id])=>alive.has(id)).map(([,p])=>p);
+  /* for the end screen: everyone with a name who fell in this mission, also fresh privates (the Cenotaph keeps only the veterans) */
+  res.fallenAll=Object.values(FV).map(f=>({ name:f.name, type:f.type, rank:Math.max(f.rank||0,P[f.id]?P[f.id].rank:0), kills:f.kills||0, missions:f.missions||0, hero:f.hero||undefined }));
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
   for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, risen:u.vet.risen||undefined };
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
