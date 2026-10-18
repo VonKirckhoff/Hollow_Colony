@@ -17,7 +17,11 @@ const MUSIC=(()=>{
   const D2=73.42, N=s=>D2*Math.pow(2,(s+TR)/12);   // semitones above D2 (D=0, Eb=1, F=3, G=5, A=7, Bb=8, C=10, D3=12), shifted by the track's key
   function setTempo(trk){ BEAT=60/trk.bpm; S16=BEAT/4; BAR=BEAT*4; TR=trk.tr||0; }
   let ac=null, noiseBuf=null, irBuf=null, shapeHeavy=null, shapeLead=null, crushCurve=null;
-  let on=store.get('hc-music',true), vol=store.get('hc-music-vol',0.3), menuTrack=store.get('hc-music-track','hollow'), shuffle=store.get('hc-music-shuffle',false), autoplay=store.get('hc-music-auto',false);
+  let on=store.get('hc-music',true), 
+    vol=store.get('hc-music-vol',0.3), 
+    menuTrack=store.get('hc-music-track','hollow'), 
+    shuffle=store.get('hc-music-shuffle',false), 
+    autoplay=store.get('hc-music-auto',false);
   if(shuffle&&autoplay) autoplay=false;
   if(menuTrack==='shuffle'){ menuTrack='hollow'; store.set('hc-music-track',menuTrack); }   /* older saves kept shuffle as a track; shuffle is now its own switch, off by default */
   let S=null, timer=null, preview=null;          // S = the running session (own buses, so stopping cuts everything cleanly)
