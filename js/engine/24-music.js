@@ -342,6 +342,8 @@ const MUSIC=(()=>{
   function initUI(){ const r=$id('music-vol'); if(r){ r.value=Math.round(vol*100); r.addEventListener('input',()=>setVol(r.value/100)); }
     const b=$id('btn-music'); if(b) b.addEventListener('click',()=>setOn(!on)); label();
     const tb=$id('btn-tracks'); if(tb) tb.addEventListener('click',()=>openPanel($id('music-panel').hidden));
+    const np=$id('music-np'); if(np) np.addEventListener('click',()=>openPanel(true));
+    initBoot();
     const p=$id('music-panel'); if(!p) return;
     p.addEventListener('click',e=>{ const pl=e.target.closest('[data-mplay]'), mm=e.target.closest('[data-mmenu]');
       if(e.target.closest('#music-close')){ closePanel(); $id('btn-tracks').focus(); return; }
@@ -350,6 +352,21 @@ const MUSIC=(()=>{
       const sk=e.target.closest('[data-mseek]'); if(sk){ seek(+sk.dataset.mseek); drawTimeline(true); return; } });
     $id('music-shuffle').addEventListener('change',e=>setMenuTrack(e.target.checked?'shuffle':(MENU_TRACKS[0].id)));
     p.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.stopPropagation(); closePanel(); $id('btn-tracks').focus(); } }); }
+  /* the now-playing chip next to the buttons: title, section and progress; it flashes when the track changes (shuffle) */
+  let npTrack=null;
+  function drawNowPlaying(){ const el=$id('music-np'); if(!el) return;
+    if(!S||!S.pass||!ac){ el.hidden=true; npTrack=null; return; } el.hidden=false; const p=S.pass, pos=clamp(ac.currentTime-p.start,0,p.bars*p.bar);
+    let acc=0, sec=p.parts[0]; for(const x of p.parts){ if(pos<(acc+x.b)*p.bar){ sec=x; break; } acc+=x.b; }
+    if(npTrack!==S.track.id){ npTrack=S.track.id; el.classList.remove('new'); void el.offsetWidth; el.classList.add('new'); }
+    el.innerHTML=`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="nt"><b>${S.track.title}</b> <small>· ${SECTION_NAME[sec.n]||sec.n} · ${mmss(pos)} / ${mmss(p.bars*p.bar)}</small></span><span class="nbar"><i style="width:${pos/(p.bars*p.bar)*100}%"></i></span>`; }
+  setInterval(drawNowPlaying,500);
+  /* boot gate: the first screen waits for a click or key, so the music can start right away */
+  function initBoot(){ const b=$id('boot'); if(!b) return;
+    try{ const probe=ctx(); if(probe && probe.state==='running'){ armed=true; return; } }catch(e){}   // sound already allowed (e.g. an installed app): no gate needed
+    if(!on) return; b.hidden=false; b.focus({preventScroll:true});
+    const go=e=>{ if(e) e.preventDefault(); b.classList.add('out'); setTimeout(()=>{ b.hidden=true; },950); b.removeEventListener('click',go); b.removeEventListener('keydown',go);
+      const f=document.querySelector('#s-menu .menu-btn'); if(f) f.focus({preventScroll:true}); };
+    b.addEventListener('click',go); b.addEventListener('keydown',go); }
   const kick0=()=>{ armed=true; if(ac&&ac.state==='suspended') ac.resume(); if(on&&MOODS[scene]&&!S) applyScene(); };
   document.addEventListener('pointerdown',kick0,{capture:true}); document.addEventListener('keydown',kick0,{capture:true});
   /* test hook: render a track offline (for checking levels without speakers) */

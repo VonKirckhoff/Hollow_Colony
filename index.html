@@ -40,6 +40,17 @@
 <div id="toast" hidden></div>
 
 <!-- MAIN MENU -->
+<!-- BOOT: browsers only allow sound after a click or key press, so the game opens on a gate -->
+<div class="boot" id="boot" hidden role="button" tabindex="0" aria-label="Start Hollow Colony">
+  <div class="boot-in">
+    <div class="eyebrow">LUNAR CORPS · TYCHO UPLINK</div>
+    <div class="boot-title">Hollow <span>Colony</span></div>
+    <div class="boot-log" aria-hidden="true"><span>&gt; signal from Kappa Station: lost</span><span>&gt; colony beacons: 0 of 7 responding</span><span>&gt; seismic activity beneath the regolith: rising</span></div>
+    <div class="boot-go">▶ Click or press any key</div>
+    <div class="boot-note">Sound on · headphones recommended</div>
+  </div>
+</div>
+
 <section class="screen" id="s-menu">
   <div class="sheet">
     <div class="eyebrow">LUNAR CORPS · FIELD OPERATIONS</div>
@@ -103,6 +114,7 @@
     <ul class="mp-list" id="music-list"></ul>
     <label class="mp-shuffle"><input type="checkbox" id="music-shuffle"> Shuffle all tracks on the menu screens</label>
   </div>
+  <button class="np" type="button" id="music-np" hidden aria-label="Now playing, open the music player"></button>
   <button class="tb-btn" type="button" id="btn-tracks" aria-expanded="false" aria-controls="music-panel">♫ Tracks</button>
   <button class="tb-btn" type="button" id="btn-music" aria-pressed="true" data-tip="Music|“Hollow Light”, generated live. Only on the menu screens, never during a mission.">♪ Music on</button>
   <label class="tb-vol">Vol <input type="range" id="music-vol" min="0" max="100" step="5" aria-label="Music volume"></label>
