@@ -19,6 +19,7 @@
     <div class="res" id="r-timer-wrap" hidden><span class="lbl" id="r-timer-lbl">Timer</span><b id="r-timer">0:00</b></div>
     <div class="spacer"></div>
     <span id="clock">00:00</span>
+    <span class="rd-badge" id="rd-badge" hidden title="Real death: whoever falls is gone, even if you lose">☠ Real death</span>
     <button class="tb-btn" id="btn-follow" type="button" data-tip="Camera follow|The camera moves along with your squad after an order. Key C.">Follow on</button>
     <button class="tb-btn hide-sm" id="btn-tracker" type="button" data-tip="Motion tracker|Shows moving Swarm near your selected squad and beeps faster as they close in. Key K.">Tracker on</button>
     <button class="tb-btn hide-sm" id="btn-voices" type="button" data-tip="Voices|Soldiers speak their lines out loud, using your browser's speech voices. Key O.">Voices on</button>
@@ -73,6 +74,9 @@
     <h2 class="h">Operation Hollow Light</h2>
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
+    <div class="defeat-row" id="defeat-row"><span class="lbl">On defeat</span><div class="seg" role="radiogroup" aria-label="On defeat">
+      <button type="button" role="radio" data-rd="0">Retry with the same soldiers</button><button type="button" role="radio" data-rd="1">☠ Real death</button></div>
+      <p class="rd-note" id="rd-note"></p></div>
     <div class="missions" id="mission-list"></div>
     <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
   </div>
