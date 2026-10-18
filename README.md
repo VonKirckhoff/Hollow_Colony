@@ -248,6 +248,14 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
 
 ### Geluid
+**Muziek: "Hollow Light".** Op de menuschermen speelt zacht een soundtrack die, net als de geluiden, live in de browser wordt opgewekt (Web Audio, geen audiobestanden). D frygisch, 72 BPM. Vier delen van elk 8 maten wisselen af in een telkens andere volgorde:
+- *Ruins*: een diepe drone, een monnikenkoor dat van "oe" naar "aa" opengaat, verre aambeelden, radioruis.
+- *Doom*: een muur van gestemde gitaren (twee sporen, links en rechts), halftempo drums, de Eb die pijn doet.
+- *Black*: een tremolo-gepikte melodie ver weg in de galm, dubbele basdrum, koor erboven.
+- *Machine*: industrial: aambeeld en zuiger, een cyberpunk-arpeggio door een delay, een sequencer-bas, glitches.
+
+Elk scherm heeft een eigen stemming: bij de **briefing** een hartslag, ruis en een spaarzame arpeggio; op de **Cenotaph** een doodsklok en een koor; in **zombie mode** speelt daar ook een speeldoos die net niet zuiver is. Tijdens een missie zwijgt de muziek. Rechtsonder op de menuschermen: *Music on/off* en een volumeschuif (standaard 30%, onthouden als `hc-music` en `hc-music-vol`). De muziek start bij je eerste klik (browserregel). Code: `js/engine/24-music.js`.
+
 Alle geluiden worden in de browser opgewekt met de Web Audio API; er zijn geen audiobestanden nodig. Het gaat om wapens, de Medic die geneest, het radarpiepje bij vijandelijk contact, bevelen, alarmen, golven, bouwen en herstellen, cocons, kratten, berichten en een melodietje bij winst of verlies. Geluiden ver buiten beeld klinken zachter. Het geluid start na je eerste klik (een browserregel). Met de knop **Sound** zet je alles uit.
 
 ### Doelmarkeringen
@@ -318,11 +326,11 @@ js/content/                     SECTION 1 — CONTENT: alles wat je normaal aanp
   missions/NN-<id>.js           één missie per bestand: MISSIONS.push({ … })
   skirmish.js                   startopstelling voor skirmish
 js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
-  00-core.js … 23-main-loop.js  basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
+  00-core.js … 24-music.js     basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
                                 (22-squad-life.js: tracker, zuur, dekking, fakkels, stemmen, gedenkteksten)
                                 pathfinding, beweging, gevecht, gedrag, gebouwen, economie,
                                 Swarm-AI, fog of war, mission API, update, berichten, tekenen,
-                                HUD, bevelen, invoer, schermen, hoofdlus
+                                HUD, bevelen, invoer, schermen, hoofdlus, muziek
 map-editor/                     de kaarteditor (leest de kaarten uit js/content/maps/)
 ```
 
@@ -331,7 +339,7 @@ map-editor/                     de kaarteditor (leest de kaarten uit js/content/
 1. eerst de content, dan de engine;
 2. `_maps.js` vóór de kaarten en `_missions.js` vóór de missies;
 3. de volgorde van de missieregels is de volgorde van de campagne (de nummers in de bestandsnamen zijn er enkel voor het overzicht);
-4. de engineblokken in hun nummervolgorde. Code die meteen bij het laden iets uitvoert (niet in een functie) mag alleen dingen gebruiken uit eerdere bestanden; het opstarten zelf gebeurt helemaal op het einde, in `23-main-loop.js`.
+4. de engineblokken in hun nummervolgorde. Code die meteen bij het laden iets uitvoert (niet in een functie) mag alleen dingen gebruiken uit eerdere bestanden; het opstarten zelf gebeurt in `23-main-loop.js`; `24-music.js` (de soundtrack) laadt daarna en start pas bij je eerste klik.
 
 ---
 

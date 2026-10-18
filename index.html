@@ -95,44 +95,85 @@
   </div>
 </section>
 
+<!-- MUSIC (menu screens only) -->
+<div class="music-ctl" id="music-ctl" hidden>
+  <button class="tb-btn" type="button" id="btn-music" aria-pressed="true" data-tip="Music|“Hollow Light”, generated live. Only on the menu screens, never during a mission.">♪ Music on</button>
+  <label class="tb-vol">Vol <input type="range" id="music-vol" min="0" max="100" step="5" aria-label="Music volume"></label>
+</div>
+
 <!-- MANUAL -->
 <section class="screen" id="s-manual" hidden>
-  <div class="sheet" style="max-width:760px">
+  <div class="sheet" style="max-width:860px">
     <div class="eyebrow">FIELD MANUAL</div>
     <h2 class="h">Controls</h2>
-    <dl class="manual">
-      <dt>Left drag</dt><dd>Select your units with a box. Click a unit to select it, double-click to select all of that type on screen. Shift adds to the selection.</dd>
-      <dt>Right click</dt><dd>Move, attack an enemy, pick up a salvage crate, repair a structure (engineers) or set a rally point (Command Post).</dd>
-      <dt>A + click</dt><dd>Attack: walk there and fight anything on the way. The squad stays aggressive on every later move, until you press S or H.</dd>
-      <dt>H</dt><dd>Defensive: hold position and only fire at targets in range. After every move they hold the new spot. Press H again to switch it off.</dd>
-      <dt>S</dt><dd>Cancel order: stop, and drop the attack or defensive stance.</dd>
-      <dt>Hover in the panel</dt><dd>Point at a soldier in the selection panel to light him up on the map and minimap. Point at a group name to light up the whole group.</dd>
-      <dt>Ctrl + 1–5</dt><dd>Save a control group. Press 1–5 to recall it.</dd>
-      <dt>Arrows, screen edge</dt><dd>Scroll the map. Middle-drag also works. Click or drag on the minimap to jump.</dd>
-      <dt>Space</dt><dd>Jump to the latest alert.</dd>
-      <dt>Z / X / V</dt><dd>Formation for the selected squad: circle, wedge or square. Medics and Engineers go in the centre, Pyros and Gunners take the tip of the wedge. The squad keeps the shape when it moves. Press the same key again to release it.</dd>
-      <dt>U / D</dt><dd>Engineer: pack up a Sentry Gun (or right-click an undamaged one) and deploy it again somewhere else. A carrying Engineer walks at 60% speed.</dd>
-      <dt>C</dt><dd>Camera follow on/off. When on, the camera moves along with your squad after each order. Scrolling yourself pauses it until the next order.</dd>
-      <dt>O</dt><dd>Voices on/off. Soldiers speak their lines out loud (the speech voices of your browser).</dd>
-      <dt>K</dt><dd>Motion tracker on/off. It shows Swarm moving near your selected squad, even in the dark, and beeps faster as they close in.</dd>
-      <dt>L + click</dt><dd>Throw a flare (a Trooper, Gunner or Pyro must be selected). It lights the ground for 45 seconds. Three per mission, six in the dark.</dd>
-      <dt>P / Esc</dt><dd>Pause menu. Esc also cancels building placement.</dd>
-    </dl>
+    <div class="mgroups">
+      <div class="mgroup"><h3>Select</h3><dl class="manual">
+        <dt>Left drag</dt><dd>Box-select your units. Click one to select it, double-click for all of that type on screen. Shift adds.</dd>
+        <dt>Ctrl + 1–5</dt><dd>Save a control group; 1–5 recalls it, twice jumps to it.</dd>
+        <dt>Panel hover</dt><dd>Point at a soldier in the selection panel to light him up on the map and minimap; a group name lights up the group.</dd>
+      </dl></div>
+      <div class="mgroup"><h3>Orders</h3><dl class="manual">
+        <dt>Right click</dt><dd>Move, attack an enemy, pick up a crate, repair (Engineer) or set a rally point.</dd>
+        <dt>A + click</dt><dd>Attack: move and fight on the way. Stays on for later moves.</dd>
+        <dt>H</dt><dd>Defensive: hold and fire at what comes in range; holds again after every move. H again: off.</dd>
+        <dt>S</dt><dd>Cancel order and drop the stance.</dd>
+        <dt>L + click</dt><dd>Throw a flare (Trooper, Gunner or Pyro).</dd>
+      </dl></div>
+      <div class="mgroup"><h3>Squad</h3><dl class="manual">
+        <dt>Z / X / V</dt><dd>Formation: circle, wedge or square. Support in the centre. Same key again releases it.</dd>
+        <dt>U / D</dt><dd>Engineer: pack up a Sentry Gun and deploy it elsewhere.</dd>
+        <dt>R / T / B</dt><dd>Engineer: build a Relay Tower, Sentry Gun or Barricade.</dd>
+      </dl></div>
+      <div class="mgroup"><h3>View and sound</h3><dl class="manual">
+        <dt>Arrows, edge</dt><dd>Scroll. Middle-drag also works; click or drag the minimap to jump.</dd>
+        <dt>Space</dt><dd>Jump to the latest alert.</dd>
+        <dt>C / K / O</dt><dd>Camera follow, motion tracker, voices on/off.</dd>
+        <dt>P / Esc</dt><dd>Pause. Esc also cancels a pending click.</dd>
+      </dl></div>
+    </div>
+
     <h2 class="h">Field notes</h2>
-    <dl class="manual">
-      <dt>Cover</dt><dd>Rock or a building between a soldier and a Spitter or Hunter cuts the damage he takes by 40%.</dd>
-      <dt>Suppression</dt><dd>Anything a Gunner hits slows down for a moment.</dd>
-      <dt>Acid blood</dt><dd>Swarm bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for a few seconds.</dd>
-      <dt>Swarm tactics</dt><dd>Big waves may send bait first or split up and come at you from the side.</dd>
-    </dl>
+    <div class="notes">
+      <div class="note"><b>Firing on the move</b>Soldiers keep walking but shoot back at anything in range, a bit slower than standing still. Engineers do the same while they build or repair.</div>
+      <div class="note"><b>Cover</b>Rock or a building between a soldier and a Spitter or Hunter cuts the damage he takes by 40%.</div>
+      <div class="note"><b>Suppression</b>Anything a Gunner hits slows down for a moment.</div>
+      <div class="note"><b>Acid blood</b>Swarm bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for 3 seconds.</div>
+      <div class="note"><b>Cocoons</b>Your dead are turned into cocoons that hatch in seconds. Burn them; a Pyro does triple damage.</div>
+      <div class="note"><b>Medic triage</b>The worst wounded first. His sidearm only comes out when nobody nearby needs him.</div>
+      <div class="note"><b>Darkness and flares</b>In dark missions everyone sees half as far. Flares light the ground for 45 seconds: three per mission, six in the dark.</div>
+      <div class="note"><b>Motion tracker</b>Shows Swarm moving near your selected squad, even in the dark, and beeps faster as they close in.</div>
+      <div class="note"><b>Swarm tactics</b>Big waves may send bait first, or split up and come at you from the side.</div>
+      <div class="note"><b>Hives regrow</b>A hive left alone heals itself. Once you start, finish it.</div>
+      <div class="note"><b>Landing pads</b>Order replacements from the pad. Never more than the squad you started with.</div>
+      <div class="note"><b>Intel</b>Every soldier, structure and enemy with its numbers: see Intel in the main menu.</div>
+    </div>
+
     <h2 class="h">Factions</h2>
     <div class="factions">
-      <div class="faction"><b style="color:var(--corps)">Lunar Corps</b>Earn salvage from Relay Towers built on relay pads and from crates on the field. Each tower also adds supply. Engineers build, Medics heal.</div>
-      <div class="faction"><b style="color:var(--swarm)">The Swarm</b>Grows from hives. Anything living it kills becomes a cocoon that hatches into new Swarm. Destroy cocoons fast; Pyros do triple damage to them.</div>
-      <div class="faction"><b style="color:var(--corps)">Veterans</b>Every soldier has a name and earns XP by killing (Medics by healing, Engineers by building). Ranks Corporal, Sergeant, Veteran and Lieutenant add HP, damage and rate of fire, and a Lieutenant gains an ability of his type (Trooper grenade, Gunner steady aim on the move, Pyro long flame, Medic heals everyone around him, Engineer works twice as fast). Your own soldier can go one step further, to Captain: soldiers close to him fire faster and take less damage. Survivors carry over to the next campaign mission; the fallen go on the Cenotaph. In zombie mode you can raise them from there.</div>
-      <div class="faction"><b style="color:var(--dim)">The Grey</b>Hunters who earn renown through honourable kills. Not yet deployable in this version.</div>
+      <div class="faction"><b style="color:var(--corps)">Lunar Corps</b><span class="ftag">You</span>
+        <ul><li>Salvage from crates and from Relay Towers on relay pads. Each tower adds supply.</li>
+            <li>Train soldiers at the Command Post, or order them in at a landing pad.</li>
+            <li>Troopers, Gunners and Pyros fight; Medics heal; Engineers build, repair and arm charges.</li></ul></div>
+      <div class="faction"><b style="color:var(--swarm)">The Swarm</b><span class="ftag">Enemy</span>
+        <ul><li>Grows from hives and comes in waves that get bigger.</li>
+            <li>Crawlers and Drones rush, Spitters lob acid from range, Brutes break walls.</li>
+            <li>Everything living it kills becomes a cocoon: new Swarm.</li></ul></div>
+      <div class="faction"><b style="color:#7ff6ff">The Grey</b><span class="ftag">Unknown</span>
+        <ul><li>Cloaked hunters, seen only when they fire, are hit or come close.</li>
+            <li>They hunt your strongest soldier and fall back when wounded.</li>
+            <li>Not playable yet.</li></ul></div>
     </div>
-    <div class="row"><button class="btn" type="button" data-go="menu">Back</button></div>
+
+    <h2 class="h">Veterans</h2>
+    <div class="ranks" id="manual-ranks"></div>
+    <div class="notes">
+      <div class="note"><b>Earning XP</b>Kills (a Spitter 2, a Brute 4, a hive 5). Medics earn by healing, Engineers by building and repairing.</div>
+      <div class="note"><b>Lieutenant abilities</b>Trooper grenade · Gunner steady aim on the move · Pyro long flame · Medic heals everyone around him · Engineer works twice as fast.</div>
+      <div class="note"><b>Your own soldier</b>Enlist him on the campaign screen. He goes on every mission and only he can become Captain: soldiers near him fire faster and take less damage.</div>
+      <div class="note"><b>The roster</b>Survivors with XP carry over to the next campaign mission and replace starting soldiers of their type.</div>
+      <div class="note"><b>Cenotaph</b>The fallen are cut into stone. In zombie mode you can raise them once.</div>
+    </div>
+    <div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="intel">Intel</button></div>
   </div>
 </section>
 
@@ -253,5 +294,6 @@
 <script src="js/engine/21-screens.js"></script>
 <script src="js/engine/22-squad-life.js"></script>
 <script src="js/engine/23-main-loop.js"></script>
+<script src="js/engine/24-music.js"></script>
 </body>
 </html>

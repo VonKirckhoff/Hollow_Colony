@@ -1,12 +1,15 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
 const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel'];
-function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name; }
+function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name;
+  if(typeof MUSIC!=='undefined') MUSIC.setScene(name);   /* menu screens have music, missions do not */
+  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || name==='end'; }
 function goMenu(name){
   if(name==='menu'){ ui.mode='menu'; G=null; $('#hud').hidden=true; resize(); }
   if(name==='campaign') buildCampaign();
   if(name==='skirmish') buildSkirmish();
   if(name==='veterans') buildVeterans();
+  if(name==='manual') $('#manual-ranks').innerHTML=rankCards();
   if(name==='cenotaph') buildCenotaph();
   if(name==='intel'){ const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='intel') ui.intelFrom=cur; buildIntel(); }
   show(name); syncDiff();
@@ -41,12 +44,13 @@ $('#hero-card').addEventListener('click',e=>{
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return; if(b.getAttribute('aria-disabled')==='true' && !e.shiftKey){ toast('Finish the previous mission first. Shift-click to play it anyway.',true); return; } openBriefing(+b.dataset.mission); });
+function rankCards(){ return RANKS.map(k=>`<div><b>${k.mark||'·'} ${k.name}</b><span>${k.xp} XP${k.heroOnly?' · your own soldier only':''}</span><span>${k.hp>1?`+${Math.round((k.hp-1)*100)}% HP, +${Math.round((k.dmg-1)*100)}% damage, +${Math.round((k.rate-1)*100)}% rate`:'base'}</span>${k.perk&&!k.aura?'<span>+ an ability of his type</span>':''}${k.aura?`<span>+ leads: soldiers within ${AURA.radius} tiles fire ${Math.round((AURA.rate-1)*100)}% faster, take ${Math.round(AURA.armor*100)}% less damage</span>`:''}</div>`).join(''); }
 function buildVeterans(){
   const R=ui.roster;
   $('#roster-list').innerHTML = R.active.length ? `<div class="rrow rhead"><span>Rank</span><span>Name</span><span>Role</span><span>XP</span><span>Kills</span><span>Missions</span></div>`+
     R.active.map(v=>{ const nx=nextRank(v); return `<div class="rrow"><span class="rmark">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'★ ':''}${v.name}${v.risen?' <i class="risen">☠ risen</i>':''}</span><span class="rdim"><img alt="" src="${iconUrl(v.type)}">${UNITS[v.type].name}</span><span>${v.xp}${nx?`<i class="rdim"> / ${nx.xp}</i>`:''}</span><span>${v.kills||0}</span><span>${v.missions||0}</span></div>`; }).join('')
     : '<p class="lede">No veterans yet. Win a campaign mission and your experienced survivors will be listed here.</p>';
-  $('#rank-list').innerHTML=RANKS.map(k=>`<div><b>${k.mark||'·'} ${k.name}</b><span>${k.xp} XP${k.heroOnly?' · your own soldier only':''}</span><span>${k.hp>1?`+${Math.round((k.hp-1)*100)}% HP, +${Math.round((k.dmg-1)*100)}% damage, +${Math.round((k.rate-1)*100)}% rate`:'base'}</span>${k.perk&&!k.aura?`<span>Ability: ${HERO_TYPES.map(t=>`${UNITS[t].name} ${PERKS[t].name.toLowerCase()}`).join(', ')}</span>`:''}${k.aura?`<span>Leads: soldiers within ${AURA.radius} tiles fire ${Math.round((AURA.rate-1)*100)}% faster and take ${Math.round(AURA.armor*100)}% less damage. If he falls, the squad wavers.</span>`:''}</div>`).join('');
+  $('#rank-list').innerHTML=rankCards();
   $('#btn-ceno2').textContent=`Cenotaph (${R.fallen.length})`;
 }
 let vetArm=null;
