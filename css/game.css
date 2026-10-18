@@ -363,3 +363,16 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .rd-brief{color:var(--danger);font-weight:600;}
 .vetnote .vsec.rd{color:var(--danger);}
 .vetnote .vsec.rd .lbl{color:var(--danger);}
+
+/* ---------- campaign: two columns, so nothing needs scrolling on a desktop screen ---------- */
+#s-campaign{background:linear-gradient(90deg,rgba(7,8,12,.86) 0%,rgba(7,8,12,.66) 50%,rgba(7,8,12,.42) 100%);}
+#s-campaign .hero-card,#s-campaign .defeat-row,#s-campaign .mission{background:rgba(17,19,26,.74);backdrop-filter:blur(2px);}
+.sheet.camp{max-width:1280px;margin-right:auto;}
+.camp-l,.camp-r{display:grid;gap:16px;align-content:start;}
+.camp-r{gap:8px;}
+@media (min-width:1000px){
+  .sheet.camp{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:32px;align-items:start;margin-left:clamp(0px,4vw,64px);}
+  .sheet.camp .h{font-size:clamp(26px,2.6vw,40px);}
+  .camp-r .mission{padding:9px 14px;}
+  .camp-r .mission .ms{font-size:11.5px;}
+}
