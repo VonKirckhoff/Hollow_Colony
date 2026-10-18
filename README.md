@@ -102,7 +102,7 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - Bij een promotie meldt de radio het, verschijnt "PROMOTED" en krijgt de soldaat een kwart van zijn levenspunten terug. Het rangteken staat boven de soldaat en in het selectiepaneel; daar zie je ook naam, XP, kills en aantal missies.
 - **Rooster:** win je een campagnemissie, dan gaan alle overlevenden met XP naar het rooster (max. 30, de meest ervarenen eerst). In de volgende campagnemissie vervangen ze startsoldaten van hetzelfde type. Wie niet meteen een plaats heeft, staat in **reserve** en komt als eerste zodra je dat type traint of via de dropship bestelt.
 - **Gesneuveld is gesneuveld:** een veteraan die sterft in een missie die je wint, verdwijnt van het rooster en komt op de **Cenotaph**. Verlies je de missie, dan verandert het rooster niet (je kan opnieuw proberen).
-- De knop **Veterans** in de campagnelijst toont het rooster en de rangen; de knop **Cenotaph** toont de gesneuvelden. De briefing toont wie meegaat. Het eindscherm toont promoties (per soldaat alleen de hoogste rang die hij haalde, en alleen van wie de missie overleefde), nieuwkomers en gesneuvelden (met de rang die ze op het moment van hun dood hadden).
+- De knop **Veterans** in de campagnelijst toont het rooster en de rangen; de knop **Cenotaph** toont de gesneuvelden. De briefing toont wie meegaat. Het eindscherm toont promoties (per soldaat alleen de hoogste rang die hij haalde, en alleen van wie de missie overleefde) en nieuwkomers, **gegroepeerd per rang** (hoogste eerst, namen alfabetisch, je eigen soldaat met ★), en de gesneuvelden elk op een eigen regel, gesorteerd op rang, met type, missies en kills.
 - **Namen:** alleen Nederlandstalige familienamen (`SURNAMES` in js/content/veterans.js). De eerste soldaten van een nieuwe campagne heten altijd, in deze volgorde, **Van Kerckhove, Heem, Van Damme, Vikernes en Verstappen** (`STARTER_NAMES`), zolang die namen vrij zijn. Een bewaard rooster met namen die niet in de lijst staan, krijgt bij het laden nieuwe namen.
 - **Je eigen soldaat:** bovenaan het campagnescherm staat *Enlist your own soldier*. Geef een naam (2 tot 18 tekens, uniek) en kies een type (Trooper, Gunner, Pyro, Medic of Engineer). Hij gaat mee op elke campagnemissie (hij vervangt een starter van zijn type, of komt er extra bij), draagt een **gouden ster** boven zijn hoofd en verdient rang zoals elke veteraan. Na zijn eerste missie ligt zijn type vast; de naam kan je altijd wijzigen met *Edit*. Sneuvelt hij, dan komt hij op de Cenotaph en kan je een nieuwe soldaat inlijven. Alleen hij kan Captain worden.
 - **Intel** (knop in het hoofdmenu en op het campagnescherm): een overzicht met tabbladen **Lunar Corps**, **Structures**, **Swarm** en **Other**. Per eenheid of gebouw een kaart met figuurtje, beschrijving, een korte veldnotitie, en de cijfers: HP, schade per seconde, bereik, snelheid (tegels per seconde), zicht, kostprijs of XP per kill, pantser, wanneer de vijand verschijnt, en de Lieutenant-vaardigheid. De cijfers komen rechtstreeks uit `UNITS` en `BUILDINGS`, dus pas je die aan, dan klopt Intel vanzelf. Welke eenheden op welk tabblad staan en de veldnotities staan in `js/content/intel.js`. Pijltjestoetsen links/rechts wisselen van tabblad.
@@ -251,6 +251,10 @@ Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squ
 **Muziek.** Op de menuschermen speelt zacht een soundtrack die, net als de geluiden, live in de browser wordt opgewekt (Web Audio, geen audiobestanden). Tijdens een missie zwijgt ze. Rechtsonder op de menuschermen: **♫ Tracks** (de muziekspeler), *Music on/off* en een volumeschuif (standaard 30%). De muziek start bij je eerste klik (browserregel).
 
 **De muziekspeler** (*♫ Tracks*) klapt een venster open met alle stukken. Met ▶ beluister je er een (het blijft spelen tot je ■ drukt, ook als je van scherm wisselt); met *☆ Menu* kies je wat er op de menuschermen speelt; *Shuffle* laat alle stukken afwisselen, met een overgang na elk stuk. Je keuze wordt onthouden (`hc-music-track`). Esc of ✕ sluit het venster.
+
+Bovenaan het venster staat een **tijdlijn** van het stuk dat speelt: een blok per deel (Ruins, Doom, Black …), een afspeelkop, en de tijd (verstreken / totaal). Klik op een blok om naar dat deel te springen. In de lijst staat bij elk stuk hoe lang één doorloop duurt (bij Hollow Light wisselt dat, omdat de volgorde telkens anders is). De stukken worden live opgewekt en spelen dus eindeloos: na een doorloop begint de volgende, met kleine variaties.
+
+Ook op het **eindscherm** speelt muziek: na een overwinning je menumuziek, na een nederlaag het stuk van de Cenotaph.
 
 | Stuk | Stijl | Tempo | Wat je hoort |
 |---|---|---|---|
@@ -516,7 +520,7 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 | `UNITS.broodmother` | `hp` (14000), `regen` (20), `chargeEvery` (10) … | Zie *De Brood Mother* hierboven |
 | `UNITS.hunter` | `retreatAt` (0.45) | Bij welk deel van zijn hp de Grey Hunter vlucht |
 | `UNITS.medic` | `heal` (9), `healRange` (3.5) | Genezing per seconde en bereik |
-| `UNITS.engineer` | `range` (5), `damage` (4) | De Engineer schiet even ver als een Trooper (Spitter: 4,6) en schiet terug terwijl hij bouwt, herstelt of inpakt |
+| `UNITS.engineer` | `speed` (68 = 2,1 tegels/s, zoals de Medic), `range` (5), `damage` (4) | De Engineer schiet even ver als een Trooper (Spitter: 4,6) en schiet terug terwijl hij bouwt, herstelt of inpakt |
 | missie `swarm` | `rate`, `guardMax`, `guardEvery`, `waves` | Groei, bewakers en golven per missie |
 
 ---

@@ -281,24 +281,26 @@ const MUSIC=(()=>{
     while(S.next < limit){
       if(!S.queue.length){
         if(S.shuffle && S.cycle>0){ const pool=MENU_TRACKS.filter(t=>t.id!==S.track.id); S.shuffleNext=pick(pool).id; return; }   // next track, crossfaded
-        S.queue=S.track.plan(S.cycle).map(x=>x.slice()); S.cycle++; }
+        S.queue=S.track.plan(S.cycle).map(x=>x.slice()); S.cycle++; newPass(S.next,0); }
       const cur=S.queue[0]; try{ SECTIONS[cur[0]](S.next,S.bar); }catch(e){ console.error(e); }
       S.next+=BAR; S.bar++; if(S.bar>=cur[1]){ S.queue.shift(); S.bar=0; }
     } }
   function start(id,opt={}){ if(!ctx()) return; if(ac.state==='suspended') ac.resume();
-    const trk=TRACK[id]||TRACK.hollow; if(S && S.track===trk && !!S.shuffle===!!opt.shuffle) return;
-    if(S) stop(3);                                                             // crossfade into a fresh session
+    const trk=TRACK[id]||TRACK.hollow; if(S && S.track===trk && !!S.shuffle===!!opt.shuffle && opt.from==null) return;
+    if(S) stop(opt.from!=null?1.2:3);                                          // crossfade into a fresh session
     setTempo(trk); S=buildSession(trk); S.track=trk; S.shuffle=!!opt.shuffle; S.queue=[]; S.bar=0; S.cycle=0; S.next=ac.currentTime+0.15;
+    if(opt.from!=null && opt.plan){ S.queue=opt.plan.map(x=>x.slice()); S.cycle=opt.cycle||1; newPass(S.next,opt.from); S.queue.splice(0,opt.from); }   // jump to a section
     S.out.gain.setValueAtTime(0.0001,ac.currentTime); S.out.gain.exponentialRampToValueAtTime(level(),ac.currentTime+(opt.fast?1.5:4));
     clearInterval(timer); timer=setInterval(tick,60); tick(); refreshPanel(); }
   function stop(fade=1.6){ if(!S) return; const s=S; S=null; clearInterval(timer); timer=null;
     const now=ac.currentTime; s.out.gain.cancelScheduledValues(now); s.out.gain.setValueAtTime(Math.max(0.0001,s.out.gain.value),now); s.out.gain.exponentialRampToValueAtTime(0.0001,now+fade);
     setTimeout(()=>{ try{ s.out.disconnect(); }catch(e){} },fade*1000+4000); refreshPanel(); }
   const level=()=>Math.max(0.0001,vol*0.6*((S&&S.track&&S.track.gain)||1));
-  const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', brief:'brief', cenotaph:'requiem' };
+  const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', brief:'brief', cenotaph:'requiem', end:'end' };
   let scene='menu', armed=false;                 /* browsers only allow sound after the first click or key press */
-  function sceneTrack(){ const m=MOODS[scene]; if(!m) return null; if(m!=='menu') return m; return menuTrack==='shuffle' ? (S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id) : menuTrack; }
-  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:MOODS[scene]==='menu'&&menuTrack==='shuffle'}); }
+  function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu';   /* victory: your menu music; defeat: the Cenotaph piece */
+    if(m!=='menu') return m; return menuTrack==='shuffle' ? (S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id) : menuTrack; }
+  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:!TRACK[id].screen&&menuTrack==='shuffle'}); }
   function setScene(name){ scene=name; if(!MOODS[name]){ preview=null; stop(name==null?1.2:2.5); closePanel(); return; } applyScene(); }
   function setOn(v){ on=!!v; store.set('hc-music',on); if(on){ armed=true; applyScene(); } else { preview=null; stop(0.8); } label(); }
   function setVol(v){ vol=clamp(+v,0,1); store.set('hc-music-vol',vol); if(S) S.out.gain.setTargetAtTime(level(),ac.currentTime,0.1); }
@@ -306,19 +308,37 @@ const MUSIC=(()=>{
   function stopPreview(){ preview=null; if(S) stop(1); applyScene(); refreshPanel(); }
   function setMenuTrack(id){ menuTrack=id; store.set('hc-music-track',id); preview=null; if(S&&S.track.id===id&&MOODS[scene]==='menu'){ S.shuffle=false; refreshPanel(); return; } applyScene(); refreshPanel(); }
 
+  /* ---------- timeline: one pass through a track's plan ---------- */
+  const SECTION_NAME={ ruins:'Ruins', doom:'Doom', doomLead:'Doom', black:'Black', machine:'Machine', forge:'Forge', void:'Void', nebula:'Nebula', drift:'Drift',
+    forest:'Forest', swell:'Swell', storm:'Storm', room:'Room', ache:'Ache', orbit:'Orbit', toll:'Toll', procession:'Procession', brief:'Briefing', requiem:'Requiem' };
+  function newPass(at0,skip){ const parts=S.queue.map(([n,b])=>({n,b})); let pre=0; for(let k=0;k<skip;k++) pre+=parts[k].b;
+    S.pass={ id:(S.pass?S.pass.id+1:1), parts, bars:parts.reduce((a,p)=>a+p.b,0), bar:BAR, start:at0-pre*BAR, plan:parts.map(p=>[p.n,p.b]), cycle:S.cycle }; }
+  function passLen(trk){ setTempo(trk); const L=[]; for(let k=0;k<12;k++) L.push(trk.plan(0).reduce((a,p)=>a+p[1],0)*BAR); if(S) setTempo(S.track); return [Math.min(...L),Math.max(...L)]; }
+  const mmss=x=>{ x=Math.max(0,Math.round(x)); return Math.floor(x/60)+':'+String(x%60).padStart(2,'0'); };
+  function seek(k){ if(!S||!S.pass) return; const p=S.pass; start(S.track.id,{from:k,plan:p.plan,cycle:p.cycle,shuffle:S.shuffle,fast:true}); if(preview) preview=S.track.id; }
+
   /* ---------- the music player (fold-out panel) ---------- */
   const $id=x=>document.getElementById(x);
   function label(){ const b=$id('btn-music'); if(b){ b.textContent=on?'♪ Music on':'♪ Music off'; b.setAttribute('aria-pressed',on); } }
-  function openPanel(open){ const p=$id('music-panel'), b=$id('btn-tracks'); if(!p) return; p.hidden=!open; b.setAttribute('aria-expanded',open); if(open){ refreshPanel(); const f=p.querySelector('button'); if(f) f.focus({preventScroll:true}); } }
+  function openPanel(open){ const p=$id('music-panel'), b=$id('btn-tracks'); if(!p) return; p.hidden=!open; b.setAttribute('aria-expanded',open); clearInterval(tlTimer); if(open) tlTimer=setInterval(()=>drawTimeline(false),250); if(open){ refreshPanel(); const f=p.querySelector('button'); if(f) f.focus({preventScroll:true}); } }
   function closePanel(){ openPanel(false); }
   function refreshPanel(){ const list=$id('music-list'); if(!list||$id('music-panel').hidden) return;
     const playing=S&&S.track.id;
     $id('music-now').innerHTML=playing?`<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span> ${S.track.title}${preview?' · preview':S.shuffle?' · shuffle':''}`:'Silent';
     list.innerHTML=TRACKS.map(t=>{ const isP=playing===t.id, isM=menuTrack===t.id;
       return `<li class="trk ${isP?'playing':''}"><button type="button" class="play" data-mplay="${t.id}" aria-label="${isP?'Stop':'Play'} ${t.title}">${isP?'■':'▶'}</button>
-        <div class="ti"><b>${t.title}</b><span class="st">${t.style} · ${t.bpm} BPM</span><span class="ds">${t.desc}</span></div>
+        <div class="ti"><b>${t.title}</b><span class="st">${t.style} · ${t.bpm} BPM · ${(()=>{ const [lo,hi]=passLen(t); return hi-lo>1?`${mmss(lo)}–${mmss(hi)}`:mmss(lo); })()}</span><span class="ds">${t.desc}</span></div>
         ${t.screen?'<span class="pin dim">screen</span>':`<button type="button" class="pin ${isM?'on':''}" data-mmenu="${t.id}" aria-pressed="${isM}" title="Play this on the menu screens">${isM?'★ Menu':'☆ Menu'}</button>`}</li>`; }).join('');
-    $id('music-shuffle').checked=menuTrack==='shuffle'; }
+    $id('music-shuffle').checked=menuTrack==='shuffle'; drawTimeline(true); }
+  let tlPass=null, tlTimer=null;
+  function drawTimeline(rebuild){ const el=$id('music-tl'); if(!el) return;
+    if(!S||!S.pass){ el.hidden=true; tlPass=null; return; } el.hidden=false; const p=S.pass;
+    if(rebuild||tlPass!==p.id+':'+S.track.id){ tlPass=p.id+':'+S.track.id; let acc=0;
+      el.innerHTML=`<div class="tl-bar">${p.parts.map((x,k)=>{ const w=x.b/p.bars*100, l=acc/p.bars*100; acc+=x.b; return `<button type="button" class="tl-seg" data-mseek="${k}" style="left:${l}%;width:${w}%" title="Jump to ${SECTION_NAME[x.n]||x.n}"><span>${SECTION_NAME[x.n]||x.n}</span></button>`; }).join('')}<i class="tl-head" id="music-head"></i></div>
+        <div class="tl-time"><span id="music-pos">0:00</span><span>${mmss(p.bars*p.bar)}</span></div>`; }
+    const pos=clamp(ac.currentTime-p.start,0,p.bars*p.bar), f=pos/(p.bars*p.bar);
+    const h=$id('music-head'); if(h) h.style.left=(f*100)+'%'; const t=$id('music-pos'); if(t) t.textContent=mmss(pos);
+    let acc=0; el.querySelectorAll('.tl-seg').forEach((b,k)=>{ const x=p.parts[k]; b.classList.toggle('on',pos>=acc*p.bar&&pos<(acc+x.b)*p.bar); acc+=x.b; }); }
   function initUI(){ const r=$id('music-vol'); if(r){ r.value=Math.round(vol*100); r.addEventListener('input',()=>setVol(r.value/100)); }
     const b=$id('btn-music'); if(b) b.addEventListener('click',()=>setOn(!on)); label();
     const tb=$id('btn-tracks'); if(tb) tb.addEventListener('click',()=>openPanel($id('music-panel').hidden));
@@ -326,7 +346,8 @@ const MUSIC=(()=>{
     p.addEventListener('click',e=>{ const pl=e.target.closest('[data-mplay]'), mm=e.target.closest('[data-mmenu]');
       if(e.target.closest('#music-close')){ closePanel(); $id('btn-tracks').focus(); return; }
       if(pl){ const id=pl.dataset.mplay; if(S&&S.track.id===id) stopPreview(); else playPreview(id); const nb=p.querySelector(`[data-mplay="${id}"]`); if(nb) nb.focus({preventScroll:true}); return; }
-      if(mm){ setMenuTrack(mm.dataset.mmenu); return; } });
+      if(mm){ setMenuTrack(mm.dataset.mmenu); return; }
+      const sk=e.target.closest('[data-mseek]'); if(sk){ seek(+sk.dataset.mseek); drawTimeline(true); return; } });
     $id('music-shuffle').addEventListener('change',e=>setMenuTrack(e.target.checked?'shuffle':(MENU_TRACKS[0].id)));
     p.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.stopPropagation(); closePanel(); $id('btn-tracks').focus(); } }); }
   const kick0=()=>{ armed=true; if(ac&&ac.state==='suspended') ac.resume(); if(on&&MOODS[scene]&&!S) applyScene(); };
