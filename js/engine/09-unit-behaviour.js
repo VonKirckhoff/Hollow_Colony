@@ -46,9 +46,12 @@ function updateUnit(u,dt){
   if(o.type==='move'||o.type==='amove'){ if(stepMove(u,dt)){ u.order=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; } }
   else if(o.type==='guard'){ if(stepMove(u,dt)){ o.wait=(o.wait||0)-dt; if(o.wait<=0){ o.wait=rand(3,8); const a=rand(0,Math.PI*2), r=rand(1,3.5)*TILE; setPath(u,o.x+Math.cos(a)*r,o.y+Math.sin(a)*r); } } }
 }
+/* distance from a unit to the edge of its target: buildings are square blocks, not circles */
+function gapTo(u,t){ if(t.kind==='building'&&t.size&&!t.def.noBlock){ const h=t.size*TILE/2, dx=Math.max(0,Math.abs(u.x-t.x)-h), dy=Math.max(0,Math.abs(u.y-t.y)-h); return Math.hypot(dx,dy); }
+  return dist(u,t)-t.r; }
 function engage(u,dt,hold){
   const t=u.target, d=u.def;
-  const reach=(d.range+(u.rangeBonus||0))*TILE + t.r + u.r*0.5, dd=dist(u,t);
+  const reach=(d.range+(u.rangeBonus||0))*TILE + u.r*0.5 + (t.kind==='building'&&t.size&&!t.def.noBlock?u.r+4:0), dd=gapTo(u,t);
   if(Math.abs(t.x-u.x)>2) u.face=t.x>=u.x?1:-1;
   if(dd<=reach){ u.path=null; u.goal=null; if(u.cd<=0) fire(u,t); }
   else if(hold){ u.target=null; }
