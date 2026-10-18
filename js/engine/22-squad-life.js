@@ -84,7 +84,7 @@ function suppress(t){ if(t.kind!=='unit'||t.faction==='corps'||t.def.boss) retur
 
 /* ---- flares: a soldier throws one; it burns and lights the ground around it ---- */
 function flareThrowers(){ return myUnits().filter(u=>!u.def.builder&&!u.def.heal&&!u.def.escort&&!u.carry); }
-function startFlare(){ if(!G.flares){ toast('No flares left.'); return; } if(!flareThrowers().length){ toast('Select a soldier to throw a flare.'); return; }
+function startFlare(){ if(ui.flare){ clearModes(); return; } clearModes(); if(!G.flares){ toast('No flares left.'); return; } if(!flareThrowers().length){ toast('Select a soldier to throw a flare.'); return; }
   ui.flare=true; ui.amove=false; ui.placing=null; cv.classList.add('amove'); G.selDirty=true; toast('Click where the flare should land.',true); }
 function throwFlare(wx,wy){
   ui.flare=false; cv.classList.remove('amove'); G.selDirty=true;

@@ -21,7 +21,7 @@ cv.addEventListener('pointerdown',e=>{
 });
 function attackMoveAt(wx,wy){ const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits();
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
-  for(const u of squad) if(u.def.damage&&!u.def.heal) u.stance='attack';   /* the attack stance stays on for later moves */
+  for(const u of units) u.stance = u.def.damage&&!u.def.heal ? 'attack' : null;   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
   if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
   for(const u of medics){ if(squad.length){ u.order={type:'support',squad}; u.path=null; } else moveGroup([u],wx,wy,'move'); }
   SFX.play('attack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.4,col:'#ff5a4f'}); ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }

@@ -11,7 +11,7 @@ function updateUnit(u,dt){
   if(d.boss) bossThink(u,dt);
   if(u.faction==='swarm') swarmThink(u,dt);
   if(d.heal){ medicThink(u,dt); return; }
-  if(d.builder && !u.order){ u.repScan=(u.repScan||0)-dt; if(u.repScan<=0){ u.repScan=0.5;
+  if(d.builder && (!u.order||u.order.type==='hold')){ u.repScan=(u.repScan||0)-dt;   /* Engineers keep looking after structures, also when defensive */ if(u.repScan<=0){ u.repScan=0.5;
       // Idle engineers repair damaged structures (and finish construction sites) nearby on their own.
       const b=nearestOf(u,e=>e.kind==='building'&&!e.def.noBlock&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&dist(u,e)<d.autoRepair*TILE);
       if(b){ u.order={type:'repair',target:b,auto:true}; u.target=null; u.path=null; u.goal=null; } } }

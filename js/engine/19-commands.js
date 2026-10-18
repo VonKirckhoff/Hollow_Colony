@@ -3,11 +3,22 @@
 function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead); }
 /* Stances stay with a soldier until you change them: 'attack' (every move becomes an attack-move) or 'hold' (after every move he holds the new spot).
    Cancel order (S) clears both the current order and the stance. */
-function cmdStop(){ for(const u of myUnits()){ u.order=null; u.target=null; u.path=null; u.home={x:u.x,y:u.y}; u.stance=null; } toast('Orders cancelled.',true); }
-function cmdHold(){ for(const u of myUnits()){ u.order={type:'hold'}; u.target=null; u.path=null; u.stance='hold'; } }
+/* only one pointer mode at a time: attack target, flare, sentry pick-up or building placement */
+function clearModes(){ ui.amove=false; ui.flare=false; ui.picking=null; ui.placing=null; cv.classList.remove('amove'); if(G) G.selDirty=true; }
+function cmdStop(){ clearModes(); for(const u of myUnits()){ u.order=null; u.target=null; u.path=null; u.home={x:u.x,y:u.y}; u.stance=null; } toast('Orders cancelled.',true); }
+/* H toggles: on = hold here and after every move; pressing it again (all already defensive) switches it off */
+function cmdHold(){ clearModes(); const us=myUnits();
+  if(us.length && us.every(u=>u.stance==='hold')){ for(const u of us){ u.stance=null; if(u.order&&u.order.type==='hold') u.order=null; u.home={x:u.x,y:u.y}; } toast('Defensive off.',true); return; }
+  for(const u of us){ u.order={type:'hold'}; u.target=null; u.path=null; u.stance='hold'; } toast('Defensive: holding position.',true); }
+/* A: pick a target or spot (always, also when the squad is already aggressive). Pressing A again while picking cancels the pick.
+   The attack stance itself is switched off with S (or replaced by H). */
+function cmdAttack(){ if(ui.amove){ clearModes(); return; } clearModes(); ui.amove=true; cv.classList.add('amove'); G.selDirty=true; }
 function stanceType(u,type){ return type==='move'&&u.stance==='attack'&&u.def.damage&&!u.def.heal ? 'amove' : type; }
-function stanceOf(units){ const s=units[0]&&units[0].stance; return s&&units.every(u=>u.stance===s)?s:null; }
-function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }
+function stanceOf(units){ if(!units.length) return null;
+  if(units.every(u=>u.stance==='hold')) return 'hold';
+  const f=units.filter(u=>u.def.damage&&!u.def.heal);   /* Medics and unarmed units never take the attack stance */
+  return f.length&&f.every(u=>u.stance==='attack')?'attack':null; }
+function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; }
 function tryPlace(keep){
   const s=placementSpot(), d=BUILDINGS[ui.placing.type];
   if(atLimit(ui.placing.type)){ toast(limitMsg(ui.placing.type)); ui.placing=null; G.selDirty=true; return; }
