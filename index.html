@@ -230,12 +230,12 @@
 
 <!-- INTEL -->
 <section class="screen" id="s-intel" hidden>
-  <div class="sheet" style="max-width:860px">
+  <div class="sheet intel-sheet">
     <div class="eyebrow">LUNAR CORPS · INTEL</div>
     <h2 class="h">Intel</h2>
     <p class="lede">What every soldier, structure and enemy can do. Range and sight are in tiles, speed in tiles per second; damage per second is before rank bonuses.</p>
     <div class="intel-tabs" role="tablist" id="intel-tabs"></div>
-    <div class="intel-grid" id="intel-grid" role="tabpanel"></div>
+    <div class="intel-split" role="tabpanel"><div class="intel-list" id="intel-list" role="listbox" aria-label="Units and structures"></div><div class="intel-detail" id="intel-grid" aria-live="polite"></div></div>
     <div class="row"><button class="btn" type="button" id="intel-back">Back</button></div>
   </div>
 </section>

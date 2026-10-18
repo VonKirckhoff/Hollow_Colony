@@ -376,3 +376,28 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
   .camp-r .mission{padding:9px 14px;}
   .camp-r .mission .ms{font-size:11.5px;}
 }
+
+/* ---------- intel: list + detail ---------- */
+#s-intel{background:linear-gradient(90deg,rgba(7,8,12,.88) 0%,rgba(7,8,12,.7) 55%,rgba(7,8,12,.45) 100%);}
+.intel-sheet{max-width:1080px;gap:16px;}
+.intel-split{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start;}
+.intel-list{display:grid;gap:4px;}
+.ili{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center;text-align:left;background:rgba(17,19,26,.74);border:1px solid var(--line);border-left:2px solid var(--line);padding:5px 10px 5px 6px;cursor:pointer;color:var(--ink);font:inherit;}
+.ili .pic{width:40px;height:40px;display:grid;place-items:center;background:#0b0c11;}
+.ili .pic img{width:32px;height:32px;object-fit:contain;image-rendering:pixelated;}
+.ili b{display:block;font-family:var(--f-display);font-weight:400;font-size:11px;letter-spacing:.06em;}
+.ili small{display:block;font-size:11px;color:var(--dim);}
+.ili:hover,.ili:focus-visible{border-color:var(--corps);outline:none;}
+.ili.on{border-left-color:var(--corps);background:rgba(255,179,71,.09);}
+.ili.f-swarm.on{border-left-color:var(--swarm);background:rgba(166,255,74,.07);}
+.ili.f-grey.on{border-left-color:#7ff6ff;} .ili.f-wild.on{border-left-color:#d3c3a6;}
+.intel-detail .icard{grid-template-columns:96px minmax(0,1fr);gap:6px 18px;padding:18px;background:rgba(17,19,26,.82);}
+.intel-detail .icard .pic{width:96px;height:96px;}
+.intel-detail .icard .pic img{width:80px;height:80px;}
+.intel-detail .icard h3{font-size:18px;}
+.intel-detail .icard .role{font-size:13px;}
+.intel-detail .icard p{font-size:14px;}
+.intel-detail .icard dl{grid-template-columns:repeat(4,minmax(0,1fr));}
+.intel-detail .icard dd{font-size:16px;}
+@media (max-width:760px){ .intel-split{grid-template-columns:1fr;} .intel-list{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));} .intel-detail .icard dl{grid-template-columns:repeat(2,minmax(0,1fr));} }
+#s-intel{padding-block:28px;}
