@@ -24,7 +24,8 @@ function updateUnit(u,dt){
   if(o && o.type==='move') u.target=null;
   if(u.target && !validTarget(u,u.target,explicit)) u.target=null;
   // Priority rule: enemy units that can fight back always come before structures.
-  if(!o || o.type!=='move'){ u.acq-=dt; if(u.acq<=0){ u.acq=0.25+Math.random()*0.1;
+  if(u.quiet && !explicit) u.target=null;   /* hold fire: only what you order them to attack */
+  if((!o || o.type!=='move') && !(u.quiet && !explicit)){ u.acq-=dt; if(u.acq<=0){ u.acq=0.25+Math.random()*0.1;
       const hold=o&&o.type==='hold';
       const cur=u.target, curD=cur ? dist(u,cur)-cur.r : Infinity, inRange=curD<=(d.range+(u.rangeBonus||0))*TILE+8;
       const rg=d.range+(u.rangeBonus||0), r = hold ? rg+0.3 : explicit ? rg+1.5 : (u.role==='brood'||u.role==='avatar') ? Math.max(4,rg) : Math.max(d.sight,rg);   /* brood waiting at the gathering point only meets what comes close */

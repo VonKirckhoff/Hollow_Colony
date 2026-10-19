@@ -224,7 +224,7 @@ function initVoiceVolume(){ const r=$('#voice-vol'); if(!r) return; r.value=Math
   r.addEventListener('pointerdown',e=>e.stopPropagation()); }
 
 /* ---- firing on the move: a soldier with a move order keeps walking, but shoots at enemies in range on the way ---- */
-function snapFire(u,dt){
+function snapFire(u,dt){ if(u.quiet) return;   /* hold fire */
   const d=u.def; u.snapT=(u.snapT||0)-dt;
   if(u.snapT<=0){ u.snapT=0.25; const rg=d.range+(u.rangeBonus||0), t=findTarget(u,rg,true); u.snap=(t&&dist(u,t)<=rg*TILE+t.r+u.r*0.5)?t:null; }
   const t=u.snap; if(!t||t.dead||!validTarget(u,t)) { u.snap=null; return; }

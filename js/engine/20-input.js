@@ -10,7 +10,7 @@ cv.addEventListener('pointerdown',e=>{
   if(e.button===1){ ui.pan={x:e.clientX,y:e.clientY,cam:{...G.cam}}; e.preventDefault(); return; }
   if(e.button===2&&(ui.burrow||ui.rallyPick)){ ui.burrow=false; ui.rallyPick=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.button===2&&ui.flare){ ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; return; }
-  if(e.button===2){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; return; } if(ui.placing){ ui.placing=null; G.selDirty=true; return; } if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; return; } smartCommand(w.x,w.y); return; }
+  if(e.button===2){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; return; } if(ui.placing){ ui.placing=null; G.selDirty=true; return; } if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; return; } if(G.side==='corps'&&canFace()){ ui.rdrag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,wx:w.x,wy:w.y}; return; } smartCommand(w.x,w.y); return; }
   if(e.button===0){
     if(ui.placing){ tryPlace(e.shiftKey); return; }
     if(ui.picking){ const s=entityAt(w.x,w.y,x=>x.faction==='corps'&&x.kind==='building'&&x.def.portable&&x.built); ui.picking=null; cv.classList.remove('amove'); G.selDirty=true;
@@ -24,7 +24,7 @@ cv.addEventListener('pointerdown',e=>{
 });
 function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits();
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
-  for(const u of units) u.stance = u.def.damage&&!u.def.heal ? 'attack' : null;   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
+  for(const u of units){ u.stance = u.def.damage&&!u.def.heal ? 'attack' : null; u.quiet=false; }   /* an attack order also lifts hold fire */   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
   if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
   for(const u of medics){ if(squad.length){ u.order={type:'support',squad}; u.path=null; } else moveGroup([u],wx,wy,'move'); }
   SFX.play('attack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.4,col:'#ff5a4f'}); ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }
@@ -32,6 +32,7 @@ window.addEventListener('pointermove',e=>{
   ui.mouse.x=e.clientX; ui.mouse.y=e.clientY; ui.mouse.inWin=true;
   if(G){ const w=toWorld(e.clientX,e.clientY); ui.mouse.wx=w.x; ui.mouse.wy=w.y; }
   if(ui.pan&&G){ stopFollow(); G.cam.x=ui.pan.cam.x-(e.clientX-ui.pan.x); G.cam.y=ui.pan.cam.y-(e.clientY-ui.pan.y); clampCam(); }
+  if(ui.rdrag){ ui.rdrag.x1=e.clientX; ui.rdrag.y1=e.clientY; }
   if(ui.drag){ ui.drag.x1=e.clientX; ui.drag.y1=e.clientY;
     if(ui.drag.touch){ if(Math.hypot(ui.drag.x1-ui.drag.x0,ui.drag.y1-ui.drag.y0)>10) ui.drag.panning=true; if(ui.drag.panning&&G){ stopFollow(); G.cam.x=ui.drag.cam.x-(ui.drag.x1-ui.drag.x0); G.cam.y=ui.drag.cam.y-(ui.drag.y1-ui.drag.y0); clampCam(); } }
     else if(Math.abs(ui.drag.x1-ui.drag.x0)+Math.abs(ui.drag.y1-ui.drag.y0)>6) ui.drag.box=true; }
@@ -42,6 +43,8 @@ document.addEventListener('pointerleave',()=>{ ui.mouse.inWin=false; });
 window.addEventListener('blur',()=>{ ui.mouse.inWin=false; ui.keys={}; });
 window.addEventListener('pointerup',e=>{
   mmDrag=false; if(ui.pan){ ui.pan=null; return; }
+  if(ui.rdrag){ const r=ui.rdrag; ui.rdrag=null; if(!G||ui.mode!=='game') return;
+    if(Math.hypot(r.x1-r.x0,r.y1-r.y0)>18) moveFacing(r.wx,r.wy,Math.atan2(r.y1-r.y0,r.x1-r.x0)); else smartCommand(r.wx,r.wy); return; }
   const d=ui.drag; ui.drag=null; if(!d||!G||ui.mode!=='game') return;
   if(d.touch){ if(d.panning) return; const w=toWorld(d.x1,d.y1); const hit=entityAt(w.x,w.y,e=>e.faction===G.side);
     if(hit){ selectEntities([hit],false); } else if(myUnits().length){ if(ui.placing) tryPlace(false); else smartCommand(w.x,w.y); } else { const any=entityAt(w.x,w.y); selectEntities(any?[any]:[],false); } return; }

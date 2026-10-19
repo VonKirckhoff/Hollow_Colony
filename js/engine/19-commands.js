@@ -5,7 +5,13 @@ function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&
    Cancel order (S) clears both the current order and the stance. */
 /* only one pointer mode at a time: attack target, flare, sentry pick-up or building placement */
 function clearModes(){ ui.amove=false; ui.flare=false; ui.picking=null; ui.placing=null; cv.classList.remove('amove'); if(G) G.selDirty=true; }
-function cmdStop(){ clearModes(); for(const u of myUnits()){ u.order=null; u.target=null; u.path=null; u.home={x:u.x,y:u.y}; u.stance=null; } toast('Orders cancelled.',true); }
+function cmdStop(){ clearModes(); for(const u of myUnits()){ u.order=null; u.target=null; u.path=null; u.home={x:u.x,y:u.y}; u.stance=null; u.quiet=false; } toast('Orders cancelled.',true); }
+/* Q toggles hold fire: they do not shoot on their own (not even back), only at what you order them to attack.
+   It stays on through moves and the defensive stance; A, S or Q again switch it off. */
+function cmdQuiet(){ const us=myUnits(); if(!us.length) return;
+  if(us.every(u=>u.quiet)){ for(const u of us) u.quiet=false; toast('Weapons free.',true); }
+  else { for(const u of us){ u.quiet=true; u.target=null; u.snap=null; } toast('Hold fire: they only shoot when you order an attack.',true); }
+  SFX.play('ack'); G.selDirty=true; }
 /* H toggles: on = hold here and after every move; pressing it again (all already defensive) switches it off */
 function cmdHold(){ clearModes(); const us=myUnits();
   if(us.length && us.every(u=>u.stance==='hold')){ for(const u of us){ u.stance=null; if(u.order&&u.order.type==='hold') u.order=null; u.home={x:u.x,y:u.y}; } toast('Defensive off.',true); return; }
@@ -65,14 +71,18 @@ function smartCommand(wx,wy){ if(G.side==='swarm'){ swarmRight(wx,wy); return; }
 const FORMATION = { maxRadius:4.5, spacing:24, minGap:14 };
 function packSentry(s){ const eng=myUnits().filter(u=>u.def.builder&&!u.carry); if(!eng.length) return;
   eng.sort((a,b)=>dist(a,s)-dist(b,s)); const u=eng[0]; u.order={type:'pack',target:s}; u.target=null; u.path=null; u.goal=null; SFX.play('ack'); G.pings.push({x:s.x,y:s.y,t:2.2,col:'#ffb347'}); }
-/* Tactical formations (Z circle, X wedge, V square). Support units (medics, engineers, escorts)
-   take the protected centre; fighters form the outline, with Pyros and Gunners at the tip of the wedge.
-   A squad keeps its formation on every move until you press the same key again or mix in other units. */
+/* Tactical formations (Z circle, X wedge, V square, I line, W zigzag). Support units (medics, engineers, escorts)
+   take the protected centre (behind the line in a line or zigzag); fighters form the outline, with Pyros and Gunners at the tip of the wedge.
+   A line or zigzag faces the nearest enemy in sight when you form it. Hold the right mouse button and drag to choose
+   where a formation faces when it arrives. A squad keeps its formation on every move until you press the same key again or mix in other units. */
 const FORMATIONS = {
   circle:{ name:'Circle', key:'Z', glyph:'◯' },
   wedge: { name:'Wedge',  key:'X', glyph:'⋀' },
-  square:{ name:'Square', key:'V', glyph:'▢' }
+  square:{ name:'Square', key:'V', glyph:'▢' },
+  line:  { name:'Line',   key:'I', glyph:'━', tip:'Everyone shoulder to shoulder, facing the enemy: every gun can fire. Medics and Engineers stand behind.' },
+  zigzag:{ name:'Zigzag', key:'W', glyph:'∿', tip:'A line in two staggered rows: the back row fires through the gaps of the front row. Medics and Engineers stand behind.' }
 };
+const FACING=new Set(['line','zigzag']);   /* shapes that are built to face an enemy */
 const isSupport=u=>!!(u.def.heal||u.def.builder||u.def.escort);
 const FRONT_RANK={ pyro:0, gunner:1, trooper:2 };
 function formationSlots(shape,nf,ns,sp){
@@ -80,11 +90,16 @@ function formationSlots(shape,nf,ns,sp){
   if(shape==='circle'){ const r=Math.max(sp*2,nf*sp*1.35/(2*Math.PI)+sp*0.6); for(let i=0;i<nf;i++){ const a=i/nf*Math.PI*2; f.push({x:Math.cos(a)*r,y:Math.sin(a)*r}); } }
   else if(shape==='wedge'){ const ranks=Math.ceil((nf-1)/2), a=ranks*sp*0.85/2; f.push({x:a+sp*0.4,y:0});
     for(let k=1;f.length<nf;k++){ f.push({x:a+sp*0.4-k*sp*0.85,y:-k*sp*0.8}); if(f.length<nf) f.push({x:a+sp*0.4-k*sp*0.85,y:k*sp*0.8}); } }
+  else if(shape==='line'){ const w=sp*1.3; for(let i=0;i<nf;i++) f.push({x:0,y:(i-(nf-1)/2)*w}); }   /* a bit wider: every gun needs a clear line of fire */
+  else if(shape==='zigzag'){ const nF=Math.ceil(nf/2), nB=nf-nF, w=sp*1.3, sh=nB===nF?w/2:0;
+    for(let i=0;i<nF;i++) f.push({x:sp*0.55,y:(i-(nF-1)/2)*w});
+    for(let i=0;i<nB;i++) f.push({x:-sp*0.55,y:(i-(nB-1)/2)*w+sh}); }
   else { const per=Math.max(1,Math.ceil(nf/4)), h=Math.max(sp*1.7,per*sp*0.7), P=8*h;
     for(let i=0;i<nf;i++){ let d=i/nf*P, x,y; if(d<2*h){ x=h; y=-h+d; } else if(d<4*h){ x=h-(d-2*h); y=h; } else if(d<6*h){ x=-h; y=h-(d-4*h); } else { x=-h+(d-6*h); y=-h; } f.push({x,y}); } }
   // support in the middle (slightly behind the tip for a wedge)
   const cx = shape==='wedge' ? -sp*0.5 : 0;
-  if(ns===1) s.push({x:cx,y:0}); else for(let i=0;i<ns;i++){ const a=i/ns*Math.PI*2; s.push({x:cx+Math.cos(a)*sp*0.7,y:Math.sin(a)*sp*0.7}); }
+  if(FACING.has(shape)){ const bx=shape==='line'?-sp*1.2:-sp*1.6; for(let i=0;i<ns;i++) s.push({x:bx,y:(i-(ns-1)/2)*sp*1.3}); }
+  else if(ns===1) s.push({x:cx,y:0}); else for(let i=0;i<ns;i++){ const a=i/ns*Math.PI*2; s.push({x:cx+Math.cos(a)*sp*0.7,y:Math.sin(a)*sp*0.7}); }
   return {f,s};
 }
 function placeFormation(units,wx,wy,dir,type){
@@ -93,9 +108,17 @@ function placeFormation(units,wx,wy,dir,type){
   const shape0=units[0].formation.shape;
   /* a circle or square needs at least 4 points on its outline: with fewer fighters, support takes a place on the outline too
      (otherwise 2 fighters + support in the middle make a straight line) */
-  if(shape0!=='wedge' && fig.length<4 && sup.length){ const all=[]; while(fig.length||sup.length){ if(fig.length) all.push(fig.shift()); if(sup.length) all.push(sup.shift()); } fig=all; }
+  if(shape0!=='wedge' && !FACING.has(shape0) && fig.length<4 && sup.length){ const all=[]; while(fig.length||sup.length){ if(fig.length) all.push(fig.shift()); if(sup.length) all.push(sup.shift()); } fig=all; }
   const shape=shape0, sp=FORMATION.spacing*1.15, slots=formationSlots(shape,fig.length,sup.length,sp);
-  const c=Math.cos(dir), s=Math.sin(dir), toWorld=o=>({x:wx+o.x*c-o.y*s, y:wy+o.x*s+o.y*c});
+  const c=Math.cos(dir), s=Math.sin(dir);
+  /* against a wall or a rock some places fall on blocked ground: shift the whole shape (up to 3 tiles) to where most of it fits,
+     instead of piling the blocked ones up on the click */
+  const all=[...slots.f,...slots.s], fits=(ox,oy)=>{ if(!walkableP(ox,oy)) return -1; let n=0; for(const o of all){ const x=ox+o.x*c-o.y*s, y=oy+o.x*s+o.y*c; if(walkableP(x,y)&&lineClear(ox,oy,x,y)) n++; } return n; };
+  let best=fits(wx,wy), bx=wx, by=wy;
+  if(best<all.length){ for(let r=1;r<=3&&best<all.length;r++) for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+      const ox=wx+dx*TILE*0.75, oy=wy+dy*TILE*0.75, n=fits(ox,oy); if(n>best){ best=n; bx=ox; by=oy; } } }
+  wx=bx; wy=by;
+  const toWorld=o=>({x:wx+o.x*c-o.y*s, y:wy+o.x*s+o.y*c});
   const pace=Math.min(...units.map(speedOf)), assign=[];
   // fighters: wedge fills the tip by rank; other shapes take the nearest free slot
   const pool=[...fig]; if(shape==='wedge') pool.sort((a,b)=>(FRONT_RANK[a.type]??3)-(FRONT_RANK[b.type]??3));
@@ -113,10 +136,21 @@ function setFormation(shape){
   const us=myUnits(); if(us.length<2){ toast('Select at least two units for a formation.',true); return; }
   const cur=us[0].formation;
   if(cur && cur.shape===shape && us.every(u=>u.formation===cur)){ us.forEach(u=>u.formation=null); toast('Formation released.',true); G.selDirty=true; return; }
-  const f={shape,dir:cur?cur.dir:-Math.PI/2}; us.forEach(u=>u.formation=f);
   const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length;
+  let dir=cur?cur.dir:-Math.PI/2;
+  if(FACING.has(shape)){ const foe=nearestOf({x:cx,y:cy},e=>e.kind==='unit'&&e.faction!=='corps'&&e.faction!=='wild'&&!e.hidden&&isVisible(e)&&Math.hypot(e.x-cx,e.y-cy)<14*TILE); if(foe) dir=Math.atan2(foe.y-cy,foe.x-cx); }
+  const f={shape,dir}; us.forEach(u=>u.formation=f);
   placeFormation(us,cx,cy,f.dir,'move'); SFX.play('ack'); toast(`Formation: ${FORMATIONS[shape].name}`,true); G.selDirty=true;
 }
+/* right mouse held and dragged: the squad goes to where you pressed and faces the way you dragged */
+function canFace(){ const us=myUnits(); return us.length>1&&us[0].formation&&us.every(u=>u.formation===us[0].formation); }
+function moveFacing(wx,wy,dir){ const us=myUnits(); if(!canFace()) { smartCommand(wx,wy); return; }
+  us[0].formation.dir=dir; anyBarker(us,stanceOf(us)==='attack'?'attack':'move'); placeFormation(us,wx,wy,dir,'move');
+  SFX.play('ack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.5,col:'#5fe3b0'}); uiUsed('facing'); G.selDirty=true; }
+/* put a squad straight into a formation where it stands (no walking): used at the start of a mission */
+function formUp(units,shape,dir=-Math.PI/2){ if(units.length<2) return; const f={shape,dir}; units.forEach(u=>u.formation=f);
+  const cx=units.reduce((s,u)=>s+u.x,0)/units.length, cy=units.reduce((s,u)=>s+u.y,0)/units.length; placeFormation(units,cx,cy,dir,'move');
+  for(const u of units){ if(u.order&&u.order.x!=null){ u.x=u.order.x; u.y=u.order.y; } u.order=null; u.path=null; u.home={x:u.x,y:u.y}; } }
 function moveGroup(units,wx,wy,type){
   const n=units.length; if(!n) return;
   if(units.some(u=>u.faction==='corps')) anyBarker(units,type==='amove'||stanceOf(units)==='attack'?'attack':'move');

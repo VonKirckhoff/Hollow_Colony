@@ -64,11 +64,12 @@ function cmdButtons(){
     const st=stanceOf(units);
     out.push({row:'Orders',key:'A',glyph:'⚔',tip:'Attack|Click a spot or an enemy: the squad moves and engages anything on the way. They stay aggressive on later moves, until you press S (or H).',act:cmdAttack,active:ui.amove||(st==='attack'&&!ui.flare)});
     out.push({row:'Orders',key:'H',glyph:'⛉',tip:'Defensive|Hold position and only fire at targets in range. After every move they hold the new spot. Press again to switch it off.',act:cmdHold,active:st==='hold'&&!ui.amove});
+    out.push({row:'Orders',key:'Q',glyph:'⊘',tip:'Hold fire|They do not shoot on their own, not even back: only at what you order them to attack (right-click an enemy). Good for slipping past a nest without waking it. Stays on after moves; press again, or A or S, to open fire.',act:cmdQuiet,active:units.every(u=>u.quiet)});
     out.push({row:'Orders',key:'S',glyph:'■',tip:'Cancel order|Stop, and drop the attack or defensive stance.',act:cmdStop});
     if(flareThrowers().length) out.push({row:'Orders',key:'L',glyph:'✶',cost:`${G.flares}`,off:!G.flares,tip:`Flare|A soldier throws a flare up to ${SQUAD.flare.range} tiles. It lights the ground for ${SQUAD.flare.time} seconds. ${G.flares} left this mission.`,act:startFlare,active:ui.flare});
     if(units.length>1){ const cur=units[0].formation, all=cur&&units.every(u=>u.formation===cur);
       for(const [shape,f] of Object.entries(FORMATIONS)) out.push({row:'Formation',key:f.key,glyph:f.glyph,active:all&&cur.shape===shape,
-        tip:`${f.name} formation|Medics, Engineers and escorts in the centre. The squad keeps this shape on every move. Press again to release.`,act:()=>setFormation(shape)}); }
+        tip:`${f.name} formation|${f.tip||'Medics, Engineers and escorts in the centre.'} The squad keeps this shape on every move. Hold the right mouse button and drag to choose where it faces. Press again to release.`,act:()=>setFormation(shape)}); }
     const eng=units.filter(u=>u.def.builder);
     const lim=t=>limitOf(t)===Infinity?'':` (${fielded(t)}/${limitOf(t)} in the field)`;
     if(eng.some(e=>e.carry)) out.push({row:'Sentry',key:'D',img:ARTURL.sentry,off:atLimit('sentry'),cost:limitOf('sentry')===Infinity?0:`${fielded('sentry')}/${limitOf('sentry')}`,tip:`Deploy sentry|Set up the carried Sentry Gun. Takes 3 seconds and keeps its damage.${lim('sentry')}`,act:()=>startPlacing('sentry',true)});

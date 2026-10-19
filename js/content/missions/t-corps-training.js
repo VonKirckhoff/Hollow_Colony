@@ -19,6 +19,7 @@ TRAINING.corps = {
   swarm:{ biomass:0, rate:0, guardMax:0, aggro:0, brood:0, waves:null },
   objectives:[ { id:'tut', text:'Training' } ],
   triggers:[
+    { when:g=>g.time>0.02, do:g=>formUp(tut.corpsUnits(),'circle') },   /* they start in a circle, so you can see who is who */
     { when:g=>g.time>0.05, do:g=>{ const lz=G.ents.find(e=>e.type==='lz'); if(lz) lz.noOrders=true; } },   /* the Landing Zone wakes up once a Relay Tower stands */
     ...tutorial([
       { say:'Welcome to boot camp. I will walk you through everything. The game keeps running while a card is open, so you can try things as you read. Close a card with [Enter]; the next one comes once you have done what it asks. The buttons I talk about light up. ◀ and ▶ on the card page back through earlier tips, and Practice again lets you redo one. The Tips tab at the top brings the card back. [N] skips a step.', obj:'Listen to the sergeant', hl:['#objectives'], done:g=>g.time>2 },
@@ -36,13 +37,17 @@ TRAINING.corps = {
       { say:'[Ctrl]+[Shift]+number adds the selection to a group without replacing it. Handy for a Medic you want with both teams: select the Medic and press [Ctrl]+[Shift]+[2]. To take someone out of a group: select the group, [Shift]-click him away, and save it again with [Ctrl]+number.', obj:'Add the Medic to group 2 (Ctrl+Shift+2)', hl:['#selection'],
         done:()=>(G.groups['2']||[]).some(e=>!e.dead&&e.type==='medic') },
       { say:'Press [1] to select the whole squad again. The chips show which groups are selected: green means exactly that group.', obj:'Select group 1 again (1)', hl:['#selection'], done:()=>{ const g=(G.groups['1']||[]).filter(e=>!e.dead); return g.length>0&&g.every(e=>G.sel.includes(e)); } },
-      { say:'Formations. With the squad selected, try all three: [Z] circle, [X] wedge and [V] square. Medics and Engineers go in the middle. Press the same key again to release it.', obj:'Try the circle, wedge and square formation (Z, X, V)', keys:['Z','X','V'],
-        setup:g=>{ g.vars.shapes={}; }, done:g=>{ for(const u of tut.corpsUnits()) if(u.formation) g.vars.shapes[u.formation.shape]=1; return Object.keys(g.vars.shapes).length>=3; } },
+      { say:'Formations. The squad started in a circle [Z]. Try the others: [X] wedge, [V] square, [I] line and [W] zigzag. Medics and Engineers go in the middle, or behind a line. Press the same key again to release it.', obj:'Try at least three other formations (X, V, I, W)', keys:['Z','X','V','I','W'],
+        setup:g=>{ g.vars.shapes={}; }, done:g=>{ for(const u of tut.corpsUnits()) if(u.formation) g.vars.shapes[u.formation.shape]=1; return Object.keys(g.vars.shapes).length>=4; } },
+      { say:'Face the enemy. Put the squad in a line [I] or a zigzag [W]: in a zigzag the back row fires through the gaps of the front row. Then hold the [Right mouse button] on the marker and drag toward the south, where the enemy comes from. Let go: they march there and line up facing the way you dragged.', obj:'Line up at the marker, facing south (I or W, then right-drag)', keys:['I','W'], mark:{x:22,y:29}, markLabel:'Line up here',
+        setup:g=>{ g.vars.fc0=(G.uiUse||{}).facing||0; }, done:g=>((G.uiUse||{}).facing||0)>g.vars.fc0&&tut.corpsUnits().some(u=>u.formation&&FACING.has(u.formation.shape)&&Math.sin(u.formation.dir)>0.5) },
       { say:'Stances. [H] makes the squad defensive: they hold where they are and only shoot what comes in range, also after every move.', obj:'Make the squad defensive (H)', keys:['H'], done:()=>{ const s=tut.selCorps(); return s.length>0&&s.every(u=>u.stance==='hold'); } },
       { say:'Targets in the south-east. Press [A] and click the spot or an enemy: the squad attacks and keeps attacking on later moves until you cancel it.', obj:'Attack the targets (A + click)', keys:['A'], mark:{x:22,y:33}, markLabel:'Targets',
         setup:g=>{ g.vars.dummies=g.spawn('crawler',{x:22,y:33},3,{order:'guard'}); for(const u of g.vars.dummies){ u.hp=u.maxHp=14; u.dmgMul=0.2; } g.reveal({x:22,y:33},4,8); }, done:g=>g.alive(g.vars.dummies)===0 },
-      { say:'Good. [S] cancels every order and drops the attack or defensive stance.', obj:'Cancel the orders (S)', keys:['S'], setup:g=>{ g.vars.hadStance=tut.corpsUnits().some(u=>u.stance); },
-        done:g=>!g.vars.hadStance&&g.time>g.vars.tutStart+3||g.vars.hadStance&&!tut.corpsUnits().some(u=>u.stance) },
+      { say:'Hold fire. Press [Q]: they stop shooting on their own, even when shot at, and only fire at what you right-click. Good for slipping past a nest without waking it. A blue mark over their heads shows it.', obj:'Order the squad to hold fire (Q)', keys:['Q'],
+        done:()=>{ const s=tut.selCorps().filter(u=>u.def.damage); return s.length>0&&s.every(u=>u.quiet); } },
+      { say:'Good. [S] cancels every order and drops the attack or defensive stance, and hold fire too.', obj:'Cancel the orders (S)', keys:['S'], setup:g=>{ g.vars.hadStance=tut.corpsUnits().some(u=>u.stance||u.quiet); },
+        done:g=>!g.vars.hadStance&&g.time>g.vars.tutStart+3||g.vars.hadStance&&!tut.corpsUnits().some(u=>u.stance||u.quiet) },
       { say:'Flares. Press [L] and click: a soldier throws a flare that lights the ground for a while. In dark missions they are worth gold.', obj:'Throw a flare (L + click)', keys:['L'], setup:g=>{ g.vars.fl0=G.flares; }, done:g=>G.flares<g.vars.fl0 },
       { say:'Now the Engineer. Select him (click him, or drag around him alone), press [R] and click the marked relay pad. A Relay Tower brings salvage and supply, and it powers the Landing Zone. Salvage is shown top left.', obj:'Build a Relay Tower on the pad', keys:['R'], hl:['#topbar .res:first-child'],
         setup:g=>{ g.give(250); const s=G.map.sites.slice().sort((a,b)=>Math.hypot(a.x-6,a.y-34)-Math.hypot(b.x-6,b.y-34))[0]; g.vars.pad={x:s.x,y:s.y}; g.marker('pad',{x:s.x,y:s.y},'Relay pad'); },
