@@ -146,7 +146,7 @@ function placeFormation(units,wx,wy,dir,type){
       if(shape!=='wedge'){ let bd=Infinity; pool.forEach((u,i)=>{ const d=Math.hypot(u.x-p.x,u.y-p.y); if(d<bd){ bd=d; pickI=i; } }); }
       assign.push([pool.splice(pickI,1)[0],p]); });
     sup.forEach((u,i)=>assign.push([u,toWorld(slots.s[i])])); }
-  const taken=new Set(); let swept=false;
+  const taken=new Set(); let swept=false; form.at={x:wx,y:wy};
   for(const [u,p] of assign){ let {x,y}=p;
     if(!walkableP(x,y)||!lineClear(wx,wy,x,y)){ const tx=Math.floor(wx/TILE), ty=Math.floor(wy/TILE);
       for(const o of SPIRAL){ const k=(tx+o.x)+','+(ty+o.y); if(taken.has(k)||!walkableT(tx+o.x,ty+o.y)) continue; taken.add(k); x=(tx+o.x+.5)*TILE; y=(ty+o.y+.5)*TILE; break; } }
@@ -154,7 +154,8 @@ function placeFormation(units,wx,wy,dir,type){
     /* Sweep: a line on the attack does not break ranks to chase. It walks on at the pace of the slowest man and fires on the move. */
     if(t==='amove'&&shape==='line'&&u.def.damage&&!u.def.heal){ u.order={type:'move',sweep:true,x,y,pace}; swept=true; }
     else u.order={type:t,x,y,pace};
-    u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
+    u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null;
+    const dx=x-wx, dy=y-wy; u.slot={x:dx*c+dy*s, y:-dx*s+dy*c}; }   /* his place in the formation, to come back to after a repair or a patient */
   if(swept&&units.some(u=>u.faction==='corps')){ toast('Sweep: the line advances and fires on the move.',true); uiUsed('sweep'); }
 }
 function setFormation(shape){
@@ -181,6 +182,13 @@ function cmdGap(){ const us=myUnits(), f=sharedForm(us); if(!f){ toast('Pick a f
   const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length; placeFormation(us,cx,cy,f.dir,'move');
   uiUsed('gap'); SFX.play('ack'); toast(`Spacing: ${gapName(f)}`,true); G.selDirty=true;
 }
+/* where a soldier belongs in his formation now (it follows the squad when it moves on without him), or null */
+function formationSpot(u){ const f=u.formation; if(!f||!f.at||!u.slot||u.faction!=='corps') return null;
+  if(!G.ents.some(e=>e!==u&&!e.dead&&e.kind==='unit'&&e.formation===f)) return null;
+  const c=Math.cos(f.dir), s=Math.sin(f.dir), x=f.at.x+u.slot.x*c-u.slot.y*s, y=f.at.y+u.slot.x*s+u.slot.y*c; return walkableP(x,y)?{x,y}:null; }
+/* back into his place after stepping out (an Engineer after a repair, a Medic after a patient) */
+function rejoinFormation(u){ const p=formationSpot(u); if(!p||Math.hypot(u.x-p.x,u.y-p.y)<TILE*0.8) return false;
+  u.order={type:'move',x:p.x,y:p.y,rejoin:true}; u.target=null; setPath(u,p.x,p.y); return true; }
 /* right mouse held and dragged: the squad goes to where you pressed and faces the way you dragged */
 function canFace(){ const us=myUnits(); return us.length>1&&us[0].formation&&us.every(u=>u.formation===us[0].formation); }
 function moveFacing(wx,wy,dir){ const us=myUnits(); if(!canFace()) { smartCommand(wx,wy); return; }

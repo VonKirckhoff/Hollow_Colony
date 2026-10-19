@@ -160,6 +160,7 @@ function medicThink(u,dt){
     return; }
   if(u.order && (u.order.type==='move'||u.order.type==='amove')){ if(!u.path) setPath(u,u.order.x,u.order.y); if(stepMove(u,dt)){ u.order=null; u.home={x:u.x,y:u.y}; } return; }
   if(t && !inRange) goTo(u,t.x,t.y,dt,0.6);
+  else if(!t && (!u.order||u.order.type==='hold') && formationSpot(u)){ const p=formationSpot(u), d=Math.hypot(u.x-p.x,u.y-p.y); if(d>TILE*0.8) u.rejoin=true; if(u.rejoin&&d>4){ goTo(u,p.x,p.y,dt); } else { u.rejoin=false; u.home={x:u.x,y:u.y}; } }   /* patient done: back into his place in the formation */
   else if(!t && u.home && Math.hypot(u.x-u.home.x,u.y-u.home.y)>2*TILE) goTo(u,u.home.x,u.home.y,dt);
 }
 function builderThink(u,dt){
@@ -187,7 +188,7 @@ function builderThink(u,dt){
   }
   const b=o.target;
   const done=b&&(b.kind==='unit'||b.built);
-  if(!alive(b) || (done && b.hp>=b.maxHp)){ u.order=null; u.home={x:u.x,y:u.y}; return; }
+  if(!alive(b) || (done && b.hp>=b.maxHp)){ u.order=null; u.home={x:u.x,y:u.y}; if(o.type==='repair') rejoinFormation(u); return; }   /* repair done: back into his place */
   const reach=(b.size||1)*TILE/2+u.r+18;
   if(dist(u,b)>reach){ goTo(u,b.x,b.y,dt); return; }
   u.path=null; if(Math.abs(b.x-u.x)>2) u.face=b.x>u.x?1:-1;
