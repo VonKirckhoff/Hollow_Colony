@@ -503,5 +503,5 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 /* control groups in the selection panel */
 .gchips{display:flex;align-items:center;gap:6px;margin-bottom:6px;} .gchips .lbl{margin-right:2px;}
 .gchip{display:inline-flex;align-items:baseline;gap:4px;padding:1px 7px;border:1px solid var(--line);font-family:var(--f-display);font-size:12px;color:var(--ink);background:#0b0c11;}
-.gchip i{font-style:normal;font-size:10px;color:var(--dim);} .gchip.on{border-color:#5fe3b0;color:#5fe3b0;}
+.gchip b{font-weight:normal;color:#ffd23f;font-size:11px;} .gchip i{font-style:normal;font-size:10px;color:var(--dim);} .gchip.on{border-color:#5fe3b0;color:#5fe3b0;}
 .sel-cell .grp{position:absolute;left:1px;top:0;font-family:var(--f-display);font-size:9px;color:#5fe3b0;text-shadow:0 1px 0 #000;letter-spacing:.05em;}

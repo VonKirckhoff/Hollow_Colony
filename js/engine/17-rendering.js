@@ -211,8 +211,8 @@ function drawHover(u,now,w,h,sp){
 
 /* right-drag: where the formation will stand and which way it will face */
 function drawFacingPreview(r){ const us=myUnits(); if(us.length<2||!us[0].formation) return; const dir=Math.atan2(r.y1-r.y0,r.x1-r.x0), c=Math.cos(dir), s=Math.sin(dir);
-  const sup=us.filter(isSupport).length, fig=us.length-sup, sh=us[0].formation.shape, sl=formationSlots(sh,fig||us.length,fig?sup:0,FORMATION.spacing*1.15);
+  const fm=us[0].formation, pl=slotPlan(us,fm.shape,FORMATION.spacing*1.15*(fm.gap||1)), pts=pl.pairs?pl.pairs.map(p=>p[1]):[...pl.slots.f,...pl.slots.s];
   const ox=r.x0, oy=r.y0; ctx.fillStyle='rgba(95,227,176,.55)';
-  for(const o of [...sl.f,...sl.s]){ const x=ox+o.x*c-o.y*s, y=oy+o.x*s+o.y*c; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); }
+  for(const o of pts){ const x=ox+o.x*c-o.y*s, y=oy+o.x*s+o.y*c; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); }
   ctx.strokeStyle='#5fe3b0'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(r.x1,r.y1); ctx.stroke();
   ctx.save(); ctx.translate(r.x1,r.y1); ctx.rotate(dir); ctx.fillStyle='#5fe3b0'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-6,-7); ctx.lineTo(-6,7); ctx.fill(); ctx.restore(); }

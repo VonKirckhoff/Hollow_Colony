@@ -105,10 +105,14 @@ window.addEventListener('keydown',e=>{
      N selects the group (twice: the camera jumps to it). A soldier may be in more than one group. */
   const gm=/^(?:Digit|Numpad)([1-5])$/.exec(e.code||''); if(gm){ const n=gm[1]; e.preventDefault();
     if(e.ctrlKey||e.metaKey){ const cur=(G.groups[n]||[]).filter(x=>!x.dead);
-      if(e.shiftKey){ G.groups[n]=[...new Set([...cur,...G.sel])]; uiUsed('groupadd'); toast(`Added to group ${n}: ${G.groups[n].length} now.`,true); }
-      else { G.groups[n]=[...G.sel]; uiUsed('groupsave'); toast(`Group ${n} saved (${G.sel.length}).`,true); }
+      G.groupForm=G.groupForm||{};
+      if(e.shiftKey){ G.groups[n]=[...new Set([...cur,...G.sel])]; if(!G.groupForm[n]) G.groupForm[n]=sharedForm(G.groups[n].filter(x=>x.kind==='unit')); uiUsed('groupadd'); toast(`Added to group ${n}: ${G.groups[n].length} now.`,true); }
+      else { G.groups[n]=[...G.sel]; G.groupForm[n]=sharedForm(G.sel.filter(x=>x.kind==='unit')); uiUsed('groupsave'); toast(`Group ${n} saved (${G.sel.length})${G.groupForm[n]?`, in ${FORMATIONS[G.groupForm[n].shape].name} formation`:''}.`,true); }
       G.selDirty=true; }
-    else { const g=(G.groups[n]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); uiUsed('groupsel'); if(again) centerOn(g[0].x,g[0].y); } }
+    else { const g=(G.groups[n]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); uiUsed('groupsel'); if(again) centerOn(g[0].x,g[0].y);
+        /* the group remembers its formation: back into it if they are not in it now */
+        const f=(G.groupForm||{})[n], us=myUnits(); if(f&&us.length>1&&!us.every(u=>u.formation===f)&&(f.shape!=='custom'||customForm())){ us.forEach(u=>u.formation=f);
+          placeFormation(us,us.reduce((s,u)=>s+u.x,0)/us.length,us.reduce((s,u)=>s+u.y,0)/us.length,f.dir,'move'); uiUsed('groupform'); toast(`Group ${n}: back in ${FORMATIONS[f.shape].name} formation.`,true); } } }
     return; }
   if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;

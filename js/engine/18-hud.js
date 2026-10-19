@@ -68,8 +68,10 @@ function cmdButtons(){
     out.push({row:'Orders',key:'S',glyph:'■',tip:'Cancel order|Stop, and drop the attack or defensive stance.',act:cmdStop});
     if(flareThrowers().length) out.push({row:'Orders',key:'L',glyph:'✶',cost:`${G.flares}`,off:!G.flares,tip:`Flare|A soldier throws a flare up to ${SQUAD.flare.range} tiles. It lights the ground for ${SQUAD.flare.time} seconds. ${G.flares} left this mission.`,act:startFlare,active:ui.flare});
     if(units.length>1){ const cur=units[0].formation, all=cur&&units.every(u=>u.formation===cur);
-      for(const [shape,f] of Object.entries(FORMATIONS)) out.push({row:'Formation',key:f.key,glyph:f.glyph,active:all&&cur.shape===shape,
-        tip:`${f.name} formation|${f.tip||'Medics, Engineers and escorts in the centre.'} The squad keeps this shape on every move. Hold the right mouse button and drag to choose where it faces. Press again to release.`,act:()=>setFormation(shape)}); }
+      for(const [shape,f] of Object.entries(FORMATIONS)) out.push({row:'Formation',key:f.key,glyph:f.glyph,active:all&&cur.shape===shape,off:shape==='custom'&&!customForm(),
+        tip:`${f.name} formation|${f.tip||'Medics, Engineers and escorts in the centre.'}${shape==='line'?' Attack (A) in a line is a Sweep: they advance together and fire on the move.':''} The squad keeps this shape on every move. Hold the right mouse button and drag to choose where it faces. Press again to release.`,act:()=>setFormation(shape)});
+      out.push({row:'Formation',key:'F',glyph:'⎘',tip:'Save formation|Saves the squad as it stands now as your own formation (Y). Every place remembers its type: a Medic goes back to the Medic\'s place. Kept for later missions.',act:saveFormation});
+      if(all) out.push({row:'Formation',key:'E',glyph:'↔',cost:gapName(cur)[0],tip:`Spacing: ${gapName(cur)}|Switches between normal, wide and tight. Wide is good against spit and blasts, tight in narrow tunnels.`,act:cmdGap}); }
     const eng=units.filter(u=>u.def.builder);
     const lim=t=>limitOf(t)===Infinity?'':` (${fielded(t)}/${limitOf(t)} in the field)`;
     if(eng.some(e=>e.carry)) out.push({row:'Sentry',key:'D',img:ARTURL.sentry,off:atLimit('sentry'),cost:limitOf('sentry')===Infinity?0:`${fielded('sentry')}/${limitOf('sentry')}`,tip:`Deploy sentry|Set up the carried Sentry Gun. Takes 3 seconds and keeps its damage.${lim('sentry')}`,act:()=>startPlacing('sentry',true)});
@@ -93,7 +95,8 @@ const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sent
 function groupsOf(e){ return G&&G.groups?Object.keys(G.groups).filter(k=>(G.groups[k]||[]).includes(e)).sort():[]; }
 function groupChips(sel){ const ks=Object.keys(G.groups||{}).sort(), out=[];
   for(const k of ks){ const g=(G.groups[k]||[]).filter(x=>!x.dead); if(!g.length) continue; const n=g.filter(x=>sel.includes(x)).length; if(!n) continue;
-    const exact=n===g.length&&n===sel.length; out.push(`<span class="gchip ${exact?'on':''}" data-tip="Group ${k}|${n} of its ${g.length} selected${exact?' (exactly this group)':''}. Ctrl+${k} saves the selection as group ${k}, Ctrl+Shift+${k} adds it.">${k}<i>${n}/${g.length}</i></span>`); }
+    const exact=n===g.length&&n===sel.length, gf=(G.groupForm||{})[k], fg=gf&&FORMATIONS[gf.shape];
+    out.push(`<span class="gchip ${exact?'on':''}" data-tip="Group ${k}|${n} of its ${g.length} selected${exact?' (exactly this group)':''}.${fg?` Remembers its formation: ${fg.name}.`:''} Ctrl+${k} saves the selection as group ${k}, Ctrl+Shift+${k} adds it.">${k}${fg?`<b>${fg.glyph}</b>`:''}<i>${n}/${g.length}</i></span>`); }
   return out.length?`<div class="gchips"><span class="lbl">Groups</span>${out.join('')}</div>`:''; }
 function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.stageName ? `${e.stageName} (turning into a Husk)` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
