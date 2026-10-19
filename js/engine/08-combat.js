@@ -10,7 +10,7 @@ function findTarget(u,rangeTiles,unitsOnly){
     if(unitsOnly && (e.kind!=='unit'||e.def.passive)) continue;
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue;
-    let score=d + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0);
+    let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0);
     if(score<bs){ bs=score; best=e; } }
   return best;
 }
@@ -31,6 +31,7 @@ function fire(u,t){
     for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200)*(1+(u.rangeBonus||0)/(d.range||1)*0.8); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
     for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)&&e!==t) continue; if(dist(e,t)<=R+e.r*0.5){ damage(e,d.damage*dm*((d.bonus&&d.bonus[e.type])||1),u); } }
+    if(u.faction==='corps') for(const b of G.ents){ if(!b.dead&&b.kind==='body'&&dist(b,t)<=R+TILE*0.5) burnBody(b); }
   } else if(d.attack==='plasma'){
     u.revealT=Math.max(u.revealT||0,1.5); const dd=dist(u,t); G.shots.push({k:'plasma',sx:mx,sy:my,tx:t.x,ty:t.y-6,t:0,dur:dd/460+0.05,src:u,dmg:d.damage*dm,splash:0.4*TILE,faction:u.faction});
   } else if(d.attack==='acid'){
@@ -58,6 +59,7 @@ function damage(t,amt,src){
     else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction)) t.target=src;
   }
   if(t.type==='hive' && src) hiveAlarm(t,src);
+  if(t.hp<=0 && canGoDown(t,src)){ goDown(t,src); return; }   /* a soldier first goes down; a Medic can still patch him up */
   if(t.hp<=0) kill(t,src);
 }
 function kill(e,src){
@@ -84,7 +86,8 @@ function kill(e,src){
     if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
-    if(e.def.bio && !(e.vet&&e.vet.risen) && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){
+    if(e.faction==='corps' && e.def.bio && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
+    else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){
       const c=makeBuilding('cocoon','swarm',Math.floor(e.x/TILE),Math.floor(e.y/TILE),true); c.x=e.x; c.y=e.y; c.r=9;
       c.hatchT=BUILDINGS.cocoon.hatch; c.hatchType=(e.def.supply||1)>=2?'drone':'crawler'; G.swarm.biomass+=12; G.stats.cocoons++;
     }

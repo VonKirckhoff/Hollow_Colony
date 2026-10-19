@@ -51,6 +51,8 @@ const VOICE = {
   contact: ['Contact!','Movement, front!','Here they come!','Eyes up!','Hostiles!'],
   down:    ['Man down!','We lost {name}!','{name} is down!','No! {name}!','Medic! ...too late.'],
   hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!'],
+  downed:  ['I\'m down!','Medic! I can\'t move!','Don\'t leave me here!','I\'m hit bad!'],
+  revived: ['Back in it.','Thanks, doc.','On my feet.','Still breathing.'],
   heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.'],
   build:   ['On it.','Building.','Give me a minute.','Setting it up.'],
   flare:   ['Flare out!','Lighting it up!','Light incoming!'],

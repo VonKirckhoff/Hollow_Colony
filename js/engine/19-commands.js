@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 2r. commands ---------- */
-function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead); }
+function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead&&!e.downed); }   /* the downed take no orders */
 /* Stances stay with a soldier until you change them: 'attack' (every move becomes an attack-move) or 'hold' (after every move he holds the new spot).
    Cancel order (S) clears both the current order and the stance. */
 /* only one pointer mode at a time: attack target, flare, sentry pick-up or building placement */
@@ -40,7 +40,7 @@ function tryPlace(keep){
   if(!keep){ ui.placing=null; G.selDirty=true; }
 }
 function entityAt(wx,wy,filter){ let best=null, bd=Infinity;
-  for(const e of G.ents){ if(e.dead||(filter&&!filter(e))) continue;
+  for(const e of G.ents){ if(e.dead||e.kind==='body'||(filter&&!filter(e))) continue;
     if(e.faction!=='corps'&&e.kind!=='crate'){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*G.map.w+Math.floor(e.x/TILE)]) continue; }
     let d; if(e.kind==='building') { const hit = e.def.noBlock&&!e.def.ground ? Math.hypot(wx-e.x,wy-e.y)<14 : (wx>=e.tx*TILE&&wx<(e.tx+e.size)*TILE&&wy>=e.ty*TILE-8&&wy<(e.ty+e.size)*TILE); if(!hit) continue; d=Math.hypot(wx-e.x,wy-e.y)+(e.def.ground?80:20); }
     else { const cy=e.kind==='unit'?e.y-8:e.y; d=Math.hypot(wx-e.x,wy-cy); if(d>e.r+8) continue; }

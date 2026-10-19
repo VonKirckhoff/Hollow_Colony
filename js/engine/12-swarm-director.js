@@ -1,7 +1,10 @@
 'use strict';
 /* ---------- 2k. the Swarm director ---------- */
 function swarmTypes(){ return Object.keys(UNITS).filter(k=>UNITS[k].faction==='swarm' && UNITS[k].weight && G.time>=((G.swarm.cfg.unlock||{})[k] ?? UNITS[k].unlock ?? 0)); }
-function pickSwarmType(maxCost){ const opts=swarmTypes().filter(k=>UNITS[k].biomass<=maxCost); if(!opts.length) return null;
+/* only: an optional list of types (e.g. ['drone','drone','spitter']: repeats make a type more likely). A listed type ignores its unlock time. */
+function pickSwarmType(maxCost,only){
+  if(only&&only.length){ const opts=only.filter(k=>UNITS[k]&&UNITS[k].biomass<=maxCost); return opts.length?pick(opts):null; }
+  const opts=swarmTypes().filter(k=>UNITS[k].biomass<=maxCost); if(!opts.length) return null;
   let tot=opts.reduce((s,k)=>s+UNITS[k].weight,0), r=Math.random()*tot; for(const k of opts){ r-=UNITS[k].weight; if(r<=0) return k; } return opts[0]; }
 function swarmCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss).length; }
 function hives(){ return G.ents.filter(e=>e.type==='hive'&&!e.dead); }
@@ -10,10 +13,11 @@ function updateSwarm(dt){
   if(!hs.length){ if(cfg.burrows && cfg.waves && G.time>=S.nextWave && swarmCount()<=14*G.diff.budget){ S.waveN++; launchWave((cfg.waves.budget+cfg.waves.growth*(S.waveN-1))*G.diff.budget); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
   S.biomass+=cfg.rate*hs.length*dt;
   for(const h of hs){
-    h.spawnT-=dt; if(h.spawnT>0) continue; h.spawnT=cfg.guardEvery*rand(0.8,1.2);
+    hiveWatch(h,dt);
+    h.spawnT-=dt; if(h.spawnT>0) continue; h.spawnT=hiveOpt(h,'guardEvery',14)*rand(0.8,1.2);
     const guards=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.homeHive===h.id&&e.role==='guard').length;
-    if(guards>=cfg.guardMax) continue;
-    const type=pickSwarmType(S.biomass); if(!type) continue;
+    if(guards>=hiveOpt(h,'guardMax',4)) continue;
+    const type=pickSwarmType(S.biomass,hiveOpt(h,'guards',null)); if(!type) continue;
     S.biomass-=UNITS[type].biomass;
     const u=spawnNearBuilding(type,'swarm',h); if(!u) continue;
     u.role='guard'; u.homeHive=h.id; u.guardAt={x:h.x,y:h.y}; u.order={type:'guard',x:h.x,y:h.y,wait:0};
@@ -40,7 +44,7 @@ function launchWave(budget,aim){
   let hs=hives(); const out=[]; let left=budget, guard=0;
   if(!hs.length){
     const spot=burrowSpot(aim); if(!spot) return [];
-    const types=[]; while(left>=15 && guard++<80){ const type=pickSwarmType(left); if(!type) break; left-=UNITS[type].biomass; types.push(type); }
+    const types=[], wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types; while(left>=15 && guard++<80){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass; types.push(type); }
     const tiles=freeTilesNear(spot.x,spot.y,types.length);
     types.forEach((type,i)=>{ const s=tiles[i]; if(!s) return; const u=makeUnit(type,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u);
       for(let j=0;j<6;j++) G.fx.push({k:'ember',x:u.x+rand(-10,10),y:u.y+rand(-4,6),vx:rand(-50,50),vy:rand(-80,-20),t:0.7,max:0.7,col:'#8a7a6a'}); });
@@ -48,7 +52,8 @@ function launchWave(budget,aim){
     if(out.length && !G.burrowWarned){ G.burrowWarned=true; say('Dr. Maas','With the hives gone they are burrowing up through the ground. Watch every direction!'); }
   } else {
     if(aim) hs=[...hs].sort((a,b)=>dist(a,aim)-dist(b,aim)).slice(0,2);   // aimed waves come from the nearest hives
-    while(left>=15 && guard++<80){ const type=pickSwarmType(left); if(!type) break; left-=UNITS[type].biomass;
+    const wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types;
+    while(left>=15 && guard++<80){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
       const u=spawnNearBuilding(type,'swarm',pick(hs)); if(u){ u.role='wave'; out.push(u); } }
   }
   for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit');
@@ -92,15 +97,35 @@ function tacticThink(u,dt){
    Every hit makes it scream (at most once per `cooldown` seconds): it births an emergency brood that goes straight for the attacker.
    Below `helpAt` of its health it calls the other hives once, and they send a wave to it.
    Missions can make this fiercer with swarm.hiveRage (Hold Kappa: the hives there are not meant to be destroyed). */
-const HIVE_DEFENCE = { cooldown:12, brood:45, helpAt:0.6, help:70 };
+const HIVE_DEFENCE = { cooldown:12, brood:45, helpAt:0.6, help:70, aggro:8, aggroBrood:45, aggroCooldown:18 };
 function hiveScream(h,src){
-  if(h.dead||G.time<(h.screamAt||0)) return; const D=G.diff, rage=G.swarm.cfg.hiveRage||1;
+  if(h.dead||G.time<(h.screamAt||0)) return; const D=G.diff, rage=hiveOpt(h,'rage',G.swarm.cfg.hiveRage||1);
   h.screamAt=G.time+HIVE_DEFENCE.cooldown*D.interval/Math.sqrt(rage);
-  let left=HIVE_DEFENCE.brood*D.budget*rage, guard=0; const out=[];
-  while(left>=15 && guard++<20){ const type=pickSwarmType(left); if(!type) break; const u=spawnNearBuilding(type,'swarm',h); if(!u) break; left-=UNITS[type].biomass;
-    u.role='hunt'; if(src&&src.kind==='unit'&&!src.dead){ u.target=src; u.order={type:'amove',x:src.x,y:src.y}; setPath(u,src.x,src.y); } out.push(u); }
+  const out=hiveBrood(h,src,hiveOpt(h,'brood',HIVE_DEFENCE.brood)*D.budget*rage);
   if(out.length){ G.fx.push({k:'boom',x:h.x,y:h.y,t:0.35,max:0.35,r:28,col:'#a6ff4a'}); if(isVisible(h)) SFX.play('hatch',h.x,h.y);
     if(!G.saidScream && isVisible(h)){ G.saidScream=true; say('Dr. Maas','The hive is screaming. It is birthing defenders as fast as it can!'); } }
   if(!h.calledHelp && h.hp<h.maxHp*HIVE_DEFENCE.helpAt && hives().length>1){ h.calledHelp=true;
     const w=launchWave(HIVE_DEFENCE.help*D.budget*rage,{x:h.x,y:h.y}); if(w.length) say('Sgt. Kessler','The other hives heard that. Everything is converging on the nest you are hitting!','alert'); }
+}
+
+/* a setting for one hive: its own value (mission start.hives entry), else the mission's swarm value, else the default */
+function hiveOpt(h,key,def){ if(h.cfg&&h.cfg[key]!=null) return h.cfg[key]; const c=G.swarm.cfg; if(c[key]!=null) return c[key]; return def; }
+/* an emergency brood: biomass spent on fresh units that go straight for the target */
+function hiveBrood(h,target,budget){ let left=budget, guard=0; const out=[], only=hiveOpt(h,'guards',null); if(swarmCount()>60) return out;   /* never a runaway swarm */
+  while(left>=15 && guard++<20){ const type=pickSwarmType(left,only); if(!type) break; const u=spawnNearBuilding(type,'swarm',h); if(!u) break; left-=UNITS[type].biomass;
+    u.role='hunt'; if(target&&target.kind==='unit'&&!target.dead){ u.target=target; u.order={type:'amove',x:target.x,y:target.y}; setPath(u,target.x,target.y); } out.push(u); }
+  return out; }
+/* A hive notices soldiers who come within its aggro radius (tiles × difficulty): its guards go for them and it births a brood.
+   Then it waits aggroCooldown seconds before it can react to that again. aggro:0 makes a hive blind (it still screams when hit). */
+function hiveWatch(h,dt){
+  h.watchT=(h.watchT||0)-dt; if(h.watchT>0) return; h.watchT=0.5;
+  const R=hiveOpt(h,'aggro',HIVE_DEFENCE.aggro)*(G.diff.aggro||1)*TILE; if(R<=0||G.time<(h.aggroAt||0)) return;
+  const t=nearestOf(h,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.downed); if(!t||dist(h,t)>R) return;
+  const D=G.diff, rage=hiveOpt(h,'rage',G.swarm.cfg.hiveRage||1);
+  h.aggroAt=G.time+hiveOpt(h,'aggroCooldown',HIVE_DEFENCE.aggroCooldown)*D.interval;
+  for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&e.homeHive===h.id){ e.target=t; } }
+  const out=hiveBrood(h,t,hiveOpt(h,'aggroBrood',HIVE_DEFENCE.aggroBrood)*D.budget*rage);
+  if(out.length){ G.fx.push({k:'boom',x:h.x,y:h.y,t:0.35,max:0.35,r:24,col:'#a6ff4a'}); if(isVisible(h)) SFX.play('hatch',h.x,h.y);
+    G.pings.push({x:h.x,y:h.y,t:0,col:'#a6ff4a'});
+    if(!G.saidAggro){ G.saidAggro=true; say('Dr. Maas','The hive has noticed you. Keep your distance, or burn it down.','alert'); } }
 }

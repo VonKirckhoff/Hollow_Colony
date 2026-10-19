@@ -166,11 +166,13 @@
       <div class="note"><b>Suppression</b>Anything a Gunner hits slows down for a moment.</div>
       <div class="note"><b>Acid blood</b>Swarm bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for 3 seconds.</div>
       <div class="note"><b>Cocoons</b>Your dead are turned into cocoons that hatch in seconds. Burn them; a Pyro does triple damage.</div>
-      <div class="note"><b>Medic triage</b>The worst wounded first. His sidearm only comes out when nobody nearby needs him.</div>
+      <div class="note"><b>Medic triage</b>The downed first, then the worst wounded. His sidearm only comes out when nobody nearby needs him.</div>
+      <div class="note"><b>Down, not out</b>A soldier at 0 health goes down for 15 seconds. A Medic who reaches him patches him up in 4 seconds. Nobody comes, and he bleeds out.</div>
+      <div class="note"><b>The fallen</b>A body lies on the ground for a while. The Swarm comes to claim it and it becomes a cocoon. Stand next to it to guard it, or let a Pyro burn it.</div>
       <div class="note"><b>Darkness and flares</b>In dark missions everyone sees half as far. Flares light the ground for 45 seconds: three per mission, six in the dark.</div>
       <div class="note"><b>Motion tracker</b>Shows Swarm moving near your selected squad, even in the dark, and beeps faster as they close in.</div>
       <div class="note"><b>Swarm tactics</b>Big waves may send bait first, or split up and come at you from the side.</div>
-      <div class="note"><b>Hives fight back</b>Every hit makes a hive scream and birth defenders. Badly hurt, it calls the other hives. Left alone, it heals. Go in with a squad, and finish what you start.</div>
+      <div class="note"><b>Hives fight back</b>Come too close and a hive notices you: its guards attack and it births a brood. Every hit makes it scream for more; badly hurt, it calls the other hives. Left alone, it heals.</div>
       <div class="note"><b>Landing pads</b>Order replacements from the pad. Never more than the squad you started with.</div>
       <div class="note"><b>Intel</b>Every soldier, structure and enemy with its numbers: see Intel in the main menu.</div>
     </div>
@@ -200,7 +202,13 @@
       <div class="note"><b>The roster</b>Survivors with XP carry over to the next campaign mission and replace starting soldiers of their type.</div>
       <div class="note"><b>Cenotaph</b>The fallen are cut into stone. In zombie mode you can raise them once.</div>
     </div>
-    <div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="intel">Intel</button></div>
+    <div class="fresh" id="fresh-box">
+      <div><div class="lbl">Start fresh</div>
+        <p>Erase everything this game keeps in your browser: campaign progress, veterans, your own soldier, the Cenotaph, difficulty, the defeat choice, zombie mode, and all music, sound and voice settings. The game starts as if you opened it for the first time.</p>
+        <label class="fresh-maps"><input type="checkbox" id="fresh-maps"> Also delete the maps I made in the map editor</label></div>
+      <button class="btn danger" type="button" id="btn-fresh">Start fresh</button>
+    </div>
+    <div class="row"><button class="btn" type="button" id="manual-back">Back</button><button class="btn" type="button" data-go="intel">Intel</button></div>
   </div>
 </section>
 
@@ -211,6 +219,7 @@
     <h2 class="h" id="p-title">Mission</h2>
     <div class="menu-list">
       <button class="menu-btn" type="button" id="p-resume">Resume</button>
+      <button class="menu-btn" type="button" id="p-manual">Field manual</button>
       <button class="menu-btn" type="button" id="p-restart">Restart mission</button>
       <button class="menu-btn" type="button" id="p-quit">Quit to menu</button>
     </div>

@@ -425,3 +425,10 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .cenotaph .name i{color:#c3c7cf;text-shadow:0 -1px 0 #000;}
 .cenotaph .name .gone{color:#9aa0ab;}
 .cenotaph .empty{color:#c3c7cf;text-shadow:0 -1px 0 #000;}
+
+/* ---------- start fresh ---------- */
+.fresh{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between;background:rgba(17,19,26,.85);border:1px solid var(--line);border-left:3px solid var(--danger);padding:12px 14px;}
+.fresh>div{flex:1 1 360px;display:grid;gap:6px;}
+.fresh p{margin:0;font-size:12px;color:var(--dim);line-height:1.5;}
+.fresh-maps{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim);cursor:pointer;}
+.fresh-maps input{accent-color:var(--danger);}

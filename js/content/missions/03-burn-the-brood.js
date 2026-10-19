@@ -11,9 +11,11 @@ MISSIONS.push(
     ],
     start:{ salvage:350, camera:'P',
       units:[ ['engineer','P',2], ['trooper','P',6], ['gunner','P',2], ['pyro','P',2], ['medic','P',2] ],
-      buildings:[ ['hq','P'] ], hives:['a','b','c','d','e'], hiveHp:1.6 },
+      buildings:[ ['hq','P'] ], hiveHp:1.6,
+      /* per hive: c is the big nest with spitters among its guards; e is tougher and angrier */
+      hives:[ 'a', 'b', { at:'c', guardMax:8, guards:['drone','drone','spitter'], aggro:10 }, 'd', { at:'e', hp:2.4, rage:1.4 } ] },
     limits:{ sentry:5 },
-    swarm:{ biomass:80, rate:0.5, guardMax:6, guardEvery:12, waves:{ first:140, every:85, budget:80, growth:32 } },
+    swarm:{ biomass:80, rate:0.5, guardMax:6, guardEvery:12, aggro:8, aggroBrood:55, waves:{ first:140, every:85, budget:80, growth:32 } },
     objectives:[
       { id:'hives', text:'Destroy all hives (0/5)' },
       { id:'hq',    text:'The Command Post must survive' }

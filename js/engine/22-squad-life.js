@@ -1,6 +1,8 @@
 'use strict';
 /* ---------- 2v. squad life: motion tracker, acid blood, voices, cover, suppression, flares, obituaries ---------- */
 const SQUAD = {
+  downed:{ time:15, hp:0.35, patch:4, reviveHp:0.3 },               // seconds to bleed out / health while down (× max) / seconds of Medic work / health after revive (× max)
+  body:{ time:35, claimTime:3, seek:7, guard:1.6, burn:1.2 },       // seconds a body lies / seconds for the Swarm to claim it / tiles a Swarm unit comes from / tiles a soldier guards it / seconds a Pyro needs to burn it
   tracker:{ range:20, size:64 },                                     // range in tiles, radius on screen in px
   acid:{ splash:1.2, splashDmg:6, pool:3, poolDps:5, poolR:14 },     // tiles / hp / seconds / hp per second / px
   cover:{ factor:0.6 },                                              // ranged damage taken in cover (×)
@@ -239,3 +241,64 @@ function drawRisenGlow(u,now){
   ctx.fillStyle=g; ctx.fillRect(u.x-24,u.y-34,48,48); ctx.globalCompositeOperation='source-over';
   if(Math.random()<0.04) G.fx.push({k:'spark',x:u.x+rand(-6,6),y:u.y-rand(4,20),vx:rand(-8,8),vy:rand(-40,-20),t:0.8,max:0.8,col:'#9dff6a'});
 }
+
+/* ---------- down, not out: a soldier at 0 HP lies on the ground for SQUAD.downed.time seconds.
+   A Medic who reaches him patches him up (patch seconds of work) and he stands up again. Enemies can still finish him off,
+   but they prefer targets that are standing. If nobody comes, he bleeds out. ---------- */
+function canGoDown(t,src){ return t.kind==='unit' && t.faction==='corps' && t.def.bio && !t.downed && !(t.vet&&t.vet.risen) && !(src&&src.def&&src.def.boss); }
+function goDown(t,src){ const D=SQUAD.downed;
+  t.downed={ t:D.time, max:D.time, patch:0 }; t.hp=t.maxHp*D.hp; t.order=null; t.target=null; t.path=null; t.goal=null; t.moving=false; t.snap=null;
+  addDecal(t.x,t.y,t.r*0.9,'rgba(120,24,24,.5)'); SFX.play('death',t.x,t.y); G.barkNext=0; bark(t,'downed');
+  if(G.time-(G.downSaid||-99)>6){ G.downSaid=G.time; const n=t.vet?`${RANKS[t.vet.rank].abbr} ${t.vet.name}`:t.def.name; const med=G.ents.some(e=>!e.dead&&!e.downed&&e.faction==='corps'&&e.def.heal);
+    say('Man down',`${n} is down! ${med?`Get a Medic to him within ${D.time} seconds.`:`No Medic in the field. He has ${D.time} seconds.`}`,'alert'); }
+  G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; }
+function downedThink(u,dt){ const d=u.downed; u.flash=Math.max(0,u.flash-dt); u.anim+=dt*0.2;
+  if(d.tended>0){ d.tended-=dt; return; }   /* a Medic is working on him: the clock stops */
+  d.t-=dt; if(d.t<=0){ u.downed=null; kill(u,null); } }
+function patchUp(m,t,dt){ const D=SQUAD.downed, d=t.downed; d.tended=0.2; d.patch+=dt/D.patch*(hasPerk(m)?1.5:1);
+  m.beam=t; SFX.play('heal',m.x,m.y); if(Math.abs(t.x-m.x)>2) m.face=t.x>m.x?1:-1;
+  if(d.patch>=1){ t.downed=null; t.hp=Math.max(t.hp,t.maxHp*D.reviveHp); t.home={x:t.x,y:t.y}; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1.4,max:1.4,txt:'BACK UP',col:'#7dffbf'});
+    SFX.play('complete',t.x,t.y); G.barkNext=0; bark(t,'revived'); gainXP(m,2); G.selDirty=true; } }
+function drawDowned(u,sp,w,h,now){ const d=u.downed;
+  drawShadow(u.x,u.y+2,u.r*1.3,u.r*0.45);
+  ctx.save(); ctx.translate(Math.round(u.x),Math.round(u.y-4)); ctx.rotate(u.face>0?-Math.PI/2:Math.PI/2); ctx.globalAlpha=0.92;
+  const img=u.vet&&u.vet.risen&&sp.risen?(u.face>0?sp.risen.img:sp.risen.flip):(u.face>0?sp.img:sp.flip); ctx.drawImage(img,-w/2,-h/2,w,h); ctx.restore(); ctx.globalAlpha=1;
+  const y=Math.round(u.y-24), x=Math.round(u.x), blink=Math.floor(now/350)%2;
+  ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='#ff5a4f'; ctx.beginPath(); ctx.arc(x,y,9,-Math.PI/2,-Math.PI/2+Math.PI*2*(d.t/d.max)); ctx.stroke();   /* time left to bleed out */
+  if(d.patch>0){ ctx.strokeStyle='#7dffbf'; ctx.beginPath(); ctx.arc(x,y,13,-Math.PI/2,-Math.PI/2+Math.PI*2*d.patch); ctx.stroke(); }   /* Medic progress */
+  ctx.fillStyle=blink||d.tended>0?'#ff5a4f':'#7a1d18'; ctx.fillRect(x-1,y-5,3,11); ctx.fillRect(x-5,y-1,11,3);
+  if(u.vet&&u.vet.hero){ ctx.fillStyle='#ffd23f'; ctx.fillRect(x-1,y-20,3,5); ctx.fillRect(x-2,y-19,5,3); } }
+
+/* ---------- the fallen: a body stays on the ground for a while. A Swarm unit can come and claim it, and it becomes a cocoon.
+   A soldier standing next to it guards it; a Pyro burns it (also when his flame hits near it). ---------- */
+function makeBody(e){ const B=SQUAD.body;
+  G.ents.push({ id:NEXT_ID++, kind:'body', type:'body', faction:'none', def:{ name:'Fallen soldier' }, x:e.x, y:e.y, r:8, t:B.time, claim:0, burn:0,
+    sprite:e.def.sprite, face:e.face||1, supply:e.def.supply||1, name:e.vet?e.vet.name:null }); }
+function burnBody(b){ if(b.dead) return; b.dead=true; addDecal(b.x,b.y,10,'rgba(20,16,12,.7)');
+  for(let i=0;i<10;i++) G.fx.push({k:'ember',x:b.x+rand(-8,8),y:b.y+rand(-4,4),vx:rand(-30,30),vy:rand(-70,-20),t:rand(.5,1),max:1,col:pick(['#ff8a2a','#ffd23f','#8a8f9c'])});
+  G.fx.push({k:'text',x:b.x,y:b.y-14,t:1,max:1,txt:'CREMATED',col:'#ffb347'}); }
+function updateBodies(dt){ const B=SQUAD.body;
+  for(const b of G.ents){ if(b.dead||b.kind!=='body') continue;
+    b.t-=dt; if(b.t<=0){ b.dead=true; continue; }
+    const guarded=G.ents.some(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-b.x,e.y-b.y)<B.guard*TILE);
+    const pyro=G.ents.find(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.def.attack==='flame'&&!e.target&&Math.hypot(e.x-b.x,e.y-b.y)<(e.def.range+(e.rangeBonus||0)+0.5)*TILE);
+    if(pyro){ b.burn+=dt/B.burn; pyro.face=b.x>=pyro.x?1:-1; if(Math.random()<dt*12){ const a=Math.atan2(b.y-pyro.y,b.x-pyro.x); G.fx.push({k:'flame',x:pyro.x+pyro.face*12,y:pyro.y-8,vx:Math.cos(a)*160,vy:Math.sin(a)*160,t:0.3,max:0.3}); SFX.play('flame',pyro.x,pyro.y); }
+      if(b.burn>=1){ burnBody(b); continue; } }
+    const near=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&Math.hypot(e.x-b.x,e.y-b.y)<TILE*1.1);
+    if(near&&!guarded){ b.claim+=dt/B.claimTime; if(b.claim>=1){ b.dead=true; const c=makeBuilding('cocoon','swarm',Math.floor(b.x/TILE),Math.floor(b.y/TILE),true); c.x=b.x; c.y=b.y; c.r=9;
+        c.hatchT=BUILDINGS.cocoon.hatch; c.hatchType=b.supply>=2?'drone':'crawler'; G.swarm.biomass+=12; G.stats.cocoons++; continue; } }
+    else b.claim=Math.max(0,b.claim-dt/B.claimTime);
+    /* call the nearest free Swarm unit to it, now and then */
+    b.seekT=(b.seekT||0)-dt; if(b.seekT<=0){ b.seekT=1;
+      if(!G.ents.some(e=>!e.dead&&e.claim===b)){ const u=nearestOf(b,e=>e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&!e.claim&&(!e.target||dist(e,e.target)>4*TILE));
+        if(u&&dist(u,b)<B.seek*TILE){ u.claim=b; u.target=null; } } } } }
+function claimThink(u,dt){ const b=u.claim; if(!b) return false; if(b.dead){ u.claim=null; u.order=null; return false; }
+  if(Math.hypot(u.x-b.x,u.y-b.y)>TILE*0.8){ if(!u.order||u.order.type!=='move'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>4){ u.order={type:'move',x:b.x,y:b.y}; setPath(u,b.x,b.y); } }
+  else u.order={type:'hold'};
+  return true; }
+function drawBody(b,now){ const sp=SPR[b.sprite]; if(!sp) return; const s=2, w=sp.w*s, h=sp.h*s;
+  ctx.save(); ctx.translate(Math.round(b.x),Math.round(b.y-2)); ctx.rotate(b.face>0?-Math.PI/2:Math.PI/2); ctx.globalAlpha=0.55*Math.min(1,b.t/4)+0.05;
+  ctx.filter='grayscale(1) brightness(.6)'; ctx.drawImage(b.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.filter='none'; ctx.restore(); ctx.globalAlpha=1;
+  if(b.claim>0){ ctx.strokeStyle='#a6ff4a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(b.x,b.y-2,12,-Math.PI/2,-Math.PI/2+Math.PI*2*b.claim); ctx.stroke(); }
+  if(b.burn>0){ ctx.strokeStyle='#ff8a2a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(b.x,b.y-2,15,-Math.PI/2,-Math.PI/2+Math.PI*2*b.burn); ctx.stroke(); } }

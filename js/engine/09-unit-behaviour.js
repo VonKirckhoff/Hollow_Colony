@@ -2,6 +2,7 @@
 /* ---------- 2h. unit behaviour ---------- */
 function updateUnit(u,dt){
   const d=u.def;
+  if(u.downed){ downedThink(u,dt); return; }   /* down: immobile, bleeding out, waiting for a Medic */
   u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
   if(u.vet&&u.vet.risen&&u.hp<u.maxHp&&G.time-(u.hitAt??-99)>RISEN.calm) u.hp=Math.min(u.maxHp,u.hp+RISEN.regen*dt);   /* the risen knit themselves back together, once nothing has hit them for a while */ u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
   if(u.stance==='hold' && !u.order) u.order={type:'hold'};   /* defensive stance: hold wherever the last order left him */
@@ -58,6 +59,7 @@ function engage(u,dt,hold){
   else goTo(u,t.x,t.y,dt,0.5);
 }
 function swarmThink(u,dt){
+  if(claimThink(u,dt)) return;   /* on its way to claim a fallen soldier */
   if(u.role==='wave' && tacticThink(u,dt)) return;
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;
   if(u.role==='guard'||u.role==='boss'){ if(!u.order && !u.target && u.guardAt) u.order={type:'guard',x:u.guardAt.x,y:u.guardAt.y,wait:0}; return; }
@@ -122,7 +124,7 @@ function wildThink(u,dt){
   if(u.wait<=0){ u.wait=rand(4,9); const h=u.home||{x:u.x,y:u.y}; const a=rand(0,Math.PI*2), r=rand(0.5,3)*TILE; u.order={type:'move',x:h.x+Math.cos(a)*r,y:h.y+Math.sin(a)*r}; setPath(u,u.order.x,u.order.y); }
 }
 const HP_ZONES={ red:0.25, orange:0.5 };
-function hpZone(e){ const f=e.hp/e.maxHp; return f<=HP_ZONES.red?0:f<=HP_ZONES.orange?1:2; }
+function hpZone(e){ if(e.downed) return -1; const f=e.hp/e.maxHp; return f<=HP_ZONES.red?0:f<=HP_ZONES.orange?1:2; }
 const hpColor=f=>f<=HP_ZONES.red?'#ff5a4f':f<=HP_ZONES.orange?'#ff9a3c':'#5fe3b0';
 function medicThink(u,dt){
   const d=u.def; u.healT=(u.healT||0)-dt;
@@ -138,9 +140,10 @@ function medicThink(u,dt){
   const t=ok(u.healTarget)?u.healTarget:null;
   const inRange = t && dist(u,t) <= d.healRange*TILE;
   if(!t && d.damage) snapFire(u,dt);   /* healing always comes first; only then the sidearm */
-  if(inRange){ const hh=Math.min(t.maxHp-t.hp,d.heal*(u.dmgMul||1)*dt); t.hp+=hh; if(u.vet){ u.vet.healed=(u.vet.healed||0)+hh; u.vet.hb=(u.vet.hb||0)+hh; if(u.vet.hb>=VET_XP.healPerXp){ u.vet.hb-=VET_XP.healPerXp; gainXP(u,1); } } u.beam=t; SFX.play('heal',u.x,u.y); if(Math.abs(t.x-u.x)>2) u.face=t.x>u.x?1:-1;
+  if(inRange && t.downed){ patchUp(u,t,dt); }
+  else if(inRange){ const hh=Math.min(t.maxHp-t.hp,d.heal*(u.dmgMul||1)*dt); t.hp+=hh; if(u.vet){ u.vet.healed=(u.vet.healed||0)+hh; u.vet.hb=(u.vet.hb||0)+hh; if(u.vet.hb>=VET_XP.healPerXp){ u.vet.hb-=VET_XP.healPerXp; gainXP(u,1); } } u.beam=t; SFX.play('heal',u.x,u.y); if(Math.abs(t.x-u.x)>2) u.face=t.x>u.x?1:-1;
     if(Math.random()<dt*3) G.fx.push({k:'text',x:t.x+rand(-6,6),y:t.y-14,t:0.7,max:0.7,txt:'+',col:'#7dffbf'});
-    if(hasPerk(u)){ for(const e of G.ents){ if(e===t||e===u||e.dead||e.kind!=='unit'||e.faction!==u.faction||!e.def.bio||(e.vet&&e.vet.risen)||e.hp>=e.maxHp||dist(u,e)>d.healRange*TILE) continue;   /* Lieutenant Medic: everyone around him */
+    if(hasPerk(u)){ for(const e of G.ents){ if(e===t||e===u||e.dead||e.downed||e.kind!=='unit'||e.faction!==u.faction||!e.def.bio||(e.vet&&e.vet.risen)||e.hp>=e.maxHp||dist(u,e)>d.healRange*TILE) continue;   /* Lieutenant Medic: everyone around him */
         e.hp=Math.min(e.maxHp,e.hp+d.heal*PERKS.medic.share*(u.dmgMul||1)*dt); if(Math.random()<dt*2) G.fx.push({k:'text',x:e.x+rand(-6,6),y:e.y-14,t:0.7,max:0.7,txt:'+',col:'#7dffbf'}); } } }
   if(u.order && u.order.type==='attack') u.order={type:'support',squad:G.ents.filter(e=>e.kind==='unit'&&e.faction===u.faction&&!e.dead&&!e.def.heal&&dist(e,u)<6*TILE)};
   if(u.order && u.order.type==='support'){

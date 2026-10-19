@@ -15,7 +15,7 @@ MISSIONS.push(
       units:[ ['trooper','P',4], ['gunner','P',1], ['medic','P',1] ],
       buildings:[], hives:['c','a'] },
     landingZone:{ tx:45, ty:37, scripted:true },   // the station pad: only this script sends the dropship
-    swarm:{ biomass:30, rate:0.3, guardMax:4, guardEvery:16, waves:null, unlock:{ spitter:300, brute:9999 } },
+    swarm:{ biomass:30, rate:0.3, guardMax:4, guardEvery:16, aggro:0, waves:null, unlock:{ spitter:300, brute:9999 } },   /* aggro:0 until the blast doors open */
     objectives:[
       { id:'reach',  text:'Reach Kappa Station' },
       { id:'crates', text:'Recover 3 salvage crates (0/3)', optional:true }
@@ -51,7 +51,7 @@ MISSIONS.push(
           g.say('Sgt. Kessler','Station log: the crew sealed the north tunnel and ran. Whatever they locked in is still behind those doors. I can open them from here.');
           g.vars.openAt=g.time+5; } },
       { when:g=>g.vars.openAt && g.time>g.vars.openAt, do:g=>{
-          g.openWall('north'); g.ping({x:44,y:24});
+          g.openWall('north'); g.ping({x:44,y:24}); g.setSwarm({ aggro:7 });
           g.say('Cmdr. Varga','Doors are open. Biomass signature in the caverns beyond. Find the nest and destroy it.');
           g.addObjective('nest','Destroy the hive in the western cavern'); g.marker('tunnel','3','Tunnel'); g.vars.open=true; } },
       { when:g=>g.vars.open && g.near('corps','3',3)>0, do:g=>{ g.unmark('tunnel'); g.reveal('c',4,10); g.ping('c'); g.marker('nest','c','Hive'); } },

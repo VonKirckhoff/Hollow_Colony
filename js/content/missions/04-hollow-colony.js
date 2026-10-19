@@ -13,7 +13,7 @@ MISSIONS.push(
       units:[ ['trooper','P',4], ['gunner','P',1], ['pyro','P',1], ['medic','P',1], ['engineer','P',1,{carry:'sentry'}] ],
       buildings:[], hives:['a','b','c'] },
     limits:{ sentry:1 },
-    swarm:{ biomass:40, rate:0.3, guardMax:3, guardEvery:16, waves:null },
+    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null },   /* no waves, but the hives watch the road */
     objectives:[ { id:'lab', text:'Find Dr. Maas in the research lab' } ],
     // Dropship timer starts at the rescue; the mission is won once it has landed and Dr. Maas is on the pad.
     triggers:[

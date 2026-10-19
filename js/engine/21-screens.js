@@ -2,14 +2,15 @@
 /* ---------- 2t. screens ---------- */
 const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel'];
 function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name;
-  if(typeof MUSIC!=='undefined') MUSIC.setScene(name);   /* menu screens have music, missions do not */
-  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause'; }
+  const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
+  if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission?null:name);   /* menu screens have music, missions do not */
+  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission; }
 function goMenu(name){
   if(name==='menu'){ ui.mode='menu'; G=null; $('#hud').hidden=true; resize(); }
   if(name==='campaign') buildCampaign();
   if(name==='skirmish') buildSkirmish();
   if(name==='veterans') buildVeterans();
-  if(name==='manual') $('#manual-ranks').innerHTML=rankCards();
+  if(name==='manual'){ $('#manual-ranks').innerHTML=rankCards(); const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='manual'&&cur!=='intel') ui.manualFrom=cur; }
   if(name==='cenotaph') buildCenotaph();
   if(name==='intel'){ const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='intel') ui.intelFrom=cur; buildIntel(); }
   show(name); syncDiff();
@@ -180,13 +181,22 @@ function skirmishMission(mapId){
 let lastMission=null;
 function startMission(m){
   lastMission=m; newGame(m,ui.diff); G.realDeath=!!ui.realDeath && m.id!=='skirmish'; $('#rd-badge').hidden=!G.realDeath; ui.mode='game'; ui.placing=null; ui.amove=false; cv.classList.remove('amove');
-  show(null); $('#hud').hidden=false; $('#tooltip').hidden=true; resize(); sizeMinimap();
+  show(null); const bt=$('#boot'); if(bt) bt.hidden=true; $('#hud').hidden=false; $('#tooltip').hidden=true; resize(); sizeMinimap();
   const cp=ptWorld(m.start.camera||'P'); centerOn(cp.x,cp.y);
   G.selDirty=true; G.objDirty=true; $('#btn-speed').textContent='1×';
   selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
 }
 function pause(on){ if(!G||G.over) return; G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
+$('#p-manual').addEventListener('click',()=>goMenu('manual'));
+$('#manual-back').addEventListener('click',()=>{ if(ui.manualFrom==='pause'&&G&&!G.over&&ui.mode==='pause'){ show('pause'); $('#p-resume').focus({preventScroll:true}); } else goMenu('menu'); });
+/* Start fresh: wipe everything the game saved in this browser (hc-… keys), optionally also the custom maps, and reload */
+let freshArm=null;
+$('#btn-fresh').addEventListener('click',()=>{ const b=$('#btn-fresh');
+  if(!freshArm){ b.classList.add('armed'); b.textContent='Click again to erase everything'; freshArm=setTimeout(()=>{ freshArm=null; b.classList.remove('armed'); b.textContent='Start fresh'; },4000); return; }
+  clearTimeout(freshArm); const maps=$('#fresh-maps').checked;
+  try{ const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('hc-')&&(maps||k!=='hc-custom-maps')) keys.push(k); } keys.forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  location.reload(); });
 $('#p-restart').addEventListener('click',()=>{ startMission(lastMission); });
 $('#p-quit').addEventListener('click',()=>goMenu('menu'));
 function showEnd(){

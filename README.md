@@ -43,7 +43,48 @@ De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets 
 | Tijd tussen golven en hive-kreten | ×1,25 | ×1 | ×0,8 |
 | Levenspunten hives | ×0,85 | ×1 | ×1,35 |
 
-**Een hive verdedigt zich.** Elke treffer laat hem *krijsen* (hoogstens om de 12 seconden): hij baart meteen een noodbroed dat recht op de aanvaller afgaat. Zakt hij onder 60%, dan roept hij één keer de andere hives, en die sturen een golf naar hem toe. In *Hold Kappa* zijn de hives vier keer zo sterk en krijsen ze feller (`hiveRage`): daar is het de bedoeling dat je standhoudt, niet dat je ze aanvalt. Instellingen: `HIVE_DEFENCE` in `js/engine/12-swarm-director.js`.
+**Een hive verdedigt zich.** Komen je soldaten binnen zijn *waarnemingsstraal* (standaard 8 tegels, × 0,8 op Easy en × 1,25 op Hard), dan merkt hij ze op: zijn bewakers vallen aan en hij baart een broed (daarna wacht hij 18 seconden voor hij opnieuw zo reageert). Elke treffer laat hem *krijsen* (hoogstens om de 12 seconden): weer een broed dat recht op de aanvaller afgaat. Zakt hij onder 60%, dan roept hij één keer de andere hives, en die sturen een golf naar hem toe. Er komen nooit meer broedsels als er al 60 Swarm-eenheden op de kaart zijn.
+
+### Moeilijkheid aanpassen
+
+Alles wat de Swarm doet, stel je in op drie niveaus. Het meest specifieke wint: **per hive** › **per missie** › **standaard**.
+
+**1. Voor het hele spel** — `js/content/difficulty.js` (`DIFFICULTY`, per moeilijkheidsgraad) en `HIVE_DEFENCE` bovenaan het hive-stuk in `js/engine/12-swarm-director.js` (de standaardwaarden).
+
+**2. Per missie** — in het missiebestand (`js/content/missions/…`), in `swarm:{ … }`:
+
+| Instelling | Betekenis | Voorbeeld |
+|---|---|---|
+| `biomass` | Biomassa waarmee de Swarm start (betaalt bewakers) | `80` |
+| `rate` | Biomassa per seconde, per levende hive | `0.5` |
+| `guardMax` | Maximum bewakers per hive | `6` |
+| `guardEvery` | Seconden tussen twee nieuwe bewakers | `12` |
+| `guards` | Welke types een hive als bewaker maakt (herhalen = vaker) | `['drone','drone','spitter']` |
+| `aggro` | Waarnemingsstraal van hives in tegels (`0` = blind tot je schiet) | `8` |
+| `aggroBrood` | Biomassa van het broed als een hive je opmerkt (standaard 45) | `55` |
+| `aggroCooldown` | Seconden voor een hive opnieuw zo reageert | `18` |
+| `brood` | Biomassa van het broed als een hive geraakt wordt | `45` |
+| `hiveRage` | Factor op alle broedsels en het tempo van krijsen | `1.8` |
+| `waves` | `{ first, every, budget, growth, types }`: eerste golf na `first` s, dan om de `every` s; grootte `budget` + `growth` per golf; `types` beperkt de soorten | `{ first:140, every:85, budget:80, growth:32 }` |
+| `unlock` | Na hoeveel seconden een type mag verschijnen | `{ spitter:120, brute:480 }` |
+| `burrows` | Als alle hives weg zijn, graven golven zich uit de grond op | `true` |
+
+Ook in `start:{ … }`: `hiveHp` (factor op de levenspunten van alle hives in die missie).
+
+**3. Per hive** — zet in `start.hives` een object in plaats van een letter. Alles wat je weglaat, komt van de missie:
+
+```js
+hives:[ 'a', 'b',
+  { at:'c', guardMax:8, guards:['drone','drone','spitter'], aggro:10 },   // het grote nest: meer en zwaardere bewakers, ziet je van ver
+  'd',
+  { at:'e', hp:2.4, rage:1.4 } ]                                          // taaier en bozer
+```
+
+Velden per hive: `at` (kaartpunt), `hp` (factor), `guardMax`, `guardEvery`, `guards`, `aggro`, `aggroBrood`, `aggroCooldown`, `brood`, `rage`.
+
+**Tijdens een missie** kan een trigger de instellingen veranderen met `g.setSwarm({ … })`, bv. `g.setSwarm({ aggro:7 })` als de deuren opengaan (zo doet *Dust Landing* het: daar zijn de hives blind tot de blast doors open zijn).
+
+Huidige afstelling: *Burn the Brood* gebruikt de per-hive-instellingen hierboven als voorbeeld; *The Hollow Colony* heeft geen golven, maar de hives letten op de weg (`aggro:9`).
 
 ---
 
@@ -112,6 +153,8 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - Bij een promotie meldt de radio het, verschijnt "PROMOTED" en krijgt de soldaat een kwart van zijn levenspunten terug. Het rangteken staat boven de soldaat en in het selectiepaneel; daar zie je ook naam, XP, kills en aantal missies.
 - **Rooster:** win je een campagnemissie, dan gaan alle overlevenden met XP naar het rooster (max. 30, de meest ervarenen eerst). In de volgende campagnemissie vervangen ze startsoldaten van hetzelfde type. Wie niet meteen een plaats heeft, staat in **reserve** en komt als eerste zodra je dat type traint of via de dropship bestelt.
 - **Gesneuveld is gesneuveld:** een veteraan die sterft in een missie die je wint, verdwijnt van het rooster en komt op de **Cenotaph**.
+- **Neer, niet dood:** een soldaat op 0 levenspunten valt **neer** (15 seconden): hij ligt op de grond met een rood kruis en een ring die aftelt, en neemt geen bevelen. Een Medic gaat eerst naar de neergevallen soldaten; na 4 seconden oplappen (een groene ring; een Lieutenant-Medic is sneller) staat hij weer op met 30% levenspunten. Komt er niemand, dan bloedt hij dood. De Swarm valt liever wie nog rechtstaat aan, maar kan een neergevallen soldaat afmaken. Risen soldaten vallen niet neer. Instellingen: `SQUAD.downed`.
+- **De gevallenen:** het lichaam blijft 35 seconden liggen. Een Swarm-eenheid in de buurt die niet aan het vechten is, komt het **opeisen**: na 3 seconden wordt het een cocon. Staat er een soldaat naast het lichaam, dan kan dat niet; een **Pyro** verbrandt het (ook als zijn vlam ernaast landt). Instellingen: `SQUAD.body`.
 - **Bij een nederlaag** kies je op het campagnescherm (*On defeat*, onthouden als `hc-real-death`):
   - **Retry with the same soldiers** (standaard): het rooster blijft zoals voor de missie, je kan opnieuw proberen met dezelfde soldaten. Het eindscherm noemt wie viel, met de vermelding dat niemand verloren is.
   - **☠ Real death**: ook bij een nederlaag is wie sneuvelde weg en komt op de Cenotaph; wie overleeft, houdt zijn XP en promoties. Het spel vermeldt dit overal: een rode rand en uitleg op het campagnescherm, een rode regel in de briefing, een badge *☠ Real death* in de bovenbalk tijdens de missie, en een rode regel op het eindscherm.
@@ -121,6 +164,8 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - **Intel** (knop in het hoofdmenu en op het campagnescherm): een overzicht met tabbladen **Lunar Corps**, **Structures**, **Swarm** en **Other**. Links staat per tabblad een lijst (klik, of pijltjes omhoog/omlaag), rechts de volledige kaart van wat je kiest, zodat niets moet scrollen. Per eenheid of gebouw een kaart met figuurtje, beschrijving, een korte veldnotitie, en de cijfers: HP, schade per seconde, bereik, snelheid (tegels per seconde), zicht, kostprijs of XP per kill, pantser, wanneer de vijand verschijnt, en de Lieutenant-vaardigheid. De cijfers komen rechtstreeks uit `UNITS` en `BUILDINGS`, dus pas je die aan, dan klopt Intel vanzelf. Welke eenheden op welk tabblad staan en de veldnotities staan in `js/content/intel.js`. Pijltjestoetsen links/rechts wisselen van tabblad.
 - **Cenotaph** (knop op het campagnescherm en het Veterans-scherm): een grafsteen met de naam van elke gesneuvelde, met rang, type, de missie waarin hij viel, missies, kills en datum. Je eigen soldaat staat er met zijn ster.
 - **Zombie mode** (Halloween, aan/uit op de Cenotaph, onthouden in je browser): met *Raise* haal je een gesneuvelde terug naar het rooster, met zijn rang, XP en kills. Een **risen** soldaat is groen, gloeit, en praat traag en hol. Hij heeft 25% meer levenspunten en geneest zichzelf (2 HP per seconde, maar pas na 4 seconden zonder treffer), maar loopt 15% trager, een Medic kan hem niet genezen, en de Swarm kan hem niet in een cocon stoppen. Sneuvelt hij een tweede keer, dan blijft hij voorgoed rusten (*Fell twice · at rest*). Was het je eigen soldaat en heb je nog geen nieuwe, dan wordt hij weer je eigen soldaat. Instellingen in `RISEN`.
+- **Start fresh** (onderaan de Field Manual, twee keer klikken) wist alles wat het spel in je browser bewaart: campagne, veteranen, je eigen soldaat, Cenotaph, moeilijkheidsgraad, keuze bij een nederlaag, zombie mode en alle muziek-, geluids- en stemmeninstellingen. Je eigen kaarten uit de kaarteditor blijven, tenzij je het vakje aanvinkt. Daarna herlaadt het spel.
+- De **Field Manual** is ook te openen vanuit het pauzemenu (*Field manual*); *Back* of Esc brengt je terug naar het pauzemenu, en tijdens een missie blijft de muziek stil.
 - **Reset veterans** (knop op het Veterans-scherm, twee keer klikken) wist het rooster en de Cenotaph, maar niet je campagnevoortgang. **Reset campaign** wist allebei.
 - **Unieke namen:** geen twee soldaten hebben dezelfde naam: niet in het rooster, niet op de Cenotaph en niet in de lopende missie. Pas als alle namen uit `SURNAMES` op zijn, krijgt een nieuwe soldaat een voorletter ("J. Torres"). Een bewaard rooster met dubbele namen wordt bij het laden rechtgezet.
 - **Reset campaign** wist ook het rooster. In skirmish wordt niets bewaard.

@@ -63,6 +63,8 @@ function makeApi(){
         if(e.def.scenery){ e.dead=true; e.hp=0; setBlock(e,0); for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y,vx:rand(-50,50),vy:rand(-60,0),t:0.5,max:0.5,col:'#ffd23f'}); SFX.play('ack',e.x,e.y); }
         else { e.invuln=false; kill(e,null); } } },
     swarmCount:()=>swarmCount(),
+    /* setSwarm({...}): change the mission's swarm settings mid-mission, e.g. g.setSwarm({ aggro:7 }) when the hives wake up */
+    setSwarm(o){ Object.assign(G.swarm.cfg,o||{}); },
     diffBudget:()=>G.diff.budget,
     diffInterval:()=>G.diff.interval,
     uplinks:()=>G.ents.filter(e=>!e.dead&&e.def&&e.def.capture&&e.owned).length,

@@ -83,7 +83,7 @@ function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.targe
   const [t,b]=el.dataset.tip.split('|'); tip.innerHTML=`<b>${t}</b>${b||''}`; tip.hidden=false; const r=tip.getBoundingClientRect();
   tip.style.left=clamp(e.clientX+14,8,innerWidth-r.width-8)+'px'; tip.style.top=clamp(e.clientY-r.height-14,8,innerHeight-r.height-8)+'px'; }
 window.addEventListener('keydown',e=>{
-  if(ui.mode!=='game'||!G) { if(e.key==='Escape'&&ui.mode==='pause') pause(false); return; }
+  if(ui.mode!=='game'||!G) { if(e.key==='Escape'&&ui.mode==='pause'){ if($('#s-pause').hidden) show('pause'); else pause(false); } return; }   /* Esc in the Field Manual (from pause) goes back to the pause menu */
   ui.keys[e.key]=true;
   if(G.over) return;
   const k=e.key.toLowerCase();
