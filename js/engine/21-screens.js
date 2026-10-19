@@ -93,7 +93,7 @@ $('#s-cenotaph').addEventListener('click',e=>{
 /* Trophy wall: a plaque per role and difficulty column. Earned plaques carry every soldier who earned them; your own soldier's progress shows on his row. */
 const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
 function buildTrophies(){
-  const T=trophies(), hero=heroOf(), earned=Object.values(T).filter(l=>l&&l.length).length, total=HERO_TYPES.length*TROPHY_COLS.length;
+  checkGrand(); const T=trophies(), hero=heroOf(), gs=grandStatus(), earned=Object.values(T).filter(l=>l&&l.length).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0), total=HERO_TYPES.length*TROPHY_COLS.length+2;
   $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${hero.tp&&hero.tp.void?'<span class="tvoid">Not on a trophy run: this soldier did not start at mission 1.</span>':TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
   const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}${c.sub?`<i>${c.sub}</i>`:''}</span>`).join('')}</div>`;
@@ -101,7 +101,11 @@ function buildTrophies(){
       const list=T[t+':'+c.key]||[], mine=hero&&hero.type===t, p=mine?trophyProgress(hero,c.key):0;
       const tip=`${UNITS[t].name} · ${c.label}`;
       if(list.length) return `<div class="plaque won ${c.key}" title="${tip}">${CUP_SVG}<b>${list[0].name}</b><i>${new Date(list[0].at).toLocaleDateString()}${list.length>1?` · +${list.length-1} more`:''}</i></div>`;
-      return `<div class="plaque ${mine&&p?'run':''}" title="${tip}">${CUP_SVG}${mine?`<i>${p} / ${MISSIONS.length}</i><span class="tbar"><span style="width:${Math.round(p/MISSIONS.length*100)}%"></span></span>`:'<i>not yet</i>'}</div>`; }).join('')}</div>`).join('');
+      return `<div class="plaque ${mine&&p?'run':''}" title="${tip}">${CUP_SVG}${mine?`<i>${p} / ${MISSIONS.length}</i><span class="tbar"><span style="width:${Math.round(p/MISSIONS.length*100)}%"></span></span>`:'<i>not yet</i>'}</div>`; }).join('')}</div>`).join('')+
+    `<div class="trow grand"><span class="trole">Grand</span>${[
+      ['corps','Hollow Light','Every trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need],
+      ['swarm','The Long Hunger','Every Swarm mission on every difficulty',`Easy ${gs.swarm.easy} · Normal ${gs.swarm.normal} · Hard ${gs.swarm.hard} / ${gs.swarm.need}`,gs.swarm.need?(gs.swarm.easy+gs.swarm.normal+gs.swarm.hard)/(3*gs.swarm.need):0]
+    ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`;
 }
 /* Intel: a card per unit or structure, numbers straight from UNITS / BUILDINGS, tips from INTEL_NOTES */
 let intelTab='corps';
@@ -245,6 +249,8 @@ function showEnd(){
   else if(!o.win && m.id!=='skirmish' && m.side!=='swarm' && G.fallenVets && Object.keys(G.fallenVets).length){ ev.hidden=false;   /* retry: show who fell, but nobody is lost */
     ev.innerHTML=`<div class="vsec"><span class="lbl">Retry</span><div>The roster is restored for another try. These soldiers fell, but they are not lost: ${Object.values(G.fallenVets).map(f=>`${RANKS[f.rank||0].abbr} ${f.name}`).sort().join(', ')}.</div></div>`; }
   else ev.hidden=true;
+  if(G.grandWon&&G.grandWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Grand trophy</span>${G.grandWon.map(k=>`<div>${k==='corps'?'Hollow Light: every trophy of the Lunar Corps.':'The Long Hunger: every Swarm mission on every difficulty.'} It hangs on the Trophy wall.</div>`).join('')}</div>`;
+    if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies fed',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Losses',S.lost],['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
   const LM=m.side==='swarm'?SWARM_MISSIONS:MISSIONS, idx=LM.indexOf(m); let btns=''; if(idx>=0) ui.campSide=m.side==='swarm'?'swarm':'corps';
   if(o.win && idx>=0 && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;

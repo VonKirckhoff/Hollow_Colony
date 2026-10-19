@@ -30,13 +30,16 @@ const UNITS = {
 
   crawler: { name:'Crawler', faction:'swarm', sprite:'crawler', role:'Swarm runner',
     hp:30, speed:100, radius:7, sight:6, range:0.6, damage:5, cooldown:0.55, attack:'melee',
-    biomass:15, weight:3, infects:true, desc:'Fast and fragile. Hatches from cocoons. The only one that can infect a fallen soldier.' },
+    biomass:15, weight:3, desc:'Fast and fragile. The Swarm\'s runner.' },
   drone: { name:'Drone', faction:'swarm', sprite:'drone', role:'Swarm warrior',
     hp:70, speed:82, radius:9, sight:6, range:0.7, damage:9, cooldown:0.8, attack:'melee',
     biomass:25, weight:4, desc:'The backbone of the Swarm.' },
   spitter: { name:'Spitter', faction:'swarm', sprite:'spitter', role:'Acid artillery',
     hp:48, speed:66, radius:9, sight:7, range:4.6, damage:12, cooldown:1.7, attack:'acid', splash:0.8,
     biomass:35, weight:2, unlock:120, desc:'Lobs acid over the front line.' },
+  grafter: { name:'Grafter', faction:'swarm', sprite:'grafter', role:'Egg-born parasite',
+    hp:14, speed:105, radius:6, sight:4, range:0, grafter:true,
+    desc:'Hatches from an egg on the creep around a hive when a body is brought home. It scuttles to the body, latches on and infects it. It cannot fight.' },
   husk: { name:'Husk', faction:'swarm', sprite:'husk', role:'Infected soldier',
     hp:150, speed:58, radius:9, sight:6, range:0.8, damage:13, cooldown:0.9, attack:'melee', armor:0.1,
     biomass:60, founder:true,
@@ -99,6 +102,8 @@ const BUILDINGS = {
                desc:'A sealed station blast door. Only the mission can open it.' },
   membrane:  { name:'Membrane', faction:'swarm', size:1, hp:600, sight:1, art:'membrane',
                desc:'Living tissue that seals a tunnel. It cannot be harmed while its egg chambers live.' },
+  egg:       { name:'Egg', faction:'swarm', size:1, hp:40, sight:2, art:'egg', noBlock:true,
+               desc:'A hive keeps a few eggs waiting on its creep. When a body is brought home, one opens and a Grafter crawls out.' },
   cocoon:    { name:'Cocoon', faction:'swarm', size:1, hp:35, sight:2, hatch:5, art:'cocoon', noBlock:true,
                desc:'A fallen body, being remade. Destroy it before it hatches.' }
 };

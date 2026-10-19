@@ -47,7 +47,7 @@ function entityAt(wx,wy,filter){ let best=null, bd=Infinity;
     else { const cy=e.kind==='unit'?e.y-8:e.y; d=Math.hypot(wx-e.x,wy-cy); if(d>e.r+8) continue; }
     if(d<bd){ bd=d; best=e; } }
   return best; }
-function smartCommand(wx,wy){ if(G.side==='swarm'){ setRally(wx,wy); return; }   /* playing the Swarm: right-click calls the brood together */
+function smartCommand(wx,wy){ if(G.side==='swarm'){ swarmRight(wx,wy); return; }   /* playing the Swarm: right-click calls the brood together */
   const units=myUnits(); const blds=G.sel.filter(e=>e.kind==='building'&&e.faction==='corps');
   if(!units.length){ for(const b of blds) if(b.def.trains||b.def.reinforce){ b.rally={x:wx,y:wy}; b.rallyN=0; G.pings.push({x:wx,y:wy,t:2.2,col:'#5fe3b0'}); } return; }
   const t=entityAt(wx,wy,e=>e.kind!=='crate');

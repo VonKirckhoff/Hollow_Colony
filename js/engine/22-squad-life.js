@@ -2,7 +2,7 @@
 /* ---------- 2v. squad life: motion tracker, acid blood, voices, cover, suppression, flares, obituaries ---------- */
 const SQUAD = {
   downed:{ time:15, hp:0.35, patch:4, reviveHp:0.3 },               // seconds to bleed out / health while down (× max) / seconds of Medic work / health after revive (× max)
-  body:{ time:35, infect:3, seek:8, guard:1.6, burn:1.2, escorts:2, haulSpeed:0.7, biomass:40, heal:0.15, huskHatch:1.6 },   // seconds a body lies / seconds a Crawler needs to infect it / tiles a Swarm unit comes from / tiles a soldier guards it / seconds a Pyro needs to burn it / Swarm guards per body / carrier speed / biomass and share of hive health when it is fed to a hive / Husk cocoon takes this × longer
+  body:{ time:35, infect:3, seek:8, guard:1.6, burn:1.2, escorts:2, haulSpeed:0.7, biomass:20, heal:0.1, huskHatch:1.6 },   // seconds a body lies / seconds a Grafter needs to infect it / tiles a Swarm unit comes from (×1.8 when you play the Swarm) / tiles a soldier guards it / seconds a Pyro needs to burn it / Swarm guards per body / carrier speed / biomass and share of hive health when a body is brought home / Husk cocoon takes this × longer
   tracker:{ range:20, size:64 },                                     // range in tiles, radius on screen in px
   acid:{ splash:1.2, splashDmg:6, pool:3, poolDps:5, poolR:14 },     // tiles / hp / seconds / hp per second / px
   cover:{ factor:0.6 },                                              // ranged damage taken in cover (×)
@@ -285,8 +285,10 @@ function drawDowned(u,sp,w,h,now){ const d=u.downed;
   if(u.vet&&u.vet.hero){ ctx.fillStyle='#ffd23f'; ctx.fillRect(x-1,y-20,3,5); ctx.fillRect(x-2,y-19,5,3); } }
 
 /* ---------- the fallen: a body stays on the ground for a while. The Swarm does not finish off the wounded: a body is worth more to it whole.
-   Only a Crawler can infect a body. It turns into a cocoon, and a Husk hatches from it (see 25-hive-life.js).
-   Other Swarm units guard the body and drag it to the nearest hive: biomass, the hive heals and a Drone hatches.
+   Swarm units guard a body and drag it home to the creep around the nearest hive (if the way is shut, the carrier digs through the rock).
+   There the hive sends a Grafter: from one of the eggs it keeps waiting on its creep, or it spits a fresh egg next to the body.
+   The Grafter latches on and infects the body; it becomes a cocoon and a Husk hatches from it (see 25-hive-life.js).
+   Nothing hatches outside the creep. A body brought home also gives biomass and heals the hive a little.
    A soldier standing next to it guards it; a Pyro burns it (also when his flame hits near it). Kill the carrier and he drops it. ---------- */
 function makeBody(e){ const B=SQUAD.body;
   G.ents.push({ id:NEXT_ID++, kind:'body', type:'body', faction:'none', def:{ name:'Fallen soldier' }, x:e.x, y:e.y, r:8, t:B.time, claim:0, burn:0, carrier:null,
@@ -295,60 +297,65 @@ function burnBody(b){ if(b.dead) return; dropBody(b); b.dead=true; addDecal(b.x,
   for(let i=0;i<10;i++) G.fx.push({k:'ember',x:b.x+rand(-8,8),y:b.y+rand(-4,4),vx:rand(-30,30),vy:rand(-70,-20),t:rand(.5,1),max:1,col:pick(['#ff8a2a','#ffd23f','#8a8f9c'])});
   G.fx.push({k:'text',x:b.x,y:b.y-14,t:1,max:1,txt:'CREMATED',col:'#ffb347'}); }
 /* a Swarm unit that is free to answer a body's call */
-function bodyFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.def.boss&&!e.def.founder&&!e.claim&&!e.haul&&(!e.target||dist(e,e.target)>4*TILE); }
-function dropBody(b){ const u=b.carrier; b.carrier=null; if(!u) return; u.haul=null; if(!u.dead){ u.claimMode='guard'; u.order=null; u.path=null; } }
-function deliverBody(b,h,u){ const B=SQUAD.body; b.dead=true; u.haul=null; u.claim=null; u.claimMode=null; u.order=null; u.path=null;
+function bodyFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.def.boss&&!e.def.founder&&!e.def.grafter&&!e.claim&&!e.haul&&!e.tunnel&&(!e.target||dist(e,e.target)>4*TILE); }
+function dropBody(b){ const u=b.carrier; b.carrier=null; b.hidden=false; if(!u) return; u.haul=null; if(!u.dead){ u.claimMode='guard'; u.order=null; u.path=null; } }
+/* the body reaches the creep around a hive: it is put down there for a Grafter */
+function bodyHome(b,h,u){ const B=SQUAD.body; dropBody(b); b.home=h; b.t=B.time;
+  if(u){ u.claim=null; u.claimMode=null; u.order=null; u.path=null; }
   G.swarm.biomass+=B.biomass; G.stats.fed=(G.stats.fed||0)+1; h.hp=Math.min(h.maxHp,h.hp+h.maxHp*B.heal);
-  const d=spawnNearBuilding('drone','swarm',h); if(d){ d.role='guard'; d.homeHive=h.id; d.guardAt={x:h.x,y:h.y}; d.order={type:'guard',x:h.x,y:h.y,wait:0}; }
-  G.fx.push({k:'boom',x:h.x,y:h.y,t:0.4,max:0.4,r:26,col:'#a6ff4a'});
-  if(isVisible(h)){ SFX.play('squelch',h.x,h.y); G.fx.push({k:'text',x:h.x,y:h.y-30,t:1.4,max:1.4,txt:'FED',col:'#a6ff4a'});
-    if(!G.saidFed){ G.saidFed=true; say('Dr. Maas','They dragged the body into the hive. It feeds on our dead: it heals, and something new crawls out.','alert'); } } }
+  G.fx.push({k:'boom',x:b.x,y:b.y,t:0.4,max:0.4,r:20,col:'#c38bff'});
+  if(isVisible(b)){ SFX.play('squelch',b.x,b.y); G.fx.push({k:'text',x:b.x,y:b.y-24,t:1.4,max:1.4,txt:'HOME',col:'#c38bff'}); }
+  if(G.side==='corps'&&isVisible(h)&&!G.saidFed){ G.saidFed=true; say('Dr. Maas','They dragged the body onto the creep around their hive. The hive is sending something out to it. Burn it before it turns!','alert'); } }
 function updateBodies(dt){ const B=SQUAD.body;
   for(const b of G.ents){ if(b.dead||b.kind!=='body') continue;
     if(b.carrier&&(b.carrier.dead||b.carrier.haul!==b)) dropBody(b);
-    if(b.carrier){ b.x=b.carrier.x; b.y=b.carrier.y+3; b.face=b.carrier.face; }
-    else { b.t-=dt; if(b.t<=0){ b.dead=true; continue; } }
+    if(b.carrier){ b.x=b.carrier.x; b.y=b.carrier.y+3; b.face=b.carrier.face; b.hidden=!!b.carrier.hidden; }
+    else if(!b.home){ b.t-=dt; if(b.t<=0){ b.dead=true; continue; } }
+    if(b.home&&b.home.dead) b.home=null;   /* its hive is gone: it is just a body again */
     b.guarded=G.ents.some(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&Math.hypot(e.x-b.x,e.y-b.y)<B.guard*TILE);
-    const pyro=G.ents.find(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.def.attack==='flame'&&!e.target&&Math.hypot(e.x-b.x,e.y-b.y)<(e.def.range+(e.rangeBonus||0)+0.5)*TILE);
+    const pyro=b.hidden?null:G.ents.find(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.def.attack==='flame'&&!e.target&&Math.hypot(e.x-b.x,e.y-b.y)<(e.def.range+(e.rangeBonus||0)+0.5)*TILE);
     if(pyro){ b.burn+=dt/B.burn; pyro.face=b.x>=pyro.x?1:-1; if(Math.random()<dt*12){ const a=Math.atan2(b.y-pyro.y,b.x-pyro.x); G.fx.push({k:'flame',x:pyro.x+pyro.face*12,y:pyro.y-8,vx:Math.cos(a)*160,vy:Math.sin(a)*160,t:0.3,max:0.3}); SFX.play('flame',pyro.x,pyro.y); }
       if(b.burn>=1){ burnBody(b); continue; } }
-    /* only a Crawler infects */
-    const crawler=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.def.infects&&Math.hypot(e.x-b.x,e.y-b.y)<TILE*1.1);
-    if(crawler&&!b.guarded){ b.claim+=dt/B.infect; if(G.vis[Math.floor(b.y/TILE)*G.map.w+Math.floor(b.x/TILE)]) SFX.play('infect',b.x,b.y); if(b.claim>=1){ dropBody(b); b.dead=true;
-        for(const e of G.ents) if(e.claim===b){ e.claim=null; e.claimMode=null; e.order=null; }
-        const c=makeBuilding('cocoon','swarm',Math.floor(b.x/TILE),Math.floor(b.y/TILE),true); c.x=b.x; c.y=b.y; c.r=9;
-        c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.swarm.biomass+=12; G.stats.cocoons++;
-        if(isVisible(c)&&!G.saidInfect){ G.saidInfect=true; say('Dr. Maas','A Crawler has infected the body. What hatches from that cocoon will not be a Crawler. Burn it!','alert'); }
-        continue; } }
-    else b.claim=Math.max(0,b.claim-dt/B.infect);
-    /* now and then the body calls the nearest free Swarm units: a Crawler to infect it, one to carry it, a few to guard it */
+    /* at home on the creep: a Grafter latches on and infects it */
+    if(b.home){
+      const g=G.ents.find(e=>!e.dead&&e.def&&e.def.grafter&&e.graft===b&&Math.hypot(e.x-b.x,e.y-b.y)<TILE*1.1);
+      if(g&&!b.guarded){ g.latched=true; g.x+=(b.x-g.x)*0.2; g.y+=(b.y-3-g.y)*0.2; b.claim+=dt/B.infect; if(G.vis[Math.floor(b.y/TILE)*G.map.w+Math.floor(b.x/TILE)]) SFX.play('infect',b.x,b.y);
+        if(b.claim>=1){ b.dead=true; g.dead=true; g.hp=0;
+          for(const e of G.ents) if(e.claim===b){ e.claim=null; e.claimMode=null; e.order=null; }
+          const c=makeBuilding('cocoon','swarm',Math.floor(b.x/TILE),Math.floor(b.y/TILE),true); c.x=b.x; c.y=b.y; c.r=9;
+          c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.stats.cocoons++;
+          if(isVisible(c)&&!G.saidInfect&&G.side==='corps'){ G.saidInfect=true; say('Dr. Maas','That thing from the egg has infected the body. Whatever hatches from that cocoon will not be one of the usual ones. Burn it!','alert'); }
+          continue; } }
+      else { if(g) g.latched=false; b.claim=Math.max(0,b.claim-dt/B.infect); }
+      if(!G.ents.some(e=>!e.dead&&((e.def&&e.def.grafter&&e.graft===b)||(e.type==='egg'&&e.target===b)))) callGrafter(b);
+      continue; }
+    b.claim=0;
+    /* now and then the body calls the nearest free Swarm units: one to carry it home, a few to guard it */
     b.seekT=(b.seekT||0)-dt; if(b.seekT>0) continue; b.seekT=1;
-    const mine=G.ents.filter(e=>!e.dead&&e.claim===b), R=B.seek*TILE;
-    if(!mine.some(e=>e.claimMode==='infect')){ const u=nearestOf(b,e=>bodyFree(e)&&e.def.infects); if(u&&dist(u,b)<R*1.5){ u.claim=b; u.claimMode='infect'; u.target=null; } }
-    if(hives().length&&!b.carrier&&!mine.some(e=>e.claimMode==='haul')){ const u=nearestOf(b,e=>bodyFree(e)&&!e.def.infects); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='haul'; u.target=null; } }
-    if(mine.filter(e=>e.claimMode==='guard').length<B.escorts){ const u=nearestOf(b,e=>bodyFree(e)&&!e.def.infects); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='guard'; } } } }
+    const mine=G.ents.filter(e=>!e.dead&&e.claim===b), R=B.seek*TILE*(G.side==='swarm'?1.8:1);
+    if(hives().length&&!b.carrier&&!mine.some(e=>e.claimMode==='haul')){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='haul'; u.target=null; } }
+    if(mine.filter(e=>e.claimMode==='guard').length<B.escorts){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='guard'; } } } }
 /* a Swarm unit with a job at a body. Returns true while it is busy (swarmThink then leaves it alone). */
 function claimThink(u,dt){ const b=u.claim; if(!b) return false;
-  if(b.dead){ u.claim=null; u.claimMode=null; u.haul=null; u.order=null; return false; }
+  if(b.dead||(b.home&&u.claimMode!=='guard')){ u.claim=null; u.claimMode=null; u.haul=null; u.order=null; return false; }
+  if(u.tunnel) return true;   /* digging through the rock with it */
   const d=Math.hypot(u.x-b.x,u.y-b.y), goBody=()=>{ if(!u.order||u.order.type!=='move'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>TILE){ u.order={type:'move',x:b.x,y:b.y}; setPath(u,b.x,b.y); } };
   const fightFor=()=>{ if(!u.order||u.order.type!=='amove'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>TILE){ u.order={type:'amove',x:b.x,y:b.y}; setPath(u,b.x,b.y); } };
   if(u.claimMode==='guard'){   /* stay close and fight whatever comes for it */
+    if(b.home&&b.claim<=0&&!b.guarded&&Math.random()<dt*0.05){ u.claim=null; u.claimMode=null; return false; }   /* safe at home: drift back to other work */
     if(!u.order||u.order.type!=='guard'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>1.5*TILE){ u.order={type:'guard',x:b.x,y:b.y,wait:rand(1,3)}; if(d>2*TILE) setPath(u,b.x,b.y); }
     return true; }
-  if(u.claimMode==='haul'){
-    if(b.carrier===u){ const h=nearestOf(u,e=>e.type==='hive'&&!e.dead);
-      if(!h){ dropBody(b); return true; }
-      if(gapTo(u,h)<TILE*0.9){ deliverBody(b,h,u); return false; }
-      if(!u.order||u.order.type!=='move'){ const s=spawnSpotToward(h,u); u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y); if(!u.path) dropBody(b); }
-      return true; }
-    if(b.carrier){ u.claimMode='guard'; return true; }
-    if(b.guarded&&d<4*TILE){ fightFor(); return true; }
-    if(d<TILE*0.9){ b.carrier=u; u.haul=b; u.order=null; u.path=null; if(isVisible(u)) SFX.play('squelch',u.x,u.y); return true; }
-    goBody(); return true; }
-  /* infect: a Crawler goes to the body and stays on it */
+  /* haul: carry it to the creep of the nearest hive */
+  if(b.carrier===u){ const h=nearestOf(u,e=>e.type==='hive'&&!e.dead);
+    if(!h){ dropBody(b); return true; }
+    if(gapTo(u,h)<TILE*0.9||(creepAt(u.x,u.y)>0.3&&dist(u,h)<((h.creepR||2)+0.5)*TILE)){ bodyHome(b,h,u); return false; }
+    if(!u.order||u.order.type!=='move'){ const s=spawnSpotToward(h,u); u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y);
+      if(!canReach(u,s)){ tunnelTo(u,s); if(isVisible(u)) SFX.play('land',u.x,u.y); } }   /* the way is shut: it digs down with the body */
+    return true; }
+  if(b.carrier){ u.claimMode='guard'; return true; }
   if(b.guarded&&d<4*TILE){ fightFor(); return true; }
-  if(d>TILE*0.8) goBody(); else u.order={type:'hold'};
-  return true; }
+  if(d<TILE*0.9){ b.carrier=u; u.haul=b; u.order=null; u.path=null; if(isVisible(u)) SFX.play('squelch',u.x,u.y); return true; }
+  goBody(); return true; }
 /* the walkable tile next to a building, on the side facing `from` */
 function spawnSpotToward(b,from){ const s=b.size; let best=null, bd=Infinity;
   for(let y=b.ty-1;y<=b.ty+s;y++) for(let x=b.tx-1;x<=b.tx+s;x++){ if(x>=b.tx&&x<b.tx+s&&y>=b.ty&&y<b.ty+s) continue; if(!walkableT(x,y)) continue;

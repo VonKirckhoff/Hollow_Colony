@@ -4,7 +4,7 @@
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
-  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','husk','broodmother'], buildings:['hive','cocoon','membrane'] },
+  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
   { id:'other',  name:'Other',       units:['hunter','grazer'] }
 ];
 const INTEL_NOTES = {
@@ -21,10 +21,12 @@ const INTEL_NOTES = {
   lz:       'Order replacements here. The dropship cannot be shot, but the soldiers it brings can.',
   charge:   'Mission object: armed by an Engineer, then it has to survive its fuse.',
   generator:'Mission object: an Engineer repairs it to full to bring it online. It goes down when badly damaged.',
-  crawler:  'Fast and fragile, often in numbers. The only Swarm unit that can infect a fallen soldier: a few seconds on the body and it becomes a cocoon. Kill Crawlers near your dead first.',
-  drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up. Drones guard the bodies of the fallen and drag them back to a hive to feed it.',
+  crawler:  'Fast and fragile, often in numbers. Cheap to lose, so the Swarm throws them first.',
+  grafter:  'The parasite of the Swarm. It only hatches from a hive egg when a body has been dragged onto the creep. It runs to the body, latches on and infects it in a few seconds: then the body becomes a cocoon. It cannot fight. One shot kills it.',
+  egg:      'Every hive keeps a few eggs waiting on its creep, and spits a fresh one next to a body if none is free. Burn the eggs and the hive cannot turn your dead.',
+  drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up. Drones guard the bodies of the fallen and drag them home to the creep around a hive.',
   spitter:  'Acid artillery at range 4.6: it outreaches Pyros and Medics. Its acid leaves a burning pool for a few seconds.',
-  husk:     'A fallen soldier, remade. A Crawler infects the body, the cocoon beats like a heart until it cracks, and a Twitcher crawls out (40% of these numbers). It molts into a Shambler (70%), then into the Husk. Each molt takes 1.6 seconds and it takes 50% more damage meanwhile: that is your moment. The Shambler stops fighting and slips away to finish turning out of your reach; the Husk then walks off to a quiet spot and takes root; if it finishes, a young hive grows there.',
+  husk:     'A fallen soldier, remade. Dragged onto the creep, infected by a Grafter from a hive egg, the cocoon beats like a heart until it cracks, and a Twitcher crawls out (40% of these numbers). It molts into a Shambler (70%), then into the Husk. Each molt takes 1.6 seconds and it takes 50% more damage meanwhile: that is your moment. The Shambler stops fighting and slips away to finish turning out of your reach; the Husk then walks off to a quiet spot and takes root; if it finishes, a young hive grows there.',
   brute:    'Armoured siege beast that goes for walls and structures. Focus fire and keep your distance.',
   broodmother:'Boss. Rooted most of the time, but charges into your lines, lays eggs and sprays acid. Regenerates when left alone.',
   hive:     'Notices soldiers who come close: its guards attack and it births a brood. Every hit makes it scream for more. Badly hurt, it calls the other hives. Regrows when left alone. The creep around it heals every Swarm unit standing on it, and it withers once the hive is dead. Bring a squad, not a hero.',

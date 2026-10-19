@@ -58,6 +58,7 @@ function render(now){
   // shots & fx
   for(const s of G.shots){ if(s.t<0) continue; const t=s.t/s.dur; if(s.k==='plasma'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t; ctx.fillStyle='#1a8fa0'; ctx.fillRect(Math.round(x)-4,Math.round(y)-4,8,8); ctx.fillStyle='#d8feff'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,4,4); continue; }
     if(s.k==='grenade'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*46; ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#5b6b3a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,4,4); if(Math.floor(s.t*12)%2){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(x)-1,Math.round(y)-4,2,2); } continue; }
+    if(s.k==='egglob'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*70; ctx.drawImage(ARTC.egg,Math.round(x)-6,Math.round(y)-7,12,14); continue; }
     const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*40; ctx.fillStyle='#4fae22'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#a6ff4a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,3,3); }
   drawFx(); drawFlares(now); if(G.side==='swarm') drawSwarmOrders(now);
   // light from running generators
@@ -135,6 +136,7 @@ function drawBuilding(b,now){
   let y=b.def.noBlock ? Math.round(b.y-h/2-4) : b.ty*TILE + Math.round((b.size*TILE-h)/2);
   if(!b.def.noBlock) drawShadow(b.x+4,b.y+b.size*TILE*0.32,b.size*TILE*0.5,b.size*TILE*0.22);
   if(b.type==='hive'){ const p=1+Math.sin(now/420+b.id)*0.025; const ww=Math.round(w*p), hh=Math.round(h*p); ctx.drawImage(art,Math.round(b.x-ww/2),Math.round(b.y-hh/2-4),ww,hh); }
+  else if(b.type==='egg'){ drawEgg(b,art,now); }
   else if(b.type==='cocoon'){ let p=1+Math.sin(now/120)*0.06*(1-b.hatchT/(b.hatchMax||BUILDINGS.cocoon.hatch)+0.3), jx=0;
     if(b.husk){ drawHuskCocoon(b,now); const q=1-b.hatchT/b.hatchMax; p=1+0.05+0.14*(b.beat||0)+0.12*q; if(b.hatchT<1.5) jx=rand(-2,2); }
     const a2=b.husk?ARTC.huskcocoon:art, w2=a2.width*2, h2=a2.height*2;

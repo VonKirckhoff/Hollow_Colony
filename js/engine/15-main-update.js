@@ -3,10 +3,10 @@
 function update(dt){
   G.time+=dt;
   if(G.shake) G.shake=Math.max(0,G.shake-dt);
-  updatePools(dt); updateFlares(dt); updateBarks(dt); updateAura(dt); updateBodies(dt); updateCreep(dt); updateCorpsAI(dt);
+  updatePools(dt); updateFlares(dt); updateBarks(dt); updateAura(dt); updateBodies(dt); updateCreep(dt); updateHatchery(dt); updateTunnels(dt); updateCorpsAI(dt);
   for(let i=0;i<G.ents.length;i++){ const e=G.ents[i]; if(e.dead) continue; if(e.kind==='unit') updateUnit(e,dt); else if(e.kind==='building') updateBuilding(e,dt); }
   separate();
-  for(const s of G.shots){ s.t+=dt; if(s.t>=s.dur){ s.done=true;
+  for(const s of G.shots){ s.t+=dt; if(s.t>=s.dur){ s.done=true; if(s.k==='egglob'){ eggLanded(s); continue; }
       for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(s.faction,e.faction)) continue; if(Math.hypot(e.x-s.tx,e.y-s.ty)<=s.splash+e.r*0.5) damage(e,s.dmg,s.src&&!s.src.dead?s.src:{faction:s.faction,dead:true}); }
       if(s.k==='grenade'){ SFX.play('boom',s.tx,s.ty); G.fx.push({k:'boom',x:s.tx,y:s.ty,t:0.45,max:0.45,r:s.splash}); addDecal(s.tx,s.ty,s.splash*0.5,'rgba(10,10,12,.55)'); G.shake=Math.max(G.shake||0,0.25);
         for(let i=0;i<14;i++) G.fx.push({k:'ember',x:s.tx,y:s.ty,vx:rand(-140,140),vy:rand(-160,10),t:rand(.3,.7),max:.7,col:pick(['#ff8a2a','#ffd23f','#ffffff'])}); continue; }

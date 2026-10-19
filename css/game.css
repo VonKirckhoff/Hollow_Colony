@@ -382,10 +382,10 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 #s-intel{background:linear-gradient(90deg,rgba(7,8,12,.88) 0%,rgba(7,8,12,.7) 55%,rgba(7,8,12,.45) 100%);}
 .intel-sheet{max-width:1080px;gap:16px;}
 .intel-split{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start;}
-.intel-list{display:grid;gap:4px;}
-.ili{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;text-align:left;background:rgba(17,19,26,.74);border:1px solid var(--line);border-left:2px solid var(--line);padding:3px 10px 3px 4px;cursor:pointer;color:var(--ink);font:inherit;}
-.ili .pic{width:34px;height:34px;display:grid;place-items:center;background:#0b0c11;}
-.ili .pic img{width:28px;height:28px;object-fit:contain;image-rendering:pixelated;}
+.intel-list{display:grid;gap:3px;}
+.ili{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:center;text-align:left;background:rgba(17,19,26,.74);border:1px solid var(--line);border-left:2px solid var(--line);padding:2px 10px 2px 4px;cursor:pointer;color:var(--ink);font:inherit;}
+.ili .pic{width:28px;height:28px;display:grid;place-items:center;background:#0b0c11;}
+.ili .pic img{width:24px;height:24px;object-fit:contain;image-rendering:pixelated;}
 .ili b{display:block;font-family:var(--f-display);font-weight:400;font-size:11px;letter-spacing:.06em;}
 .ili small{display:block;font-size:11px;color:var(--dim);}
 .ili:hover,.ili:focus-visible{border-color:var(--corps);outline:none;}
@@ -481,3 +481,7 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .msg.swarm .who{color:#a6ff4a !important;} .msg.swarm .txt{color:#e3d4ff;}
 body.as-swarm #r-salvage{color:#a6ff4a;}
 .camp-side button[data-side="swarm"].on{background:#a6ff4a;color:#0b1206;}
+.trow.grand .grandp{grid-column:span 2;min-height:76px;}
+.trow.grand .grandp b{color:#d8cfb8;} .trow.grand .grandp.won b{color:#fff3c9;}
+.plaque.won.swarm{border-color:rgba(166,255,74,.5);color:#a6ff4a;background:linear-gradient(#1f2a14,#11180b);} .plaque.won.swarm svg{filter:drop-shadow(0 0 6px rgba(166,255,74,.5));}
+@media (max-width:640px){ .trow.grand .grandp{grid-column:span 2;} }

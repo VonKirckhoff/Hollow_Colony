@@ -93,7 +93,7 @@ function kill(e,src){
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
     if(e.faction==='corps' && e.def.bio && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
-    else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){
+    else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y) && creepAt(e.x,e.y)>0.3){   /* nothing hatches off the creep */
       const c=makeBuilding('cocoon','swarm',Math.floor(e.x/TILE),Math.floor(e.y/TILE),true); c.x=e.x; c.y=e.y; c.r=9;
       c.hatchT=BUILDINGS.cocoon.hatch; c.hatchType=(e.def.supply||1)>=2?'drone':'crawler'; G.swarm.biomass+=12; G.stats.cocoons++;
     }

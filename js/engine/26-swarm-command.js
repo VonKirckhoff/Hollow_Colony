@@ -33,7 +33,7 @@ function broodCap(){ return G.swarm.cfg.cap||SWARM_PLAY.cap; }
 function broodUnlocked(type){ const at=(G.swarm.cfg.unlock||{})[type] ?? UNITS[type].unlock ?? 0; return G.time>=at; }
 function nestHive(){ const s=G.sel.find(e=>!e.dead&&e.type==='hive'); if(s) return s; const r=G.swarm.rally; const hs=hives(); if(!hs.length) return null; return r?hs.reduce((a,b)=>dist(a,r)<=dist(b,r)?a:b):hs[0]; }
 /* waiting brood stays near the gathering point and fights whatever comes close */
-function broodThink(u){ const r=G.swarm.rally||u.guardAt; if(!r) return;
+function broodThink(u){ const r=u.post||G.swarm.rally||u.guardAt; if(!r) return; if(u.order&&u.order.type==='move') return;   /* walking to where you sent it */
   if(!u.target&&(!u.order||Math.hypot(u.order.x-r.x,u.order.y-r.y)>TILE)){ u.order={type:'guard',x:r.x,y:r.y,wait:rand(0,2)}; setPath(u,r.x,r.y); } }
 function swarmBreed(type){
   const d=UNITS[type], nest=nestHive();
@@ -43,17 +43,36 @@ function swarmBreed(type){
   if(broodUsed()>=broodCap()){ toast(`The brood is at its limit (${broodCap()}). Spend it first.`); return; }
   const u=spawnNearBuilding(type,'swarm',nest,G.swarm.rally); if(!u){ toast('The nest is surrounded.'); return; }
   G.swarm.biomass-=d.biomass; u.role='brood'; u.mine=true; u.guardAt={x:u.x,y:u.y};
-  const r=G.swarm.rally; if(r&&dist(u,r)>4*TILE&&!findPath(u.x,u.y,r.x,r.y,true)) tunnelTo(u,r);   /* the way is shut: it digs */
+  const r=G.swarm.rally; if(r&&dist(u,r)>4*TILE&&!canReach(u,r)) tunnelTo(u,r);   /* the way is shut: it digs */
   G.fx.push({k:'boom',x:u.x,y:u.y,t:0.3,max:0.3,r:16,col:'#a6ff4a'}); SFX.play('hatch',u.x,u.y); G.selDirty=true; }
+/* can a unit walk from a to b? (findPath falls back to the closest point it can reach, so look where the path ends) */
+function canReach(a,b){ const p=findPath(a.x,a.y,b.x,b.y,true); if(!p||!p.length) return false; const l=p[p.length-1]; return Math.hypot(l.x-b.x,l.y-b.y)<2*TILE; }
 /* a fresh hatchling that cannot walk to the gathering point burrows into the rock and comes up near it a little later */
 function tunnelTo(u,r){ u.tunnel={x:r.x,y:r.y,t:SWARM_PLAY.tunnel}; u.hidden=true; u.invuln=true; addDecal(u.x,u.y,10,'rgba(30,26,22,.6)'); }
 function updateTunnels(dt){ for(const u of G.ents){ if(u.dead||!u.tunnel) continue; u.tunnel.t-=dt; u.order={type:'hold'}; if(u.tunnel.t>0) continue;
     const f=freeTilesNear(Math.floor(u.tunnel.x/TILE)+Math.round(rand(-2,2)),Math.floor(u.tunnel.y/TILE)+Math.round(rand(-2,2)),1)[0]; if(f){ u.x=(f.x+.5)*TILE; u.y=(f.y+.5)*TILE; }
     u.tunnel=null; u.hidden=false; u.invuln=false; u.order=null; u.path=null; for(let j=0;j<6;j++) G.fx.push({k:'ember',x:u.x+rand(-10,10),y:u.y+rand(-4,6),vx:rand(-50,50),vy:rand(-80,-20),t:0.7,max:0.7,col:'#8a7a6a'}); addDecal(u.x,u.y,12,'rgba(30,26,22,.6)'); } }
+/* the swarm units you selected yourself (box-drag or click): you can steer them as a squad */
+function selSwarm(){ return G.sel.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&!e.def.grafter); }
+function freeFromJobs(u){ if(u.haul) dropBody(u.haul); u.claim=null; u.claimMode=null; u.waveDelay=0; u.viaGoal=null; }
+/* right-click: with swarm units selected they go there (or attack what you clicked) and wait there; otherwise it sets the gathering point */
+function swarmRight(x,y){ const us=selSwarm(); if(!us.length){ setRally(x,y); return; }
+  const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
+  if(t){ for(const u of us){ freeFromJobs(u); u.role='wave'; u.post=null; u.target=t; u.order={type:'attack',target:t}; u.path=null; } SFX.play('attack'); G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; return; }
+  for(const u of us){ freeFromJobs(u); u.role='brood'; u.mine=true; u.target=null; u.post={x,y}; }
+  moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; }
+/* H: the waiting brood (or your selection) goes out to fetch the bodies lying in the field */
+function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood()).filter(u=>!u.haul); const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
+  if(!bodies.length){ toast('No fallen to bring home right now.',true); return; } if(!us.length){ toast('Nobody is free to fetch them.'); return; }
+  let n=0; for(const b of bodies){ const pool=us.filter(u=>!u.claim); if(!pool.length) break;
+    const c=pool.reduce((a,u)=>dist(u,b)<dist(a,b)?u:a); freeFromJobs(c); c.claim=b; c.claimMode='haul'; c.target=null; c.order=null; n++;
+    const g=us.filter(u=>!u.claim); if(g.length){ const e=g.reduce((a,u)=>dist(u,b)<dist(a,b)?u:a); e.claim=b; e.claimMode='guard'; e.target=null; e.order=null; } }
+  G.selDirty=true; say('The Brood',`We go to bring ${n} of the fallen home.`,'swarm'); }
 function setRally(x,y){ const f=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(!f) return; x=(f.x+.5)*TILE; y=(f.y+.5)*TILE;
-  G.swarm.rally={x,y}; for(const u of myBrood()){ u.order=null; u.target=null; } G.pings.push({x,y,t:0,col:'#c38bff'}); SFX.play('squelch'); G.selDirty=true; }
+  G.swarm.rally={x,y}; for(const u of myBrood()){ u.order=null; u.target=null; u.post=null; } G.pings.push({x,y,t:0,col:'#c38bff'}); SFX.play('squelch'); G.selDirty=true; }
 function sendWave(x,y){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true;
-  const us=myBrood(); if(!us.length){ toast('No brood is waiting at the gathering point. Hatch some first.'); return; }
+  const sel=selSwarm(), us=sel.length?sel:myBrood(); if(!us.length){ toast('No brood is waiting at the gathering point. Hatch some first.'); return; }
+  for(const u of us){ freeFromJobs(u); u.post=null; }
   const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
   for(const u of us){ u.role='wave'; u.target=t||null; u.order={type:'amove',x:x+rand(-24,24),y:y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); }
   const plan=waveTactic(us,G.swarm.tactic);
@@ -77,9 +96,11 @@ function swarmButtons(){ const out=[], S=G.swarm, used=broodUsed(), cap=broodCap
   for(const t of SWARM_PLAY.brood){ const d=UNITS[t], un=broodUnlocked(t);
     out.push({row:'Brood',key:SWARM_PLAY.keys[t],img:iconUrl(t),cost:d.biomass,off:!un||S.biomass<d.biomass||used>=cap,
       tip:`${d.name}|${d.desc} Costs ${d.biomass} biomass.${un?'':` Not yet: the brood can grow it after ${fmtTime((S.cfg.unlock||{})[t]??d.unlock??0)}.`}`,act:()=>swarmBreed(t)}); }
-  const waiting=myBrood().length, T=TACTIC_INFO[S.tactic];
-  out.push({row:'Orders',key:'A',glyph:'⚔',cost:waiting||'',active:ui.amove,off:!waiting,tip:`Attack|Click a spot or an enemy: all ${waiting} waiting at the gathering point go for it (${T.name}).`,act:()=>{ ui.amove=!ui.amove; ui.burrow=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.amove); }});
+  const sel=selSwarm().length, waiting=sel||myBrood().length, T=TACTIC_INFO[S.tactic];
+  out.push({row:'Orders',key:'A',glyph:'⚔',cost:waiting||'',active:ui.amove,off:!waiting,tip:`Attack|Click a spot or an enemy: ${sel?`the ${sel} you selected go`:`all ${waiting} waiting at the gathering point go`} for it (${T.name}).`,act:()=>{ ui.amove=!ui.amove; ui.burrow=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.amove); }});
   out.push({row:'Orders',key:'G',glyph:'⚑',active:ui.rallyPick,tip:'Gather|Click where the brood gathers. Right-click anywhere does the same. New brood hatches at the hive nearest to it, or at the hive you selected.',act:()=>{ ui.rallyPick=!ui.rallyPick; ui.amove=false; ui.burrow=false; cv.classList.toggle('amove',ui.rallyPick); }});
+  const nb=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier).length;
+  out.push({row:'Orders',key:'H',glyph:'⤓',cost:nb||'',off:!nb,tip:`Harvest|${sel?'The units you selected':'The waiting brood'} go out to carry the ${nb} fallen lying in the field home to a hive. One carries, one guards. On the creep a Grafter from a hive egg turns them.`,act:swarmHarvest});
   out.push({row:'Orders',key:'T',glyph:T.glyph,tip:`Tactic: ${T.name}|${T.tip} Press T to change.`,act:cycleTactic});
   const B=SWARM_PLAY.burrow, cd=Math.ceil(B.cooldown-(G.time-S.burrowAt));
   out.push({row:'Orders',key:'B',glyph:'⇣',cost:cd>0?`${cd}s`:B.cost,active:ui.burrow,off:cd>0||S.biomass<B.cost,tip:`Burrow|${B.units.length} of the brood dig up out of the ground where you click, at least ${B.clear} tiles from the Lunar Corps. Costs ${B.cost} biomass, then the ground needs ${B.cooldown} seconds.`,act:()=>{ ui.burrow=!ui.burrow; ui.amove=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.burrow); }});
@@ -97,10 +118,10 @@ function setupSideHud(){ const sw=swarmSide(), lbl=(id,t)=>{ const el=$(id); if(
   lbl('#r-salvage',sw?'Biomass':'Salvage'); lbl('#r-supply',sw?'Brood':'Supply'); lbl('#r-troops',sw?'Swarm':'Troops');
   $('#r-troops-wrap').dataset.tip=sw?'The Swarm on the field|Your brood, the hive guards and everything that hatched on its own.':'Troops|';
   document.body.classList.toggle('as-swarm',sw); }
-const SWARM_HINT='You are the Brood. <kbd>Right-click</kbd> to call the brood together, <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> to hatch, <kbd>A</kbd> + click to send them. Click a hive to hatch there.';
+const SWARM_HINT='You are the Brood. Drag to select swarm units and <kbd>Right-click</kbd> to move them; with nothing selected, right-click calls the brood together. <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> hatch (click a hive to hatch there), <kbd>A</kbd> + click attacks, <kbd>H</kbd> brings the fallen home.';
 /* the Lunar Corps as the computer: a squad answers when one of its buildings or soldiers nearby is hit */
 function corpsMove(us,x,y,mode){ for(const u of us){ u.home=null; u.stance=null; } moveGroup(us,x,y,mode); }
-function updateCorpsAI(dt){ if(!swarmSide()) return; updateTunnels(dt); G.corpsT=(G.corpsT||0)-dt; if(G.corpsT>0) return; G.corpsT=0.5;
+function updateCorpsAI(dt){ if(!swarmSide()) return; G.corpsT=(G.corpsT||0)-dt; if(G.corpsT>0) return; G.corpsT=0.5;
   const hit=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.hitAt!=null&&G.time-e.hitAt<3);
   if(!hit.length) return;
   for(const u of G.ents){ if(u.dead||u.downed||u.kind!=='unit'||u.faction!=='corps'||u.target||u.def.escort||!u.def.damage) continue; if(u.order&&u.order.type!=='hold') continue;

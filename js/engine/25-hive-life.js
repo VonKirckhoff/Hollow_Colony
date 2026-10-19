@@ -174,3 +174,46 @@ function drawRooting(u,now){
   const y=Math.round(u.y-40), x=Math.round(u.x);
   ctx.fillStyle='#000'; ctx.fillRect(x-15,y-1,30,5); ctx.fillStyle='#c38bff'; ctx.fillRect(x-14,y,Math.round(28*p),3);
   ctx.font='9px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText('ROOTING',x+1,y-3); ctx.fillStyle='#c38bff'; ctx.fillText('ROOTING',x,y-4); }
+
+/* ---- the hatchery: eggs on the creep and the Grafters that hatch from them ----
+   EGG: max = eggs a hive keeps waiting (per hive or mission: eggs:<n>) · every = seconds to grow a new one
+        open = seconds an egg takes to open · spitEvery = how often a hive can spit a fresh egg at a body when none is free
+        life = seconds a Grafter without a body lives */
+const EGG = { max:3, every:18, open:1.4, spitEvery:6, life:25 };
+function eggsOf(h){ return G.ents.filter(e=>!e.dead&&e.type==='egg'&&e.hive===h.id); }
+function layHiveEgg(h,x,y,target){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(!walkableT(tx,ty)) return null;
+  const e=makeBuilding('egg','swarm',tx,ty,true); e.x=x; e.y=y; e.r=7; e.hive=h.id; if(target){ e.target=target; e.openT=EGG.open; } return e; }
+function updateHatchery(dt){
+  for(const h of hives()){ const max=hiveOpt(h,'eggs',EGG.max); if(!max) continue;
+    if(!h.eggInit){ h.eggInit=true; h.eggT=EGG.every; for(let i=0;i<max;i++) placeEgg(h,2.2,3.2); continue; }   /* a few eggs already waiting */
+    h.eggT-=dt; if(h.eggT<=0){ h.eggT=EGG.every; if(eggsOf(h).length<max&&(h.creepR||0)>=2.5) placeEgg(h,2.2,Math.max(2.6,h.creepR-0.4)); } }
+  for(const e of G.ents){ if(e.dead||e.type!=='egg') continue;
+    if(!G.ents.some(h=>!h.dead&&h.id===e.hive)){ e.hp-=5*dt; if(e.hp<=0){ kill(e,null); continue; } }   /* its hive is dead: it withers */
+    if(e.target&&(e.target.dead||!e.target.home)){ e.target=null; e.openT=null; }
+    if(e.openT!=null){ e.openT-=dt; if(e.openT<=0) openEgg(e); } } }
+function placeEgg(h,r0,r1){ for(let k=0;k<24;k++){ const a=Math.random()*Math.PI*2, r=rand(r0,r1)*TILE, x=h.x+Math.cos(a)*r, y=h.y+Math.sin(a)*r;
+    if(!walkableT(Math.floor(x/TILE),Math.floor(y/TILE))) continue; if(G.ents.some(e=>!e.dead&&e.type==='egg'&&Math.hypot(e.x-x,e.y-y)<1.3*TILE)) continue;
+    return layHiveEgg(h,x,y); } return null; }
+function openEgg(e){ e.dead=true; const u=makeUnit('grafter','swarm',e.x,e.y); u.graft=e.target; u.life=EGG.life; u.role='grafter';
+  addDecal(e.x,e.y,8,'rgba(90,40,110,.6)'); for(let i=0;i<10;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-60,60),vy:rand(-90,-10),t:0.5,max:0.5,col:pick(['#c38bff','#a6ff4a','#7a5a8e'])});
+  if(isVisible(e)){ SFX.play('crack',e.x,e.y); if(G.side==='corps'&&!G.saidEgg){ G.saidEgg=true; say('Dr. Maas','One of those eggs just opened. Something small is running for the body. Shoot it!','alert'); } } }
+/* a body has come home: send the nearest waiting egg's Grafter, or spit a fresh egg next to it */
+function callGrafter(b){ const h=b.home; if(!h||h.dead) return;
+  const free=eggsOf(h).filter(e=>!e.target); if(free.length){ const e=free.reduce((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)<=Math.hypot(c.x-b.x,c.y-b.y)?a:c); e.target=b; e.openT=EGG.open; return; }
+  if(G.time<(h.spitAt||0)) return; h.spitAt=G.time+EGG.spitEvery;
+  const f=freeTilesNear(Math.floor(b.x/TILE)+(Math.random()<0.5?1:-1),Math.floor(b.y/TILE),1)[0]; if(!f) return; const tx=(f.x+.5)*TILE, ty=(f.y+.5)*TILE;
+  G.shots.push({k:'egglob',sx:h.x,sy:h.y-24,tx,ty,t:0,dur:Math.hypot(tx-h.x,ty-h.y)/200+0.35,faction:'none',splash:0,dmg:0,hive:h.id,body:b});
+  if(isVisible(h)) SFX.play('spit',h.x,h.y); }
+function eggLanded(s){ const h=G.ents.find(e=>!e.dead&&e.id===s.hive)||{id:s.hive}; const e=layHiveEgg(h,s.tx,s.ty,s.body&&!s.body.dead?s.body:null);
+  if(e){ SFX.play('splat',e.x,e.y); addDecal(e.x,e.y,9,'rgba(90,40,110,.5)'); } }
+/* the Grafter: runs to its body (or another body at home nearby) and latches on; without one it withers away */
+function grafterThink(u,dt){ u.flash=Math.max(0,u.flash-dt); u.anim+=dt; u.moving=false; u.target=null;
+  let b=u.graft;
+  if(!b||b.dead||!b.home){ b=u.graft=nearestOf(u,e=>e.kind==='body'&&!e.dead&&e.home&&!G.ents.some(g=>g!==u&&!g.dead&&g.def&&g.def.grafter&&g.graft===e))||null;
+    if(!b||dist(u,b)>12*TILE){ u.graft=null; u.life-=dt; if(u.life<=0){ u.dead=true; addDecal(u.x,u.y,5,'rgba(90,40,110,.5)'); } return; } }
+  if(u.latched) return;
+  if(Math.hypot(u.x-b.x,u.y-b.y)>TILE*0.7) goTo(u,b.x,b.y,dt,0.6); }
+/* an egg on the map: it breathes, and shudders open when its Grafter is needed */
+function drawEgg(b,art,now){ const opening=b.openT!=null, p=opening?1-b.openT/EGG.open:0, s=1+Math.sin(now/500+b.id)*0.04+(opening?0.12*p:0), jx=opening?rand(-1.5,1.5):0;
+  const w=art.width*2*s, h=art.height*2*s; ctx.drawImage(art,Math.round(b.x-w/2+jx),Math.round(b.y-h+6),Math.round(w),Math.round(h));
+  if(opening){ ctx.strokeStyle='#a6ff4a'; ctx.lineWidth=2; for(let i=0;i<4;i++){ const a=-Math.PI/2+(i-1.5)*0.5; ctx.beginPath(); ctx.moveTo(b.x,b.y-h+10); ctx.lineTo(b.x+Math.cos(a)*7*p,b.y-h+10+Math.sin(a)*7*p); ctx.stroke(); } } }

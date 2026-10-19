@@ -124,6 +124,15 @@ const TROPHY_COLS=[ {key:'easy',label:'Easy'}, {key:'normal',label:'Normal'}, {k
 function trophies(){ return store.get('hc-trophies',{}); }
 /* strict: the soldier's very first mission was mission 1, and the missions were won in campaign order: progress is how far that unbroken chain reaches */
 function trophyProgress(v,key){ if(!v||!v.tp||v.tp.void||!v.tp[key]) return 0; let n=0; while(n<MISSIONS.length&&v.tp[key].includes(MISSIONS[n].id)) n++; return n; }
+/* two grand trophies: Lunar Corps = every one of the 20 role trophies; The Swarm = every Swarm mission won on Easy, Normal and Hard
+   (a win on Hard also counts for Normal and Easy). Stored as 'grand:corps' and 'grand:swarm' in hc-trophies. */
+function grandStatus(){ const T=trophies(), need=HERO_TYPES.length*TROPHY_COLS.length, have=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0);
+  const sw=k=>SWARM_MISSIONS.filter(m=>{ const r=ui.progress.results[m.id]; return r&&DIFF_RANK[r.diff]>=DIFF_RANK[k]; }).length;
+  return { corps:{ have, need }, swarm:{ easy:sw('easy'), normal:sw('normal'), hard:sw('hard'), need:SWARM_MISSIONS.length } }; }
+function checkGrand(){ const T=trophies(), g=grandStatus(), won=[];
+  if(!T['grand:corps']&&g.corps.have>=g.corps.need){ T['grand:corps']={ at:Date.now() }; won.push('corps'); }
+  if(!T['grand:swarm']&&g.swarm.need&&g.swarm.hard>=g.swarm.need){ T['grand:swarm']={ at:Date.now() }; won.push('swarm'); }
+  if(won.length) store.set('hc-trophies',T); return won; }
 function heroTrack(v){
   const tp=v.tp=v.tp||{}, id=G.mission.id, idx=MISSIONS.findIndex(m=>m.id===id), keys=Object.keys(DIFF_RANK).filter(k=>DIFF_RANK[k]<=DIFF_RANK[G.diffKey]); if(G.realDeath) keys.push('real');
   if(!tp.void) for(const k of keys){ tp[k]=tp[k]||[]; if(idx===trophyProgress(v,k)&&!tp[k].includes(id)) tp[k].push(id); }   /* only the next mission in line counts; a replay of an earlier one changes nothing */

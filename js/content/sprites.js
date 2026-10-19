@@ -25,6 +25,13 @@ const SPRITES = {
     "...kAk..kAk.....",
     "...kgk..kgk.....",
     "...kkk..kkk....."],
+  grafter:[
+    "..........kk",
+    "...kkkk..kbk",
+    ".kkbbbbkkbk.",
+    "kbsbmsbbbk..",
+    ".kmkkkmkk...",
+    "k.k.k.k.k..."],
   husk1:[
     "..........kkkk..",
     ".........kaeeak.",

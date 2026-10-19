@@ -22,7 +22,7 @@ SWARM_MISSIONS.push(
     objectives:[
       { id:'kill', text:'Leave none of them alive' },
       { id:'nest', text:'Keep at least one hive alive' },
-      { id:'feed', text:'Feed 2 of the fallen to a hive (0/2)', optional:true }
+      { id:'feed', text:'Bring 2 of the fallen home to a hive (0/2)', optional:true }
     ],
     triggers:[
       { when:g=>g.time>0.1, do:g=>{ for(let x=40;x<=48;x++) g.wall({x,y:24},0,'north','door'); swarmBrood(); } },
@@ -30,7 +30,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.time>3, do:g=>g.say('Cmdr. Varga','Dust, this is Varga. You are down. Follow the canyons north-east to Kappa Station and report.') },
       { when:g=>g.time>14, do:g=>g.brood_say('Our nests are sealed in, so what hatches there tunnels through the rock to the gathering point. Press B to dig a small brood up anywhere they are not standing.') },
       { repeat:true, when:()=>true, do:g=>{ const n=g.corps().length+g.inbound(); g.setText('kill',`Leave none of them alive (${n} left${g.vars.drop2?'':', more will come'})`);
-          const f=Math.min(2,g.stat('fed')); g.setText('feed',`Feed 2 of the fallen to a hive (${f}/2)`); if(f>=2) g.complete('feed'); } },
+          const f=Math.min(2,g.stat('fed')); g.setText('feed',`Bring 2 of the fallen home to a hive (${f}/2)`); if(f>=2) g.complete('feed'); } },
       // the squad reaches the station
       { when:g=>g.near('corps','1',5)>=2, do:g=>{ g.vars.station=g.time; g.say('Sgt. Kessler','We are at the station. Doors forced open from the inside. No crew.'); } },
       // first reinforcements: after a while at the station, or as soon as the squad is hurting
