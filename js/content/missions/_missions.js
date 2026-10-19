@@ -40,11 +40,12 @@ function tutorialTick(g,steps){ const V=g.vars;
   const st=steps[V.tutI]; if(!st) return;
   if(V.tutState==='start'){ if(g.time<V.tutAt) return;
     if(st.setup) try{ st.setup(g); }catch(e){ console.error('tutorial setup',e); }
-    if(st.say) say(st.who||TUT_VOICE[G.side],st.say,G.side==='swarm'&&!st.who?'swarm':'');
+    tutHighlight(st);   /* light up the buttons this step is about */
+    if(st.say) tutShow(st.who||TUT_VOICE[G.side],st.say,V.tutI+1,steps.length);   /* the card waits until you confirm it */
     g.setText('tut',`Step ${V.tutI+1}/${steps.length}: ${st.obj||''}`); if(st.mark) g.marker('tut',st.mark,st.markLabel||'');
     V.tutState='run'; V.tutStart=g.time; return; }
   let ok=false; try{ ok=!!V.skip||!!st.done(g); }catch(e){ ok=false; } V.skip=false;
-  if(ok){ g.unmark('tut'); if(st.after) try{ st.after(g); }catch(e){}
+  if(ok){ g.unmark('tut'); tutHighlight(null); if(st.after) try{ st.after(g); }catch(e){}
     SFX.play('complete'); G.fx.push({k:'text',x:G.cam.x+ui.vw/2,y:G.cam.y+(ui.vh-ui.hudH)/2-40,t:1.2,max:1.2,txt:'✓',col:'#5fe3b0'});
     V.tutI++; V.tutState='start'; V.tutAt=g.time+(st.pause??1.5);
     if(V.tutI>=steps.length) g.complete('tut'); } }

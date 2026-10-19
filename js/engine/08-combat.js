@@ -56,6 +56,7 @@ function damage(t,amt,src){
   amt=coverDamage(t,amt,src);
   if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */
   if(t.molt>0) amt*=MOLT.vuln;   /* a Husk shedding its skin is soft */
+  if(t.avatar&&t.rootT!=null) amt*=0.5;   /* your creature rooting: the roots hold it together */
   const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);

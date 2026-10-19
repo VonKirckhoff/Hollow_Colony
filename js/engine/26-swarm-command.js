@@ -62,9 +62,9 @@ function swarmRight(x,y){ let us=selSwarm(); if(!us.length&&avatarAlive()&&G.ava
   /* the creature you steer simply goes where you click, or attacks what you click */
   for(const u of us.filter(u=>u.avatar)){ if(u.rootT!=null||u.latched) continue; if(t&&!u.def.grafter){ u.target=t; u.order={type:'attack',target:t}; u.path=null; } else { u.target=null; u.order={type:'move',x,y}; setPath(u,x,y); } }
   if(us.some(u=>u.avatar)){ G.following=true; G.pings.push({x,y,t:0,col:'#c38bff'}); SFX.play('squelch'); } us=us.filter(u=>!u.avatar); if(!us.length) return;
-  if(t){ for(const u of us){ freeFromJobs(u); u.role='wave'; u.post=null; u.target=t; u.order={type:'attack',target:t}; u.path=null; } SFX.play('attack'); G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; return; }
+  if(t){ for(const u of us){ freeFromJobs(u); u.role='wave'; u.post=null; u.target=t; u.order={type:'attack',target:t}; u.path=null; } SFX.play('attack'); G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; startFollow(); return; }
   for(const u of us){ freeFromJobs(u); u.role='brood'; u.mine=true; u.target=null; u.post={x,y}; }
-  moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; }
+  moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; startFollow(); }   /* the camera follows the squad you steer */
 /* H: the waiting brood (or your selection) goes out to fetch the bodies lying in the field */
 function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood()).filter(u=>!u.haul); const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
   if(!bodies.length){ toast('No fallen to bring home right now.',true); return; } if(!us.length){ toast('Nobody is free to fetch them.'); return; }
@@ -79,7 +79,7 @@ function sendWave(x,y){ ui.amove=false; cv.classList.remove('amove'); G.selDirty
   for(const u of us){ freeFromJobs(u); u.post=null; }
   const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
   for(const u of us){ u.role='wave'; u.target=t||null; u.order={type:'amove',x:x+rand(-24,24),y:y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); }
-  const plan=waveTactic(us,G.swarm.tactic);
+  const plan=waveTactic(us,G.swarm.tactic); if(sel.length) startFollow();
   G.pings.push({x,y,t:0,col:'#ff5a4f'}); SFX.play('horn');
   say('The Brood',`${us.length} go${us.length===1?'es':''} to feed${plan!=='direct'?` (${TACTIC_INFO[plan].name.toLowerCase()})`:''}.`,'swarm'); }
 function cycleTactic(){ const ks=Object.keys(TACTIC_INFO), i=ks.indexOf(G.swarm.tactic); G.swarm.tactic=ks[(i+1)%ks.length]; toast(`Tactic: ${TACTIC_INFO[G.swarm.tactic].name}. ${TACTIC_INFO[G.swarm.tactic].tip}`,true); G.selDirty=true; }

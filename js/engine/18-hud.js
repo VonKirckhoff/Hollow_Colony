@@ -18,7 +18,7 @@ function hudTick(){
   const live=G.msgs.filter(m=>G.time-m.born<m.life);
   if(G.msgDirty||live.length!==G.msgs.length){ G.msgs=live; G.msgDirty=false;
     $('#comms').innerHTML=live.map(m=>`<div class="msg ${m.kind}"><span class="who">${m.who.toUpperCase()}</span><span class="txt">${m.text}</span></div>`).join(''); }
-  G.hudT-=1; if(G.selDirty||G.hudT<=0){ G.hudT=8; G.selDirty=false; renderSelection(); renderCmdCard(); }
+  G.hudT-=1; if(G.selDirty||G.hudT<=0){ G.hudT=8; G.selDirty=false; renderSelection(); renderCmdCard(); tutApplyHighlight(); }
   renderMinimap();
 }
 function primaryGroup(){
@@ -92,6 +92,7 @@ function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
 const CMD_ROWS=['Avatar','Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();
-  const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''}" data-cmd="${i}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;
+  const hl=G.tutHL&&G.tutHL.keys;
+  const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''} ${hl&&hl.includes(String(c.key).toLowerCase())?'tut-hl':''}" data-cmd="${i}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;
   $('#cmdcard').innerHTML=CMD_ROWS.map(r=>{ const items=CMDS.map((c,i)=>[c,i]).filter(([c])=>(c.row||'Orders')===r); if(!items.length) return '';
     return `<div class="cmdrow"><span class="cmdlbl">${r}</span><div class="cmdbtns">${items.map(([c,i])=>btn(c,i)).join('')}</div></div>`; }).join(''); }

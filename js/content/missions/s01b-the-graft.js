@@ -47,7 +47,7 @@ SWARM_MISSIONS.push(
           if(st==='cocoon') g.brood_say('The body closes around you. Something is coming up the tunnel: the nest\'s guards will meet it.');
           if(st==='twitcher'){ g.brood_say(`You crawl out small and weak. Feed. Grazers wander the cavern; a soldier counts double. ${AVATAR.food} kills and you grow.`); }
           if(st==='shambler'){ g.brood_say(`You are bigger now, and they can smell you. Do not fight. Get away from every one of them and stay hidden for ${AVATAR.hide} seconds.`);
-            g.say('Cmdr. Varga','Something walked out of that nest on two legs. Hunter team, find it and burn it.'); g.vars.hunters=[...g.spawn('trooper','1',g.n(2),{faction:'corps'}),...g.spawn('pyro','1',1,{faction:'corps'})]; }
+            g.say('Cmdr. Varga','Something walked out of that nest on two legs. Hunter team, find it and burn it.'); g.vars.hunters=[...g.spawn('trooper','1',g.n(2),{faction:'corps'}),...(G.diffKey==='hard'?g.spawn('pyro','1',1,{faction:'corps'}):[])]; }   /* a Pyro joins the hunt on Hard */
           if(st==='husk') g.brood_say(`You are whole. Find open ground, at least ${AVATAR.rootClear} tiles from them and away from the old nest, and press F to take root.`);
           if(st==='rooting'){ g.say('Sgt. Kessler','It is digging in! Hunter team, on it!'); const hs=(g.vars.hunters||[]).filter(h=>!h.dead); if(hs.length) g.orderCorps(hs,{x:Math.floor(u.x/TILE),y:Math.floor(u.y/TILE)},'amove'); g.brood_say('They are coming. The nest will send what it has to guard you.'); for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&e.kind==='unit'){ e.role='brood'; e.post={x:u.x,y:u.y}; e.order=null; } }
           if(st==='hive'){ g.complete('life'); g.complete('seed'); g.win('A new nest breathes in the canyons. You were a seed in a dead man; now you are the Brood.'); }
@@ -57,7 +57,7 @@ SWARM_MISSIONS.push(
       { repeat:true, when:g=>g.time>(g.vars.patrolAt||(g.vars.patrolAt=25)), do:g=>{ g.vars.patrolAt=g.time+30; g.vars.pi=(g.vars.pi||0)+1;
           const team=g.corps().filter(u=>!g.vars.hunters||!g.vars.hunters.includes(u)).filter(u=>Math.hypot(u.x-ptWorld('1').x,u.y-ptWorld('1').y)>6*TILE||g.vars.pi%3===0).slice(0,3);
           const deep=['shambler','husk','rooting'].includes(avatarStage());   /* they only search the cavern once something big walks around in it */
-          g.orderCorps(team,(deep?[ '3',{x:30,y:10},'3',{x:44,y:28} ]:[ '3',{x:44,y:28} ])[g.vars.pi%(deep?4:2)],'amove'); } },
+          g.orderCorps(team,(deep?[ '3',{x:38,y:10},'3',{x:44,y:28} ]:[ '3',{x:44,y:28} ])[g.vars.pi%(deep?4:2)],'amove'); } },   /* once it is big, the patrol looks into the mouth of the cavern */
       // the hunters go where they last saw it, if it is close enough to track
       { repeat:true, when:g=>g.vars.hunters&&g.time>(g.vars.huntAt||0), do:g=>{ g.vars.huntAt=g.time+8; const u=G.avatar; if(!avatarAlive()||u.kind!=='unit') return;
           const hs=g.vars.hunters.filter(h=>!h.dead&&!h.downed); if(!hs.length) return; const near=hs.some(h=>dist(h,u)<16*TILE);

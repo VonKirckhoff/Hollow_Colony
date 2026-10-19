@@ -8,8 +8,8 @@
           (at least `clear` tiles from your troops and buildings, `spacing` tiles from other hives, at most `reach` tiles away)
           and takes root for `root` seconds. Then it becomes a young hive with `hiveHp` of a normal hive's health.
           A mission can cap the new hives with swarm.husks (default `max`; 0 = Husks never root). */
-const CREEP = { start:2, max:5.5, grow:90, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
-const HUSK  = { root:18, clear:13, spacing:11, reach:34, max:2, hiveHp:0.55, guardMax:2, hide:11 };   /* hide: tiles a withdrawing Shambler keeps from your troops */
+const CREEP = { start:3, max:11, grow:150, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
+const HUSK  = { root:18, clear:13, spacing:16, reach:34, max:2, hiveHp:0.55, guardMax:2, hide:11 };   /* hide: tiles a withdrawing Shambler keeps from your troops */
 
 /* ---- creep ---- */
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
@@ -107,6 +107,8 @@ function drawHuskCracks(c){ const p=1-c.hatchT/c.hatchMax; if(p<0.55) return; co
   for(let i=0;i<n;i++){ const a=creepNoise(i,c.id)*Math.PI*2, x0=c.x+Math.cos(a)*3, y0=c.y-10+Math.sin(a)*5; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+Math.cos(a)*5+2,y0+Math.sin(a)*4-2); ctx.lineTo(x0+Math.cos(a)*9,y0+Math.sin(a)*7+1); ctx.stroke(); }
   ctx.globalAlpha=1; }
 function huskCap(){ const c=G.swarm.cfg.husks; return c!=null?c:HUSK.max; }
+/* the most hives there may be at once on a map: the mission's own hives plus one (at least 3); a mission can set swarm.maxHives */
+function hiveMax(){ const c=G.swarm.cfg.maxHives; return c!=null?c:Math.max(3,(G.mission.start.hives||[]).length+1); }
 /* a quiet 3×3 spot, far from the Lunar Corps (clear tiles) and other hives (spacing tiles), at most reach tiles away, as close to the Husk as possible */
 function quietSpot(u,clear,spacing,reach){
   const m=G.map, W=m.w, hs=hives(), corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!(e.def&&e.def.scenery));
@@ -142,7 +144,7 @@ function founderThink(u,dt){
   if(u.avatar) return false;   /* you decide where it roots (F) */
   if(u.noFound) return false;
   u.foundT=(u.foundT??0)-dt; if(u.foundT>0) return false;
-  if((G.swarm.founded||0)+rooting()>=huskCap()){ u.noFound=true; return false; }   /* enough new hives: it just hunts */
+  if((G.swarm.founded||0)+rooting()>=huskCap()||hives().length+rooting()>=hiveMax()){ u.noFound=true; return false; }   /* enough new hives: it just hunts */
   if(!u.site){ u.siteT=(u.siteT||0)-dt; if(u.siteT>0) return false; u.siteT=4;
     const s=huskSite(u); if(!s) return false; const sx=(s.x+.5)*TILE, sy=(s.y+.5)*TILE;
     u.target=null; u.order={type:'move',x:sx,y:sy}; setPath(u,sx,sy); if(!u.path){ u.order=null; return false; } u.site=s; }
@@ -188,7 +190,7 @@ function layHiveEgg(h,x,y,target){ const tx=Math.floor(x/TILE), ty=Math.floor(y/
 function updateHatchery(dt){
   for(const h of hives()){ const max=hiveOpt(h,'eggs',EGG.max); if(!max) continue;
     if(!h.eggInit){ h.eggInit=true; h.eggT=EGG.every; for(let i=0;i<max;i++) placeEgg(h,2.2,3.2); continue; }   /* a few eggs already waiting */
-    h.eggT-=dt; if(h.eggT<=0){ h.eggT=EGG.every; if(eggsOf(h).length<max&&(h.creepR||0)>=2.5) placeEgg(h,2.2,Math.max(2.6,h.creepR-0.4)); } }
+    h.eggT-=dt; if(h.eggT<=0){ h.eggT=EGG.every; if(eggsOf(h).length<max&&(h.creepR||0)>=2.5) placeEgg(h,2.2,Math.min(5,Math.max(2.6,h.creepR-0.4))); } }
   for(const e of G.ents){ if(e.dead||e.type!=='egg') continue;
     if(!G.ents.some(h=>!h.dead&&h.id===e.hive)){ e.hp-=5*dt; if(e.hp<=0){ kill(e,null); continue; } }   /* its hive is dead: it withers */
     if(e.target&&(e.target.dead||!e.target.home)){ e.target=null; e.openT=null; }
