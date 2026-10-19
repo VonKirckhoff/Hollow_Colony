@@ -50,9 +50,60 @@ function drawCreep(now,vx0,vy0,vx1,vy1){
       ctx.fillStyle=`rgba(120,60,150,${0.7*c})`; ctx.fillRect(bx+Math.floor(n2*TILE*0.8)-1,by+Math.floor(n*TILE*0.7)+3,5,2); } }
 }
 
-/* ---- the Husk ---- */
-function huskHatched(u){ u.role='hunt'; u.foundT=HUSK.hunt;
-  if(isVisible(u)&&!G.saidHusk){ G.saidHusk=true; say('Dr. Maas','That thing was one of ours. A Husk. If it gets away from you it will take root and grow a new hive. Kill it!','alert'); } }
+/* ---- the Husk: the turning of a fallen soldier ----
+   A Crawler burrows into the body (it twitches and turns green), the body becomes a cocoon that beats like a heart,
+   faster and faster until the shell cracks. What crawls out is not a Husk yet: it grows through three stages,
+   and between them it stops to molt (its skin splits; it takes 50% more damage while it does).
+     Twitcher: crawls on all fours, weak and slow · Shambler: upright, half armour, half flesh · Husk: the final form.
+   Only the final form goes off to take root. hp/speed/dmg are shares of the Husk's own numbers. */
+const HUSK_STAGES = [
+  { name:'Twitcher', sprite:'husk1', hp:0.4,  speed:0.7, dmg:0.45, time:7 },
+  { name:'Shambler', sprite:'husk2', hp:0.7,  speed:0.9, dmg:0.75, time:8 },
+  { name:'Husk',     sprite:'husk',  hp:1,    speed:1,   dmg:1 }
+];
+const MOLT = { time:1.6, vuln:1.5 };
+function huskStage(u,i){ const st=HUSK_STAGES[i], f=u.maxHp?u.hp/u.maxHp:1, base=u.def.hp*G.diff.hp;
+  u.stage=i; u.sprite=st.sprite; u.stageName=i<HUSK_STAGES.length-1?st.name:null; u.speedMul=st.speed; u.dmgMul=(G.diff.dmg||1)*st.dmg;
+  u.maxHp=base*st.hp; u.hp=Math.min(u.maxHp,Math.max(u.maxHp*f,u.maxHp*0.5)); u.stageT=st.time||0; }
+function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=HUSK.hunt;
+  const vis=isVisible(u); G.fx.push({k:'boom',x:u.x,y:u.y,t:0.6,max:0.6,r:34,col:'#c38bff'}); addDecal(u.x,u.y,18,'rgba(70,30,90,.6)');
+  for(let i=0;i<26;i++) G.fx.push({k:'ember',x:u.x+rand(-6,6),y:u.y-6+rand(-6,6),vx:rand(-120,120),vy:rand(-170,-20),t:rand(.5,1.1),max:1.1,col:pick(['#a6ff4a','#c38bff','#7a5a8e','#d23a3a','#eef2f5'])});
+  if(vis){ SFX.play('huskborn',u.x,u.y); G.shake=Math.max(G.shake||0,0.3); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'IT LIVES',col:'#c38bff'}); }
+  if(vis&&!G.saidHusk){ G.saidHusk=true; say('Dr. Maas','That thing was one of ours. It is still changing: it will grow into a Husk, and a Husk takes root and grows a new hive. Kill it while it is weak!','alert'); } }
+/* growing up: returns true while it is molting (it stands still and cannot attack) */
+function huskGrow(u,dt){
+  if(u.molt>0){ u.molt-=dt; u.order={type:'hold'}; u.path=null; u.target=null; u.cd=Math.max(u.cd,0.3);
+    if(Math.random()<dt*14) G.fx.push({k:'ember',x:u.x+rand(-8,8),y:u.y-rand(2,20),vx:rand(-40,40),vy:rand(-70,-20),t:0.6,max:0.6,col:pick(['#a6ff4a','#c38bff','#d23a3a'])});
+    if(u.molt<=0){ huskStage(u,u.stage+1); u.order=null; const vis=isVisible(u);
+      G.fx.push({k:'boom',x:u.x,y:u.y-6,t:0.45,max:0.45,r:26,col:'#c38bff'}); addDecal(u.x,u.y,12,'rgba(90,40,110,.55)');
+      for(let i=0;i<14;i++) G.fx.push({k:'spark',x:u.x,y:u.y-10,vx:rand(-90,90),vy:rand(-120,0),t:0.5,max:0.5,col:pick(['#7a5a8e','#a6ff4a','#5d6f83'])});   /* shed armour and skin */
+      const final=u.stage===HUSK_STAGES.length-1;
+      if(vis){ SFX.play(final?'huskroar':'crack',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-32,t:1.4,max:1.4,txt:final?'HUSK':HUSK_STAGES[u.stage].name.toUpperCase(),col:final?'#ff5a4f':'#c38bff'}); if(final) G.shake=Math.max(G.shake||0,0.25); }
+      if(final){ u.foundT=HUSK.hunt; if(vis&&!G.saidHuskFull){ G.saidHuskFull=true; say('Dr. Maas','It has finished turning. Any moment now it will look for a place to take root.','alert'); } } }
+    return true; }
+  if(u.stage<HUSK_STAGES.length-1){ u.stageT-=dt; if(u.stageT<=0){ u.molt=MOLT.time; if(isVisible(u)) SFX.play('molt',u.x,u.y); return true; } }
+  return false; }
+/* drawn on top of the Husk while it molts: it shakes, its skin glows and the next form pushes through */
+function drawMolt(u,x,y,w,h,now){
+  const p=1-u.molt/MOLT.time, nx=SPR[HUSK_STAGES[Math.min(u.stage+1,HUSK_STAGES.length-1)].sprite], s=u.def.scale||2, nw=nx.w*s, nh=nx.h*s;
+  ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.25+0.35*Math.abs(Math.sin(now/60));
+  ctx.drawImage(u.face>0?SPR[u.sprite].flash:SPR[u.sprite].flashFlip,x,y,w,h); ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=p*0.85; ctx.drawImage(u.face>0?nx.img:nx.flip,Math.round(u.x-nw/2+rand(-2,2)),Math.round(u.y-nh+4),nw,nh); ctx.globalAlpha=1;
+  ctx.strokeStyle=`rgba(195,139,255,${0.5*(1-p)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(u.x,u.y+2,10+p*14,(10+p*14)*0.5,0,0,Math.PI*2); ctx.stroke(); }
+/* the cocoon a Husk grows in: a heartbeat that speeds up, veins reaching out, then cracks */
+function huskCocoonThink(c,dt){ const p=1-c.hatchT/c.hatchMax, period=1.1-0.8*p;
+  c.beatT=(c.beatT||0)-dt; if(c.beatT<=0){ c.beatT=period; c.beat=1; if(isVisible(c)){ SFX.play('heartbeat',c.x,c.y); if(p>0.6) SFX.play('crack',c.x,c.y); } }
+  c.beat=Math.max(0,(c.beat||0)-dt*4);
+  if(p>0.3&&Math.random()<dt*(2+p*10)) G.fx.push({k:'ember',x:c.x+rand(-8,8),y:c.y-rand(4,18),vx:rand(-20,20),vy:rand(-50,-15),t:0.9,max:0.9,col:pick(['#a6ff4a','#c38bff'])}); }
+function drawHuskCocoon(c,now){ const p=1-c.hatchT/c.hatchMax, b=c.beat||0;
+  const g=ctx.createRadialGradient(c.x,c.y-6,2,c.x,c.y-6,26+p*14); g.addColorStop(0,`rgba(195,139,255,${0.18+0.3*b+0.2*p})`); g.addColorStop(1,'rgba(195,139,255,0)');
+  ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(c.x-42,c.y-48,84,84); ctx.globalCompositeOperation='source-over';
+  ctx.strokeStyle=`rgba(80,30,100,${0.7})`; ctx.lineWidth=2;
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2+c.id, r=(8+p*20)*(0.7+0.3*creepNoise(i,c.id)); ctx.beginPath(); ctx.moveTo(c.x,c.y+4); ctx.quadraticCurveTo(c.x+Math.cos(a+0.5)*r*0.6,c.y+4+Math.sin(a+0.5)*r*0.3,c.x+Math.cos(a)*r,c.y+4+Math.sin(a)*r*0.5); ctx.stroke(); } }
+function drawHuskCracks(c){ const p=1-c.hatchT/c.hatchMax; if(p<0.55) return; const n=Math.floor((p-0.55)/0.45*6)+1;
+  ctx.strokeStyle='#d8ff9a'; ctx.lineWidth=1.5; ctx.globalAlpha=0.6+0.4*(c.beat||0);
+  for(let i=0;i<n;i++){ const a=creepNoise(i,c.id)*Math.PI*2, x0=c.x+Math.cos(a)*3, y0=c.y-10+Math.sin(a)*5; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+Math.cos(a)*5+2,y0+Math.sin(a)*4-2); ctx.lineTo(x0+Math.cos(a)*9,y0+Math.sin(a)*7+1); ctx.stroke(); }
+  ctx.globalAlpha=1; }
 function huskCap(){ const c=G.swarm.cfg.husks; return c!=null?c:HUSK.max; }
 /* a quiet 3×3 spot, far from the Lunar Corps and other hives, as close to the Husk as possible */
 function huskSite(u){
@@ -71,6 +122,8 @@ function huskSite(u){
 function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* returns true while the Husk is busy founding (swarmThink then leaves it alone) */
 function founderThink(u,dt){
+  if(huskGrow(u,dt)) return true;
+  if(u.stage!=null&&u.stage<HUSK_STAGES.length-1) return false;   /* still growing: it fights like any other */
   if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }
   if(u.noFound) return false;
   u.foundT=(u.foundT??HUSK.hunt)-dt; if(u.foundT>0) return false;

@@ -303,7 +303,7 @@ const MUSIC=(()=>{
     const now=ac.currentTime; s.out.gain.cancelScheduledValues(now); s.out.gain.setValueAtTime(Math.max(0.0001,s.out.gain.value),now); s.out.gain.exponentialRampToValueAtTime(0.0001,now+fade);
     setTimeout(()=>{ try{ s.out.disconnect(); }catch(e){} },fade*1000+4000); refreshPanel(); }
   const level=()=>Math.max(0.0001,vol*0.6*((S&&S.track&&S.track.gain)||1));
-  const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', brief:'brief', cenotaph:'requiem', end:'end' };
+  const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', trophies:'menu', brief:'brief', cenotaph:'requiem', end:'end' };
   let scene='menu', armed=false;                 /* browsers only allow sound after the first click or key press */
   function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu';   /* victory: your menu music; defeat: the Cenotaph piece */
     if(m!=='menu') return m; if(shuffle) return S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id;

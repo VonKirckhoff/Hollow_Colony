@@ -39,7 +39,7 @@ function gainXP(u,amount){
   if(!u||u.dead||!u.vet||amount<=0) return; u.vet.xp+=amount;
   const r=rankFor(u.vet.xp,u.vet.hero); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'});
-    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?' The squad rallies around him.':''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
+    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?` The squad rallies around ${pron(u.vet,'him')}.`:''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
 function isCampaign(){ return G.mission.id!=='skirmish'; }
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */
@@ -68,7 +68,7 @@ function settleRoster(){
   const P=G.promoted||{};
   const FV=G.fallenVets||{}, ids=new Set(R.active.map(v=>v.id));
   for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
-    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined, risen:v.risen||undefined };
+    const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined, sex:v.sex||undefined, risen:v.risen||undefined };
     R.fallen.unshift(rec); res.fallen.push(rec); } }
   // soldiers who earned a rank in this mission and fell are remembered too
   for(const [id,f] of Object.entries(FV)){ if(ids.has(id)||!(f.rank>=1)) continue;
@@ -79,7 +79,7 @@ function settleRoster(){
   /* for the end screen: everyone with a name who fell in this mission, also fresh privates (the Cenotaph keeps only the veterans) */
   res.fallenAll=Object.values(FV).map(f=>({ name:f.name, type:f.type, rank:Math.max(f.rank||0,P[f.id]?P[f.id].rank:0), kills:f.kills||0, missions:f.missions||0, hero:f.hero||undefined }));
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
-  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined };
+  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, sex:u.vet.sex||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined };
     if(v.hero && G.over && G.over.win) res.trophies=heroTrack(v);
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
@@ -125,20 +125,23 @@ function heroTrack(v){
   const tp=v.tp=v.tp||{}, id=G.mission.id, keys=Object.keys(DIFF_RANK).filter(k=>DIFF_RANK[k]<=DIFF_RANK[G.diffKey]); if(G.realDeath) keys.push('real');
   for(const k of keys){ tp[k]=tp[k]||[]; if(!tp[k].includes(id)) tp[k].push(id); }
   const T=trophies(), won=[];
-  for(const c of TROPHY_COLS){ const tag=v.type+':'+c.key, list=T[tag]=T[tag]||[]; if(list.some(x=>x.name===v.name)) continue;   /* every soldier who earns it is cut into the plaque */
-    if(trophyProgress(v,c.key)>=MISSIONS.length){ list.push({ name:v.name, at:Date.now() }); won.push({ type:v.type, col:c.key, name:v.name }); } else if(!list.length) delete T[tag]; }
+  for(const c of TROPHY_COLS){ const tag=v.type+':'+c.key, list=T[tag]=T[tag]||[]; if(list.some(x=>x.id?x.id===v.id:x.name===v.name)) continue;   /* every soldier who earns it is cut into the plaque */
+    if(trophyProgress(v,c.key)>=MISSIONS.length){ list.push({ id:v.id, name:v.name, type:v.type, at:Date.now() }); won.push({ type:v.type, col:c.key, name:v.name }); } else if(!list.length) delete T[tag]; }
   if(won.length) store.set('hc-trophies',T);
   return won; }
 function heroOf(){ return ui.roster.active.find(v=>v.hero)||null; }
-function setHero(name,type){
+/* he / she for a soldier record (only your own soldier can be a woman: sex:'f') */
+function pron(v,form){ const f=v&&v.sex==='f'; return ({he:f?'she':'he',He:f?'She':'He',him:f?'her':'him',his:f?'her':'his'})[form]; }
+function setHero(name,type,sex){
   name=String(name||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,18);
   if(name.length<2) return 'Give your soldier a name of at least 2 letters.';
   if(!HERO_TYPES.includes(type)) return 'Pick a type.';
   const others=new Set([...ui.roster.active.filter(v=>!v.hero).map(v=>v.name),...ui.roster.fallen.map(v=>v.name)]);
   if(others.has(name)) return 'That name is already taken by another soldier (or on the Cenotaph).';
   const h=heroOf();
-  if(h){ if(h.type!==type && (h.missions||0)>0) return 'Your soldier has seen action: his type can no longer change.'; h.name=name; h.type=type; }
-  else ui.roster.active.unshift({ id:'hero-'+Date.now().toString(36), name, type, rank:0, xp:0, kills:0, missions:0, hero:true });
+  sex=sex==='f'?'f':'m';
+  if(h){ if(h.type!==type && (h.missions||0)>0) return `Your soldier has seen action: ${pron(h,'his')} type can no longer change.`; h.name=name; h.type=type; h.sex=sex; }
+  else ui.roster.active.unshift({ id:'hero-'+Date.now().toString(36), name, type, sex, rank:0, xp:0, kills:0, missions:0, hero:true });
   saveRoster(); return null;
 }
 
@@ -149,7 +152,7 @@ function raiseFallen(i){
   const R=ui.roster, rec=R.fallen[i]; if(!rec||!canRaise(rec)) return 'This soldier rests for good.';
   if(R.active.length>=ROSTER_MAX) return 'The roster is full.';
   const hero=!!rec.hero && !heroOf();
-  const v={ id:'risen-'+Date.now().toString(36), name:rec.name, type:rec.type, rank:rec.rank||0, xp:rec.xp||0, kills:rec.kills||0, missions:rec.missions||0, healed:0, repaired:0, risen:true, hero:hero||undefined };
+  const v={ id:'risen-'+Date.now().toString(36), name:rec.name, type:rec.type, rank:rec.rank||0, xp:rec.xp||0, kills:rec.kills||0, missions:rec.missions||0, healed:0, repaired:0, risen:true, hero:hero||undefined, sex:rec.sex||undefined };
   if(v.rank>=RANKS.length || (RANKS[v.rank].heroOnly&&!hero)) v.rank=rankFor(v.xp,hero);
   R.fallen.splice(i,1); if(hero) R.active.unshift(v); else R.active.push(v); saveRoster(); return null;
 }

@@ -29,6 +29,16 @@ const SFX=(()=>{
     wrench:  [0.42,v=>{ tone(1250,1250,0.04,'triangle',0.16*v); tone(1650,1650,0.06,'triangle',0.12*v,0.05); noise(0.04,3000,'highpass',1,0.1*v); }],
     plasma:  [0.2, v=>{ tone(1600,240,0.22,'sawtooth',0.12*v); noise(0.1,6000,'highpass',1,0.12*v); }],
     hatch:   [0.2, v=>{ noise(0.25,800,'bandpass',2,0.3*v,0,300); tone(300,700,0.15,'sawtooth',0.07*v); }],
+    /* the turning of a fallen soldier */
+    infect:  [0.7, v=>{ for(let i=0;i<3;i++) noise(0.09,420+Math.random()*300,'lowpass',4,0.3*v,i*0.13,140); tone(95,55,0.45,'sawtooth',0.06*v,0.05); }],
+    heartbeat:[0.25,v=>{ tone(62,40,0.13,'sine',0.55*v); noise(0.06,180,'lowpass',1,0.25*v); tone(55,36,0.12,'sine',0.4*v,0.17); }],
+    crack:   [0.12,v=>{ for(let i=0;i<4;i++) noise(0.025,2600+Math.random()*2400,'highpass',1.5,0.32*v,i*0.035+Math.random()*0.02); tone(240,90,0.08,'square',0.05*v); }],
+    huskborn:[1,   v=>{ for(let i=0;i<6;i++) noise(0.03,3000+Math.random()*3000,'highpass',1,0.35*v,i*0.03);
+                         noise(0.7,900,'lowpass',2,0.45*v,0.12,120); tone(85,30,0.8,'sine',0.5*v,0.1);
+                         tone(1250,190,0.9,'sawtooth',0.08*v,0.2); tone(1330,170,0.9,'sawtooth',0.07*v,0.22); tone(640,120,1.1,'square',0.04*v,0.25); }],
+    molt:    [0.6, v=>{ for(let i=0;i<9;i++) noise(0.02,1800+Math.random()*3500,'highpass',2,0.25*v,Math.random()*0.9);
+                         tone(150,62,1.0,'sawtooth',0.07*v); tone(158,66,1.0,'sawtooth',0.05*v,0.03); noise(0.9,350,'lowpass',3,0.2*v,0,90); }],
+    huskroar:[1,   v=>{ tone(240,105,1.2,'sawtooth',0.11*v); tone(361,150,1.2,'sawtooth',0.07*v,0.04); tone(118,52,1.3,'square',0.06*v); noise(1.1,800,'bandpass',1.5,0.25*v,0,200); }],
     ack:     [0.1, ()=>tone(520,720,0.05,'square',0.06)],
     attack:  [0.1, ()=>{ tone(420,260,0.07,'square',0.08); tone(420,260,0.07,'square',0.06,0.08); }],
     select:  [0.08,()=>tone(900,900,0.03,'sine',0.07)],

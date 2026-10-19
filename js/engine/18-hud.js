@@ -46,7 +46,7 @@ function renderSelection(){
     if(e.def.reinforce && e.flight){ stats+='<div class="queue">'+e.flight.cargo.map(t=>`<div class="qslot" data-tip="${UNITS[t].name}|On the dropship."><img alt="" src="${iconUrl(t)}"><i style="width:${Math.floor((1-e.flight.t/e.flight.total)*100)}%"></i></div>`).join('')+'</div>'; }
     if(e.def.trains && G.mission.noTraining) stats+=`<span><b>Reinforcements come in through the Landing Zone.</b></span>`;
     let q=''; if(e.def.trains && e.faction==='corps' && !G.mission.noTraining){ q='<div class="queue">'+e.queue.map((t,i)=>`<div class="qslot" data-cancel="${i}" data-tip="${UNITS[t].name}|Click to cancel and refund ${UNITS[t].cost}."><img alt="" src="${iconUrl(t)}">${i===0?`<i style="width:${Math.floor(e.prodT/UNITS[t].buildTime*100)}%"></i>`:''}</div>`).join('')+'</div>'; }
-    el.innerHTML=`<div class="sel-single"><div class="portrait"><img alt="" src="${img}"></div><div style="min-width:0"><div class="sel-name">${e.vet?`${RANKS[e.vet.rank].abbr} ${e.vet.name} <span class="sel-sub">${d.name}</span>`:d.name}</div><div class="sel-role">${d.role||''}${d.role?' · ':''}${d.desc||''}</div><div class="hpbar"><i style="width:${f*100}%;background:${hpColor(f)}"></i></div><div class="stats">${d.ground?"":`<span>HP <b>${Math.ceil(e.hp)}/${Math.round(e.maxHp)}</b></span>`}${stats}</div>${q}</div></div>`;
+    el.innerHTML=`<div class="sel-single"><div class="portrait"><img alt="" src="${img}"></div><div style="min-width:0"><div class="sel-name">${e.vet?`${RANKS[e.vet.rank].abbr} ${e.vet.name} <span class="sel-sub">${d.name}</span>`:e.stageName?`${e.stageName} <span class="sel-sub">turning into a Husk</span>`:d.name}</div><div class="sel-role">${d.role||''}${d.role?' · ':''}${d.desc||''}</div><div class="hpbar"><i style="width:${f*100}%;background:${hpColor(f)}"></i></div><div class="stats">${d.ground?"":`<span>HP <b>${Math.ceil(e.hp)}/${Math.round(e.maxHp)}</b></span>`}${stats}</div>${q}</div></div>`;
     return; }
   // grouped by type, always in the same order, so it is easy to see what the squad is made of
   const groups=new Map(); for(const e of sel){ if(!groups.has(e.type)) groups.set(e.type,[]); groups.get(e.type).push(e); }
@@ -86,7 +86,7 @@ function cmdButtons(){
 }
 let CMDS=[];
 const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sentry','relay','barricade'];
-function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.def.name; }
+function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.stageName ? `${e.stageName} (turning into a Husk)` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
 const CMD_ROWS=['Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();

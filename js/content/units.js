@@ -40,7 +40,7 @@ const UNITS = {
   husk: { name:'Husk', faction:'swarm', sprite:'husk', role:'Infected soldier',
     hp:150, speed:58, radius:9, sight:6, range:0.8, damage:13, cooldown:0.9, attack:'melee', armor:0.1,
     biomass:60, founder:true,
-    desc:'What a Crawler makes of a fallen soldier. It hunts for a short while, then walks off to a quiet spot far from your troops and takes root there. Leave it alone and a new hive grows from it.' },
+    desc:'What a Crawler makes of a fallen soldier. It hatches small and grows through two molts into its final form. Then it walks off to a quiet spot far from your troops and takes root there. Leave it alone and a new hive grows from it.' },
   brute: { name:'Brute', faction:'swarm', sprite:'brute', role:'Siege beast', scale:2,
     hp:280, speed:50, radius:15, sight:6, range:0.9, damage:26, cooldown:1.4, attack:'melee',
     biomass:90, weight:1, unlock:300, desc:'Armoured siege beast that tears through walls.' },

@@ -35,22 +35,24 @@ function buildDefeatRow(){ const rd=!!ui.realDeath;
 $('#defeat-row').addEventListener('click',e=>{ const b=e.target.closest('[data-rd]'); if(!b) return; ui.realDeath=b.dataset.rd==='1'; store.set('hc-real-death',ui.realDeath); buildDefeatRow();
   toast(ui.realDeath?'Real death: the fallen are gone, win or lose.':'Retry: a lost mission does not cost you anyone.',true); });
 /* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
-let heroEdit=false, heroType=null;
+let heroEdit=false, heroType=null, heroSex=null;
 function buildHero(){
   const el=$('#hero-card'), h=heroOf();
-  if(h && !heroEdit){ el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><img alt="" src="${iconUrl(h.type)}" style="width:28px;height:28px;image-rendering:pixelated"><span class="hname">★ ${RANKS[h.rank].abbr} ${h.name}</span><span class="rdim">${UNITS[h.type].name} · ${h.missions||0} mission${h.missions===1?'':'s'} · ${h.kills||0} kills</span><span style="flex:1"></span><button class="btn" type="button" id="hero-edit">Edit</button></div>`; return; }
-  heroType=heroType||(h?h.type:'trooper'); const locked=h&&(h.missions||0)>0;
+  if(h && !heroEdit){ el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><img alt="" src="${iconUrl(h.type)}" style="width:28px;height:28px;image-rendering:pixelated"><span class="hname">★ ${RANKS[h.rank].abbr} ${h.name}</span><span class="rdim">${h.sex==='f'?'♀ Woman':'♂ Man'} · ${UNITS[h.type].name} · ${h.missions||0} mission${h.missions===1?'':'s'} · ${h.kills||0} kills</span><span style="flex:1"></span><button class="btn" type="button" id="hero-edit">Edit</button></div>`; return; }
+  heroType=heroType||(h?h.type:'trooper'); heroSex=heroSex||(h&&h.sex)||'m'; const locked=h&&(h.missions||0)>0, P=f=>pron({sex:heroSex},f);
   el.innerHTML=`<div class="lbl">${h?'Edit your soldier':'Enlist your own soldier'}</div>
-    <p class="lede" style="margin:0">${h?'Rename him any time. His type is fixed once he has been on a mission.':'Give him a name and pick his job. He goes on every campaign mission, marked with a gold star, and earns rank like any veteran. If he falls, you can enlist a new one.'}</p>
-    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" value="${h?h.name:''}" aria-label="Soldier name"></div>
+    <p class="lede" style="margin:0">${h?`Rename ${P('him')} any time. ${P('his').replace(/^./,c=>c.toUpperCase())} type is fixed once ${P('he')} has been on a mission.`:`Give ${P('him')} a name, pick man or woman (that sets the voice) and pick ${P('his')} job. ${P('He')} goes on every campaign mission, marked with a gold star, and earns rank like any veteran. If ${P('he')} falls, you can enlist a new one.`}</p>
+    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" value="${h?h.name:''}" aria-label="Soldier name">
+      <span class="hsex" role="group" aria-label="Man or woman"><button type="button" class="htype ${heroSex==='m'?'on':''}" data-hsex="m" aria-pressed="${heroSex==='m'}">♂ Man</button><button type="button" class="htype ${heroSex==='f'?'on':''}" data-hsex="f" aria-pressed="${heroSex==='f'}">♀ Woman</button></span></div>
     <div class="hrow">${HERO_TYPES.map(t=>`<button type="button" class="htype ${t===heroType?'on':''}" data-htype="${t}" ${locked&&t!==h.type?'disabled':''}><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</button>`).join('')}</div>
     <div class="hrow"><button class="btn primary" type="button" id="hero-save">${h?'Save':'Enlist'}</button>${h?'<button class="btn" type="button" id="hero-cancel">Cancel</button>':''}</div>`;
 }
 $('#hero-card').addEventListener('click',e=>{
-  if(e.target.closest('#hero-edit')){ heroEdit=true; heroType=null; buildHero(); const i=$('#hero-name'); if(i) i.focus(); return; }
+  if(e.target.closest('#hero-edit')){ heroEdit=true; heroType=null; heroSex=null; buildHero(); const i=$('#hero-name'); if(i) i.focus(); return; }
   if(e.target.closest('#hero-cancel')){ heroEdit=false; buildHero(); return; }
+  const sx=e.target.closest('[data-hsex]'); if(sx){ heroSex=sx.dataset.hsex; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; voiceSample(heroSex); return; }
   const t=e.target.closest('[data-htype]'); if(t&&!t.disabled){ heroType=t.dataset.htype; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; return; }
-  if(e.target.closest('#hero-save')){ const err=setHero($('#hero-name').value,heroType||'trooper'); if(err){ toast(err); return; } heroEdit=false; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
+  if(e.target.closest('#hero-save')){ const err=setHero($('#hero-name').value,heroType||'trooper',heroSex||'m'); if(err){ toast(err); return; } heroEdit=false; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return; if(b.getAttribute('aria-disabled')==='true' && !e.shiftKey){ toast('Finish the previous mission first. Shift-click to play it anyway.',true); return; } openBriefing(+b.dataset.mission); });

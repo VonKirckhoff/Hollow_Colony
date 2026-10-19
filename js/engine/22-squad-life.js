@@ -124,8 +124,12 @@ function bark(u,kind,arg){
 }
 /* Spoken lines with the browser's own speech voices (no sound files needed). Every soldier keeps his own voice and pitch.
    Follows the Sound button, and can be switched off on its own with the Voices button (key O). */
-let VOICES_EN=[];
-function loadVoices(){ try{ const all=speechSynthesis.getVoices(); VOICES_EN=all.filter(v=>/^en(-|_|$)/i.test(v.lang)); if(!VOICES_EN.length) VOICES_EN=all; }catch(e){ VOICES_EN=[]; } }
+let VOICES_EN=[], VOICES_F=[], VOICES_M=[];
+/* Browsers do not say whether a voice is a man or a woman, so we go by the names the common voices have (Windows, macOS, Chrome, Edge, Android). */
+const VOICE_F=/female|woman|zira|hazel|susan|heera|catherine|linda|samantha|victoria|karen|moira|tessa|fiona|veena|kate|serena|allison|ava|susan|nicky|martha|sonia|libby|maisie|aria|jenny|michelle|emma|ana\b|natasha|clara|leah|molly|olivia|joanna|salli|kimberly|kendra|ivy|amy|nicole|zoe|siri.*female/i;
+const VOICE_M=/\bmale|\bman\b|david|mark|george|james|richard|ravi|sean|daniel|alex\b|fred|ralph|bruce|junior|albert|oliver|arthur|gordon|lee\b|rishi|aaron|tom\b|ryan|guy|thomas|brian|christopher|eric|roger|steffan|william|liam|matthew|joey|justin|russell/i;
+function loadVoices(){ try{ const all=speechSynthesis.getVoices(); VOICES_EN=all.filter(v=>/^en(-|_|$)/i.test(v.lang)); if(!VOICES_EN.length) VOICES_EN=all;
+    VOICES_F=VOICES_EN.filter(v=>VOICE_F.test(v.name)&&!/\bmale/i.test(v.name.replace(/female/i,''))); VOICES_M=VOICES_EN.filter(v=>VOICE_M.test(v.name)&&!VOICE_F.test(v.name)); }catch(e){ VOICES_EN=[]; VOICES_F=[]; VOICES_M=[]; } }
 if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
 function nameHash(n){ let h=0; for(const c of String(n)) h=(h*31+c.charCodeAt(0))>>>0; return h; }
 function speak(u,line,kind){
@@ -134,11 +138,18 @@ function speak(u,line,kind){
     const urgent=kind==='down'||kind==='contact'||kind==='hurt';
     if(speechSynthesis.speaking){ if(!urgent) return; speechSynthesis.cancel(); }
     const ut=new SpeechSynthesisUtterance(line.replace(/\.\.\./g,','));
-    const h=nameHash(u.vet?u.vet.name:u.id); if(VOICES_EN.length) ut.voice=VOICES_EN[h%VOICES_EN.length];
-    const z=u.vet&&u.vet.risen; ut.pitch=z?0.1:0.8+(h%7)*0.06; ut.rate=z?0.7:urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
+    const h=nameHash(u.vet?u.vet.name:u.id), sex=u.vet&&u.vet.sex;
+    /* your own soldier speaks with a woman's or a man's voice, as you chose; if the browser has none of that kind, the pitch does the work */
+    const list=sex==='f'?VOICES_F:sex==='m'?VOICES_M:VOICES_EN, pool=list.length?list:VOICES_EN; if(pool.length) ut.voice=pool[h%pool.length];
+    const z=u.vet&&u.vet.risen; ut.pitch=z?(sex==='f'?0.5:0.1):sex==='f'?(VOICES_F.length?1.05:1.5)+(h%3)*0.05:sex==='m'?0.75+(h%4)*0.05:0.8+(h%7)*0.06; ut.rate=z?0.7:urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
     setTimeout(()=>{ try{ speechSynthesis.speak(ut); }catch(e){} },90);   // after the radio click
   }catch(e){}
 }
+/* a short line in the chosen voice, when you pick man or woman for your own soldier */
+function voiceSample(sex){ if(!window.speechSynthesis||SFX.muted||!ui.voices) return;
+  try{ speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance(pick(['Reporting for duty.','Ready when you are.','Point me at them.']));
+    const pool=(sex==='f'?VOICES_F:VOICES_M).length?(sex==='f'?VOICES_F:VOICES_M):VOICES_EN; if(pool.length) ut.voice=pool[0];
+    ut.pitch=sex==='f'?(VOICES_F.length?1.05:1.5):0.8; ut.rate=1.05; ut.volume=clamp(ui.voiceVol,0,1); speechSynthesis.speak(ut); }catch(e){} }
 function toggleVoices(){ ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices&&window.speechSynthesis) speechSynthesis.cancel(); toast(ui.voices?'Voices on.':'Voices off.',true); }
 const voicesLabel=()=>{ const b=$('#btn-voices'); if(b) b.textContent=ui.voices?'Voices on':'Voices off'; };
 function updateBarks(dt){ for(const b of G.barks) b.t-=dt; G.barks=G.barks.filter(b=>b.t>0&&!b.u.dead); }
@@ -250,7 +261,7 @@ function goDown(t,src){ const D=SQUAD.downed;
   t.downed={ t:D.time, max:D.time, patch:0 }; t.hp=t.maxHp*D.hp; t.order=null; t.target=null; t.path=null; t.goal=null; t.moving=false; t.snap=null;
   addDecal(t.x,t.y,t.r*0.9,'rgba(120,24,24,.5)'); SFX.play('death',t.x,t.y); G.barkNext=0; bark(t,'downed');
   if(G.time-(G.downSaid||-99)>6){ G.downSaid=G.time; const n=t.vet?`${RANKS[t.vet.rank].abbr} ${t.vet.name}`:t.def.name; const med=G.ents.some(e=>!e.dead&&!e.downed&&e.faction==='corps'&&e.def.heal);
-    say('Man down',`${n} is down! ${med?`Get a Medic to him within ${D.time} seconds.`:`No Medic in the field. He has ${D.time} seconds.`}`,'alert'); }
+    say(t.vet&&t.vet.sex==='f'?'Soldier down':'Man down',`${n} is down! ${med?`Get a Medic to ${pron(t.vet,'him')} within ${D.time} seconds.`:`No Medic in the field. ${pron(t.vet,'He')} has ${D.time} seconds.`}`,'alert'); }
   G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; }
 function downedThink(u,dt){ const d=u.downed; u.flash=Math.max(0,u.flash-dt); u.anim+=dt*0.2;
   if(d.tended>0){ d.tended-=dt; return; }   /* a Medic is working on him: the clock stops */
@@ -300,10 +311,10 @@ function updateBodies(dt){ const B=SQUAD.body;
       if(b.burn>=1){ burnBody(b); continue; } }
     /* only a Crawler infects */
     const crawler=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.def.infects&&Math.hypot(e.x-b.x,e.y-b.y)<TILE*1.1);
-    if(crawler&&!b.guarded){ b.claim+=dt/B.infect; if(b.claim>=1){ dropBody(b); b.dead=true;
+    if(crawler&&!b.guarded){ b.claim+=dt/B.infect; if(G.vis[Math.floor(b.y/TILE)*G.map.w+Math.floor(b.x/TILE)]) SFX.play('infect',b.x,b.y); if(b.claim>=1){ dropBody(b); b.dead=true;
         for(const e of G.ents) if(e.claim===b){ e.claim=null; e.claimMode=null; e.order=null; }
         const c=makeBuilding('cocoon','swarm',Math.floor(b.x/TILE),Math.floor(b.y/TILE),true); c.x=b.x; c.y=b.y; c.r=9;
-        c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; G.swarm.biomass+=12; G.stats.cocoons++;
+        c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.swarm.biomass+=12; G.stats.cocoons++;
         if(isVisible(c)&&!G.saidInfect){ G.saidInfect=true; say('Dr. Maas','A Crawler has infected the body. What hatches from that cocoon will not be a Crawler. Burn it!','alert'); }
         continue; } }
     else b.claim=Math.max(0,b.claim-dt/B.infect);
@@ -340,8 +351,13 @@ function spawnSpotToward(b,from){ const s=b.size; let best=null, bd=Infinity;
   for(let y=b.ty-1;y<=b.ty+s;y++) for(let x=b.tx-1;x<=b.tx+s;x++){ if(x>=b.tx&&x<b.tx+s&&y>=b.ty&&y<b.ty+s) continue; if(!walkableT(x,y)) continue;
     const px=(x+.5)*TILE, py=(y+.5)*TILE, d=Math.hypot(px-from.x,py-from.y); if(d<bd){ bd=d; best={x:px,y:py}; } }
   return best||{x:b.x,y:b.y}; }
-function drawBody(b,now){ const sp=SPR[b.sprite]; if(!sp) return; const s=2, w=sp.w*s, h=sp.h*s;
-  ctx.save(); ctx.translate(Math.round(b.x),Math.round(b.y-2)); ctx.rotate(b.face>0?-Math.PI/2:Math.PI/2); ctx.globalAlpha=0.55*Math.min(1,b.t/4)+0.05;
-  ctx.filter='grayscale(1) brightness(.6)'; ctx.drawImage(b.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.filter='none'; ctx.restore(); ctx.globalAlpha=1;
+function drawBody(b,now){ const sp=SPR[b.sprite]; if(!sp) return; const s=2, w=sp.w*s, h=sp.h*s, c=b.claim||0;
+  /* being infected: it twitches, and the green spreads through it */
+  const tw=c>0?Math.sin(now/(40+Math.random()*30))*0.12*c+(Math.random()<0.08*c?rand(-0.3,0.3):0):0;
+  ctx.save(); ctx.translate(Math.round(b.x+(c>0?rand(-1,1)*c*2:0)),Math.round(b.y-2)); ctx.rotate((b.face>0?-Math.PI/2:Math.PI/2)+tw); ctx.globalAlpha=0.55*Math.min(1,b.t/4)+0.05+0.4*c;
+  ctx.filter=c>0?`grayscale(${1-c}) brightness(${0.6+0.3*c}) hue-rotate(${Math.round(60*c)}deg)`:'grayscale(1) brightness(.6)'; ctx.drawImage(b.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.filter='none';
+  if(c>0){ ctx.restore(); ctx.save(); ctx.strokeStyle=`rgba(166,255,74,${0.35+0.4*c})`; ctx.lineWidth=1;
+    for(let i=0;i<Math.ceil(c*7);i++){ const a=creepNoise(i,b.id)*Math.PI*2, r=4+c*10; ctx.beginPath(); ctx.moveTo(b.x,b.y-3); ctx.lineTo(b.x+Math.cos(a)*r*0.5+rand(-1,1),b.y-3+Math.sin(a)*r*0.25); ctx.lineTo(b.x+Math.cos(a)*r,b.y-3+Math.sin(a)*r*0.45); ctx.stroke(); } }
+  ctx.restore(); ctx.globalAlpha=1;
   if(b.claim>0){ ctx.strokeStyle='#a6ff4a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(b.x,b.y-2,12,-Math.PI/2,-Math.PI/2+Math.PI*2*b.claim); ctx.stroke(); }
   if(b.burn>0){ ctx.strokeStyle='#ff8a2a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(b.x,b.y-2,15,-Math.PI/2,-Math.PI/2+Math.PI*2*b.burn); ctx.stroke(); } }

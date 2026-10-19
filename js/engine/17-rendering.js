@@ -107,12 +107,12 @@ function render(now){
 }
 function drawStars(cam){ ctx.fillStyle='#2a2d3a'; for(let i=0;i<70;i++){ const x=((hash2(i,1,9)*ui.vw*2-cam.x*0.05)%ui.vw+ui.vw)%ui.vw, y=((hash2(i,2,9)*ui.vh*2-cam.y*0.05)%ui.vh+ui.vh)%ui.vh; ctx.fillRect(x|0,y|0,1+(i%3===0),1); } }
 function drawUnit(u){
-  const sp=SPR[u.def.sprite], s=u.def.scale||2, w=sp.w*s, h=sp.h*s;
+  const sp=SPR[u.sprite||u.def.sprite], s=u.def.scale||2, w=sp.w*s, h=sp.h*s;
   if(u.downed){ drawDowned(u,sp,w,h,performance.now()); return; }
   const bob = u.moving ? (Math.floor(u.anim*8)%2) : 0;
   const lunge = u.lunge>0 ? u.face*4 : 0;
   drawShadow(u.x,u.y+3,u.r*0.95,u.r*0.42);
-  const x=Math.round(u.x-w/2+lunge), y=Math.round(u.y-h+4-bob*s/2);
+  const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
   const now=performance.now(), risen=u.vet&&u.vet.risen;
   if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now);
   const hov=ui.hover&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)));
@@ -122,6 +122,7 @@ function drawUnit(u){
   if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
   if(hov){ ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.35+0.15*Math.sin(now/120); ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
   if(u.flash>0){ ctx.globalAlpha=(u.def.scale||2)>=3?0.25:0.8; ctx.drawImage(u.face>0?sp.flash:sp.flashFlip,x,y,w,h); ctx.globalAlpha=1; }
+  if(u.molt>0) drawMolt(u,x,y,w,h,now);
   if(u.vet && u.vet.rank>0){ ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; const mk=RANKS[u.vet.rank].mark; ctx.fillStyle='#000'; ctx.fillText(mk,u.x+1,y-7); ctx.fillStyle=risen?'#9dff6a':u.vet.rank>=5?'#ffd23f':u.vet.rank>=3?'#ffe2a8':'#ffb347'; ctx.fillText(mk,u.x,y-8); }
   if(u.order&&u.order.type==='hold'&&G.sel.includes(u)){ ctx.fillStyle='#ffb347'; ctx.fillRect(Math.round(u.x)-3,y-6,6,2); }
   if(u.stance==='attack'&&G.sel.includes(u)){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(u.x)-3,y-6,6,2); }
@@ -134,7 +135,10 @@ function drawBuilding(b,now){
   let y=b.def.noBlock ? Math.round(b.y-h/2-4) : b.ty*TILE + Math.round((b.size*TILE-h)/2);
   if(!b.def.noBlock) drawShadow(b.x+4,b.y+b.size*TILE*0.32,b.size*TILE*0.5,b.size*TILE*0.22);
   if(b.type==='hive'){ const p=1+Math.sin(now/420+b.id)*0.025; const ww=Math.round(w*p), hh=Math.round(h*p); ctx.drawImage(art,Math.round(b.x-ww/2),Math.round(b.y-hh/2-4),ww,hh); }
-  else if(b.type==='cocoon'){ const p=1+Math.sin(now/120)*0.06*(1-b.hatchT/(b.hatchMax||BUILDINGS.cocoon.hatch)+0.3); if(b.husk) ctx.filter='hue-rotate(95deg) saturate(1.3)'; ctx.drawImage(art,Math.round(b.x-w*p/2),Math.round(b.y-h*p+6),Math.round(w*p),Math.round(h*p)); ctx.filter='none'; }
+  else if(b.type==='cocoon'){ let p=1+Math.sin(now/120)*0.06*(1-b.hatchT/(b.hatchMax||BUILDINGS.cocoon.hatch)+0.3), jx=0;
+    if(b.husk){ drawHuskCocoon(b,now); const q=1-b.hatchT/b.hatchMax; p=1+0.05+0.14*(b.beat||0)+0.12*q; if(b.hatchT<1.5) jx=rand(-2,2); }
+    const a2=b.husk?ARTC.huskcocoon:art, w2=a2.width*2, h2=a2.height*2;
+    ctx.drawImage(a2,Math.round(b.x-w2*p/2+jx),Math.round(b.y-h2*p+6),Math.round(w2*p),Math.round(h2*p)); if(b.husk) drawHuskCracks(b); }
   else { if(!b.built) ctx.globalAlpha=0.45+0.4*b.progress; ctx.drawImage(art,x,y,w,h); ctx.globalAlpha=1; }
   if(b.flash>0){ ctx.globalAlpha=0.35; ctx.fillStyle='#fff'; ctx.fillRect(b.x-b.r,b.y-b.r,b.r*2,b.r*2); ctx.globalAlpha=1; }
   if(!b.built){ ctx.strokeStyle='rgba(255,179,71,.8)'; ctx.setLineDash([6,4]); ctx.strokeRect(b.tx*TILE+1,b.ty*TILE+1,b.size*TILE-2,b.size*TILE-2); ctx.setLineDash([]); return; }

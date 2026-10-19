@@ -135,6 +135,7 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .hero-card .htype{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--panel-2);border:1px solid var(--line);padding:6px 8px;cursor:pointer;font-size:12px;min-width:66px;}
 .hero-card .htype img{width:28px;height:28px;image-rendering:pixelated;}
 .hero-card .htype.on{border-color:#ffd23f;background:#2a2216;}
+.hero-card .hsex{display:flex;gap:6px;} .hero-card .hsex .htype{flex-direction:row;font-size:13px;padding:6px 12px;}
 .hero-card .htype[disabled]{opacity:.35;cursor:not-allowed;}
 .hero-card .hname{font-weight:600;}
 .mission{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;text-align:left;background:rgba(17,19,26,.85);border:1px solid var(--line);padding:12px 14px;cursor:pointer;}
