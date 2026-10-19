@@ -17,8 +17,9 @@ function updateSwarm(dt){
     h.spawnT-=dt; if(h.spawnT>0) continue; h.spawnT=hiveOpt(h,'guardEvery',14)*rand(0.8,1.2);
     const guards=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.homeHive===h.id&&e.role==='guard').length;
     if(guards>=hiveOpt(h,'guardMax',4)) continue;
-    const type=pickSwarmType(S.biomass,hiveOpt(h,'guards',null)); if(!type) continue;
-    S.biomass-=UNITS[type].biomass;
+    const own=G.side==='swarm';   /* playing the Swarm, a hive grows its own few guards for free: your biomass is yours */
+    const type=pickSwarmType(own?40:S.biomass,hiveOpt(h,'guards',own?['drone','crawler']:null)); if(!type) continue;
+    if(!own) S.biomass-=UNITS[type].biomass;
     const u=spawnNearBuilding(type,'swarm',h); if(!u) continue;
     u.role='guard'; u.homeHive=h.id; u.guardAt={x:h.x,y:h.y}; u.order={type:'guard',x:h.x,y:h.y,wait:0};
   }
@@ -69,9 +70,9 @@ function launchWave(budget,aim){
    lure   – the fastest few go first, the rest wait a few seconds and hit you while you chase the bait;
    flank  – half the wave swings out wide and comes in from the side. */
 const TACTICS = { minSize:6, lureDelay:9, flankOffset:9, weights:{ direct:0.4, lure:0.3, flank:0.3 } };
-function waveTactic(out){
-  const us=out.filter(u=>u.order); if(us.length<TACTICS.minSize) return 'direct';
-  let r=Math.random(), plan='direct'; for(const [k,w] of Object.entries(TACTICS.weights)){ if(r<w){ plan=k; break; } r-=w; }
+function waveTactic(out,forced){
+  const us=out.filter(u=>u.order); if(us.length<(forced?3:TACTICS.minSize)) return 'direct';
+  let r=Math.random(), plan='direct'; if(forced) plan=forced; else for(const [k,w] of Object.entries(TACTICS.weights)){ if(r<w){ plan=k; break; } r-=w; }
   if(plan==='lure'){
     const sorted=[...us].sort((a,b)=>b.def.speed-a.def.speed), bait=Math.max(2,Math.round(us.length*0.3));
     sorted.slice(bait).forEach(u=>{ u.waveDelay=TACTICS.lureDelay+rand(0,2); u.waveGoal={x:u.order.x,y:u.order.y}; u.order=null; u.path=null; });

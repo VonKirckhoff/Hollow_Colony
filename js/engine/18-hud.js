@@ -11,6 +11,7 @@ function hudTick(){
   $('#r-troops-wrap').dataset.tip='Troops on the field|'+(Object.entries(per).map(([k,v])=>`${v}× ${k}`).join(', ')||'None');
   $('#r-supply-wrap').hidden=!!(G.mission.noTraining||G.mission.landingZone);   // with a Landing Zone the troop limit replaces supply
   const sup=$('#r-supply'); sup.textContent= s.cap>0 ? `${s.used}/${s.cap}` : '—'; sup.classList.toggle('warn',s.cap>0&&s.used>=s.cap);
+  if(G.side==='swarm'){ swarmHud(); $('#r-supply-wrap').hidden=false; }
   $('#clock').textContent=fmtTime(G.time);
   const tw=$('#r-timer-wrap'); if(G.timer){ tw.hidden=false; $('#r-timer-lbl').textContent=G.timer.label; $('#r-timer').textContent=fmtTime(G.timer.end-G.time); } else tw.hidden=true;
   if(G.objDirty){ G.objDirty=false; $('#obj-list').innerHTML=G.objectives.filter(o=>o.state!=='hidden').map(o=>`<li class="${o.state}"><span class="box"></span><span>${o.text}${o.optional?'<span class="opt">OPTIONAL</span>':''}</span></li>`).join(''); }
@@ -26,7 +27,7 @@ function primaryGroup(){
 }
 function renderSelection(){
   const el=$('#selection'); const sel=G.sel.filter(e=>!e.dead);
-  if(!sel.length){ el.innerHTML=`<div class="lbl" style="margin-bottom:6px">${G.mission.title} · ${G.map.name}</div><div class="hint">Drag to select units. <kbd>Right-click</kbd> to move or attack, <kbd>A</kbd> + click to attack-move. Walk over crates to collect salvage.</div>`; return; }
+  if(!sel.length){ el.innerHTML=`<div class="lbl" style="margin-bottom:6px">${G.mission.title} · ${G.map.name}</div><div class="hint">${G.side==='swarm'?SWARM_HINT:'Drag to select units. <kbd>Right-click</kbd> to move or attack, <kbd>A</kbd> + click to attack-move. Walk over crates to collect salvage.'}</div>`; return; }
   if(sel.length===1){ const e=sel[0], d=e.def, img=iconUrl(e.type), f=clamp(e.hp/e.maxHp,0,1);
     let stats='';
     if(e.kind==='unit'){ stats = d.heal ? `<span>Heal <b>${d.heal}/s</b></span><span>Range <b>${d.healRange}</b></span>` : d.damage ? `<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span><span>Rate <b>${(1/d.cooldown).toFixed(1)}/s</b></span>` : '';
@@ -56,6 +57,7 @@ function renderSelection(){
       list.map(e=>`<div class="sel-cell" data-only="${e.id}" data-tip="${unitTitle(e)}|Click to select only this one."><img alt="" src="${iconUrl(e.type)}">${rankBadge(e)}<i><s style="width:${clamp(e.hp/e.maxHp,0,1)*100}%;background:${hpColor(e.hp/e.maxHp)}"></s></i></div>`).join('')+'</div></div>'; }).join('')+'</div>';
 }
 function cmdButtons(){
+  if(G.side==='swarm') return swarmButtons();
   const {units,blds}=primaryGroup(); const out=[];
   if(ui.placing){ out.push({row:'Placing',key:'Esc',glyph:'✕',tip:'Cancel|Stop placing the building.',act:()=>{ui.placing=null;G.selDirty=true;}}); return out; }
   if(units.length){
@@ -88,7 +90,7 @@ let CMDS=[];
 const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sentry','relay','barricade'];
 function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.stageName ? `${e.stageName} (turning into a Husk)` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
-const CMD_ROWS=['Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
+const CMD_ROWS=['Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();
   const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''}" data-cmd="${i}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;
   $('#cmdcard').innerHTML=CMD_ROWS.map(r=>{ const items=CMDS.map((c,i)=>[c,i]).filter(([c])=>(c.row||'Orders')===r); if(!items.length) return '';

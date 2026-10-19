@@ -12,18 +12,19 @@ function recordWin(id,diff,time){ const r=ui.progress.results[id];
   else if(diff===r.diff && (r.time==null||time<r.time)) r.time=time;
   store.set('hc-progress',ui.progress); }
 const ui={ mode:'menu', mouse:{x:0,y:0,wx:0,wy:0,inWin:false}, drag:null, pan:null, placing:null, amove:false, keys:{}, dpr:1, vw:0, vh:0, hudH:0,
-  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.3), zombie:store.get('hc-zombie',false), realDeath:store.get('hc-real-death',false) /* on defeat: false = retry with the same soldiers, true = the fallen are gone */, skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
+  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.3), zombie:store.get('hc-zombie',false), realDeath:store.get('hc-real-death',false), campSide:store.get('hc-camp-side','corps') /* on defeat: false = retry with the same soldiers, true = the fallen are gone */, skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
 let NEXT_ID=1;
 
 function newGame(mission, diffKey){
   const map=loadMap(mission.map);
   const N=map.w*map.h;
-  G={ mission, map, diff:DIFFICULTY[diffKey]||DIFFICULTY.normal, diffKey, ents:[], fx:[], shots:[], decals:[], time:0, speed:1,
+  const asSwarm=mission.side==='swarm';
+  G={ mission, map, side:asSwarm?'swarm':'corps', diff:asSwarm?DIFFICULTY.normal:(DIFFICULTY[diffKey]||DIFFICULTY.normal), corpsDiff:asSwarm?(SWARM_DIFF[diffKey]||SWARM_DIFF.normal):null, diffKey, ents:[], fx:[], shots:[], decals:[], time:0, speed:1,
       salvage:mission.start.salvage||0, block:new Uint8Array(N), vis:new Uint8Array(N), seen:new Uint8Array(N), reveals:[],
       sel:[], groups:{}, objectives:[], triggers:mission.triggers.map(t=>({...t,fired:false})), vars:{}, timer:null,
       stats:{ kills:0, lost:0, crates:0, cocoons:0, built:0, trained:0, hives:0 }, msgs:[], over:null, paused:false,
       cam:{x:0,y:0}, pings:[], pools:[], flareList:[], barks:[], flares:(mission.flares!==undefined?mission.flares:mission.dark?SQUAD.flare.perDarkMission:SQUAD.flare.perMission), markers:[], alert:null, alertT:0, trigT:0, fogT:0, hudT:0, selDirty:true, objDirty:true, msgDirty:true,
-      swarm:{ cfg:mission.swarm, biomass:mission.swarm.biomass||0, nextWave:mission.swarm.waves?mission.swarm.waves.first*(DIFFICULTY[diffKey]||DIFFICULTY.normal).interval:Infinity, waveN:0 } };
+      swarm:{ cfg:mission.swarm, biomass:mission.swarm.biomass||0, nextWave:mission.swarm.waves?mission.swarm.waves.first*(DIFFICULTY[diffKey]||DIFFICULTY.normal).interval:Infinity, waveN:0, rally:null, tactic:'direct', burrowAt:-99 } };
   for(let i=0;i<N;i++) G.block[i]=map.walk[i]?0:1;
   initPathBuffers();
   const st=mission.start;

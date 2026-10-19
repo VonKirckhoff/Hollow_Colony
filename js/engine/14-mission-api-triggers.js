@@ -76,6 +76,16 @@ function makeApi(){
     clearTimer(){ G.timer=null; },
     setTimer(seconds,label){ G.timer={end:G.time+seconds,label}; },
     timerLeft:()=>G.timer?Math.max(0,G.timer.end-G.time):Infinity,
+    /* for the Swarm campaign: the Lunar Corps is the computer's side */
+    corps:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort),
+    orderCorps(list,at,mode='amove'){ const p=ptWorld(at); if(!p) return; const us=(list==='all'?G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'):list).filter(e=>!e.dead&&!e.downed); if(us.length) corpsMove(us,p.x,p.y,mode); },
+    place(type,at,dx=0,dy=0){ const p=pt(at); if(!p) return null; const s=BUILDINGS[type].size; for(const o of SPIRAL){ const x=p.x+dx+o.x, y=p.y+dy+o.y; let ok=true;
+        for(let j=0;j<s&&ok;j++) for(let i=0;i<s;i++) if(!walkableT(x+i,y+j)){ ok=false; break; } if(ok) return makeBuilding(type,'corps',x,y,true); } return null; },
+    biomass(n){ G.swarm.biomass+=n; },
+    brood:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm').length,
+    inbound:()=>G.ents.filter(e=>!e.dead&&e.type==='lz'&&e.flight).reduce((s,e)=>s+e.flight.cargo.length,0),
+    n:x=>Math.max(1,Math.round(x*(G.corpsDiff?G.corpsDiff.reinforce:1))),
+    brood_say:(text)=>say('The Brood',text,'swarm'),
     win:text=>endGame(true,text), lose:text=>endGame(false,text)
   };
 }
@@ -84,7 +94,8 @@ function runTriggers(){
     let ok=false; try{ ok=t.when(G.api); }catch(e){ console.error('Trigger condition error',e); t.fired=true; continue; }
     if(ok){ t.fired=true; try{ t.do(G.api); }catch(e){ console.error('Trigger action error',e); } } }
   // default defeat: nothing left
-  if(!G.over && !G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground)) endGame(false,'Your forces have been wiped out.');
+  if(!G.over && G.side==='swarm'){ if(!G.ents.some(e=>!e.dead&&e.faction==='swarm'&&(e.kind==='unit'||e.type==='hive'||e.type==='cocoon'))) endGame(false,'The brood is ash. Nothing is left to remember the hunger.'); }
+  else if(!G.over && !G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground)) endGame(false,'Your forces have been wiped out.');
 }
 function endGame(win,text){
   if(G.over) return; G.over={win,text,at:performance.now()}; SFX.play(win?'win':'lose');

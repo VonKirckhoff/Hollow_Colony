@@ -1,8 +1,8 @@
 'use strict';
 /* ---------- 2g. combat ---------- */
 function hostile(a,b){ if(a===b||a==='none'||b==='none') return false; if(a==='wild') return false; if(b==='wild') return a==='swarm'; return true; }
-function visibleTo(faction,e){ if(faction!=='corps') return true; return isVisible(e); }
-function isVisible(e){ if(e.faction==='corps') return true; if(e.def&&e.def.cloak&&!(e.revealT>0)) return false; const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE), i=ty*G.map.w+tx; return (e.kind==='building'&&e.type!=='cocoon') ? G.seen[i]>0 : G.vis[i]>0; }
+function visibleTo(faction,e){ if(faction!==(G?G.side:'corps')) return true; return isVisible(e); }   /* the computer's side sees everything its units could */
+function isVisible(e){ if(e.faction===G.side) return true; if(e.def&&e.def.cloak&&!(e.revealT>0)) return false; const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE), i=ty*G.map.w+tx; return (e.kind==='building'&&e.type!=='cocoon') ? G.seen[i]>0 : G.vis[i]>0; }
 function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss); }
@@ -57,7 +57,8 @@ function damage(t,amt,src){
   if(t.molt>0) amt*=MOLT.vuln;   /* a Husk shedding its skin is soft */
   const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
-  if(t.faction==='corps' && src && src.faction==='swarm') raiseAlert(t);
+  if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
+  if(t.kind==='building') t.hitBy=src;
   if(t.kind==='unit' && src && !src.dead){
     if(t.def.passive){ const a=Math.atan2(t.y-src.y,t.x-src.x); t.order={type:'move',x:t.x+Math.cos(a)*120,y:t.y+Math.sin(a)*120}; setPath(t,t.order.x,t.order.y); }
     else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction)) t.target=src;
@@ -78,17 +79,18 @@ function kill(e,src){
     if(e.type==='charge' && e.tag) chargeLost(e);
     if(e.type==='hive') G.stats.hives++;
     if(e.type==='hive' && src && src.faction==='corps') gainXP(src,VET_XP.hive);
-    if(e.faction==='corps') G.stats.lost++;
+    if(e.faction===G.side) G.stats.lost++;
     if(e.type==='cocoon' && src && src.faction==='corps') G.fx.push({k:'text',x:e.x,y:e.y-14,t:1,max:1,txt:'PURGED',col:'#a6ff4a'});
   } else {
     const col = e.faction==='swarm' ? 'rgba(90,190,30,.6)' : e.faction==='wild' ? 'rgba(150,120,80,.55)' : 'rgba(120,24,24,.6)';
     addDecal(e.x,e.y,e.r*1.1,col);
     if(e.faction==='corps'||isVisible(e)) SFX.play(e.faction==='swarm'?'squelch':'death',e.x,e.y);
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
-    if(e.faction==='corps') G.stats.lost++;
+    if(e.faction===G.side) G.stats.lost++;
     if(e.faction==='corps') obituary(e);
+    if(G.side==='swarm' && e.faction==='corps' && !e.def.escort){ G.stats.kills++; G.swarm.biomass+=SWARM_PLAY.kill; }   /* playing the Swarm: every soldier who dies (also one who bleeds out) feeds the brood */
     if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
-    if(e.faction==='swarm' && src && src.faction==='corps'){ G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
+    if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
     if(e.faction==='corps' && e.def.bio && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
     else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y)){
@@ -99,7 +101,9 @@ function kill(e,src){
   if(G.sel.includes(e)){ G.sel=G.sel.filter(x=>x!==e); G.selDirty=true; }
 }
 function addDecal(x,y,r,col){ G.decals.push({x,y,r,col,seed:Math.random()*1000,t:0}); if(G.decals.length>180) G.decals.shift(); }
-function raiseAlert(t){ if(G.time-G.alertT<10) return; G.alertT=G.time; G.alert={x:t.x,y:t.y}; G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); SFX.play('alarm');
+function raiseAlert(t){ if(G.time-G.alertT<10) return; G.alertT=G.time; G.alert={x:t.x,y:t.y}; G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'});
+  if(G.side==='swarm'){ SFX.play('heartbeat'); say('The Brood', t.type==='hive' ? 'A hive is burning. They have found one of our nests.' : 'The soft ones are hurting the brood.', 'swarm alert'); return; }
+  SFX.play('alarm');
   say('Alert', t.kind==='building' ? `${t.def.name} under attack.` : 'Our forces are under attack.', 'alert'); }
 function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&dist(e,h)<12*TILE) e.target=src; } hiveScream(h,src); }
 /* Lieutenant Trooper: a grenade now and then, aimed at the thickest group near his target */

@@ -3,12 +3,13 @@
    CREEP: a living carpet grows out from every hive, from `start` tiles to `max` tiles over `grow` seconds
           (per hive or per mission: creep:<tiles>, creep:0 for none). Swarm units standing on it heal `heal` HP/s.
           When the hive dies, the creep withers away.
-   HUSK:  hatches from a body a Crawler infected. It hunts for `hunt` seconds, then walks to a quiet spot
+   HUSK:  hatches from a body a Crawler infected (see the stages below). The Twitcher fights, the Shambler withdraws from the battle
+          (keeps `hide` tiles from your troops), and the finished Husk goes straight to a quiet spot
           (at least `clear` tiles from your troops and buildings, `spacing` tiles from other hives, at most `reach` tiles away)
           and takes root for `root` seconds. Then it becomes a young hive with `hiveHp` of a normal hive's health.
           A mission can cap the new hives with swarm.husks (default `max`; 0 = Husks never root). */
 const CREEP = { start:2, max:5.5, grow:90, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
-const HUSK  = { hunt:8, root:18, clear:13, spacing:11, reach:34, max:2, hiveHp:0.55, guardMax:2 };
+const HUSK  = { root:18, clear:13, spacing:11, reach:34, max:2, hiveHp:0.55, guardMax:2, hide:11 };   /* hide: tiles a withdrawing Shambler keeps from your troops */
 
 /* ---- creep ---- */
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
@@ -65,7 +66,7 @@ const MOLT = { time:1.6, vuln:1.5 };
 function huskStage(u,i){ const st=HUSK_STAGES[i], f=u.maxHp?u.hp/u.maxHp:1, base=u.def.hp*G.diff.hp;
   u.stage=i; u.sprite=st.sprite; u.stageName=i<HUSK_STAGES.length-1?st.name:null; u.speedMul=st.speed; u.dmgMul=(G.diff.dmg||1)*st.dmg;
   u.maxHp=base*st.hp; u.hp=Math.min(u.maxHp,Math.max(u.maxHp*f,u.maxHp*0.5)); u.stageT=st.time||0; }
-function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=HUSK.hunt;
+function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=0;
   const vis=isVisible(u); G.fx.push({k:'boom',x:u.x,y:u.y,t:0.6,max:0.6,r:34,col:'#c38bff'}); addDecal(u.x,u.y,18,'rgba(70,30,90,.6)');
   for(let i=0;i<26;i++) G.fx.push({k:'ember',x:u.x+rand(-6,6),y:u.y-6+rand(-6,6),vx:rand(-120,120),vy:rand(-170,-20),t:rand(.5,1.1),max:1.1,col:pick(['#a6ff4a','#c38bff','#7a5a8e','#d23a3a','#eef2f5'])});
   if(vis){ SFX.play('huskborn',u.x,u.y); G.shake=Math.max(G.shake||0,0.3); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'IT LIVES',col:'#c38bff'}); }
@@ -79,7 +80,7 @@ function huskGrow(u,dt){
       for(let i=0;i<14;i++) G.fx.push({k:'spark',x:u.x,y:u.y-10,vx:rand(-90,90),vy:rand(-120,0),t:0.5,max:0.5,col:pick(['#7a5a8e','#a6ff4a','#5d6f83'])});   /* shed armour and skin */
       const final=u.stage===HUSK_STAGES.length-1;
       if(vis){ SFX.play(final?'huskroar':'crack',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-32,t:1.4,max:1.4,txt:final?'HUSK':HUSK_STAGES[u.stage].name.toUpperCase(),col:final?'#ff5a4f':'#c38bff'}); if(final) G.shake=Math.max(G.shake||0,0.25); }
-      if(final){ u.foundT=HUSK.hunt; if(vis&&!G.saidHuskFull){ G.saidHuskFull=true; say('Dr. Maas','It has finished turning. Any moment now it will look for a place to take root.','alert'); } } }
+      if(final){ u.foundT=0; u.hide=null; if(vis&&!G.saidHuskFull){ G.saidHuskFull=true; say('Dr. Maas','It has finished turning. Any moment now it will look for a place to take root.','alert'); } } }
     return true; }
   if(u.stage<HUSK_STAGES.length-1){ u.stageT-=dt; if(u.stageT<=0){ u.molt=MOLT.time; if(isVisible(u)) SFX.play('molt',u.x,u.y); return true; } }
   return false; }
@@ -105,28 +106,40 @@ function drawHuskCracks(c){ const p=1-c.hatchT/c.hatchMax; if(p<0.55) return; co
   for(let i=0;i<n;i++){ const a=creepNoise(i,c.id)*Math.PI*2, x0=c.x+Math.cos(a)*3, y0=c.y-10+Math.sin(a)*5; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+Math.cos(a)*5+2,y0+Math.sin(a)*4-2); ctx.lineTo(x0+Math.cos(a)*9,y0+Math.sin(a)*7+1); ctx.stroke(); }
   ctx.globalAlpha=1; }
 function huskCap(){ const c=G.swarm.cfg.husks; return c!=null?c:HUSK.max; }
-/* a quiet 3×3 spot, far from the Lunar Corps and other hives, as close to the Husk as possible */
-function huskSite(u){
+/* a quiet 3×3 spot, far from the Lunar Corps (clear tiles) and other hives (spacing tiles), at most reach tiles away, as close to the Husk as possible */
+function quietSpot(u,clear,spacing,reach){
   const m=G.map, W=m.w, hs=hives(), corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!(e.def&&e.def.scenery));
   const marks=G.ents.filter(e=>!e.dead&&e.kind==='building'&&e.def.noBlock);   /* landing zones, beacons, charge sites: not on top of those */
   let best=null, bd=Infinity;
   for(let i=0;i<600;i++){ const x=2+Math.floor(Math.random()*(W-4)), y=2+Math.floor(Math.random()*(m.h-4)); let ok=true;
     for(let dy=-1;dy<=1&&ok;dy++) for(let dx=-1;dx<=1;dx++) if(!walkableT(x+dx,y+dy)){ ok=false; break; } if(!ok) continue;
-    const px=(x+.5)*TILE, py=(y+.5)*TILE, d=Math.hypot(px-u.x,py-u.y); if(d>HUSK.reach*TILE||d>=bd) continue;
-    if(corps.some(e=>Math.hypot(e.x-px,e.y-py)<HUSK.clear*TILE)) continue;
-    if(hs.some(h=>Math.hypot(h.x-px,h.y-py)<HUSK.spacing*TILE)) continue;
+    const px=(x+.5)*TILE, py=(y+.5)*TILE, d=Math.hypot(px-u.x,py-u.y); if(d>reach*TILE||d>=bd) continue;
+    if(corps.some(e=>Math.hypot(e.x-px,e.y-py)<clear*TILE)) continue;
+    if(spacing&&hs.some(h=>Math.hypot(h.x-px,h.y-py)<spacing*TILE)) continue;
     if(marks.some(e=>Math.hypot(e.x-px,e.y-py)<3*TILE)) continue;
-    if(G.ents.some(e=>!e.dead&&e.rootT!=null&&e!==u&&Math.hypot(e.x-px,e.y-py)<HUSK.spacing*TILE)) continue;
+    if(spacing&&G.ents.some(e=>!e.dead&&e.rootT!=null&&e!==u&&Math.hypot(e.x-px,e.y-py)<spacing*TILE)) continue;
     best={x,y}; bd=d; }
   return best; }
+function huskSite(u){ return quietSpot(u,HUSK.clear,HUSK.spacing,HUSK.reach); }
+/* the Shambler, close to its final form, stops fighting and slips away from the battle to finish turning in peace.
+   It keeps HUSK.hide tiles between itself and your troops; if they come after it, it moves on. Returns true while it is withdrawing. */
+function withdraw(u,dt){
+  const near=nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed), dn=near?dist(u,near)/TILE:99;
+  u.hideT=(u.hideT||0)-dt;
+  if(!u.hide||(dn<HUSK.hide*0.6&&u.hideT<=0)){ u.hideT=2; const s=quietSpot(u,HUSK.hide,0,HUSK.reach); if(!s) return false;
+    u.hide={x:(s.x+.5)*TILE,y:(s.y+.5)*TILE}; u.target=null; u.order={type:'move',x:u.hide.x,y:u.hide.y}; setPath(u,u.hide.x,u.hide.y); if(!u.path){ u.hide=null; u.order=null; return false; }
+    if(isVisible(u)&&!G.saidWithdraw){ G.saidWithdraw=true; say('Sgt. Kessler','That one is pulling back. It wants to finish changing where we cannot see it. Do not let it get away!','alert'); } }
+  if(Math.hypot(u.x-u.hide.x,u.y-u.hide.y)<TILE*0.8){ u.order={type:'hold'}; u.target=null; u.cd=Math.max(u.cd,0.3); }   /* hidden: it waits and does not fight */
+  else if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:u.hide.x,y:u.hide.y}; setPath(u,u.hide.x,u.hide.y); }
+  return true; }
 function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* returns true while the Husk is busy founding (swarmThink then leaves it alone) */
 function founderThink(u,dt){
   if(huskGrow(u,dt)) return true;
-  if(u.stage!=null&&u.stage<HUSK_STAGES.length-1) return false;   /* still growing: it fights like any other */
+  if(u.stage!=null&&u.stage<HUSK_STAGES.length-1) return u.stage===HUSK_STAGES.length-2 ? withdraw(u,dt) : false;   /* the Twitcher fights; the Shambler withdraws */
   if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }
   if(u.noFound) return false;
-  u.foundT=(u.foundT??HUSK.hunt)-dt; if(u.foundT>0) return false;
+  u.foundT=(u.foundT??0)-dt; if(u.foundT>0) return false;
   if((G.swarm.founded||0)+rooting()>=huskCap()){ u.noFound=true; return false; }   /* enough new hives: it just hunts */
   if(!u.site){ u.siteT=(u.siteT||0)-dt; if(u.siteT>0) return false; u.siteT=4;
     const s=huskSite(u); if(!s) return false; const sx=(s.x+.5)*TILE, sy=(s.y+.5)*TILE;

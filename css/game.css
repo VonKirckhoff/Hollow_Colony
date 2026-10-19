@@ -465,3 +465,19 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .tbar span{display:block;height:100%;background:#ffd23f;}
 .vsec.troph .lbl{color:#ffd23f;}
 @media (max-width:640px){ .trow{grid-template-columns:repeat(4,minmax(0,1fr));} .trole{grid-column:1/-1;} .trow.thead span:first-child{display:none;} .plaque{min-height:76px;} }
+.troph-hero .tvoid{color:#ff9a8f;}
+
+/* ---------- the Swarm campaign ---------- */
+.camp-side{justify-self:start;}
+.swarm-only{display:none;}
+#s-campaign.swarm .swarm-only{display:block;}
+#s-campaign.swarm .hero-card,#s-campaign.swarm .defeat-row,#s-campaign.swarm #btn-vets,#s-campaign.swarm #btn-ceno,#s-campaign.swarm #btn-troph{display:none;}
+#s-campaign.swarm .eyebrow,#s-brief.swarm .eyebrow{color:#a6ff4a;}
+#s-campaign.swarm .h,#s-brief.swarm .h{color:#d8c4ff;text-shadow:0 0 18px rgba(195,139,255,.35);}
+#s-campaign.swarm .mission .num{color:#a6ff4a;}
+#s-campaign.swarm .mission:hover{border-color:#a6ff4a;}
+#s-brief.swarm .brief i{color:#c38bff;}
+.msg.intercept{opacity:.72;} .msg.intercept .who{color:#8a93a6 !important;}
+.msg.swarm .who{color:#a6ff4a !important;} .msg.swarm .txt{color:#e3d4ff;}
+body.as-swarm #r-salvage{color:#a6ff4a;}
+.camp-side button[data-side="swarm"].on{background:#a6ff4a;color:#0b1206;}

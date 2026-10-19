@@ -39,17 +39,17 @@ function render(now){
   // rally
   for(const e of G.sel){ if(e.kind==='building'&&e.rally){ ctx.strokeStyle='rgba(95,227,176,.5)'; ctx.setLineDash([3,5]); ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(e.rally.x,e.rally.y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='#5fe3b0'; ctx.fillRect(e.rally.x-1,e.rally.y-14,2,14); ctx.fillRect(e.rally.x+1,e.rally.y-14,7,5); } }
   // visible entities
-  const list=[], shimmer=[]; for(const e of G.ents){ if(e.dead||!inView(e)) continue;
+  const list=[], shimmer=[]; for(const e of G.ents){ if(e.dead||e.hidden||!inView(e)) continue;   /* hidden: tunnelling through the rock */
     if(e.kind==='body'&&e.carrier){ if(isVisible(e.carrier)) list.push(e); continue; }   /* a body being dragged off is seen only with its carrier */
     if(e.kind==='crate'||e.kind==='body'){ if(G.seen[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) list.push(e); continue; }
-    if(e.faction==='corps'){ list.push(e); continue; }
+    if(e.faction===G.side){ list.push(e); continue; }
     if(e.kind==='building' && e.type!=='cocoon'){ if(G.seen[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) list.push(e); continue; }
     if(isVisible(e)) list.push(e); else if(e.def&&e.def.cloak&&!e.retreating&&G.vis[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) shimmer.push(e); }
   for(let i=list.length-1;i>=0;i--) if(list[i].def&&list[i].def.ground) list.splice(i,1);
   list.sort((a,b)=>(a.kind==='building'?a.y+a.r*0.6:a.y)-(b.kind==='building'?b.y+b.r*0.6:b.y));
   // selection rings
   for(const e of G.sel){ if(!e.dead&&e.def&&e.def.ground){ ctx.strokeStyle='#5fe3b0'; ctx.lineWidth=2; ctx.strokeRect(e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); continue; }
-    if(e.dead||!list.includes(e)) continue; ctx.strokeStyle=e.faction==='corps'?'#5fe3b0':'#ff5a4f'; ctx.lineWidth=2;
+    if(e.dead||!list.includes(e)) continue; ctx.strokeStyle=e.faction===G.side?'#5fe3b0':'#ff5a4f'; ctx.lineWidth=2;
     ctx.beginPath(); if(e.kind==='building') ctx.ellipse(e.x,e.y+e.r*0.35,e.r*1.1,e.r*0.75,0,0,Math.PI*2); else ctx.ellipse(e.x,e.y+4,e.r+4,(e.r+4)*0.55,0,0,Math.PI*2); ctx.stroke(); }
   for(const e of list){ if(e.kind==='unit') drawUnit(e); else if(e.kind==='building') drawBuilding(e,now); else if(e.kind==='body') drawBody(e,now); else ctx.drawImage(ARTC.crate,Math.round(e.x-12),Math.round(e.y-10+Math.sin(now/300+e.id)*1.5),24,20); }
   for(const e of shimmer){ const sp=SPR[e.def.sprite], s=2; ctx.globalAlpha=0.1+0.08*Math.sin(now/90+e.id); ctx.drawImage(e.face>0?sp.flash:sp.flashFlip,Math.round(e.x-sp.w+Math.sin(now/60)*2),Math.round(e.y-sp.h*s+4),sp.w*s,sp.h*s); ctx.globalAlpha=1; }
@@ -59,7 +59,7 @@ function render(now){
   for(const s of G.shots){ if(s.t<0) continue; const t=s.t/s.dur; if(s.k==='plasma'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t; ctx.fillStyle='#1a8fa0'; ctx.fillRect(Math.round(x)-4,Math.round(y)-4,8,8); ctx.fillStyle='#d8feff'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,4,4); continue; }
     if(s.k==='grenade'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*46; ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#5b6b3a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,4,4); if(Math.floor(s.t*12)%2){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(x)-1,Math.round(y)-4,2,2); } continue; }
     const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*40; ctx.fillStyle='#4fae22'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#a6ff4a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,3,3); }
-  drawFx(); drawFlares(now);
+  drawFx(); drawFlares(now); if(G.side==='swarm') drawSwarmOrders(now);
   // light from running generators
   ctx.globalCompositeOperation='lighter';
   for(const e of G.ents){ if(e.dead||!e.def||!e.def.generator||!e.powered) continue; const R=e.def.light*TILE*0.9, fl=0.9+0.1*Math.sin(now/90+e.id);
@@ -72,12 +72,12 @@ function render(now){
   for(const e of list){ if(e.kind==='crate'||e.kind==='body') continue; const show=G.sel.includes(e)||e.hp<e.maxHp||(e.kind==='building'&&!e.built); if(!show) continue;
     const w=e.kind==='building'?e.size*TILE*0.8:24, x=Math.round(e.x-w/2), y=Math.round(e.kind==='building'?e.y-e.size*TILE/2-8:e.y-(SPR[e.def.sprite].h*(e.def.scale||2))-6);
     ctx.fillStyle='#000'; ctx.fillRect(x-1,y-1,w+2,5); ctx.fillStyle='#3a1512'; ctx.fillRect(x,y,w,3);
-    const f=clamp(e.hp/e.maxHp,0,1); ctx.fillStyle=e.faction!=='corps'?'#ff5a4f':hpColor(f); ctx.fillRect(x,y,Math.round(w*f),3);
+    const f=clamp(e.hp/e.maxHp,0,1); ctx.fillStyle=e.faction!==G.side?'#ff5a4f':hpColor(f); ctx.fillRect(x,y,Math.round(w*f),3);
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*e.progress),2); }
     if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); } }
   // status labels of mission objects (generators, charges)
   ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
-  for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!=='corps'&&!isVisible(e)) continue;
+  for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!==G.side&&!isVisible(e)) continue;
     const y=e.kind==='building'?e.y+e.size*TILE/2+14:e.y-34; ctx.fillStyle='#000'; ctx.fillText(e.status.txt,e.x+1,y+1); ctx.fillStyle=e.status.col; ctx.fillText(e.status.txt,e.x,y); }
   drawBarks();
   for(const p of G.pings){ const r=10+p.t*28; ctx.strokeStyle=p.col; ctx.globalAlpha=Math.max(0,1-p.t/3); ctx.lineWidth=2; ctx.strokeRect(p.x-r,p.y-r,r*2,r*2); ctx.globalAlpha=1; }
@@ -183,7 +183,7 @@ function renderMinimap(){
   if(!G||!G.mmScale) return; const m=G.map, s=G.mmScale;
   mctx.imageSmoothingEnabled=false; mctx.drawImage(m.mini,0,0,mm.width,mm.height);
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||e.kind==='body') continue;
-    if(e.faction!=='corps'){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) continue; }
+    if(e.faction!==G.side){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) continue; }
     mctx.fillStyle=e.def.capture?(e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffffff'):e.faction==='corps'?(e.def.escort?'#ffffff':'#ffb347'):e.faction==='swarm'?'#a6ff4a':e.faction==='grey'?'#7ff6ff':'#d3c3a6';
     const sz=e.kind==='building'?Math.max(3,e.size*s):Math.max(2,s*0.9);
     mctx.fillRect(Math.round(e.x/TILE*s-sz/2),Math.round(e.y/TILE*s-sz/2),Math.ceil(sz),Math.ceil(sz)); }

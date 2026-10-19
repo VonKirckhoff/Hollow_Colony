@@ -8,6 +8,7 @@ cv.addEventListener('pointerdown',e=>{
   const w=toWorld(e.clientX,e.clientY);
   if(e.pointerType==='touch'){ ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,touch:true,cam:{...G.cam}}; return; }
   if(e.button===1){ ui.pan={x:e.clientX,y:e.clientY,cam:{...G.cam}}; e.preventDefault(); return; }
+  if(e.button===2&&(ui.burrow||ui.rallyPick)){ ui.burrow=false; ui.rallyPick=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.button===2&&ui.flare){ ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.button===2){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; return; } if(ui.placing){ ui.placing=null; G.selDirty=true; return; } if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; return; } smartCommand(w.x,w.y); return; }
   if(e.button===0){
@@ -15,11 +16,13 @@ cv.addEventListener('pointerdown',e=>{
     if(ui.picking){ const s=entityAt(w.x,w.y,x=>x.faction==='corps'&&x.kind==='building'&&x.def.portable&&x.built); ui.picking=null; cv.classList.remove('amove'); G.selDirty=true;
       if(s) packSentry(s); else toast('Click one of your Sentry Guns.'); return; }
     if(ui.flare){ throwFlare(w.x,w.y); return; }
+    if(ui.burrow){ burrowAt(w.x,w.y); return; }
+    if(ui.rallyPick){ ui.rallyPick=false; cv.classList.remove('amove'); setRally(w.x,w.y); return; }
     if(ui.amove){ attackMoveAt(w.x,w.y); return; }
     ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,box:false,shift:e.shiftKey};
   }
 });
-function attackMoveAt(wx,wy){ const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits();
+function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits();
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
   for(const u of units) u.stance = u.def.damage&&!u.def.heal ? 'attack' : null;   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
   if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
@@ -40,19 +43,19 @@ window.addEventListener('blur',()=>{ ui.mouse.inWin=false; ui.keys={}; });
 window.addEventListener('pointerup',e=>{
   mmDrag=false; if(ui.pan){ ui.pan=null; return; }
   const d=ui.drag; ui.drag=null; if(!d||!G||ui.mode!=='game') return;
-  if(d.touch){ if(d.panning) return; const w=toWorld(d.x1,d.y1); const hit=entityAt(w.x,w.y,e=>e.faction==='corps');
+  if(d.touch){ if(d.panning) return; const w=toWorld(d.x1,d.y1); const hit=entityAt(w.x,w.y,e=>e.faction===G.side);
     if(hit){ selectEntities([hit],false); } else if(myUnits().length){ if(ui.placing) tryPlace(false); else smartCommand(w.x,w.y); } else { const any=entityAt(w.x,w.y); selectEntities(any?[any]:[],false); } return; }
   if(d.box){
     const a=toWorld(Math.min(d.x0,d.x1),Math.min(d.y0,d.y1)), b=toWorld(Math.max(d.x0,d.x1),Math.max(d.y0,d.y1));
-    const inBox=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.x>=a.x&&e.x<=b.x&&e.y-6>=a.y&&e.y-6<=b.y);
+    const inBox=G.ents.filter(e=>!e.dead&&e.faction===G.side&&e.x>=a.x&&e.x<=b.x&&e.y-6>=a.y&&e.y-6<=b.y);
     const units=inBox.filter(e=>e.kind==='unit'); selectEntities(units.length?units:inBox.filter(e=>e.kind==='building').slice(0,1),d.shift);
   } else {
     const w=toWorld(d.x1,d.y1); const hit=entityAt(w.x,w.y,e=>e.kind!=='crate');
     if(!hit){ if(!d.shift) selectEntities([],false); return; }
     const now=performance.now();
-    if(hit.faction==='corps' && ui.lastClick.id===hit.id && now-ui.lastClick.t<350){
-      const same=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.type===hit.type&&e.x>G.cam.x&&e.x<G.cam.x+ui.vw&&e.y>G.cam.y&&e.y<G.cam.y+ui.vh); selectEntities(same,d.shift);
-    } else if(d.shift && hit.faction==='corps'){ if(G.sel.includes(hit)){ G.sel=G.sel.filter(x=>x!==hit); G.selDirty=true; } else selectEntities([hit],true); }
+    if(hit.faction===G.side && ui.lastClick.id===hit.id && now-ui.lastClick.t<350){
+      const same=G.ents.filter(e=>!e.dead&&e.faction===G.side&&e.type===hit.type&&e.x>G.cam.x&&e.x<G.cam.x+ui.vw&&e.y>G.cam.y&&e.y<G.cam.y+ui.vh); selectEntities(same,d.shift);
+    } else if(d.shift && hit.faction===G.side){ if(G.sel.includes(hit)){ G.sel=G.sel.filter(x=>x!==hit); G.selDirty=true; } else selectEntities([hit],true); }
     else selectEntities([hit],false);
     ui.lastClick={id:hit.id,t:now};
   }
@@ -87,6 +90,7 @@ window.addEventListener('keydown',e=>{
   ui.keys[e.key]=true;
   if(G.over) return;
   const k=e.key.toLowerCase();
+  if(e.key==='Escape'&&(ui.burrow||ui.rallyPick)){ ui.burrow=false; ui.rallyPick=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.key==='Escape'&&ui.flare){ ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; return; }
   if(e.key==='Escape'){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; } else if(ui.placing){ ui.placing=null; G.selDirty=true; } else if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; } else pause(true); return; }
   if(k==='p'){ pause(true); return; }

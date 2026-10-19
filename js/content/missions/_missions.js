@@ -23,3 +23,8 @@
      g.setSwarm({...})  g.online()  g.generatorAt(at)  g.chargeSite(at,tag)  g.charge(tag)  g.chargeFuse(tag)  g.bury(at,radius,tag)  g.hiveAt(at)  g.boss(unit,title)
      g.timerLeft()  g.win(text)  g.lose(text) */
 const MISSIONS = [];
+/* The Swarm campaign: the same maps and story, played as the Brood (side:'swarm'). The Lunar Corps is the computer.
+   Extra: start.rally (where the brood gathers first), start.units are Lunar Corps soldiers, start.swarmUnits your first brood
+   (give them order:'brood' via swarmBrood), swarm.cap (most brood at once), swarm.unlock (when you may hatch a type).
+   Extra mission API for these: g.corps() g.orderCorps(list|'all',at,mode) g.place(type,at,dx,dy) g.biomass(n) g.brood() g.inbound() g.n(x) g.brood_say(text) */
+const SWARM_MISSIONS = [];

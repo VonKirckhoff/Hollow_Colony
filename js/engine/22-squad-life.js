@@ -14,13 +14,13 @@ const SQUAD = {
 
 /* ---- motion tracker: blips for everything that moves within range of your squad, faster beeps when closer ---- */
 function trackerRef(){
-  const us=G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead);
+  const us=G.sel.filter(e=>e.kind==='unit'&&e.faction===G.side&&!e.dead);
   if(us.length) return { x:us.reduce((s,u)=>s+u.x,0)/us.length, y:us.reduce((s,u)=>s+u.y,0)/us.length };
   return { x:G.cam.x+ui.vw/2, y:G.cam.y+(ui.vh-ui.hudH)/2 };
 }
 function trackerContacts(ref){
   const R=SQUAD.tracker.range*TILE, out=[];
-  for(const e of G.ents){ if(e.dead||e.kind!=='unit'||(e.faction!=='swarm'&&e.faction!=='grey')) continue;
+  for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.faction===G.side||e.faction==='wild'||e.faction==='none') continue;   /* playing the Swarm, it senses the warm bodies of the Lunar Corps */
     if(e.def.cloak&&!(e.revealT>0)) continue;                     // a cloaked Grey does not show
     const d=Math.hypot(e.x-ref.x,e.y-ref.y); if(d<R) out.push({e,d,a:Math.atan2(e.y-ref.y,e.x-ref.x)}); }
   return out;
@@ -160,7 +160,10 @@ function drawBarks(){
     ctx.beginPath(); ctx.moveTo(u.x-4,y+5); ctx.lineTo(u.x+4,y+5); ctx.lineTo(u.x,y+10); ctx.fillStyle='rgba(10,12,18,.85)'; ctx.fill();
     ctx.fillStyle='#e8ecf2'; ctx.fillText(b.text,u.x+1,y); ctx.globalAlpha=1; }
 }
-function anyBarker(units,kind,arg){ const us=units.filter(u=>u.kind==='unit'&&u.faction==='corps'&&!u.dead&&!u.def.convoy&&!u.def.escort); if(us.length) bark(pick(us),kind,arg); }
+/* the squad answers through its highest rank (your own soldier first among equals, then the most experienced) */
+function squadVoice(units){ const us=units.filter(u=>u.kind==='unit'&&u.faction==='corps'&&!u.dead&&!u.downed&&!u.def.convoy&&!u.def.escort); if(!us.length) return null;
+  const score=u=>u.vet?u.vet.rank*1000+(u.vet.hero?500:0)+(u.vet.xp||0):-1; return us.reduce((a,b)=>score(b)>score(a)?b:a); }
+function anyBarker(units,kind,arg){ const u=squadVoice(units); if(u) bark(u,kind,arg); }
 
 /* ---- personal veterans: an obituary on the radio, kept for the memorial ---- */
 function obituary(u){
@@ -295,7 +298,7 @@ function burnBody(b){ if(b.dead) return; dropBody(b); b.dead=true; addDecal(b.x,
 function bodyFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.def.boss&&!e.def.founder&&!e.claim&&!e.haul&&(!e.target||dist(e,e.target)>4*TILE); }
 function dropBody(b){ const u=b.carrier; b.carrier=null; if(!u) return; u.haul=null; if(!u.dead){ u.claimMode='guard'; u.order=null; u.path=null; } }
 function deliverBody(b,h,u){ const B=SQUAD.body; b.dead=true; u.haul=null; u.claim=null; u.claimMode=null; u.order=null; u.path=null;
-  G.swarm.biomass+=B.biomass; h.hp=Math.min(h.maxHp,h.hp+h.maxHp*B.heal);
+  G.swarm.biomass+=B.biomass; G.stats.fed=(G.stats.fed||0)+1; h.hp=Math.min(h.maxHp,h.hp+h.maxHp*B.heal);
   const d=spawnNearBuilding('drone','swarm',h); if(d){ d.role='guard'; d.homeHive=h.id; d.guardAt={x:h.x,y:h.y}; d.order={type:'guard',x:h.x,y:h.y,wait:0}; }
   G.fx.push({k:'boom',x:h.x,y:h.y,t:0.4,max:0.4,r:26,col:'#a6ff4a'});
   if(isVisible(h)){ SFX.play('squelch',h.x,h.y); G.fx.push({k:'text',x:h.x,y:h.y-30,t:1.4,max:1.4,txt:'FED',col:'#a6ff4a'});

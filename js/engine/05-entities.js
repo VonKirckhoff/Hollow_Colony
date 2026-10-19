@@ -5,6 +5,7 @@ function makeUnit(type,faction,x,y){
   const u=({ id:NEXT_ID++, kind:'unit', type, def:d, faction, x, y, hp:d.hp*hpMul, maxHp:d.hp*hpMul, r:d.radius||9,
     order:null, path:null, pi:0, target:null, cd:Math.random()*0.4, acq:Math.random()*0.3, face:Math.random()<.5?1:-1, anim:Math.random()*10, flash:0, moving:false, role:null, home:null });
   if(faction==='swarm') u.dmgMul=(G&&G.diff&&G.diff.dmg)||1;   /* difficulty: Swarm damage */
+  if(faction==='corps' && G && G.corpsDiff){ u.hp=u.maxHp=d.hp*G.corpsDiff.hp; u.dmgMul=G.corpsDiff.dmg; }   /* playing the Swarm: difficulty makes the Lunar Corps tougher */
   if(faction==='corps' && isSoldierType(type)) u.vet={ id:'v'+Date.now().toString(36)+NEXT_ID, name:freshName(), type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
   G.ents.push(u); return u;
 }
@@ -40,7 +41,7 @@ function gainXP(u,amount){
   const r=rankFor(u.vet.xp,u.vet.hero); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'});
     say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?` The squad rallies around ${pron(u.vet,'him')}.`:''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
-function isCampaign(){ return G.mission.id!=='skirmish'; }
+function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swarm'; }   /* the Swarm campaign keeps no roster */
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */
 function deployRoster(){
@@ -80,6 +81,7 @@ function settleRoster(){
   res.fallenAll=Object.values(FV).map(f=>({ name:f.name, type:f.type, rank:Math.max(f.rank||0,P[f.id]?P[f.id].rank:0), kills:f.kills||0, missions:f.missions||0, hero:f.hero||undefined }));
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
   for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, sex:u.vet.sex||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined };
+    if(v.hero && !(u.vet.missions>0) && G.mission.id!==MISSIONS[0].id && !(v.tp&&v.tp.void)) v.tp={...(v.tp||{}), void:true};   /* a trophy run starts at mission 1 */
     if(v.hero && G.over && G.over.win) res.trophies=heroTrack(v);
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
@@ -120,10 +122,11 @@ const HERO_TYPES=['trooper','gunner','pyro','medic','engineer'];
    Progress lives on your soldier (v.tp: missions won per column); a new soldier starts from zero. Awards: hc-trophies { 'gunner:hard':[{name,at}, …] }. ---------- */
 const TROPHY_COLS=[ {key:'easy',label:'Easy'}, {key:'normal',label:'Normal'}, {key:'hard',label:'Hard'}, {key:'real',label:'Real death',sub:'iron mode'} ];
 function trophies(){ return store.get('hc-trophies',{}); }
-function trophyProgress(v,key){ return v&&v.tp&&v.tp[key] ? MISSIONS.filter(m=>v.tp[key].includes(m.id)).length : 0; }
+/* strict: the soldier's very first mission was mission 1, and the missions were won in campaign order: progress is how far that unbroken chain reaches */
+function trophyProgress(v,key){ if(!v||!v.tp||v.tp.void||!v.tp[key]) return 0; let n=0; while(n<MISSIONS.length&&v.tp[key].includes(MISSIONS[n].id)) n++; return n; }
 function heroTrack(v){
-  const tp=v.tp=v.tp||{}, id=G.mission.id, keys=Object.keys(DIFF_RANK).filter(k=>DIFF_RANK[k]<=DIFF_RANK[G.diffKey]); if(G.realDeath) keys.push('real');
-  for(const k of keys){ tp[k]=tp[k]||[]; if(!tp[k].includes(id)) tp[k].push(id); }
+  const tp=v.tp=v.tp||{}, id=G.mission.id, idx=MISSIONS.findIndex(m=>m.id===id), keys=Object.keys(DIFF_RANK).filter(k=>DIFF_RANK[k]<=DIFF_RANK[G.diffKey]); if(G.realDeath) keys.push('real');
+  if(!tp.void) for(const k of keys){ tp[k]=tp[k]||[]; if(idx===trophyProgress(v,k)&&!tp[k].includes(id)) tp[k].push(id); }   /* only the next mission in line counts; a replay of an earlier one changes nothing */
   const T=trophies(), won=[];
   for(const c of TROPHY_COLS){ const tag=v.type+':'+c.key, list=T[tag]=T[tag]||[]; if(list.some(x=>x.id?x.id===v.id:x.name===v.name)) continue;   /* every soldier who earns it is cut into the plaque */
     if(trophyProgress(v,c.key)>=MISSIONS.length){ list.push({ id:v.id, name:v.name, type:v.type, at:Date.now() }); won.push({ type:v.type, col:c.key, name:v.name }); } else if(!list.length) delete T[tag]; }

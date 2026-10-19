@@ -41,12 +41,13 @@ function tryPlace(keep){
 }
 function entityAt(wx,wy,filter){ let best=null, bd=Infinity;
   for(const e of G.ents){ if(e.dead||e.kind==='body'||(filter&&!filter(e))) continue;
-    if(e.faction!=='corps'&&e.kind!=='crate'){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*G.map.w+Math.floor(e.x/TILE)]) continue; }
+    if(e.hidden) continue;
+    if(e.faction!==G.side&&e.kind!=='crate'){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*G.map.w+Math.floor(e.x/TILE)]) continue; }
     let d; if(e.kind==='building') { const hit = e.def.noBlock&&!e.def.ground ? Math.hypot(wx-e.x,wy-e.y)<14 : (wx>=e.tx*TILE&&wx<(e.tx+e.size)*TILE&&wy>=e.ty*TILE-8&&wy<(e.ty+e.size)*TILE); if(!hit) continue; d=Math.hypot(wx-e.x,wy-e.y)+(e.def.ground?80:20); }
     else { const cy=e.kind==='unit'?e.y-8:e.y; d=Math.hypot(wx-e.x,wy-cy); if(d>e.r+8) continue; }
     if(d<bd){ bd=d; best=e; } }
   return best; }
-function smartCommand(wx,wy){
+function smartCommand(wx,wy){ if(G.side==='swarm'){ setRally(wx,wy); return; }   /* playing the Swarm: right-click calls the brood together */
   const units=myUnits(); const blds=G.sel.filter(e=>e.kind==='building'&&e.faction==='corps');
   if(!units.length){ for(const b of blds) if(b.def.trains||b.def.reinforce){ b.rally={x:wx,y:wy}; b.rallyN=0; G.pings.push({x:wx,y:wy,t:2.2,col:'#5fe3b0'}); } return; }
   const t=entityAt(wx,wy,e=>e.kind!=='crate');
