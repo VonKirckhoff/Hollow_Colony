@@ -47,7 +47,7 @@ function drawTracker(now){
   // the beep: faster and higher the closer the nearest contact is
   if(near!=null && !G.paused){ const k=near/R, gap=0.22+1.3*k; if(now/1000>(G.trkBeep||0)){ G.trkBeep=now/1000+gap; SFX.play(k<0.3?'trk3':k<0.6?'trk2':'trk1'); } }
 }
-function toggleTracker(){ ui.tracker=!ui.tracker; store.set('hc-tracker',ui.tracker); trackerLabel(); toast(ui.tracker?'Motion tracker on.':'Motion tracker off.',true); }
+function toggleTracker(){ uiUsed('tracker'); ui.tracker=!ui.tracker; store.set('hc-tracker',ui.tracker); trackerLabel(); toast(ui.tracker?'Motion tracker on.':'Motion tracker off.',true); }
 const trackerLabel=()=>{ const b=$('#btn-tracker'); if(b) b.textContent=ui.tracker?'Tracker on':'Tracker off'; };
 
 /* ---- acid blood: a Swarm creature that dies spatters acid on soldiers next to it and leaves a burning pool ---- */
@@ -156,7 +156,7 @@ function voiceSample(sex){ if(!window.speechSynthesis||SFX.muted||!ui.voices) re
   try{ speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance(pick(['Reporting for duty.','Ready when you are.','Point me at them.']));
     const pool=(sex==='f'?VOICES_F:VOICES_M).length?(sex==='f'?VOICES_F:VOICES_M):VOICES_EN; if(pool.length) ut.voice=pool[0];
     ut.pitch=sex==='f'?(VOICES_F.length?1.05:1.5):0.8; ut.rate=1.05; ut.volume=clamp(ui.voiceVol,0,1); speechSynthesis.speak(ut); }catch(e){} }
-function toggleVoices(){ ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices&&window.speechSynthesis) speechSynthesis.cancel(); toast(ui.voices?'Voices on.':'Voices off.',true); }
+function toggleVoices(){ uiUsed('voices'); ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices&&window.speechSynthesis) speechSynthesis.cancel(); toast(ui.voices?'Voices on.':'Voices off.',true); }
 const voicesLabel=()=>{ const b=$('#btn-voices'); if(b) b.textContent=ui.voices?'Voices on':'Voices off'; };
 function updateBarks(dt){ for(const b of G.barks) b.t-=dt; G.barks=G.barks.filter(b=>b.t>0&&!b.u.dead); }
 function drawBarks(){
@@ -219,7 +219,7 @@ function drawShips(now){
 
 /* Voice volume slider in the top bar (0–100%), remembered in this browser. Releasing it plays a test line. */
 function initVoiceVolume(){ const r=$('#voice-vol'); if(!r) return; r.value=Math.round(ui.voiceVol*100);
-  r.addEventListener('input',()=>{ ui.voiceVol=r.value/100; store.set('hc-voice-vol',ui.voiceVol); });
+  r.addEventListener('input',()=>{ uiUsed('volume'); ui.voiceVol=r.value/100; store.set('hc-voice-vol',ui.voiceVol); });
   r.addEventListener('change',()=>{ if(!window.speechSynthesis||SFX.muted||!ui.voices) return; try{ speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance('Radio check.'); if(VOICES_EN.length) ut.voice=VOICES_EN[0]; ut.volume=ui.voiceVol; speechSynthesis.speak(ut); }catch(e){} });
   r.addEventListener('pointerdown',e=>e.stopPropagation()); }
 

@@ -3,7 +3,7 @@
 let lastT=performance.now(), acc=0;
 function frame(now){
   const dt=Math.min(0.1,(now-lastT)/1000); lastT=now;
-  if(G && ui.mode==='game' && !G.paused && !G.over && !G.tutHold){   /* a training card waiting to be read holds the game */ acc+=dt*G.speed; let n=0; while(acc>=STEP && n++<6){ update(STEP); acc-=STEP; } if(n>=6) acc=0; }
+  if(G && ui.mode==='game' && !G.paused && !G.over){ acc+=dt*G.speed; let n=0; while(acc>=STEP && n++<6){ update(STEP); acc-=STEP; } if(n>=6) acc=0; }
   updateCamera(dt);
   try{ render(now); }catch(err){ console.error(err); }
   if(G && (ui.mode==='game'||ui.mode==='pause'||ui.mode==='end')) hudTick();

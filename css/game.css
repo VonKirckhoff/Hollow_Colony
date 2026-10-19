@@ -496,3 +496,6 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #tut-card.swarm{border-color:#a6ff4a;} #tut-card.swarm .lbl{color:#a6ff4a;}
 .tut-hl{outline:2px solid #ffd23f !important;outline-offset:2px;animation:tutpulse 1s ease-in-out infinite;position:relative;z-index:3;}
 @keyframes tutpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.7);}50%{box-shadow:0 0 0 6px rgba(255,210,63,0);}}
+#tut-card .tut-foot{flex-wrap:wrap;} .tut-nav{display:flex;align-items:center;gap:8px;margin-right:auto;} .tut-nav .btn{padding:4px 10px;} .tut-nav .btn:disabled{opacity:.3;cursor:default;}
+#tut-card.past{border-style:dashed;opacity:.97;} #tut-card.done{border-color:#5fe3b0;} #tut-card.done #tut-step{color:#5fe3b0;}
+#tut-open{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:11;padding:4px 14px;font-size:11px;}

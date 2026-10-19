@@ -76,18 +76,18 @@ $('#selection').addEventListener('pointerover',e=>{ if(!G) return; const o=e.tar
 $('#selection').addEventListener('pointerleave',()=>{ ui.hover=null; });
 $('#btn-menu').addEventListener('click',()=>pause(true));
 const soundLabel=()=>{ $('#btn-sound').textContent=SFX.muted?'Sound off':'Sound on'; };
-$('#btn-sound').addEventListener('click',()=>{ SFX.toggle(); soundLabel(); if(SFX.muted&&window.speechSynthesis) speechSynthesis.cancel(); }); soundLabel();
+$('#btn-sound').addEventListener('click',()=>{ uiUsed('sound'); SFX.toggle(); soundLabel(); if(SFX.muted&&window.speechSynthesis) speechSynthesis.cancel(); }); soundLabel();
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
-function toggleFollow(){ ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
+function toggleFollow(){ uiUsed('follow'); ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
 $('#btn-follow').addEventListener('click',toggleFollow); followLabel();
 $('#btn-tracker').addEventListener('click',()=>toggleTracker()); $('#btn-voices').addEventListener('click',()=>toggleVoices());   /* label set at boot (23-main-loop.js) */
-$('#btn-speed').addEventListener('click',()=>{ if(!G) return; G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
+$('#btn-speed').addEventListener('click',()=>{ if(!G) return; uiUsed('speed'+(G.speed===1?'1.5':G.speed===1.5?'2':'1')); G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
 function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.target.closest('[data-tip]'); if(!el){ tip.hidden=true; return; }
   const [t,b]=el.dataset.tip.split('|'); tip.innerHTML=`<b>${t}</b>${b||''}`; tip.hidden=false; const r=tip.getBoundingClientRect();
   tip.style.left=clamp(e.clientX+14,8,innerWidth-r.width-8)+'px'; tip.style.top=clamp(e.clientY-r.height-14,8,innerHeight-r.height-8)+'px'; }
 window.addEventListener('keydown',e=>{
   if(ui.mode!=='game'||!G) { if(e.key==='Escape'&&ui.mode==='pause'){ if($('#s-pause').hidden) show('pause'); else pause(false); } return; }   /* Esc in the Field Manual (from pause) goes back to the pause menu */
-  if(G.tutHold){ if(e.key==='Enter'||e.key===' '||e.key==='Escape'){ e.preventDefault(); tutConfirm(); } return; }   /* a training card is open */
+  if(e.key==='Enter'&&G.vars&&G.vars.cardOpen){ e.preventDefault(); tutConfirm(); return; }   /* a training card is open: Enter closes it, every other key still plays */
   ui.keys[e.key]=true;
   if(G.over) return;
   const k=e.key.toLowerCase();
@@ -123,4 +123,5 @@ function updateCamera(dt){
   const w=toWorld(ui.mouse.x,ui.mouse.y); ui.mouse.wx=w.x; ui.mouse.wy=w.y;
 }
 
-$('#tut-ok').addEventListener('click',()=>tutConfirm());
+$('#tut-ok').addEventListener('click',()=>tutConfirm()); $('#tut-prev').addEventListener('click',()=>tutPage(-1)); $('#tut-next').addEventListener('click',()=>tutPage(1));
+$('#tut-practice').addEventListener('click',()=>tutPractice()); $('#tut-open').addEventListener('click',()=>tutReopen());

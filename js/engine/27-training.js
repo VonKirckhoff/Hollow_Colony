@@ -4,7 +4,7 @@
      step = { say:'what the instructor says' (shown on a card; the game waits until the player confirms it), obj:'short objective', who:'speaker', mark:point, markLabel:'',
               keys:['A','H'] (command buttons to light up), hl:['#minimap-wrap'] (other parts of the screen to light up),
               setup:g=>{…} (when the step starts), done:g=>bool (checked 4× per second), pause:seconds before the next step }
-     The objective 'tut' shows "Step 3/12: …". Press N to skip a step (training missions only).
+     The objective 'tut' shows "Step 3/12: …". Press N to skip a step (training missions only). The card does not pause the game.
    AVATAR: in a Swarm mission the player can steer one creature through its whole life (G.avatar):
      a Grafter from an egg → latches onto a body → cocoon → Twitcher → Shambler → Husk → a new hive.
      Twitcher: grows by feeding (AVATAR.food kills; a soldier counts double). Shambler: grows by staying hidden
@@ -44,12 +44,33 @@ function avatarButtons(){ const u=G.avatar; if(!avatarAlive()||u.kind!=='unit') 
   out.push({row:'Avatar',key:'X',glyph:'◎',tip:'Find me|Centre the camera on your creature.',act:()=>{ centerOn(u.x,u.y); G.following=true; }});
   return out; }
 
-/* ---- the training card: the instructor's words stay on screen until you confirm them (Enter, Space or the button) ---- */
-function tutShow(who,text,i,n){ G.tutHold=true; const c=$('#tut-card'); if(!c) return;
-  $('#tut-who').textContent=who; $('#tut-text').innerHTML=text.replace(/\[([^\]]+)\]/g,'<kbd>$1</kbd>');
-  $('#tut-step').textContent=`Step ${i} of ${n}`; c.hidden=false; c.classList.toggle('swarm',G.side==='swarm'); SFX.play('radio'); }
-function tutConfirm(){ if(!G||!G.tutHold) return false; G.tutHold=false; const c=$('#tut-card'); if(c) c.hidden=true; SFX.play('ack'); return true; }
+/* ---- the training card: it stays on screen until you close it (Enter or the button), but the game keeps running,
+   so you can try things out while you read. ◀ ▶ page through the earlier steps; "Practice again" runs that step once more.
+   Closed, a "Tips" tab at the top brings it back. ---- */
+function tutShow(i){ const V=G.vars; V.cardOpen=true; V.cardView=i; tutRefresh(); SFX.play('radio'); }
+function tutRefresh(){ const c=$('#tut-card'), V=G&&G.vars, S=G&&G.tutSteps; if(!c||!S) return; const i=V.cardView??V.tutI, st=S[i]; if(!st) return;
+  const cur=i===V.tutI, done=cur&&V.stepDone;
+  c.hidden=!V.cardOpen; $('#tut-open').hidden=!!V.cardOpen||!G.mission.training||!!G.over; c.classList.toggle('swarm',G.side==='swarm'); c.classList.toggle('past',!cur); c.classList.toggle('done',!!done);
+  $('#tut-who').textContent=(st.who||TUT_VOICE[G.side])+(cur?'':' · earlier tip');
+  $('#tut-text').innerHTML=(st.say||st.obj||'').replace(/\[([^\]]+)\]/g,'<kbd>$1</kbd>');
+  $('#tut-step').textContent=done?`✓ Step ${i+1} done`:`Step ${i+1} of ${S.length}`;
+  $('#tut-prev').disabled=i<=0; $('#tut-next').disabled=i>=V.tutI;
+  $('#tut-practice').hidden=cur||V.returnTo!=null||i>=S.length-1;
+  $('#tut-ok').innerHTML=cur?(done?'Next step <kbd>Enter</kbd>':'Got it <kbd>Enter</kbd>'):'Back to now <kbd>Enter</kbd>'; }
+/* Enter / the button: on an earlier tip it jumps back to the current one; on the current one it closes the card */
+function tutConfirm(){ const V=G&&G.vars; if(!V||!V.cardOpen) return false;
+  if((V.cardView??V.tutI)!==V.tutI){ V.cardView=V.tutI; tutRefresh(); return true; }
+  V.cardOpen=false; tutRefresh(); SFX.play('ack'); return true; }
+function tutPage(d){ const V=G.vars; V.cardView=clamp((V.cardView??V.tutI)+d,0,V.tutI); tutRefresh(); }
+function tutReopen(){ const V=G.vars; V.cardOpen=true; V.cardView=V.tutI; tutRefresh(); }
+/* practise an earlier step once more, then come back */
+function tutPractice(){ const V=G.vars, i=V.cardView; if(i==null||i>=V.tutI) return; g_unmarkTut(); tutHighlight(null);
+  V.returnTo=V.tutI; V.tutI=i; V.tutState='start'; V.tutAt=G.time; V.cardOpen=false; tutRefresh(); toast('Practice: '+(G.tutSteps[i].obj||''),true); }
+function g_unmarkTut(){ G.markers=G.markers.filter(m=>m.id!=='tut'); }
 /* light up command buttons (by key) and parts of the screen (by selector) */
 function tutHighlight(st){ document.querySelectorAll('.tut-hl').forEach(e=>e.classList.remove('tut-hl'));
   G.tutHL=st&&(st.keys||st.hl)?{ keys:(st.keys||[]).map(k=>k.toLowerCase()), sel:st.hl||[] }:null; G.selDirty=true; tutApplyHighlight(); }
 function tutApplyHighlight(){ const H=G&&G.tutHL; if(!H) return; for(const s of H.sel) document.querySelectorAll(s).forEach(e=>e.classList.add('tut-hl')); }
+
+/* which top-bar buttons the player has used in this mission (the training checks these) */
+function uiUsed(name){ if(G){ G.uiUse=G.uiUse||{}; G.uiUse[name]=(G.uiUse[name]||0)+1; } }

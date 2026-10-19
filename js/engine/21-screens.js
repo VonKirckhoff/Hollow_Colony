@@ -4,7 +4,8 @@ const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','vete
 function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name;
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
   if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission?null:name);   /* menu screens have music, missions do not */
-  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission; }
+  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission;
+  if(name){ $('#tut-card').hidden=true; $('#tut-open').hidden=true; } else if(G&&G.tutSteps) tutRefresh(); }   /* the training card only shows during play */
 function goMenu(name){
   if(name==='menu'){ ui.mode='menu'; G=null; $('#hud').hidden=true; resize(); }
   if(name==='campaign') buildCampaign();
@@ -216,7 +217,7 @@ function startMission(m){
   if(G.side==='swarm'){ const r=ptWorld(m.start.rally||m.start.camera||'P'); if(r) G.swarm.rally=r; selectEntities([],false); }
   else selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
 }
-function pause(on){ if(!G||G.over) return; G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
+function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
 $('#p-manual').addEventListener('click',()=>goMenu('manual'));
 $('#manual-back').addEventListener('click',()=>{ if(ui.manualFrom==='pause'&&G&&!G.over&&ui.mode==='pause'){ show('pause'); $('#p-resume').focus({preventScroll:true}); } else goMenu('menu'); });

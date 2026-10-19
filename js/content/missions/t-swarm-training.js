@@ -17,7 +17,7 @@ TRAINING.swarm = {
     { when:g=>g.time>0.05, do:g=>{ g.vars.prey=g.corps().filter(u=>Math.hypot(u.x-(36.5*TILE),u.y-(24.5*TILE))<4*TILE); for(const u of g.corps()){ u.order={type:'hold'}; u.stance='hold'; }
         g.place('sentry','Q',3,-2); const s=G.map.sites.slice().sort((a,b)=>Math.hypot(a.x-19,a.y-20)-Math.hypot(b.x-19,b.y-20))[0]; makeBuilding('relay','corps',s.x,s.y,true); } },
     ...tutorial([
-      { say:'We wake. Learn what the Brood can do. Read each card, confirm it with [Enter], then do what it says. What we talk about lights up. Press [N] to skip a step.', obj:'Listen to the Brood', hl:['#objectives'], done:g=>g.time>2 },
+      { say:'We wake. Learn what the Brood can do. The world keeps moving while a card is open; try things as you read. Close a card with [Enter]; the next one comes once you have done what it asks. What we talk about lights up. ◀ and ▶ page back through earlier tips; Practice again redoes one. The Tips tab at the top brings the card back. [N] skips a step.', obj:'Listen to the Brood', hl:['#objectives'], done:g=>g.time>2 },
       { say:'Look around: arrow keys, the edge of the screen, or click the minimap. Our three nests ring the basin.', obj:'Move the camera', hl:['#minimap-wrap'], setup:g=>{ g.vars.cam0={...G.cam}; }, done:tut.camMoved },
       { say:'Click one of our hives. The selected hive is the nest: new brood hatches there.', obj:'Click a hive', setup:()=>{ centerOn(31*TILE,9*TILE); }, done:()=>G.sel.some(e=>e.type==='hive') },
       { say:'Hatch the brood: [Q] a Crawler, [W] a Drone, [E] a Spitter, [R] a Brute. Each costs biomass (top left). Hatch three.', obj:'Hatch three of the brood (Q W E R)', keys:['Q','W','E','R'], hl:['#topbar .res:first-child'], done:()=>broodUsed()>=3 },
@@ -29,6 +29,7 @@ TRAINING.swarm = {
       { keys:['H'], say:'We do not finish the fallen: a whole body is worth more. They bleed out. Then press [H]: the brood carries them home to the creep of a hive.', obj:'Bring a body home (H)', done:()=>(G.stats.fed||0)>=1 },
       { say:'On the creep an egg opens. A Grafter crawls out, latches onto the body and infects it. Watch.', obj:'Watch the Grafter turn the body', done:()=>G.stats.cocoons>=1 },
       { say:'The cocoon beats faster and faster. What crawls out grows: Twitcher, Shambler, Husk. The Shambler hides to finish turning; the Husk roots into a new hive.', obj:'Watch it grow', done:g=>G.ents.some(e=>e.type==='husk'&&!e.dead&&e.stage>=1)||g.time>g.vars.tutStart+45 },
+      ...topbarSteps('swarm'),
       { keys:['T'], say:'How the brood attacks: press [T] to change the tactic. Direct goes straight in, Lure sends bait first, Flank swings half round the side. Pick Flank.', obj:'Change the tactic to Flank (T)', done:()=>G.swarm.tactic==='flank' },
       { keys:['B'], say:'Press [B] and click open ground, away from their eyes: a small brood digs up out of the rock.', obj:'Burrow up a brood (B + click)', setup:g=>{ g.biomass(60); }, done:()=>G.swarm.burrowAt>0 },
       { say:'Their outpost hums at the centre: a tower and a gun that turns by itself. Grow the brood and tear both down. Every soldier we kill feeds us.', obj:'Destroy the Relay Tower and the Sentry Gun', mark:'Q', markLabel:'Outpost',
