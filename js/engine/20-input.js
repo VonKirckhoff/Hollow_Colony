@@ -100,6 +100,7 @@ window.addEventListener('keydown',e=>{
   if(/^[1-5]$/.test(e.key)){ if(e.ctrlKey||e.metaKey){ e.preventDefault(); G.groups[e.key]=[...G.sel]; toast(`Group ${e.key} saved.`,true); } else { const g=(G.groups[e.key]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); if(again) centerOn(g[0].x,g[0].y); } } return; }
   if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(k==='n'&&G.mission.training){ G.vars.skip=true; toast('Step skipped.',true); return; }   /* training: skip a step */
   const c=CMDS.find(c=>c.key.toLowerCase()===k); if(c){ e.preventDefault(); c.act(); G.selDirty=true; }
 });
 window.addEventListener('keyup',e=>{ ui.keys[e.key]=false; });
@@ -113,7 +114,7 @@ function updateCamera(dt){
   if(ui.mouse.inWin && !ui.drag && !ui.pan && !mmDrag && matchMedia('(pointer:fine)').matches){ if(ui.mouse.x<edge) vx-=sp; if(ui.mouse.x>ui.vw-edge) vx+=sp; if(ui.mouse.y<edge) vy-=sp; if(ui.mouse.y>ui.vh-edge) vy+=sp; }
   if(vx||vy){ stopFollow(); G.cam.x+=vx; G.cam.y+=vy; clampCam(); }
   else if(G.following && !G.paused){
-    const us=myUnits(); if(!us.length){ stopFollow(); return; }
+    const us=G.side==='swarm'?(G.avatar&&!G.avatar.dead&&G.avatar.kind==='unit'?[G.avatar]:selSwarm()):myUnits(); if(!us.length){ stopFollow(); return; }
     const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length;
     const tx=cx-ui.vw/2, ty=cy-(ui.vh-ui.hudH)/2, k=Math.min(1,dt*3.5);
     G.cam.x+=(tx-G.cam.x)*k; G.cam.y+=(ty-G.cam.y)*k; clampCam();

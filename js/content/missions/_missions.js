@@ -28,3 +28,32 @@ const MISSIONS = [];
    (give them order:'brood' via swarmBrood), swarm.cap (most brood at once), swarm.unlock (when you may hatch a type).
    Extra mission API for these: g.corps() g.orderCorps(list|'all',at,mode) g.place(type,at,dx,dy) g.biomass(n) g.brood() g.inbound() g.n(x) g.brood_say(text) */
 const SWARM_MISSIONS = [];
+/* Training: one per side, shown as 00 above the campaign list. Not part of the campaign: no roster, no unlocks, no trophies.
+   Built from steps with tutorial([...]) (see js/engine/27-training.js); press N in a training mission to skip a step. */
+const TRAINING = {};
+/* the step engine for training missions (runs during the mission; the engine itself is loaded later) */
+const TUT_VOICE = { corps:'Sgt. Kessler', swarm:'The Brood' };
+function tutorial(steps){ return [
+  { repeat:true, when:()=>true, do:g=>tutorialTick(g,steps) } ]; }
+function tutorialTick(g,steps){ const V=g.vars;
+  if(V.tutI==null){ V.tutI=0; V.tutState='start'; V.tutAt=g.time+1; }
+  const st=steps[V.tutI]; if(!st) return;
+  if(V.tutState==='start'){ if(g.time<V.tutAt) return;
+    if(st.setup) try{ st.setup(g); }catch(e){ console.error('tutorial setup',e); }
+    if(st.say) say(st.who||TUT_VOICE[G.side],st.say,G.side==='swarm'&&!st.who?'swarm':'');
+    g.setText('tut',`Step ${V.tutI+1}/${steps.length}: ${st.obj||''}`); if(st.mark) g.marker('tut',st.mark,st.markLabel||'');
+    V.tutState='run'; V.tutStart=g.time; return; }
+  let ok=false; try{ ok=!!V.skip||!!st.done(g); }catch(e){ ok=false; } V.skip=false;
+  if(ok){ g.unmark('tut'); if(st.after) try{ st.after(g); }catch(e){}
+    SFX.play('complete'); G.fx.push({k:'text',x:G.cam.x+ui.vw/2,y:G.cam.y+(ui.vh-ui.hudH)/2-40,t:1.2,max:1.2,txt:'✓',col:'#5fe3b0'});
+    V.tutI++; V.tutState='start'; V.tutAt=g.time+(st.pause??1.5);
+    if(V.tutI>=steps.length) g.complete('tut'); } }
+/* small helpers for the step checks */
+const tut = {
+  corpsUnits:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'),
+  selCorps:()=>G.sel.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'),
+  built:type=>G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.type===type&&e.built),
+  camMoved:g=>Math.hypot(G.cam.x-g.vars.cam0.x,G.cam.y-g.vars.cam0.y)>260
+};
+
+

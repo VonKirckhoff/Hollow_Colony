@@ -4,7 +4,7 @@
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
-  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
+  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
   { id:'other',  name:'Other',       units:['hunter','grazer'] }
 ];
 const INTEL_NOTES = {
@@ -22,6 +22,7 @@ const INTEL_NOTES = {
   charge:   'Mission object: armed by an Engineer, then it has to survive its fuse.',
   generator:'Mission object: an Engineer repairs it to full to bring it online. It goes down when badly damaged.',
   crawler:  'Fast and fragile, often in numbers. Cheap to lose, so the Swarm throws them first.',
+  bloater:  'Lunar fauna the Swarm killed on its creep, remade. Slow and tough, and when it dies it bursts in a cloud of acid that burns your soldiers (and the Swarm). Kill it at range.',
   grafter:  'The parasite of the Swarm. It only hatches from a hive egg when a body has been dragged onto the creep. It runs to the body, latches on and infects it in a few seconds: then the body becomes a cocoon. It cannot fight. One shot kills it.',
   egg:      'Every hive keeps a few eggs waiting on its creep, and spits a fresh one next to a body if none is free. Burn the eggs and the hive cannot turn your dead.',
   drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up. Drones guard the bodies of the fallen and drag them home to the creep around a hive.',

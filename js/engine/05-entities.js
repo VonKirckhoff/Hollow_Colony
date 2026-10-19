@@ -41,7 +41,7 @@ function gainXP(u,amount){
   const r=rankFor(u.vet.xp,u.vet.hero); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'});
     say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?` The squad rallies around ${pron(u.vet,'him')}.`:''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
-function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swarm'; }   /* the Swarm campaign keeps no roster */
+function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swarm' && !G.mission.training; }   /* the Swarm campaign keeps no roster */
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */
 function deployRoster(){

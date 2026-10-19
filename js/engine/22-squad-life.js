@@ -57,6 +57,12 @@ function splashAcid(e){
   G.pools.push({x:e.x,y:e.y+3,r:A.poolR*big,t:A.pool*big,max:A.pool*big,seed:Math.random()*10});
   if(G.pools.length>40) G.pools.shift();
 }
+/* a Bloater bursts when it dies: acid over everything around it (both sides take it) and a big pool */
+function bloaterBurst(e){ const B=e.def.burst; for(const u of G.ents){ if(u.dead||u===e||(u.kind!=='unit'&&u.kind!=='building')||u.def.ground) continue;
+    if(Math.hypot(u.x-e.x,u.y-e.y)<B.radius*TILE) damage(u,B.damage,{faction:'swarm',dead:true,acid:true}); }
+  G.pools.push({x:e.x,y:e.y+3,r:SQUAD.acid.poolR*2,t:SQUAD.acid.pool*1.5,max:SQUAD.acid.pool*1.5,seed:Math.random()*10});
+  G.fx.push({k:'boom',x:e.x,y:e.y,t:0.5,max:0.5,r:B.radius*TILE,col:'#a6ff4a'}); for(let i=0;i<16;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-120,120),vy:rand(-140,10),t:0.6,max:0.6,col:'#a6ff4a'});
+  if(isVisible(e)) SFX.play('splat',e.x,e.y); }
 function updatePools(dt){
   const A=SQUAD.acid;
   for(const p of G.pools){ p.t-=dt;
@@ -323,7 +329,7 @@ function updateBodies(dt){ const B=SQUAD.body;
         if(b.claim>=1){ b.dead=true; g.dead=true; g.hp=0;
           for(const e of G.ents) if(e.claim===b){ e.claim=null; e.claimMode=null; e.order=null; }
           const c=makeBuilding('cocoon','swarm',Math.floor(b.x/TILE),Math.floor(b.y/TILE),true); c.x=b.x; c.y=b.y; c.r=9;
-          c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.stats.cocoons++;
+          c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; if(g.avatar) setAvatar(c); if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.stats.cocoons++;
           if(isVisible(c)&&!G.saidInfect&&G.side==='corps'){ G.saidInfect=true; say('Dr. Maas','That thing from the egg has infected the body. Whatever hatches from that cocoon will not be one of the usual ones. Burn it!','alert'); }
           continue; } }
       else { if(g) g.latched=false; b.claim=Math.max(0,b.claim-dt/B.infect); }

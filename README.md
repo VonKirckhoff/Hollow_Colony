@@ -248,6 +248,7 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - **Hives groeien terug** (6 hp per seconde) als ze 12 seconden niet geraakt zijn. Even aanvallen en weglopen helpt dus niet; doorduwen wel. Instelbaar met `regen` en `regenDelay` bij `BUILDINGS.hive`.
 - **Cocons:** lunar fauna die door de Swarm sterft **op de schimmel**, wordt een cocon die na 5 seconden uitkomt (een Crawler); daarbuiten komt er niets uit. Gesneuvelde soldaten volgen hun eigen regels (zie *De gevallenen* bij Veterans). Pyros doen drievoudige schade aan cocons.
 - **De schimmel (creep):** rond elke hive groeit een paarse, levende laag, van 2 tegels naar 5,5 tegels in anderhalve minuut, met aders en groene puisten. Swarm-eenheden die erop staan, **genezen** 4 HP per seconde (een paars plusje). Valt de hive, dan verwelkt de schimmel in een tiental seconden. Instellingen: `CREEP` in js/engine/25-hive-life.js; per missie of per hive `creep:<tegels>`.
+- **De Bloater:** een grazer (lokale fauna) die de Swarm op haar schimmel doodt, wordt een cocon waaruit een **Bloater** komt: traag, taai (120 HP), zwakke beet, maar bij zijn dood barst hij open: zuur in een straal van 1,8 tegel (28 schade, ook voor de Swarm) en een grote zuurplas. Dood hem op afstand.
 - **De Husk:** een gesneuvelde soldaat die op de schimmel door een Grafter is geïnfecteerd. Het **verloop** (instellingen: `HUSK_STAGES`, `MOLT` en `HUSK` in js/engine/25-hive-life.js):
   1. **Infectie:** op de schimmel klampt een Grafter uit een hive-ei zich vast. Het lichaam schokt, kleurt groen en er kruipen groene aders uit (geluid: nat geknaag).
   2. **Cocon:** een lange paarse pod, de helm steekt er nog uit. Hij **klopt als een hart**, steeds sneller, met een paarse gloed en tentakels in de grond. Het laatste stuk komen er barsten in en schudt hij (geluid: hartslag, dan krakend pantser). Na 8 seconden barst hij open: een gil, rondvliegend vlees, een schokje van de camera en *IT LIVES*.
@@ -373,6 +374,14 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 
 De missies zijn nu bewust langer gemaakt. Sentry-limieten per missie: Hold Kappa 4, Burn the Brood 5, The Hollow Colony 1, Brood Mother 6, High Ground 8 (waarvan 2 al bij de start). Een missie wordt vrijgegeven als je de vorige wint. De voortgang wordt in de browser bewaard.
 
+### Training (00 in beide campagnes)
+
+Bovenaan de missielijst staat voor elke kant een **training** (*00*). Ze telt niet mee voor de campagne: geen veteranen, geen trofeeën, ze schakelt niets vrij. Elke stap zegt wat je moet doen en wacht tot je het gedaan hebt; de doelenlijst toont *Step 3/20: …*. Met **N** sla je een stap over. Na de training brengt *Next mission* je naar missie 1.
+
+- **Boot Camp** (Lunar Corps, Kappa Basin, 20 stappen): camera, één soldaat selecteren, de hele squad selecteren, verplaatsen, groep bewaren (Ctrl+1), de drie formaties (Z, X, V), defensief (H), aanvallen (A) op oefendoelen, bevelen annuleren (S), een fakkel (L), met de Engineer een Relay Tower op een pad (R), een Sentry Gun (T) en een Barricade (B), een beschadigde sentry herstellen, de sentry inpakken (U) en weer neerzetten (D), daarna versterking bestellen via de **Landing Zone** (die werkt pas zodra de Relay Tower staat), een Medic die een neergevallen soldaat oplapt, een Pyro die een cocon verbrandt, de knoppen in de bovenbalk, en tot slot een oefen-hive met schimmel en eieren.
+- **The First Hunger** (de Swarm, Kappa Basin, 13 stappen): camera, een hive aanklikken (het nest), drie brood laten uitkomen (Q W E R), het verzamelpunt verzetten, brood selecteren en verplaatsen, twee soldaten aanvallen (A), een lichaam naar huis brengen (H), kijken hoe een Grafter het lichaam omvormt en de Husk opgroeit, de tactiek op Flank zetten (T), ingraven (B), en een buitenpost (Relay Tower en Sentry Gun) slopen.
+- Een training maak je met `tutorial([ … stappen … ])` (in js/content/missions/_missions.js); elke stap heeft `say`, `obj`, eventueel `mark`, `setup(g)` en `done(g)`. Trainingen staan in `TRAINING.corps` en `TRAINING.swarm` (js/content/missions/t-corps-training.js en t-swarm-training.js).
+
 ### De Swarm-campagne (*The Long Hunger*)
 
 Op het campagnescherm kies je bovenaan **Lunar Corps** of **The Swarm** (onthouden als `hc-camp-side`). In de Swarm-campagne speel je hetzelfde verhaal op dezelfde kaarten, maar dan als **de Brood**. Je bent een regisseur: je stuurt geen losse eenheden, maar je beslist wat er uitkomt, waar het verzamelt en waar het toeslaat. De eenheden vechten zelf. De **Lunar Corps** wordt door de computer gespeeld.
@@ -400,9 +409,10 @@ Op het campagnescherm kies je bovenaan **Lunar Corps** of **The Swarm** (onthoud
 | # | Missie | Kaart | Doel |
 |---|---|---|---|
 | 1 | **The Waking** | Kappa Canyons | De andere kant van *Dust Landing*. Je twee hives zitten achter de blast doors; een kleine brood wacht in de oostelijke tunnel. Squad Dust loopt naar het station, het dropship brengt twee keer versterking, en zodra er een Pyro is, gaan de deuren open en komen ze je nesten platbranden. Laat niemand leven en houd minstens één hive in leven. Optioneel: breng 2 gevallenen naar huis, naar een hive. |
-| 2 | **Kappa Siege** | Kappa Basin | De andere kant van *Hold Kappa*. De Lunar Corps zit ingegraven rond een versterkte Command Post (dubbele levenspunten) met Sentry Guns, barricades en twee Relay Towers, traint om de minuut een soldaat en stuurt na 4 en 9 minuten een ploeg naar je dichtste hive. Vernietig de Command Post voor het konvooi aankomt (15 minuten). Optioneel: vernietig beide Relay Towers. |
+| 2 | **The Graft** | Kappa Canyons | Je bestuurt **één wezen**, van ei tot nest. Een Drone sleept een gesneuvelde van Dust naar het westelijke nest; het ei dat opengaat, ben jij. **Grafter**: rechtsklik het lichaam en klamp je vast. **Cocon**: overleef. **Twitcher**: voed je, dood 3 grazers (een soldaat telt dubbel; je mag ook neergevallen soldaten opeten). **Shambler**: verberg je, blijf 10 seconden lang minstens 11 tegels van elke soldaat (een jachtploeg met een Pyro zoekt je; zijn ze verder dan 16 tegels, dan verliezen ze je spoor). **Husk**: zoek open grond, minstens 9 tegels van de Lunar Corps en 8 van een andere hive, en druk **F** om wortel te schieten (18 seconden; het nest stuurt zijn brood om je te beschermen). Groeit het nest, dan win je; sterft je wezen, dan verlies je. X centreert de camera op je wezen. Het nest kan een kleine brood laten uitkomen (Q, W, E). De nestbewakers laten de grazers met rust: die zijn voor jou (`swarm.spareFauna`). Instellingen: `AVATAR` in js/engine/27-training.js. |
+| 3 | **Kappa Siege** | Kappa Basin | De andere kant van *Hold Kappa*. De Lunar Corps zit ingegraven rond een versterkte Command Post (dubbele levenspunten) met Sentry Guns, barricades en twee Relay Towers, traint om de minuut een soldaat en stuurt na 4 en 9 minuten een ploeg naar je dichtste hive. Vernietig de Command Post voor het konvooi aankomt (15 minuten). Optioneel: vernietig beide Relay Towers. |
 
-De andere zes missies volgen. Getest met een eenvoudige automatische speler: op Easy en Normal winbaar, op Hard verloor die.
+De andere missies volgen. Getest met een eenvoudige automatische speler: op Easy en Normal winbaar, op Hard verloor die.
 
 ---
 
@@ -448,13 +458,14 @@ js/content/                     SECTION 1 — CONTENT: alles wat je normaal aanp
   missions/NN-<id>.js           één missie per bestand: MISSIONS.push({ … })
   skirmish.js                   startopstelling voor skirmish
 js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
-  00-core.js … 26-swarm-command.js basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
+  00-core.js … 27-training.js basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
                                 (22-squad-life.js: tracker, zuur, dekking, fakkels, stemmen, gedenkteksten)
                                 pathfinding, beweging, gevecht, gedrag, gebouwen, economie,
                                 Swarm-AI, fog of war, mission API, update, berichten, tekenen,
                                 HUD, bevelen, invoer, schermen, hoofdlus, muziek
                                 (25-hive-life.js: schimmel rond hives, Husks die wortel schieten)
                                 (26-swarm-command.js: spelen als de Swarm, de Lunar Corps als computer)
+                                (27-training.js: één wezen besturen van ei tot hive)
 map-editor/                     de kaarteditor (leest de kaarten uit js/content/maps/)
 ```
 

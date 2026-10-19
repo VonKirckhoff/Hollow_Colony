@@ -90,7 +90,7 @@ let CMDS=[];
 const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sentry','relay','barricade'];
 function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.stageName ? `${e.stageName} (turning into a Husk)` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
-const CMD_ROWS=['Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
+const CMD_ROWS=['Avatar','Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();
   const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''}" data-cmd="${i}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;
   $('#cmdcard').innerHTML=CMD_ROWS.map(r=>{ const items=CMDS.map((c,i)=>[c,i]).filter(([c])=>(c.row||'Orders')===r); if(!items.length) return '';

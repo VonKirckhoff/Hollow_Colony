@@ -5,12 +5,13 @@ function visibleTo(faction,e){ if(faction!==(G?G.side:'corps')) return true; ret
 function isVisible(e){ if(e.faction===G.side) return true; if(e.def&&e.def.cloak&&!(e.revealT>0)) return false; const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE), i=ty*G.map.w+tx; return (e.kind==='building'&&e.type!=='cocoon') ? G.seen[i]>0 : G.vis[i]>0; }
 function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
-function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss); }
+function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 function findTarget(u,rangeTiles,unitsOnly){
   const R=rangeTiles*TILE; let best=null, bs=Infinity;
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)) continue;
     if(unitsOnly && (e.kind!=='unit'||e.def.passive)) continue;
-    if(e.downed&&spareDowned(u)) continue;   /* the Swarm wants the body, not a corpse full of holes */
+    if(e.downed&&spareDowned(u)) continue;
+    if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue;
     let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0);
@@ -88,14 +89,16 @@ function kill(e,src){
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
     if(e.faction===G.side) G.stats.lost++;
     if(e.faction==='corps') obituary(e);
+    if(src&&src.avatar) avatarFed(src,e);   /* the creature you steer grows by feeding */
     if(G.side==='swarm' && e.faction==='corps' && !e.def.escort){ G.stats.kills++; G.swarm.biomass+=SWARM_PLAY.kill; }   /* playing the Swarm: every soldier who dies (also one who bleeds out) feeds the brood */
     if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
+    if(e.def.burst) bloaterBurst(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
     if(e.faction==='corps' && e.def.bio && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
     else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y) && creepAt(e.x,e.y)>0.3){   /* nothing hatches off the creep */
       const c=makeBuilding('cocoon','swarm',Math.floor(e.x/TILE),Math.floor(e.y/TILE),true); c.x=e.x; c.y=e.y; c.r=9;
-      c.hatchT=BUILDINGS.cocoon.hatch; c.hatchType=(e.def.supply||1)>=2?'drone':'crawler'; G.swarm.biomass+=12; G.stats.cocoons++;
+      c.hatchT=BUILDINGS.cocoon.hatch; c.hatchType=e.faction==='wild'?'bloater':(e.def.supply||1)>=2?'drone':'crawler'; G.swarm.biomass+=12; G.stats.cocoons++;   /* fauna becomes a Bloater */
     }
   }
   if(G.sel.includes(e)){ G.sel=G.sel.filter(x=>x!==e); G.selDirty=true; }

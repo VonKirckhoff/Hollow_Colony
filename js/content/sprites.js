@@ -25,6 +25,14 @@ const SPRITES = {
     "...kAk..kAk.....",
     "...kgk..kgk.....",
     "...kkk..kkk....."],
+  bloater:[
+    "....kkkkk.......",
+    "..kkCpepCkk.kk..",
+    ".kCpeCpeCpCkkpk.",
+    ".kCepCCpeCCCpbk.",
+    "..kkCkkkCkkCkk..",
+    "...kCk.kCk.kk...",
+    "...kk..kk......."],
   grafter:[
     "..........kk",
     "...kkkk..kbk",

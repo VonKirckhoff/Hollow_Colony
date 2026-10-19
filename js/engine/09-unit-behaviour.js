@@ -27,7 +27,7 @@ function updateUnit(u,dt){
   if(!o || o.type!=='move'){ u.acq-=dt; if(u.acq<=0){ u.acq=0.25+Math.random()*0.1;
       const hold=o&&o.type==='hold';
       const cur=u.target, curD=cur ? dist(u,cur)-cur.r : Infinity, inRange=curD<=(d.range+(u.rangeBonus||0))*TILE+8;
-      const rg=d.range+(u.rangeBonus||0), r = hold ? rg+0.3 : explicit ? rg+1.5 : u.role==='brood' ? Math.max(4,rg) : Math.max(d.sight,rg);   /* brood waiting at the gathering point only meets what comes close */
+      const rg=d.range+(u.rangeBonus||0), r = hold ? rg+0.3 : explicit ? rg+1.5 : (u.role==='brood'||u.role==='avatar') ? Math.max(4,rg) : Math.max(d.sight,rg);   /* brood waiting at the gathering point only meets what comes close */
       if(!cur || cur.kind!=='unit' || cur.def.boss || !inRange){
         const tu=findTarget(u,r,true);
         if(tu){ if(!cur && u.faction==='corps') SFX.play('contact',u.x,u.y); u.target=tu; }
@@ -62,6 +62,7 @@ function engage(u,dt,hold){
 function swarmThink(u,dt){
   if(u.def.founder && founderThink(u,dt)) return;   /* a Husk looking for a place to root */
   if(claimThink(u,dt)) return;   /* busy with a fallen soldier: infecting, carrying or guarding it */
+  if(u.role==='avatar') return;   /* the creature you steer yourself */
   if(u.role==='wave' && tacticThink(u,dt)) return;
   if(u.role==='brood'){ broodThink(u); return; }   /* playing the Swarm: waiting at the gathering point for your call */
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;

@@ -485,3 +485,4 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .trow.grand .grandp b{color:#d8cfb8;} .trow.grand .grandp.won b{color:#fff3c9;}
 .plaque.won.swarm{border-color:rgba(166,255,74,.5);color:#a6ff4a;background:linear-gradient(#1f2a14,#11180b);} .plaque.won.swarm svg{filter:drop-shadow(0 0 6px rgba(166,255,74,.5));}
 @media (max-width:640px){ .trow.grand .grandp{grid-column:span 2;} }
+.mission.training .num{color:#5fe3b0;} .mission.training{border-style:dashed;}

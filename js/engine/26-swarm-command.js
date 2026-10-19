@@ -53,11 +53,15 @@ function updateTunnels(dt){ for(const u of G.ents){ if(u.dead||!u.tunnel) contin
     const f=freeTilesNear(Math.floor(u.tunnel.x/TILE)+Math.round(rand(-2,2)),Math.floor(u.tunnel.y/TILE)+Math.round(rand(-2,2)),1)[0]; if(f){ u.x=(f.x+.5)*TILE; u.y=(f.y+.5)*TILE; }
     u.tunnel=null; u.hidden=false; u.invuln=false; u.order=null; u.path=null; for(let j=0;j<6;j++) G.fx.push({k:'ember',x:u.x+rand(-10,10),y:u.y+rand(-4,6),vx:rand(-50,50),vy:rand(-80,-20),t:0.7,max:0.7,col:'#8a7a6a'}); addDecal(u.x,u.y,12,'rgba(30,26,22,.6)'); } }
 /* the swarm units you selected yourself (box-drag or click): you can steer them as a squad */
-function selSwarm(){ return G.sel.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&!e.def.grafter); }
+function selSwarm(){ return G.sel.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&(!e.def.grafter||e.avatar)); }
 function freeFromJobs(u){ if(u.haul) dropBody(u.haul); u.claim=null; u.claimMode=null; u.waveDelay=0; u.viaGoal=null; }
 /* right-click: with swarm units selected they go there (or attack what you clicked) and wait there; otherwise it sets the gathering point */
-function swarmRight(x,y){ const us=selSwarm(); if(!us.length){ setRally(x,y); return; }
-  const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
+function swarmRight(x,y){ let us=selSwarm(); if(!us.length&&avatarAlive()&&G.avatar.kind==='unit') us=[G.avatar];   /* your own creature listens even when nothing is selected */
+  if(!us.length){ setRally(x,y); return; }
+  const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate'||e.faction==='wild');
+  /* the creature you steer simply goes where you click, or attacks what you click */
+  for(const u of us.filter(u=>u.avatar)){ if(u.rootT!=null||u.latched) continue; if(t&&!u.def.grafter){ u.target=t; u.order={type:'attack',target:t}; u.path=null; } else { u.target=null; u.order={type:'move',x,y}; setPath(u,x,y); } }
+  if(us.some(u=>u.avatar)){ G.following=true; G.pings.push({x,y,t:0,col:'#c38bff'}); SFX.play('squelch'); } us=us.filter(u=>!u.avatar); if(!us.length) return;
   if(t){ for(const u of us){ freeFromJobs(u); u.role='wave'; u.post=null; u.target=t; u.order={type:'attack',target:t}; u.path=null; } SFX.play('attack'); G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; return; }
   for(const u of us){ freeFromJobs(u); u.role='brood'; u.mine=true; u.target=null; u.post={x,y}; }
   moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; }
@@ -92,7 +96,7 @@ function burrowAt(x,y){ const B=SWARM_PLAY.burrow; ui.burrow=false; cv.classList
     for(let j=0;j<6;j++) G.fx.push({k:'ember',x:u.x+rand(-10,10),y:u.y+rand(-4,6),vx:rand(-50,50),vy:rand(-80,-20),t:0.7,max:0.7,col:'#8a7a6a'}); });
   addDecal(x,y,22,'rgba(30,26,22,.6)'); SFX.play('land',x,y); G.swarm.rally={x,y}; G.pings.push({x,y,t:0,col:'#c38bff'}); }
 /* the command card while playing the Swarm */
-function swarmButtons(){ const out=[], S=G.swarm, used=broodUsed(), cap=broodCap();
+function swarmButtons(){ const out=avatarButtons(), S=G.swarm, used=broodUsed(), cap=broodCap();
   for(const t of SWARM_PLAY.brood){ const d=UNITS[t], un=broodUnlocked(t);
     out.push({row:'Brood',key:SWARM_PLAY.keys[t],img:iconUrl(t),cost:d.biomass,off:!un||S.biomass<d.biomass||used>=cap,
       tip:`${d.name}|${d.desc} Costs ${d.biomass} biomass.${un?'':` Not yet: the brood can grow it after ${fmtTime((S.cfg.unlock||{})[t]??d.unlock??0)}.`}`,act:()=>swarmBreed(t)}); }

@@ -28,7 +28,8 @@ function buildCampaign(){
   buildHero(); buildDefeatRow();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
   const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete${sw?' · more to come':''}`;
-  $('#mission-list').innerHTML=L.map((m,i)=>{ const res=ui.progress.results[m.id], done=!!res, un=isUnlocked(i);
+  const tr=TRAINING[sw?'swarm':'corps'], trRes=tr&&ui.progress.results[tr.id];
+  $('#mission-list').innerHTML=(tr?`<button class="mission training" type="button" data-mission="-1"><span class="num">00</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`:'')+L.map((m,i)=>{ const res=ui.progress.results[m.id], done=!!res, un=isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':'aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"'}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
 /* On defeat: retry with the same soldiers (default) or real death */
@@ -167,8 +168,9 @@ $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }
   clearTimeout(resetArm); resetArm=null; ui.progress={results:{}}; ui.roster={active:[],fallen:[]}; saveRoster(); store.set('hc-progress',ui.progress); b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress erased.',true); });
 let briefIdx=0;
-function openBriefing(i){ briefIdx=i; const m=campList()[i], sw=m.side==='swarm';
-  $('#b-eyebrow').textContent=`${sw?'THE SWARM · ':''}MISSION ${i+1} · ${MAPS[m.map].name.toUpperCase()}`; $('#s-brief').classList.toggle('swarm',sw); $('#b-start').textContent=sw?'Wake':'Deploy'; $('#b-title').textContent=m.title;
+function briefMission(i){ return i<0?TRAINING[ui.campSide==='swarm'?'swarm':'corps']:campList()[i]; }
+function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swarm';
+  $('#b-eyebrow').textContent=`${sw?'THE SWARM · ':''}${m.training?'TRAINING':'MISSION '+(i+1)} · ${MAPS[m.map].name.toUpperCase()}`; $('#s-brief').classList.toggle('swarm',sw); $('#b-start').textContent=sw?'Wake':'Deploy'; $('#b-title').textContent=m.title;
   $('#b-text').innerHTML=m.briefing.map(p=>`<p>${p}</p>`).join('');
   const res=ui.progress.results[m.id]; $('#b-eyebrow').textContent+= res?` · COMPLETED ON ${DIFFICULTY[res.diff].label.toUpperCase()}`:'';
   const nv=sw?0:ui.roster.active.length; $('#b-text').innerHTML+= nv?`<p class="rdim">${nv} veteran${nv>1?'s':''} on the roster will join this mission: ${ui.roster.active.slice(0,6).map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(', ')}${nv>6?'…':''}.</p>`:'';
@@ -176,7 +178,7 @@ function openBriefing(i){ briefIdx=i; const m=campList()[i], sw=m.side==='swarm'
   else if(ui.realDeath) $('#b-text').innerHTML+='<p class="rd-brief">☠ Real death is on: whoever falls in this mission is gone, even if you lose it.</p>';
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
   show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true}); }
-$('#b-start').addEventListener('click',()=>startMission(campList()[briefIdx]));
+$('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
 $('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
 function syncDiff(){ document.querySelectorAll('.diff-seg').forEach(seg=>{ seg.innerHTML=Object.entries(DIFFICULTY).map(([k,d])=>`<button type="button" data-diff="${k}" class="${k===ui.diff?'on':''}">${d.label}</button>`).join(''); }); }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-diff]'); if(!b) return; ui.diff=b.dataset.diff; store.set('hc-diff',ui.diff); syncDiff(); });
@@ -251,10 +253,10 @@ function showEnd(){
   else ev.hidden=true;
   if(G.grandWon&&G.grandWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Grand trophy</span>${G.grandWon.map(k=>`<div>${k==='corps'?'Hollow Light: every trophy of the Lunar Corps.':'The Long Hunger: every Swarm mission on every difficulty.'} It hangs on the Trophy wall.</div>`).join('')}</div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
-  const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies fed',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Losses',S.lost],['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
-  const LM=m.side==='swarm'?SWARM_MISSIONS:MISSIONS, idx=LM.indexOf(m); let btns=''; if(idx>=0) ui.campSide=m.side==='swarm'?'swarm':'corps';
-  if(o.win && idx>=0 && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;
-  btns+=`<button class="btn ${o.win&&idx>=0&&idx<LM.length-1?'':'primary'}" type="button" id="e-retry">${o.win?'Play again':'Retry'}</button><button class="btn" type="button" id="e-menu">Main menu</button>`;
+  const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Losses',S.lost],['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
+  const LM=m.side==='swarm'?SWARM_MISSIONS:MISSIONS, idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=m.side==='swarm'?'swarm':'corps';
+  if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;
+  btns+=`<button class="btn ${o.win&&(m.training||idx>=0)&&idx<LM.length-1?'':'primary'}" type="button" id="e-retry">${o.win?'Play again':'Retry'}</button><button class="btn" type="button" id="e-menu">Main menu</button>`;
   $('#e-buttons').innerHTML=btns; show('end');
   $('#e-next')?.addEventListener('click',()=>openBriefing(idx+1));
   $('#e-retry').addEventListener('click',()=>startMission(lastMission));

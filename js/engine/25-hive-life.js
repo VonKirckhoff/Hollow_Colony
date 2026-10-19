@@ -58,7 +58,7 @@ function drawCreep(now,vx0,vy0,vx1,vy1){
      Twitcher: crawls on all fours, weak and slow · Shambler: upright, half armour, half flesh · Husk: the final form.
    Only the final form goes off to take root. hp/speed/dmg are shares of the Husk's own numbers. */
 const HUSK_STAGES = [
-  { name:'Twitcher', sprite:'husk1', hp:0.4,  speed:0.7, dmg:0.45, time:7 },
+  { name:'Twitcher', sprite:'husk1', hp:0.4,  speed:0.7, dmg:0.6,  time:7 },
   { name:'Shambler', sprite:'husk2', hp:0.7,  speed:0.9, dmg:0.75, time:8 },
   { name:'Husk',     sprite:'husk',  hp:1,    speed:1,   dmg:1 }
 ];
@@ -82,7 +82,8 @@ function huskGrow(u,dt){
       if(vis){ SFX.play(final?'huskroar':'crack',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-32,t:1.4,max:1.4,txt:final?'HUSK':HUSK_STAGES[u.stage].name.toUpperCase(),col:final?'#ff5a4f':'#c38bff'}); if(final) G.shake=Math.max(G.shake||0,0.25); }
       if(final){ u.foundT=0; u.hide=null; if(vis&&!G.saidHuskFull){ G.saidHuskFull=true; say('Dr. Maas','It has finished turning. Any moment now it will look for a place to take root.','alert'); } } }
     return true; }
-  if(u.stage<HUSK_STAGES.length-1){ u.stageT-=dt; if(u.stageT<=0){ u.molt=MOLT.time; if(isVisible(u)) SFX.play('molt',u.x,u.y); return true; } }
+  if(u.stage<HUSK_STAGES.length-1){ const ready=u.avatar?avatarReady(u,dt):(u.stageT-=dt)<=0;   /* the creature you steer grows by feeding and hiding, not by the clock */
+    if(ready){ u.molt=MOLT.time; if(isVisible(u)) SFX.play('molt',u.x,u.y); return true; } }
   return false; }
 /* drawn on top of the Husk while it molts: it shakes, its skin glows and the next form pushes through */
 function drawMolt(u,x,y,w,h,now){
@@ -136,8 +137,9 @@ function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* returns true while the Husk is busy founding (swarmThink then leaves it alone) */
 function founderThink(u,dt){
   if(huskGrow(u,dt)) return true;
-  if(u.stage!=null&&u.stage<HUSK_STAGES.length-1) return u.stage===HUSK_STAGES.length-2 ? withdraw(u,dt) : false;   /* the Twitcher fights; the Shambler withdraws */
+  if(u.stage!=null&&u.stage<HUSK_STAGES.length-1) return u.avatar ? false : u.stage===HUSK_STAGES.length-2 ? withdraw(u,dt) : false;   /* the Twitcher fights; the Shambler withdraws */
   if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }
+  if(u.avatar) return false;   /* you decide where it roots (F) */
   if(u.noFound) return false;
   u.foundT=(u.foundT??0)-dt; if(u.foundT>0) return false;
   if((G.swarm.founded||0)+rooting()>=huskCap()){ u.noFound=true; return false; }   /* enough new hives: it just hunts */
@@ -159,7 +161,7 @@ function rootHive(u){
   const s=u.site; u.dead=true; if(G.sel.includes(u)){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
   const h=makeBuilding('hive','swarm',s.x-1,s.y-1,true);
   h.maxHp=BUILDINGS.hive.hp*HUSK.hiveHp*(G.diff.hiveHp||1); h.hp=h.maxHp*0.6; h.spawnT=5; h.cfg={ guardMax:HUSK.guardMax, offshoot:true }; h.offshoot=true; h.creepR=1;
-  G.swarm.founded=(G.swarm.founded||0)+1;
+  G.swarm.founded=(G.swarm.founded||0)+1; if(u.avatar){ h.avatar=true; G.avatar=h; }
   /* nobody may stand inside the new hive */
   for(const e of G.ents){ if(e.dead||e.kind!=='unit') continue; const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE);
     if(tx>=h.tx&&tx<h.tx+3&&ty>=h.ty&&ty<h.ty+3){ const f=nearestWalkable(tx,ty); if(f){ e.x=(f.x+.5)*TILE; e.y=(f.y+.5)*TILE; e.path=null; } } }
@@ -198,7 +200,7 @@ function openEgg(e){ e.dead=true; const u=makeUnit('grafter','swarm',e.x,e.y); u
   addDecal(e.x,e.y,8,'rgba(90,40,110,.6)'); for(let i=0;i<10;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-60,60),vy:rand(-90,-10),t:0.5,max:0.5,col:pick(['#c38bff','#a6ff4a','#7a5a8e'])});
   if(isVisible(e)){ SFX.play('crack',e.x,e.y); if(G.side==='corps'&&!G.saidEgg){ G.saidEgg=true; say('Dr. Maas','One of those eggs just opened. Something small is running for the body. Shoot it!','alert'); } } }
 /* a body has come home: send the nearest waiting egg's Grafter, or spit a fresh egg next to it */
-function callGrafter(b){ const h=b.home; if(!h||h.dead) return;
+function callGrafter(b){ const h=b.home; if(!h||h.dead||b.avatarBody) return;   /* the body meant for your own Grafter waits for you */
   const free=eggsOf(h).filter(e=>!e.target); if(free.length){ const e=free.reduce((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)<=Math.hypot(c.x-b.x,c.y-b.y)?a:c); e.target=b; e.openT=EGG.open; return; }
   if(G.time<(h.spitAt||0)) return; h.spitAt=G.time+EGG.spitEvery;
   const f=freeTilesNear(Math.floor(b.x/TILE)+(Math.random()<0.5?1:-1),Math.floor(b.y/TILE),1)[0]; if(!f) return; const tx=(f.x+.5)*TILE, ty=(f.y+.5)*TILE;
@@ -208,6 +210,7 @@ function eggLanded(s){ const h=G.ents.find(e=>!e.dead&&e.id===s.hive)||{id:s.hiv
   if(e){ SFX.play('splat',e.x,e.y); addDecal(e.x,e.y,9,'rgba(90,40,110,.5)'); } }
 /* the Grafter: runs to its body (or another body at home nearby) and latches on; without one it withers away */
 function grafterThink(u,dt){ u.flash=Math.max(0,u.flash-dt); u.anim+=dt; u.moving=false; u.target=null;
+  if(u.avatar){ avatarGrafter(u,dt); return; }
   let b=u.graft;
   if(!b||b.dead||!b.home){ b=u.graft=nearestOf(u,e=>e.kind==='body'&&!e.dead&&e.home&&!G.ents.some(g=>g!==u&&!g.dead&&g.def&&g.def.grafter&&g.graft===e))||null;
     if(!b||dist(u,b)>12*TILE){ u.graft=null; u.life-=dt; if(u.life<=0){ u.dead=true; addDecal(u.x,u.y,5,'rgba(90,40,110,.5)'); } return; } }
