@@ -2,7 +2,7 @@
 /* ---------- 2i. buildings ---------- */
 function updateBuilding(b,dt){
   b.flash=Math.max(0,b.flash-dt);
-  if(b.type==='cocoon'){ b.hatchT-=dt; if(b.hatchT<=0){ b.dead=true; const u=makeUnit(b.hatchType,'swarm',b.x,b.y); u.role='hunt'; if(isVisible(b)) SFX.play('hatch',b.x,b.y); G.fx.push({k:'boom',x:b.x,y:b.y,t:0.3,max:0.3,r:16,col:'#a6ff4a'}); addDecal(b.x,b.y,10,'rgba(90,190,30,.55)'); if(G.sel.includes(b)){G.sel=G.sel.filter(x=>x!==b);G.selDirty=true;} } return; }
+  if(b.type==='cocoon'){ b.hatchT-=dt; if(b.hatchT<=0){ b.dead=true; const u=makeUnit(b.hatchType,'swarm',b.x,b.y); u.role='hunt'; if(u.def.founder) huskHatched(u); if(isVisible(b)) SFX.play('hatch',b.x,b.y); G.fx.push({k:'boom',x:b.x,y:b.y,t:0.3,max:0.3,r:16,col:'#a6ff4a'}); addDecal(b.x,b.y,10,'rgba(90,190,30,.55)'); if(G.sel.includes(b)){G.sel=G.sel.filter(x=>x!==b);G.selDirty=true;} } return; }
   if(!b.built) return;
   const d=b.def;
   if(d.generator) updateGenerator(b,dt);

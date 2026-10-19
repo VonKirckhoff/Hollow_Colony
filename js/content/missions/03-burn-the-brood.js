@@ -23,7 +23,7 @@ MISSIONS.push(
     triggers:[
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to Tycho Maw. Five hives. I want every one of them ash.') },
       { when:g=>g.time>10, do:g=>g.say('Sgt. Kessler','Grab the relay pads near the base first. Pyros make short work of hive tissue.') },
-      { repeat:true, when:()=>true, do:g=>{ g.setText('hives',`Destroy all hives (${5-g.hives()}/5)`); } },
+      { repeat:true, when:()=>true, do:g=>{ g.setText('hives',`Destroy all hives (${g.stat('hives')}/${g.stat('hives')+g.hives()})`); } },
       { when:g=>g.hives()<=2, do:g=>{ g.say('Cmdr. Varga','The brood knows it is dying. Massive wave forming. Brace!'); g.wave(240); } },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen.'); } },
       { when:g=>g.hives()===0, do:g=>{ g.complete('hives'); g.vars.final=true;

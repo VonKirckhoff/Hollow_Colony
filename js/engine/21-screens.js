@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
-const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel'];
+const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel','trophies'];
 function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name;
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
   if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission?null:name);   /* menu screens have music, missions do not */
@@ -12,6 +12,7 @@ function goMenu(name){
   if(name==='veterans') buildVeterans();
   if(name==='manual'){ $('#manual-ranks').innerHTML=rankCards(); const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='manual'&&cur!=='intel') ui.manualFrom=cur; }
   if(name==='cenotaph') buildCenotaph();
+  if(name==='trophies') buildTrophies();
   if(name==='intel'){ const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='intel') ui.intelFrom=cur; buildIntel(); }
   show(name); syncDiff();
   const first=$('#s-'+name+' button'); if(first) first.focus({preventScroll:true});
@@ -82,6 +83,19 @@ $('#s-cenotaph').addEventListener('click',e=>{
   const b=e.target.closest('[data-raise]'); if(!b) return; const rec=ui.roster.fallen[+b.dataset.raise]; const err=raiseFallen(+b.dataset.raise); if(err){ toast(err); return; }
   SFX.play('squelch'); buildCenotaph(); toast(`${rec.name} rises from the stone and rejoins the roster.`,true);
 });
+/* Trophy wall: a plaque per role and difficulty column. Earned plaques carry every soldier who earned them; your own soldier's progress shows on his row. */
+const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
+function buildTrophies(){
+  const T=trophies(), hero=heroOf(), earned=Object.values(T).filter(l=>l&&l.length).length, total=HERO_TYPES.length*TROPHY_COLS.length;
+  $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
+    :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
+  const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}${c.sub?`<i>${c.sub}</i>`:''}</span>`).join('')}</div>`;
+  $('#trophy-wall').innerHTML=head+HERO_TYPES.map(t=>`<div class="trow"><span class="trole"><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</span>${TROPHY_COLS.map(c=>{
+      const list=T[t+':'+c.key]||[], mine=hero&&hero.type===t, p=mine?trophyProgress(hero,c.key):0;
+      const tip=`${UNITS[t].name} · ${c.label}`;
+      if(list.length) return `<div class="plaque won ${c.key}" title="${tip}">${CUP_SVG}<b>${list[0].name}</b><i>${new Date(list[0].at).toLocaleDateString()}${list.length>1?` · +${list.length-1} more`:''}</i></div>`;
+      return `<div class="plaque ${mine&&p?'run':''}" title="${tip}">${CUP_SVG}${mine?`<i>${p} / ${MISSIONS.length}</i><span class="tbar"><span style="width:${Math.round(p/MISSIONS.length*100)}%"></span></span>`:'<i>not yet</i>'}</div>`; }).join('')}</div>`).join('');
+}
 /* Intel: a card per unit or structure, numbers straight from UNITS / BUILDINGS, tips from INTEL_NOTES */
 let intelTab='corps';
 const ATTACK_NAME={ bullet:'Gunfire', flame:'Flame, hits a group', acid:'Lobbed acid, splash', plasma:'Plasma bolt', melee:'Melee' };
@@ -194,8 +208,8 @@ $('#manual-back').addEventListener('click',()=>{ if(ui.manualFrom==='pause'&&G&&
 let freshArm=null;
 $('#btn-fresh').addEventListener('click',()=>{ const b=$('#btn-fresh');
   if(!freshArm){ b.classList.add('armed'); b.textContent='Click again to erase everything'; freshArm=setTimeout(()=>{ freshArm=null; b.classList.remove('armed'); b.textContent='Start fresh'; },4000); return; }
-  clearTimeout(freshArm); const maps=$('#fresh-maps').checked;
-  try{ const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('hc-')&&(maps||k!=='hc-custom-maps')) keys.push(k); } keys.forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  clearTimeout(freshArm); const maps=$('#fresh-maps').checked, keepT=$('#fresh-troph').checked;
+  try{ const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('hc-')&&(maps||k!=='hc-custom-maps')&&(!keepT||k!=='hc-trophies')) keys.push(k); } keys.forEach(k=>localStorage.removeItem(k)); }catch(e){}
   location.reload(); });
 $('#p-restart').addEventListener('click',()=>{ startMission(lastMission); });
 $('#p-quit').addEventListener('click',()=>goMenu('menu'));
@@ -208,13 +222,14 @@ function showEnd(){
     $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; }
   const ev=$('#e-vets'); const rr=G.rosterResult, promoted=(rr&&rr.promoted)||[], hero=heroOf();
   const fallenAll=(rr&&(rr.fallenAll||rr.fallen))||[];
-  if((o.win||G.realDeath) && m.id!=='skirmish' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length))||G.realDeath)){ ev.hidden=false;
+  if((o.win||G.realDeath) && m.id!=='skirmish' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length))||G.realDeath||(o.win&&heroOf()))){ ev.hidden=false;
     const star=n=>hero&&hero.name===n?'<span class="vstar">★</span> ':'';
     // one row per rank, highest first; names alphabetical within a rank
     const byRank=list=>{ const m2=new Map(); for(const v of list){ if(!m2.has(v.rank)) m2.set(v.rank,[]); m2.get(v.rank).push(v.name); }
       return [...m2.entries()].sort((a,b)=>b[0]-a[0]).map(([r,ns])=>`<div class="vrow"><span class="vrank">${RANKS[r].mark||'·'} ${RANKS[r].name}</span><span>${ns.sort((a,b)=>a.localeCompare(b)).map(n=>star(n)+n).join(', ')}</span></div>`).join(''); };
     const fallen=fallenAll.slice().sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
-    ev.innerHTML=(G.realDeath?`<div class="vsec rd"><span class="lbl">☠ Real death</span><div>${o.win?'The fallen are gone for good.':'The mission is lost, and so are the fallen. Survivors keep their experience.'}</div></div>`:'')+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
+    const tw=(rr&&rr.trophies)||[], run=o.win&&hero&&hero.tp?`<div class="vsec"><span class="lbl">Trophy run</span><div>★ ${hero.name} · ${UNITS[hero.type].name}: ${TROPHY_COLS.map(c=>`${c.label} ${trophyProgress(hero,c.key)}/${MISSIONS.length}`).join(' · ')}</div></div>`:'';
+    ev.innerHTML=(tw.length?`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${tw.map(w=>`<div>${w.name}: ${UNITS[w.type].name} · ${TROPHY_COLS.find(c=>c.key===w.col).label}. It hangs on the Trophy wall.</div>`).join('')}</div>`:'')+run+(G.realDeath?`<div class="vsec rd"><span class="lbl">☠ Real death</span><div>${o.win?'The fallen are gone for good.':'The mission is lost, and so are the fallen. Survivors keep their experience.'}</div></div>`:'')+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
       (rr&&rr.joined.length?`<div class="vsec"><span class="lbl">New on the roster</span>${byRank(rr.joined)}</div>`:'')+
       (fallen.length?`<div class="vsec fallen"><span class="lbl">Fallen</span>${fallen.map(v=>`<div class="vrow"><span class="vrank">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'<span class="vstar">★</span> ':''}${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}</i></span></div>`).join('')}</div>`:''); }
   else if(!o.win && m.id!=='skirmish' && G.fallenVets && Object.keys(G.fallenVets).length){ ev.hidden=false;   /* retry: show who fell, but nobody is lost */

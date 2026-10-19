@@ -4,7 +4,7 @@
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
-  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','broodmother'], buildings:['hive','cocoon','membrane'] },
+  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','husk','broodmother'], buildings:['hive','cocoon','membrane'] },
   { id:'other',  name:'Other',       units:['hunter','grazer'] }
 ];
 const INTEL_NOTES = {
@@ -21,13 +21,14 @@ const INTEL_NOTES = {
   lz:       'Order replacements here. The dropship cannot be shot, but the soldiers it brings can.',
   charge:   'Mission object: armed by an Engineer, then it has to survive its fuse.',
   generator:'Mission object: an Engineer repairs it to full to bring it online. It goes down when badly damaged.',
-  crawler:  'Fast and fragile, often in numbers. Hatches from cocoons, so burn those.',
-  drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up.',
+  crawler:  'Fast and fragile, often in numbers. The only Swarm unit that can infect a fallen soldier: a few seconds on the body and it becomes a cocoon. Kill Crawlers near your dead first.',
+  drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up. Drones guard the bodies of the fallen and drag them back to a hive to feed it.',
   spitter:  'Acid artillery at range 4.6: it outreaches Pyros and Medics. Its acid leaves a burning pool for a few seconds.',
+  husk:     'A fallen soldier, remade. Hatches from a cocoon a Crawler made of a body. It fights for a few seconds, then slips away to a quiet spot far from your troops and takes root. If it finishes, a young hive grows there. Hunt it down.',
   brute:    'Armoured siege beast that goes for walls and structures. Focus fire and keep your distance.',
   broodmother:'Boss. Rooted most of the time, but charges into your lines, lays eggs and sprays acid. Regenerates when left alone.',
-  hive:     'Notices soldiers who come close: its guards attack and it births a brood. Every hit makes it scream for more. Badly hurt, it calls the other hives. Regrows when left alone. Bring a squad, not a hero.',
-  cocoon:   'A fallen soldier being turned. Hatches in seconds unless you burn it.',
+  hive:     'Notices soldiers who come close: its guards attack and it births a brood. Every hit makes it scream for more. Badly hurt, it calls the other hives. Regrows when left alone. The creep around it heals every Swarm unit standing on it, and it withers once the hive is dead. Bring a squad, not a hero.',
+  cocoon:   'A fallen soldier being turned. A Husk hatches from it in a few seconds unless you burn it.',
   membrane: 'Organic wall that seals tunnels. Has to be burned or shot through.',
   hunter:   'Cloaked. Visible only when it fires, is hit or comes close. Retreats when wounded and hunts your strongest soldier.',
   grazer:   'Harmless lunar fauna. The Swarm infects it if it gets the chance.'

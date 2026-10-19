@@ -56,7 +56,7 @@ function launchWave(budget,aim){
     while(left>=15 && guard++<80){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
       const u=spawnNearBuilding(type,'swarm',pick(hs)); if(u){ u.role='wave'; out.push(u); } }
   }
-  for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit');
+  for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed);
     if(t){ u.order={type:'amove',x:t.x+rand(-30,30),y:t.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); } }
   if(hs.length) waveTactic(out);
   if(out.length){ SFX.play('horn'); say('Alert','Swarm movement detected. A wave is coming.','alert'); }

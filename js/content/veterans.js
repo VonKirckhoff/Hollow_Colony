@@ -25,7 +25,7 @@ const AURA = { radius:4, rate:1.10, armor:0.10, waver:{ radius:9, time:10, rate:
 /* Zombie mode (Halloween): raise a fallen soldier from the Cenotaph. The risen are tougher and heal themselves,
    but shamble, cannot be healed by a Medic, and rest for good if they fall a second time. They only heal out of combat. */
 const RISEN = { hp:1.25, speed:0.85, regen:2, calm:4 };   /* regen only after `calm` seconds without being hit */
-const VET_XP = { kill:1, spitter:2, brute:4, hive:5, broodmother:10, healPerXp:60, repairPerXp:250, build:1 };
+const VET_XP = { kill:1, spitter:2, brute:4, husk:3, hive:5, broodmother:10, healPerXp:60, repairPerXp:250, build:1 };
 const ROSTER_MAX = 30;
 const STARTER_NAMES = ['Van Kerckhove','Heem','Van Damme','Vikernes','Verstappen'];
 const SURNAMES = [

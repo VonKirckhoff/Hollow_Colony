@@ -78,7 +78,7 @@
     <div class="defeat-row" id="defeat-row"><span class="lbl">On defeat</span><div class="seg" role="radiogroup" aria-label="On defeat">
       <button type="button" role="radio" data-rd="0">Retry with the same soldiers</button><button type="button" role="radio" data-rd="1">☠ Real death</button></div>
       <p class="rd-note" id="rd-note"></p></div>
-    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
+    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button><button class="btn" type="button" data-go="trophies" id="btn-troph">Trophies</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
    </div>
    <div class="camp-r"><div class="lbl">Missions</div><div class="missions" id="mission-list"></div></div>
   </div>
@@ -167,12 +167,14 @@
       <div class="note"><b>Acid blood</b>Swarm bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for 3 seconds.</div>
       <div class="note"><b>Cocoons</b>Your dead are turned into cocoons that hatch in seconds. Burn them; a Pyro does triple damage.</div>
       <div class="note"><b>Medic triage</b>The downed first, then the worst wounded. His sidearm only comes out when nobody nearby needs him.</div>
-      <div class="note"><b>Down, not out</b>A soldier at 0 health goes down for 15 seconds. A Medic who reaches him patches him up in 4 seconds. Nobody comes, and he bleeds out.</div>
-      <div class="note"><b>The fallen</b>A body lies on the ground for a while. The Swarm comes to claim it and it becomes a cocoon. Stand next to it to guard it, or let a Pyro burn it.</div>
+      <div class="note"><b>Down, not out</b>A soldier at 0 health goes down for 15 seconds. The Swarm leaves him be: it wants the body. A Medic who reaches him patches him up in 4 seconds. Nobody comes, and he bleeds out.</div>
+      <div class="note"><b>The fallen</b>A Crawler infects a body into a cocoon, and a Husk hatches. Other Swarm guard the body and drag it to a hive to feed it. Stand next to it to guard it, kill the carrier, or let a Pyro burn it.</div>
+      <div class="note"><b>Husks</b>An infected soldier. After a short fight it slips away to a quiet spot and takes root. Kill it before a new hive grows there.</div>
       <div class="note"><b>Darkness and flares</b>In dark missions everyone sees half as far. Flares light the ground for 45 seconds: three per mission, six in the dark.</div>
       <div class="note"><b>Motion tracker</b>Shows Swarm moving near your selected squad, even in the dark, and beeps faster as they close in.</div>
       <div class="note"><b>Swarm tactics</b>Big waves may send bait first, or split up and come at you from the side.</div>
       <div class="note"><b>Hives fight back</b>Come too close and a hive notices you: its guards attack and it births a brood. Every hit makes it scream for more; badly hurt, it calls the other hives. Left alone, it heals.</div>
+      <div class="note"><b>The creep</b>A purple fungus spreads around every hive. The Swarm heals while standing on it. It withers when the hive dies.</div>
       <div class="note"><b>Landing pads</b>Order replacements from the pad. Never more than the squad you started with.</div>
       <div class="note"><b>Intel</b>Every soldier, structure and enemy with its numbers: see Intel in the main menu.</div>
     </div>
@@ -201,11 +203,13 @@
       <div class="note"><b>Your own soldier</b>Enlist him on the campaign screen. He goes on every mission and only he can become Captain: soldiers near him fire faster and take less damage.</div>
       <div class="note"><b>The roster</b>Survivors with XP carry over to the next campaign mission and replace starting soldiers of their type.</div>
       <div class="note"><b>Cenotaph</b>The fallen are cut into stone. In zombie mode you can raise them once.</div>
+      <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty, and Real death too.</div>
     </div>
     <div class="fresh" id="fresh-box">
       <div><div class="lbl">Start fresh</div>
         <p>Erase everything this game keeps in your browser: campaign progress, veterans, your own soldier, the Cenotaph, difficulty, the defeat choice, zombie mode, and all music, sound and voice settings. The game starts as if you opened it for the first time.</p>
-        <label class="fresh-maps"><input type="checkbox" id="fresh-maps"> Also delete the maps I made in the map editor</label></div>
+        <label class="fresh-maps"><input type="checkbox" id="fresh-maps"> Also delete the maps I made in the map editor</label>
+        <label class="fresh-maps"><input type="checkbox" id="fresh-troph" checked> Keep my trophy wall</label></div>
       <button class="btn danger" type="button" id="btn-fresh">Start fresh</button>
     </div>
     <div class="row"><button class="btn" type="button" id="manual-back">Back</button><button class="btn" type="button" data-go="intel">Intel</button></div>
@@ -249,6 +253,20 @@
     <div class="intel-tabs" role="tablist" id="intel-tabs"></div>
     <div class="intel-split" role="tabpanel"><div class="intel-list" id="intel-list" role="listbox" aria-label="Units and structures"></div><div class="intel-detail" id="intel-grid" aria-live="polite"></div></div>
     <div class="row"><button class="btn" type="button" id="intel-back">Back</button></div>
+  </div>
+</section>
+
+<!-- TROPHIES -->
+<section class="screen" id="s-trophies" hidden>
+  <div class="sheet troph-sheet">
+   <div class="troph-l">
+    <div class="eyebrow">LUNAR CORPS · HALL OF HONOUR</div>
+    <h2 class="h">Trophy wall</h2>
+    <p class="lede">One trophy for every role and every difficulty. To earn it, your own soldier must win all campaign missions in that role and walk out of every one of them alive. A win on Hard also counts for Normal and Easy. Real death counts only missions won with real death on.</p>
+    <div class="troph-hero" id="troph-hero"></div>
+    <div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="veterans">Veterans</button></div>
+   </div>
+   <div class="trophies" id="trophy-wall"></div>
   </div>
 </section>
 
@@ -331,6 +349,7 @@
 <script src="js/engine/20-input.js"></script>
 <script src="js/engine/21-screens.js"></script>
 <script src="js/engine/22-squad-life.js"></script>
+<script src="js/engine/25-hive-life.js"></script>
 <script src="js/engine/23-main-loop.js"></script>
 <script src="js/engine/24-music.js"></script>
 </body>

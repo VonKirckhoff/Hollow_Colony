@@ -59,12 +59,13 @@ function engage(u,dt,hold){
   else goTo(u,t.x,t.y,dt,0.5);
 }
 function swarmThink(u,dt){
-  if(claimThink(u,dt)) return;   /* on its way to claim a fallen soldier */
+  if(u.def.founder && founderThink(u,dt)) return;   /* a Husk looking for a place to root */
+  if(claimThink(u,dt)) return;   /* busy with a fallen soldier: infecting, carrying or guarding it */
   if(u.role==='wave' && tacticThink(u,dt)) return;
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;
   if(u.role==='guard'||u.role==='boss'){ if(!u.order && !u.target && u.guardAt) u.order={type:'guard',x:u.guardAt.x,y:u.guardAt.y,wait:0}; return; }
   if((u.role==='hunt'||u.role==='wave') && !u.target && (!u.order||u.order.type!=='amove')){
-    const t=nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery);   // blast doors and rubble are scenery, not prey
+    const t=nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery&&!e.downed);   // blast doors and rubble are scenery, not prey
     if(t){ u.order={type:'amove',x:t.x,y:t.y}; setPath(u,t.x,t.y); }
   }
 }

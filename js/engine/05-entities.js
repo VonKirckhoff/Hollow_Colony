@@ -79,7 +79,8 @@ function settleRoster(){
   /* for the end screen: everyone with a name who fell in this mission, also fresh privates (the Cenotaph keeps only the veterans) */
   res.fallenAll=Object.values(FV).map(f=>({ name:f.name, type:f.type, rank:Math.max(f.rank||0,P[f.id]?P[f.id].rank:0), kills:f.kills||0, missions:f.missions||0, hero:f.hero||undefined }));
   R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
-  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, risen:u.vet.risen||undefined };
+  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined };
+    if(v.hero && G.over && G.over.win) res.trophies=heroTrack(v);
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
   saveRoster(); G.rosterResult=res;
@@ -114,6 +115,20 @@ function spawnNearBuilding(type,faction,b,toward){
 
 /* ---- your own soldier: a named recruit you create on the campaign screen ---- */
 const HERO_TYPES=['trooper','gunner','pyro','medic','engineer'];
+/* ---------- the Trophy wall: your own soldier wins every campaign mission and walks out alive, as one type, on one difficulty.
+   A win on Hard also counts for Normal and Easy. The Real death column counts wins with real death on, on any difficulty.
+   Progress lives on your soldier (v.tp: missions won per column); a new soldier starts from zero. Awards: hc-trophies { 'gunner:hard':[{name,at}, …] }. ---------- */
+const TROPHY_COLS=[ {key:'easy',label:'Easy'}, {key:'normal',label:'Normal'}, {key:'hard',label:'Hard'}, {key:'real',label:'Real death',sub:'iron mode'} ];
+function trophies(){ return store.get('hc-trophies',{}); }
+function trophyProgress(v,key){ return v&&v.tp&&v.tp[key] ? MISSIONS.filter(m=>v.tp[key].includes(m.id)).length : 0; }
+function heroTrack(v){
+  const tp=v.tp=v.tp||{}, id=G.mission.id, keys=Object.keys(DIFF_RANK).filter(k=>DIFF_RANK[k]<=DIFF_RANK[G.diffKey]); if(G.realDeath) keys.push('real');
+  for(const k of keys){ tp[k]=tp[k]||[]; if(!tp[k].includes(id)) tp[k].push(id); }
+  const T=trophies(), won=[];
+  for(const c of TROPHY_COLS){ const tag=v.type+':'+c.key, list=T[tag]=T[tag]||[]; if(list.some(x=>x.name===v.name)) continue;   /* every soldier who earns it is cut into the plaque */
+    if(trophyProgress(v,c.key)>=MISSIONS.length){ list.push({ name:v.name, at:Date.now() }); won.push({ type:v.type, col:c.key, name:v.name }); } else if(!list.length) delete T[tag]; }
+  if(won.length) store.set('hc-trophies',T);
+  return won; }
 function heroOf(){ return ui.roster.active.find(v=>v.hero)||null; }
 function setHero(name,type){
   name=String(name||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,18);

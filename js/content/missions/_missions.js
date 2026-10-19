@@ -6,9 +6,9 @@
    noTraining: true = the Command Post does not train in this mission
    limits:    optional cap per building type, e.g. { sentry:3 } (packed-up sentries do not count)
    swarm:     AI tuning (see "Moeilijkheid aanpassen" in the README). waves:null means no attack waves.
-              biomass, rate, guardMax, guardEvery, hiveRage, aggro, aggroBrood, aggroCooldown, brood, guards:[types],
+              biomass, rate, guardMax, guardEvery, hiveRage, aggro, aggroBrood, aggroCooldown, brood, guards:[types], creep (tiles of fungus), husks (max new hives),
               waves:{ first, every, budget, growth, types:[types] }, unlock:{ type:seconds }, burrows
-   start.hives: map points, or { at:'a', hp, guardMax, guardEvery, guards, aggro, aggroBrood, aggroCooldown, brood, rage } per hive
+   start.hives: map points, or { at:'a', hp, guardMax, guardEvery, guards, aggro, aggroBrood, aggroCooldown, brood, rage, creep } per hive
    dark:      optional { sight }: the mission plays in the dark (sight × sight; running generators give light)
    flares:    optional number of flares (default 3, or 6 in a dark mission)
    objectives: shown in the HUD. optional:true = not required.
