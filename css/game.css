@@ -499,3 +499,9 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #tut-card .tut-foot{flex-wrap:wrap;} .tut-nav{display:flex;align-items:center;gap:8px;margin-right:auto;} .tut-nav .btn{padding:4px 10px;} .tut-nav .btn:disabled{opacity:.3;cursor:default;}
 #tut-card.past{border-style:dashed;opacity:.97;} #tut-card.done{border-color:#5fe3b0;} #tut-card.done #tut-step{color:#5fe3b0;}
 #tut-open{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:11;padding:4px 14px;font-size:11px;}
+
+/* control groups in the selection panel */
+.gchips{display:flex;align-items:center;gap:6px;margin-bottom:6px;} .gchips .lbl{margin-right:2px;}
+.gchip{display:inline-flex;align-items:baseline;gap:4px;padding:1px 7px;border:1px solid var(--line);font-family:var(--f-display);font-size:12px;color:var(--ink);background:#0b0c11;}
+.gchip i{font-style:normal;font-size:10px;color:var(--dim);} .gchip.on{border-color:#5fe3b0;color:#5fe3b0;}
+.sel-cell .grp{position:absolute;left:1px;top:0;font-family:var(--f-display);font-size:9px;color:#5fe3b0;text-shadow:0 1px 0 #000;letter-spacing:.05em;}

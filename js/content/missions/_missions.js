@@ -51,7 +51,11 @@ function tutorialTick(g,steps){ const V=g.vars; G.tutSteps=steps;
     if(!ok) return;
     g.unmark('tut'); tutHighlight(null); if(st.after) try{ st.after(g); }catch(e){}
     SFX.play('complete'); G.fx.push({k:'text',x:G.cam.x+ui.vw/2,y:G.cam.y+(ui.vh-ui.hudH)/2-40,t:1.2,max:1.2,txt:'✓',col:'#5fe3b0'});
-    V.stepDone=true; V.tutState='wait'; tutRefresh(); return; }
+    V.stepDone=true; V.tutState='wait'; tutRefresh();
+    /* tick it off in the objectives list: the last three finished steps stay visible, checked */
+    const idx=G.objectives.findIndex(o=>o.id==='tut'); if(idx>=0){ G.objectives.splice(idx,0,{ id:'tutd'+(++V.doneN||(V.doneN=1)), text:st.obj||'', state:'done' });
+      const dn=G.objectives.filter(o=>/^tutd/.test(o.id)); if(dn.length>3) G.objectives.splice(G.objectives.indexOf(dn[0]),1); G.objDirty=true; }
+    return; }
   if(V.tutState==='wait'&&!V.cardOpen){   /* the next card only comes once you have closed this one */
     if(V.returnTo!=null){ V.tutI=V.returnTo; V.returnTo=null; } else V.tutI++;
     V.tutState='start'; V.tutAt=g.time+(st.pause??0.8);

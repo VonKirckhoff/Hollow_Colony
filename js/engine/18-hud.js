@@ -52,9 +52,9 @@ function renderSelection(){
   // grouped by type, always in the same order, so it is easy to see what the squad is made of
   const groups=new Map(); for(const e of sel){ if(!groups.has(e.type)) groups.set(e.type,[]); groups.get(e.type).push(e); }
   const order=[...groups.keys()].sort((a,b)=>(TYPE_ORDER.indexOf(a)+1||99)-(TYPE_ORDER.indexOf(b)+1||99));
-  el.innerHTML='<div class="sel-groups">'+order.map(type=>{ const list=groups.get(type).sort((a,b)=>(b.xp||0)-(a.xp||0)||a.id-b.id);
+  el.innerHTML=groupChips(sel)+'<div class="sel-groups">'+order.map(type=>{ const list=groups.get(type).sort((a,b)=>(b.xp||0)-(a.xp||0)||a.id-b.id);
     return `<div class="sel-group"><div class="sel-ghead" data-type="${type}" data-tip="${list[0].def.name}|Click to select only these.">${list[0].def.name}<b>${list.length}</b></div><div class="sel-gcells">`+
-      list.map(e=>`<div class="sel-cell" data-only="${e.id}" data-tip="${unitTitle(e)}|Click to select only this one."><img alt="" src="${iconUrl(e.type)}">${rankBadge(e)}<i><s style="width:${clamp(e.hp/e.maxHp,0,1)*100}%;background:${hpColor(e.hp/e.maxHp)}"></s></i></div>`).join('')+'</div></div>'; }).join('')+'</div>';
+      list.map(e=>`<div class="sel-cell" data-only="${e.id}" data-tip="${unitTitle(e)}|Click to select only this one.${groupsOf(e).length?' Group '+groupsOf(e).join(', ')+'.':''}"><img alt="" src="${iconUrl(e.type)}">${rankBadge(e)}${groupsOf(e).length?`<span class="grp">${groupsOf(e).join('')}</span>`:''}<i><s style="width:${clamp(e.hp/e.maxHp,0,1)*100}%;background:${hpColor(e.hp/e.maxHp)}"></s></i></div>`).join('')+'</div></div>'; }).join('')+'</div>';
 }
 function cmdButtons(){
   if(G.side==='swarm') return swarmButtons();
@@ -88,6 +88,12 @@ function cmdButtons(){
 }
 let CMDS=[];
 const TYPE_ORDER=['trooper','gunner','pyro','medic','engineer','scientist','sentry','relay','barricade'];
+/* control groups: which groups a unit is in, and a row of chips above a selection: [1] 5/5 means all 5 of group 1 are selected */
+function groupsOf(e){ return G&&G.groups?Object.keys(G.groups).filter(k=>(G.groups[k]||[]).includes(e)).sort():[]; }
+function groupChips(sel){ const ks=Object.keys(G.groups||{}).sort(), out=[];
+  for(const k of ks){ const g=(G.groups[k]||[]).filter(x=>!x.dead); if(!g.length) continue; const n=g.filter(x=>sel.includes(x)).length; if(!n) continue;
+    const exact=n===g.length&&n===sel.length; out.push(`<span class="gchip ${exact?'on':''}" data-tip="Group ${k}|${n} of its ${g.length} selected${exact?' (exactly this group)':''}. Ctrl+${k} saves the selection as group ${k}, Ctrl+Shift+${k} adds it.">${k}<i>${n}/${g.length}</i></span>`); }
+  return out.length?`<div class="gchips"><span class="lbl">Groups</span>${out.join('')}</div>`:''; }
 function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.stageName ? `${e.stageName} (turning into a Husk)` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
 const CMD_ROWS=['Avatar','Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];

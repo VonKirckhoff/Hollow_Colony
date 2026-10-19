@@ -55,7 +55,7 @@ window.addEventListener('pointerup',e=>{
     const now=performance.now();
     if(hit.faction===G.side && ui.lastClick.id===hit.id && now-ui.lastClick.t<350){
       const same=G.ents.filter(e=>!e.dead&&e.faction===G.side&&e.type===hit.type&&e.x>G.cam.x&&e.x<G.cam.x+ui.vw&&e.y>G.cam.y&&e.y<G.cam.y+ui.vh); selectEntities(same,d.shift);
-    } else if(d.shift && hit.faction===G.side){ if(G.sel.includes(hit)){ G.sel=G.sel.filter(x=>x!==hit); G.selDirty=true; } else selectEntities([hit],true); }
+    } else if(d.shift && hit.faction===G.side){ if(G.sel.includes(hit)){ G.sel=G.sel.filter(x=>x!==hit); G.selDirty=true; uiUsed('shiftdel'); } else { selectEntities([hit],true); uiUsed('shiftadd'); } }
     else selectEntities([hit],false);
     ui.lastClick={id:hit.id,t:now};
   }
@@ -98,7 +98,15 @@ window.addEventListener('keydown',e=>{
   if(k==='c' && !e.ctrlKey && !e.metaKey){ toggleFollow(); return; }
   if(k==='k' && !e.ctrlKey && !e.metaKey){ toggleTracker(); return; }
   if(k==='o' && !e.ctrlKey && !e.metaKey){ toggleVoices(); return; }
-  if(/^[1-5]$/.test(e.key)){ if(e.ctrlKey||e.metaKey){ e.preventDefault(); G.groups[e.key]=[...G.sel]; toast(`Group ${e.key} saved.`,true); } else { const g=(G.groups[e.key]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); if(again) centerOn(g[0].x,g[0].y); } } return; }
+  /* control groups 1–5, by key position so AZERTY works too: Ctrl+N saves the selection as group N, Ctrl+Shift+N adds it to group N,
+     N selects the group (twice: the camera jumps to it). A soldier may be in more than one group. */
+  const gm=/^(?:Digit|Numpad)([1-5])$/.exec(e.code||''); if(gm){ const n=gm[1]; e.preventDefault();
+    if(e.ctrlKey||e.metaKey){ const cur=(G.groups[n]||[]).filter(x=>!x.dead);
+      if(e.shiftKey){ G.groups[n]=[...new Set([...cur,...G.sel])]; uiUsed('groupadd'); toast(`Added to group ${n}: ${G.groups[n].length} now.`,true); }
+      else { G.groups[n]=[...G.sel]; uiUsed('groupsave'); toast(`Group ${n} saved (${G.sel.length}).`,true); }
+      G.selDirty=true; }
+    else { const g=(G.groups[n]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); uiUsed('groupsel'); if(again) centerOn(g[0].x,g[0].y); } }
+    return; }
   if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(k==='n'&&G.mission.training){ G.vars.skip=true; toast('Step skipped.',true); return; }   /* training: skip a step */
