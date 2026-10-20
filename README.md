@@ -432,6 +432,23 @@ De andere missies volgen. Getest met een eenvoudige automatische speler: op Easy
 
 ---
 
+## Dev-modus (waarden testen tijdens het spelen)
+
+Druk tijdens een missie op **F9** (of de toets links van 1: `²` op AZERTY, `` ` `` op QWERTY). Rechts verschijnt een half doorzichtig paneel.
+
+- **Bovenaan:** *Pause/Run* pauzeert of hervat het spel zonder menu (je kan intussen wel bevelen geven), de snelheid (0,25× tot 4×), ◐ wisselt de doorzichtigheid, en een klik op **DEV** klapt het paneel dicht of open. ✕ of F9 sluit het.
+- **Live:** wat er nu gebeurt (tijd, moeilijkheid, hives, golf en wanneer de volgende komt, hoeveel Swarm rondloopt tegenover het maximum, troepen, de grootte van de volgende golf). Je kan salvage, biomassa, fakkels en de tijd tot de volgende golf meteen aanpassen. Knoppen: *Wave now*, *Reveal map*, *Heal everyone*, *Kill all roaming Swarm*, *Win mission*, *Lose mission*. Dit geldt enkel voor het lopende spel.
+- **Mission:** de instellingen van deze missie (start-salvage, fakkels, Landing Zone, sentry-limiet, en alles van de Swarm: biomassa, ritme, bewakers, aggro, golven, `maxAlive`, `growWaves`, `max`, wanneer Spitters en Brutes mogen komen). Leeg = de standaardwaarde van het spel. Bewaarde waarden gelden enkel voor die missie.
+- **Difficulty:** `DIFFICULTY` (Easy, Normal, Hard voor de Lunar Corps-campagne) en `SWARM_DIFF` (voor de Swarm-campagne).
+- **Swarm:** `WAVES`, `HIVE_DEFENCE`, `TACTICS`, `CREEP`, `HUSK`, `EGG`, `MOLT`, `SWARM_PLAY`, `AVATAR`.
+- **Squad:** `SQUAD`, `FORMATION`, `AURA`, `RISEN`, `VET_XP`.
+- **Units:** kies een eenheid of gebouw en pas levenspunten, snelheid, bereik, schade, kosten … aan. Levenspunten veranderen ook voor wie al op de kaart staat; de rest geldt voor nieuwe eenheden.
+- Elke wijziging werkt **meteen**. Een gewijzigde waarde staat in oranje met een ↺ om ze terug te zetten. Onderaan staat hoeveel waarden afwijken en of ze bewaard zijn.
+- **Save** bewaart alle wijzigingen in deze browser (`hc-dev-tune`); ze worden voortaan bij het laden van het spel toegepast. **Reset all** zet alles terug en wist de bewaarde waarden. **Export** toont elke wijziging (oud → nieuw, plus JSON) en kopieert ze, zodat je ze kan doorgeven om ze vast in de code te zetten.
+- Code: js/engine/28-dev.js (`DEV_ROOTS` bepaalt welke instellingen in het paneel staan, `DEV_MISSION_KEYS` de missie-instellingen).
+
+---
+
 ## Kaarteditor
 
 `map-editor/index.html` is een aparte app (uitleg in [map-editor/README.md](map-editor/README.md)) om kaarten te tekenen of aan te passen. Hij gebruikt dezelfde terreintypes en markeringen als het spel.

@@ -48,7 +48,7 @@ function avatarButtons(){ const u=G.avatar; if(!avatarAlive()||u.kind!=='unit') 
    so you can try things out while you read. ◀ ▶ page through the earlier steps; "Practice again" runs that step once more.
    Closed, a "Tips" tab at the top brings it back. ---- */
 function tutShow(i){ const V=G.vars; V.cardOpen=true; V.cardView=i; tutRefresh(); SFX.play('radio'); }
-function tutRefresh(){ const c=$('#tut-card'), V=G&&G.vars, S=G&&G.tutSteps; if(!c||!S) return; const i=V.cardView??V.tutI, st=S[i]; if(!st) return;
+function tutRefresh(){ const c=$('#tut-card'), V=G&&G.vars, S=G&&G.tutSteps; if(c&&!S){ c.hidden=true; $('#tut-open').hidden=true; } if(!c||!S) return;   /* no training in this mission: no card */ const i=V.cardView??V.tutI, st=S[i]; if(!st) return;
   const cur=i===V.tutI, done=cur&&V.stepDone;
   c.hidden=!V.cardOpen; $('#tut-open').hidden=!!V.cardOpen||!G.mission.training||!!G.over; c.classList.toggle('swarm',G.side==='swarm'); c.classList.toggle('past',!cur); c.classList.toggle('done',!!done);
   $('#tut-who').textContent=(st.who||TUT_VOICE[G.side])+(cur?'':' · earlier tip');

@@ -89,6 +89,7 @@ function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.targe
   const [t,b]=el.dataset.tip.split('|'); tip.innerHTML=`<b>${t}</b>${b||''}`; tip.hidden=false; const r=tip.getBoundingClientRect();
   tip.style.left=clamp(e.clientX+14,8,innerWidth-r.width-8)+'px'; tip.style.top=clamp(e.clientY-r.height-14,8,innerHeight-r.height-8)+'px'; }
 window.addEventListener('keydown',e=>{
+  if(e.target&&e.target.closest&&e.target.closest('#dev')) return;   /* typing in the dev panel */
   if(ui.mode!=='game'||!G) { if(e.key==='Escape'&&ui.mode==='pause'){ if($('#s-pause').hidden) show('pause'); else pause(false); } return; }   /* Esc in the Field Manual (from pause) goes back to the pause menu */
   if(e.key==='Enter'&&G.vars&&G.vars.cardOpen){ e.preventDefault(); tutConfirm(); return; }   /* a training card is open: Enter closes it, every other key still plays */
   ui.keys[e.key]=true;
@@ -127,7 +128,7 @@ function stopFollow(){ if(G) G.following=false; }
 function updateCamera(dt){
   if(!G||ui.mode!=='game') return; let vx=0, vy=0; const sp=760*dt, edge=10;
   if(ui.keys.ArrowLeft) vx-=sp; if(ui.keys.ArrowRight) vx+=sp; if(ui.keys.ArrowUp) vy-=sp; if(ui.keys.ArrowDown) vy+=sp;
-  if(ui.mouse.inWin && !ui.drag && !ui.pan && !mmDrag && matchMedia('(pointer:fine)').matches){ if(ui.mouse.x<edge) vx-=sp; if(ui.mouse.x>ui.vw-edge) vx+=sp; if(ui.mouse.y<edge) vy-=sp; if(ui.mouse.y>ui.vh-edge) vy+=sp; }
+  if(ui.mouse.inWin && !ui.overDev && !ui.drag && !ui.pan && !mmDrag && matchMedia('(pointer:fine)').matches){ if(ui.mouse.x<edge) vx-=sp; if(ui.mouse.x>ui.vw-edge) vx+=sp; if(ui.mouse.y<edge) vy-=sp; if(ui.mouse.y>ui.vh-edge) vy+=sp; }
   if(vx||vy){ stopFollow(); G.cam.x+=vx; G.cam.y+=vy; clampCam(); }
   else if(G.following && !G.paused){
     const us=G.side==='swarm'?(G.avatar&&!G.avatar.dead&&G.avatar.kind==='unit'?[G.avatar]:selSwarm()):myUnits(); if(!us.length){ stopFollow(); return; }
