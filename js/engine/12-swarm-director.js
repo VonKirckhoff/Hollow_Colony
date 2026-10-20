@@ -8,9 +8,21 @@ function pickSwarmType(maxCost,only){
   let tot=opts.reduce((s,k)=>s+UNITS[k].weight,0), r=Math.random()*tot; for(const k of opts){ r-=UNITS[k].weight; if(r<=0) return k; } return opts[0]; }
 function swarmCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss).length; }
 function hives(){ return G.ents.filter(e=>e.type==='hive'&&!e.dead); }
+/* Waves: they grow for the first few waves and then stop growing, they shrink as you burn hives, and the Swarm never
+   fields more than a set number of creatures at once (a wave that would go over waits).
+   Per mission in swarm.waves: max (biggest wave budget), growWaves (how many waves keep growing); in swarm: maxAlive. */
+const WAVES = { growWaves:8, maxAlive:40, hiveScale:0.6, waitFull:15 };
+function swarmCap(){ return (G.swarm.cfg.maxAlive??WAVES.maxAlive)*G.diff.budget; }
+function roamCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&e.role!=='guard').length; }   /* the cap is for what roams: the guards at home do not count */
+function waveBudget(){ const S=G.swarm, w=S.cfg.waves, hs=hives().length;
+  let b=w.budget+w.growth*Math.min(S.waveN-1, w.growWaves??WAVES.growWaves); if(w.max!=null) b=Math.min(b,w.max);
+  if(S.hives0&&hs) b*=1-WAVES.hiveScale*(1-Math.min(1,hs/S.hives0));   /* every burnt hive makes the waves smaller */
+  return b*G.diff.budget; }
+function nextWaveDue(){ const S=G.swarm; if(roamCount()>=swarmCap()*0.85){ S.nextWave=G.time+WAVES.waitFull; return false; } return true; }
 function updateSwarm(dt){
   const S=G.swarm, cfg=S.cfg, hs=hives();
-  if(!hs.length){ if(cfg.burrows && cfg.waves && G.time>=S.nextWave && swarmCount()<=14*G.diff.budget){ S.waveN++; launchWave((cfg.waves.budget+cfg.waves.growth*(S.waveN-1))*G.diff.budget); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
+  if(S.hives0==null) S.hives0=hs.length;
+  if(!hs.length){ if(cfg.burrows && cfg.waves && G.time>=S.nextWave && swarmCount()<=14*G.diff.budget){ S.waveN++; launchWave(waveBudget()); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
   S.biomass+=cfg.rate*hs.length*dt;
   for(const h of hs){
     hiveWatch(h,dt);
@@ -23,8 +35,8 @@ function updateSwarm(dt){
     const u=spawnNearBuilding(type,'swarm',h); if(!u) continue;
     u.role='guard'; u.homeHive=h.id; u.guardAt={x:h.x,y:h.y}; u.order={type:'guard',x:h.x,y:h.y,wait:0};
   }
-  if(cfg.waves && G.time>=S.nextWave){
-    S.waveN++; launchWave((cfg.waves.budget+cfg.waves.growth*(S.waveN-1))*G.diff.budget);
+  if(cfg.waves && G.time>=S.nextWave && nextWaveDue()){
+    S.waveN++; launchWave(waveBudget());
     S.nextWave=G.time+cfg.waves.every*G.diff.interval;
   }
 }
@@ -54,7 +66,8 @@ function launchWave(budget,aim){
   } else {
     if(aim) hs=[...hs].sort((a,b)=>dist(a,aim)-dist(b,aim)).slice(0,2);   // aimed waves come from the nearest hives
     const wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types;
-    while(left>=15 && guard++<80){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
+    const room=swarmCap()-roamCount();   /* never more than the cap at once */
+    while(left>=15 && guard++<80 && out.length<room){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
       const u=spawnNearBuilding(type,'swarm',pick(hs)); if(u){ u.role='wave'; out.push(u); } }
   }
   for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed);

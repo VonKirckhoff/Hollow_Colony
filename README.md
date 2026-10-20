@@ -65,7 +65,8 @@ Alles wat de Swarm doet, stel je in op drie niveaus. Het meest specifieke wint: 
 | `aggroCooldown` | Seconden voor een hive opnieuw zo reageert | `18` |
 | `brood` | Biomassa van het broed als een hive geraakt wordt | `45` |
 | `hiveRage` | Factor op alle broedsels en het tempo van krijsen | `1.8` |
-| `waves` | `{ first, every, budget, growth, types }`: eerste golf na `first` s, dan om de `every` s; grootte `budget` + `growth` per golf; `types` beperkt de soorten | `{ first:140, every:85, budget:80, growth:32 }` |
+| `waves` | `{ first, every, budget, growth, growWaves, max, types }`: eerste golf na `first` s, dan om de `every` s; grootte `budget` + `growth` per golf, maar enkel de eerste `growWaves` golven groeien (standaard 8), daarna blijft de grootte gelijk; `max` is een vast plafond; `types` beperkt de soorten. Elke verbrande hive maakt de golven kleiner (met nog 2 van de 5 hives zijn ze nog 64% zo groot). | `{ first:140, every:85, budget:80, growth:32 }` |
+| `maxAlive` | Hoeveel Swarm er hoogstens tegelijk rondloopt (de bewakers bij hun hive tellen niet mee), maal de moeilijkheid. Zit de Swarm aan 85%, dan wacht de volgende golf 15 seconden. Standaard `WAVES.maxAlive` = 40 in js/engine/12-swarm-director.js | `40` |
 | `unlock` | Na hoeveel seconden een type mag verschijnen | `{ spitter:120, brute:480 }` |
 | `burrows` | Als alle hives weg zijn, graven golven zich uit de grond op | `true` |
 | `creep` | Straal (tegels) die de schimmel rond elke hive uiteindelijk haalt (`0` = geen schimmel) | `6` |
