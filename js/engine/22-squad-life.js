@@ -370,8 +370,11 @@ function spawnSpotToward(b,from){ const s=b.size; let best=null, bd=Infinity;
 function drawBody(b,now){ const sp=SPR[b.sprite]; if(!sp) return; const s=2, w=sp.w*s, h=sp.h*s, c=b.claim||0;
   /* being infected: it twitches, and the green spreads through it */
   const tw=c>0?Math.sin(now/(40+Math.random()*30))*0.12*c+(Math.random()<0.08*c?rand(-0.3,0.3):0):0;
-  ctx.save(); ctx.translate(Math.round(b.x+(c>0?rand(-1,1)*c*2:0)),Math.round(b.y-2)); ctx.rotate((b.face>0?-Math.PI/2:Math.PI/2)+tw); ctx.globalAlpha=0.55*Math.min(1,b.t/4)+0.05+0.4*c;
-  ctx.filter=c>0?`grayscale(${1-c}) brightness(${0.6+0.3*c}) hue-rotate(${Math.round(60*c)}deg)`:'grayscale(1) brightness(.6)'; ctx.drawImage(b.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.filter='none';
+  /* a dark pool under the body, so it stands out against the ground */
+  const fade=Math.min(1,b.t/4); ctx.save(); ctx.globalAlpha=0.7*fade; ctx.fillStyle='#4e0b0b'; ctx.beginPath(); ctx.ellipse(Math.round(b.x),Math.round(b.y+1),w*0.42,h*0.16,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.translate(Math.round(b.x+(c>0?rand(-1,1)*c*2:0)),Math.round(b.y-2)); ctx.rotate((b.face>0?-Math.PI/2:Math.PI/2)+tw); ctx.globalAlpha=Math.min(1,0.9*fade+0.05+0.4*c);
+  /* their own uniform colours, a little duller (greener while it is being infected) */
+  ctx.filter=c>0?`saturate(${0.6*(1-c)}) brightness(${0.8+0.15*c}) hue-rotate(${Math.round(60*c)}deg)`:'saturate(.65) brightness(.92) contrast(1.1)'; ctx.drawImage(b.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.filter='none';
   if(c>0){ ctx.restore(); ctx.save(); ctx.strokeStyle=`rgba(166,255,74,${0.35+0.4*c})`; ctx.lineWidth=1;
     for(let i=0;i<Math.ceil(c*7);i++){ const a=creepNoise(i,b.id)*Math.PI*2, r=4+c*10; ctx.beginPath(); ctx.moveTo(b.x,b.y-3); ctx.lineTo(b.x+Math.cos(a)*r*0.5+rand(-1,1),b.y-3+Math.sin(a)*r*0.25); ctx.lineTo(b.x+Math.cos(a)*r,b.y-3+Math.sin(a)*r*0.45); ctx.stroke(); } }
   ctx.restore(); ctx.globalAlpha=1;

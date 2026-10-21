@@ -443,6 +443,7 @@ Druk tijdens een missie op **F9** (of de toets links van 1: `²` op AZERTY, `` `
 - **Swarm:** `WAVES`, `HIVE_DEFENCE`, `TACTICS`, `CREEP`, `HUSK`, `EGG`, `MOLT`, `SWARM_PLAY`, `AVATAR`.
 - **Squad:** `SQUAD`, `FORMATION`, `AURA`, `RISEN`, `VET_XP`.
 - **Units:** kies een eenheid of gebouw en pas levenspunten, snelheid, bereik, schade, kosten … aan. Levenspunten veranderen ook voor wie al op de kaart staat; de rest geldt voor nieuwe eenheden.
+- **Uitleg:** ga met de muis over de naam van een waarde: je ziet wat ze doet, in welke eenheid, en de standaardwaarde. De teksten staan in js/engine/28-dev-help.js (`DEV_HELP`).
 - Elke wijziging werkt **meteen**. Een gewijzigde waarde staat in oranje met een ↺ om ze terug te zetten. Onderaan staat hoeveel waarden afwijken en of ze bewaard zijn.
 - **Save** bewaart alle wijzigingen in deze browser (`hc-dev-tune`); ze worden voortaan bij het laden van het spel toegepast. **Reset all** zet alles terug en wist de bewaarde waarden. **Export** toont elke wijziging (oud → nieuw, plus JSON) en kopieert ze, zodat je ze kan doorgeven om ze vast in de code te zetten.
 - Code: js/engine/28-dev.js (`DEV_ROOTS` bepaalt welke instellingen in het paneel staan, `DEV_MISSION_KEYS` de missie-instellingen).

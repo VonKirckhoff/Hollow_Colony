@@ -2,7 +2,7 @@
 /* ---------- 2x. dev mode: a see-through panel to look at and tune the game's numbers while you play ----------
    F9 (or the key left of 1, ² / `) opens and closes it during a mission. The game can keep running or be paused from the panel.
    Tabs: Live (what is happening now, plus a few tools), Mission (this mission's settings), Difficulty, Swarm, Squad, Units.
-   Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
+   Hover a name to see what it does. Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
    loads; ↺ puts one value back, "Reset all" puts everything back. "Export" lists every change so you can copy it.
    Unit stats count for units that appear after the change; health is also adjusted on the units already on the map. */
 const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, SWARM_PLAY, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, UNITS, BUILDINGS };
@@ -63,8 +63,9 @@ function devEl(){ let el=$('#dev'); if(el) return el;
 function devToggle(on){ if(!G||ui.mode==='menu') return; const el=devEl(); el.hidden=on==null?!el.hidden:!on; ui.overDev=false; if(!el.hidden){ store.set('hc-dev',true); devRender(); } }
 function devFmt(v){ return typeof v==='number'?String(Math.round(v*1000)/1000):''; }
 function devRow(key,label){ const v=devGet(key), t=devTarget(key); if(!t) return ''; const ch=getP(t.obj,t.path)!==t.orig;
-  if(typeof v==='boolean'||typeof t.orig==='boolean') return `<label class="dv-row ${ch?'ch':''}"><span>${label}</span><input type="checkbox" data-k="${key}" ${v?'checked':''}><button type="button" class="dv-rs" data-rs="${key}" title="Back to ${t.orig}">↺</button></label>`;
-  return `<label class="dv-row ${ch?'ch':''}"><span>${label}</span><input type="number" step="any" data-k="${key}" value="${devFmt(v)}" placeholder="${t.orig==null?'default':devFmt(t.orig)}"><button type="button" class="dv-rs" data-rs="${key}" title="Back to ${t.orig==null?'default':devFmt(t.orig)}">↺</button></label>`; }
+  const tip=` data-tip="${key.split('|')[1]}|${(devHelp(key)||'No description yet.').replace(/"/g,'&quot;')} Default: ${t.orig==null?'not set (the game default)':devFmt(t.orig)||String(t.orig)}."`;
+  if(typeof v==='boolean'||typeof t.orig==='boolean') return `<label class="dv-row ${ch?'ch':''}"><span${tip}>${label}</span><input type="checkbox" data-k="${key}" ${v?'checked':''}><button type="button" class="dv-rs" data-rs="${key}" title="Back to ${t.orig}">↺</button></label>`;
+  return `<label class="dv-row ${ch?'ch':''}"><span${tip}>${label}</span><input type="number" step="any" data-k="${key}" value="${devFmt(v)}" placeholder="${t.orig==null?'default':devFmt(t.orig)}"><button type="button" class="dv-rs" data-rs="${key}" title="Back to ${t.orig==null?'default':devFmt(t.orig)}">↺</button></label>`; }
 /* every number in an object, as rows grouped by the object they sit in */
 function devLeaves(obj,pre='',out=[]){ for(const [k,v] of Object.entries(obj||{})){ const p=pre?pre+'.'+k:k;
     if(typeof v==='number'||typeof v==='boolean') out.push(p); else if(v&&typeof v==='object'&&!Array.isArray(v)&&pre.split('.').length<3) devLeaves(v,p,out); } return out; }
