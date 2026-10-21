@@ -543,3 +543,10 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #s-end.watching{background:none;}
 #s-end.watching .sheet{display:none;}
 #e-report{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);pointer-events:auto;z-index:11;}
+
+/* top bar: which mission and which mode (campaign and number, difficulty) */
+#topbar .mission-tag{min-width:0;flex:0 1 auto;}
+#topbar .mission-tag b{font-size:13px;color:var(--ink);flex:0 0 auto;}
+#topbar .mission-tag .lbl{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+@media (max-width:900px){ #topbar .mission-tag .lbl{display:none;} }
+@media (max-width:640px){ #topbar .mission-tag{display:none;} }

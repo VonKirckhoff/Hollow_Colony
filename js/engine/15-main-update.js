@@ -21,7 +21,7 @@ function update(dt){
     if(c.supply){ supplyPickup(c); continue; }   /* a flown-in structure: only an Engineer takes it */
     for(const u of G.ents){ if(u.kind==='unit'&&!u.dead&&u.faction==='corps'&&dist(u,c)<u.r+12){ c.dead=true; G.salvage+=c.value; G.stats.crates++; SFX.play('pickup'); G.fx.push({k:'text',x:c.x,y:c.y-10,t:1.2,max:1.2,txt:'+'+c.value,col:'#ffb347'}); break; } } }
   if(G.ents.some(e=>e.dead)) G.ents=G.ents.filter(e=>!e.dead);
-  updateSwarm(dt);
+  updateSwarm(dt); swarmHunt(dt);   /* a Husk leads the Swarm to your soldiers (and after a defeat, the Swarm hunts down the rest) */
   G.fogT-=dt; if(G.fogT<=0){ G.fogT=0.15; computeFog(); }
   G.rescueT=(G.rescueT||0)-dt; if(G.rescueT<=0){ G.rescueT=2; rescueTrapped(); }
   G.trigT-=dt; if(G.trigT<=0){ G.trigT=0.25; runTriggers(); }

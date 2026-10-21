@@ -157,3 +157,26 @@ function hiveWatch(h,dt){
     G.pings.push({x:h.x,y:h.y,t:0,col:'#a6ff4a'});
     if(!G.saidAggro){ G.saidAggro=true; say('Dr. Maas','The hive has noticed you. Keep your distance, or burn it down.','alert'); } }
 }
+
+/* ---------- the hunt: a Husk leads the Swarm to your soldiers (during play and after a defeat) ----------
+   Every `every` seconds (afterEvery once the mission is lost), as long as soldiers live:
+   - a full-grown Husk is told where the nearest soldiers are and leads the attack (THE HUNT); a fresh party from the nest
+     nearest to him joins his war party (up to partyMax), so the last blow stays his;
+   - idle hunters go looking for soldiers;
+   - with no Husk about, a plain wave goes for a soldier.
+   This comes on top of the mission's own waves. Each round is a little bigger (grow, up to growMax rounds).
+   A mission can switch it off with swarm.hunt:false (the hunt after a defeat still runs). */
+const HUNT = { every:30, afterEvery:20, first:6, budget:40, afterBudget:60, grow:0.2, growMax:10, partyMax:8 };
+function swarmHunt(dt){ if(G.side!=='corps'||G.mission.training) return; const S=G.swarm, lost=afterDefeat(); if(!lost&&S.cfg.hunt===false) return;
+  S.huntT=(S.huntT??(lost?HUNT.first:HUNT.every))-dt; if(S.huntT>0) return; S.huntT=lost?HUNT.afterEvery:HUNT.every;
+  const corps=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.def.ground); if(!corps.length) return;
+  const near=u=>{ let b=null, bd=Infinity; for(const e of corps){ const d=dist(u,e); if(d<bd){ bd=d; b=e; } } return b; };
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='swarm'||u.target||u.claim||u.haul||u.def.boss||u.def.grafter||u.def.founder) continue;
+    if(!(u.role==='hunt'||u.role==='wave')||(u.order&&u.order.type==='amove')) continue; const t=near(u); u.order={type:'amove',x:t.x,y:t.y}; setPath(u,t.x,t.y); }
+  const n=S.huntN=(S.huntN||0)+1, budget=(lost?HUNT.afterBudget:HUNT.budget)*(1+HUNT.grow*Math.min(n,HUNT.growMax))*G.diff.budget;
+  const husk=G.ents.filter(e=>huskHunter(e)).sort((a,b)=>dist(a,near(a))-dist(b,near(b)))[0];
+  if(husk){ const t=near(husk); if(!husk.target&&!husk.finish){ husk.order={type:'amove',x:t.x,y:t.y}; setPath(husk,t.x,t.y); }
+    if(escortsOf(husk).length<HUNT.partyMax&&nests().length&&roamCount()<swarmCap()) for(const u of launchWave(budget,husk)) joinEscort(u,husk);   /* they gather round the Husk and go in with him */
+    if(isVisible(husk)){ G.fx.push({k:'text',x:husk.x,y:husk.y-48,t:1.4,max:1.4,txt:'THE HUNT',col:'#ff5a4f'});
+      if(!G.saidHunt){ G.saidHunt=true; say('Dr. Maas','The Husk is calling the brood to it. They are coming for us, and they are leaving the kill to it.','alert'); } } }
+  else if(roamCount()<swarmCap()) launchWave(budget,pick(corps)); }

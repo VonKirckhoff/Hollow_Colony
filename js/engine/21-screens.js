@@ -229,7 +229,7 @@ function startMission(m){
   lastMission=m; newGame(m,ui.diff); G.realDeath=!!ui.realDeath && m.id!=='skirmish' && m.side!=='swarm'; $('#rd-badge').hidden=!G.realDeath; ui.mode='game'; ui.placing=null; ui.amove=false; cv.classList.remove('amove');
   show(null); const bt=$('#boot'); if(bt) bt.hidden=true; $('#hud').hidden=false; $('#tooltip').hidden=true; resize(); sizeMinimap();
   const cp=ptWorld(m.start.camera||'P'); centerOn(cp.x,cp.y);
-  G.selDirty=true; G.objDirty=true; $('#btn-speed').textContent='1×'; setupSideHud(); ui.burrow=false; ui.rallyPick=false;
+  G.selDirty=true; G.objDirty=true; $('#btn-speed').textContent='1×'; setupSideHud(); ui.burrow=false; ui.rallyPick=false; missionTag();
   if(G.side==='swarm'){ const r=ptWorld(m.start.rally||m.start.camera||'P'); if(r) G.swarm.rally=r; selectEntities([],false); }
   else selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
 }
@@ -288,3 +288,9 @@ function showEnd(){
 }
 
 $('#e-report').addEventListener('click',()=>{ $('#s-end').classList.remove('watching'); $('#e-report').hidden=true; });
+
+/* top bar: the mission's title, and its mode: which campaign and number (or training / skirmish) and the difficulty */
+function missionTag(){ const m=G.mission, sw=m.side==='swarm', L=sw?SWARM_MISSIONS:MISSIONS, i=L.indexOf(m);
+  const mode=m.training?(sw?'Swarm training':'Corps training'):m.id==='skirmish'?'Skirmish':i>=0?`${sw?'Swarm':'Corps'} ${i+1}`:'Mission';
+  const diff=(sw?SWARM_DIFF:DIFFICULTY)[G.diffKey], d=diff&&diff.label?diff.label:G.diffKey;
+  $('#r-mode').textContent=`${mode} · ${d}`; $('#r-mtitle').textContent=m.title; $('#r-mission').dataset.tip=`${m.title}|${mode.replace(/^(Corps|Swarm) (\d)/,'$1 campaign, mission $2')}, ${d}${G.realDeath?', real death':''}.`; }

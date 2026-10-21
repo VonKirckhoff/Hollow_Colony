@@ -185,6 +185,9 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - **Reset campaign** wist ook het rooster. In skirmish wordt niets bewaard.
 - Instelbaar bovenaan in de code: `RANKS`, `VET_XP`, `ROSTER_MAX` en de namenlijst `SURNAMES`.
 
+### Bovenbalk
+Midden in de bovenbalk staan de **titel van de missie** en de **mode**: welke campagne en het missienummer (*Corps 4*, *Swarm 2*, *Corps training*, *Skirmish*) en de moeilijkheid. Hover voor de volledige uitleg.
+
 ### Selectiepaneel en knoppen
 - Bovenaan het selectiepaneel staan **groepschips**: *1 5/7* betekent dat 5 van de 7 leden van groep 1 geselecteerd zijn; groen is precies die groep. Elke eenheid toont in haar vakje de nummers van de groepen waarin ze zit.
 - Geselecteerde troepen staan **gegroepeerd per type**, altijd in dezelfde volgorde (Trooper, Gunner, Pyro, Medic, Engineer …), met het aantal bij elke groep en de meest ervaren eerst. Klik op de groepsnaam om alleen dat type te selecteren.
@@ -276,6 +279,7 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
   - De **eindvorm** is een **krijger**: hij verlaat de schimmel en jaagt op je squad. Hij schiet **geen wortel** meer en wordt nooit een hive (alleen je eigen wezen in *The Graft* doet dat nog, met F).
   - **Terug naar de schimmel:** heeft een volgroeide Husk een soldaat neergehaald of gedood, of heeft hij niets meer om tegen te vechten, en heeft hij minder dan 65% van zijn levenspunten (`HUSK_WARRIOR.mendAt`), dan valt hij terug (*FALLS BACK*) naar de schimmel van de dichtstbijzijnde hive. Onderweg vecht hij niet; op de schimmel geneest hij en vecht hij alleen tegen wat tot bij hem komt. Vanaf 95% (`mendDone`) gaat hij een nieuw slachtoffer zoeken (*HUNTING*). Is er geen hive met schimmel meer of geen weg erheen, dan vecht hij gewoon door.
   - **Oorlogsbende:** een volgroeide Husk trekt ten strijde met **3 Swarm-wezens** rond zich (`HUSK_WARRIOR.escort`): eerst vrije wezens binnen 14 tegels, de rest komt uit het nest waar hij staat. Elke 12 seconden vult hij aan (ook na het genezen). Ze lopen mee, vechten wat dichtbij komt en volgen hem terug naar de schimmel.
+  - **De jacht** (`HUNT` in js/engine/12-swarm-director.js), ook tijdens het spelen: om de 30 seconden krijgt een volgroeide Husk te horen waar je soldaten zijn en leidt hij de aanval (*THE HUNT*). Een verse groep uit het nest dat het dichtst bij hem ligt, sluit zich bij zijn bende aan (tot 8 wezens). Wezens die niets te doen hebben, gaan ook zoeken. Is er geen Husk, dan gaat er een **gewone golf** op een soldaat af. Dat komt bovenop de eigen golven van de missie; elke ronde is iets groter (tot 10 rondes ver). Een missie kan het uitzetten met `swarm.hunt:false`. Na een nederlaag om de 20 seconden en groter.
   - **De laatste slag is voor de Husk:** zou een Swarm-wezen een soldaat neerhalen terwijl er een volgroeide Husk binnen 6 tegels is (`finishR`), dan houden ze hem op 1 HP vast en komt de Husk hem afmaken. Zijn eigen bende wacht altijd op hem, hoe ver hij ook staat. Boven een volgroeide Husk staat een **doodshoofdje met zijn kills** (`2/4`: nog 2 tot Matriarch); in het selectiepaneel staat *Kills*. Een Matriarch houdt zijn telling. Zo telt elke kill mee voor zijn groei naar Matriarch. Haal je soldaat daar weg, of laat een Medic hem oplappen. Wordt hij een Matriarch, dan blijft de bende bij hem.
   - **Schreeuw:** brengt een Husk een soldaat neer of doodt hij er een, dan schreeuwt hij (*SCREAM*, een rode schokgolf): de soldaten binnen 3,5 tegels deinzen terug (ze zijn even onderdrukt: trager, zoals onder zwaar vuur). `HUSK_WARRIOR` in js/engine/25-hive-life.js.
   - In het selectiepaneel zie je in welk stadium hij zit (*Twitcher (turning into a Husk)*).
@@ -450,7 +454,7 @@ De andere missies volgen. Getest met een eenvoudige automatische speler: op Easy
 ---
 
 ### Na een nederlaag: de strijd loopt door
-Mislukt een missie, dan is het rapport (*Defeat*) **doorzichtig** en speelt het gevecht erachter gewoon verder: de Swarm sleept zijn doden weg, Husks komen uit, golven trekken verder. De mist verdwijnt, zodat je alles ziet. Je kan de camera verslepen (muis), met de pijltjestoetsen bewegen of op de minimap klikken. Met **Watch the field** verberg je het rapport helemaal; **Show report** bovenaan haalt het terug. Triggers en scripts lopen niet meer (`afterDefeat()` in js/engine/14-mission-api-triggers.js).
+Mislukt een missie, dan is het rapport (*Defeat*) **doorzichtig** en speelt het gevecht erachter gewoon verder: de Swarm sleept zijn doden weg, Husks komen uit, golven trekken verder. De mist verdwijnt, zodat je alles ziet. Je kan de camera verslepen (muis), met de pijltjestoetsen bewegen of op de minimap klikken. Met **Watch the field** verberg je het rapport helemaal; **Show report** bovenaan haalt het terug. Triggers en scripts lopen niet meer (`afterDefeat()` in js/engine/14-mission-api-triggers.js). Zolang er nog soldaten leven, **jaagt de Swarm ze op** (zie *De jacht* bij de Husk): om de 20 seconden, met een gewone golf als er geen Husk is.
 
 ## Opslaan en verdergaan
 
