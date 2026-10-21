@@ -444,6 +444,9 @@ De andere missies volgen. Getest met een eenvoudige automatische speler: op Easy
 
 ---
 
+### Na een nederlaag: de strijd loopt door
+Mislukt een missie, dan is het rapport (*Defeat*) **doorzichtig** en speelt het gevecht erachter gewoon verder: de Swarm sleept zijn doden weg, Husks komen uit, golven trekken verder. De mist verdwijnt, zodat je alles ziet. Je kan de camera verslepen (muis), met de pijltjestoetsen bewegen of op de minimap klikken. Met **Watch the field** verberg je het rapport helemaal; **Show report** bovenaan haalt het terug. Triggers en scripts lopen niet meer (`afterDefeat()` in js/engine/14-mission-api-triggers.js).
+
 ## Opslaan en verdergaan
 
 - In het **pauzemenu** (P of Esc) staat **Save game**: de hele lopende missie wordt in deze browser bewaard (`hc-save`, één plaats: een nieuwe save vervangt de vorige). Je ziet een melding met de missie en de klok.

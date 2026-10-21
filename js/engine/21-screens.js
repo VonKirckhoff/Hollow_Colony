@@ -276,9 +276,15 @@ function showEnd(){
   const LM=m.side==='swarm'?SWARM_MISSIONS:MISSIONS, idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=m.side==='swarm'?'swarm':'corps';
   if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;
   btns+=`<button class="btn ${o.win&&(m.training||idx>=0)&&idx<LM.length-1?'':'primary'}" type="button" id="e-retry">${o.win?'Play again':'Retry'}</button><button class="btn" type="button" id="e-menu">Main menu</button>`;
-  $('#e-buttons').innerHTML=btns; show('end');
+  if(!o.win) btns+=`<button class="btn" type="button" id="e-watch" data-tip="Watch the field|Hide this report and watch the battle play on. Drag, the arrow keys or the minimap move the camera.">Watch the field</button>`;
+  $('#e-buttons').innerHTML=btns;
+  /* a lost mission: the report is see-through and the battle plays on behind it (afterDefeat) */
+  const se=$('#s-end'); se.classList.toggle('aftermath',!o.win); se.classList.remove('watching'); $('#e-report').hidden=true; show('end');
+  $('#e-watch')?.addEventListener('click',()=>{ se.classList.add('watching'); $('#e-report').hidden=false; $('#e-report').focus({preventScroll:true}); });
   $('#e-next')?.addEventListener('click',()=>openBriefing(idx+1));
   $('#e-retry').addEventListener('click',()=>startMission(lastMission));
   $('#e-menu').addEventListener('click',()=>goMenu('menu'));
   ($('#e-next')||$('#e-retry')).focus({preventScroll:true});
 }
+
+$('#e-report').addEventListener('click',()=>{ $('#s-end').classList.remove('watching'); $('#e-report').hidden=true; });

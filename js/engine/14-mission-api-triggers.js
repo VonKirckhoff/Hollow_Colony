@@ -103,6 +103,9 @@ function runTriggers(){
   if(!G.over && G.side==='swarm'){ if(!G.ents.some(e=>!e.dead&&e.faction==='swarm'&&(e.kind==='unit'||e.type==='hive'||e.type==='cocoon'))) endGame(false,'The brood is ash. Nothing is left to remember the hunger.'); }
   else if(!G.over && !G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground)) endGame(false,'Your forces have been wiped out.');
 }
+/* After a defeat the battle carries on behind the report: the simulation keeps running (no more triggers), the fog lifts
+   and you can pan around to watch what the Swarm does next (23-main-loop.js, 13-fog-of-war.js, 20-input.js, showEnd). */
+function afterDefeat(){ return !!(G&&G.over&&!G.over.win); }
 function endGame(win,text){
   if(G.over) return; G.over={win,text,at:performance.now()}; SFX.play(win?'win':'lose');
   if(win || G.realDeath) settleRoster();   /* real death: a lost mission counts too */

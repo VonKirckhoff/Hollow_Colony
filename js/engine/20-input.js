@@ -4,6 +4,7 @@ function toWorld(sx,sy){ return {x:sx+Math.round(G.cam.x), y:sy+Math.round(G.cam
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 $('#hud').addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{
+  if(G&&afterDefeat()&&(ui.mode==='game'||ui.mode==='end')){ stopFollow(); ui.pan={x:e.clientX,y:e.clientY,cam:{...G.cam}}; cv.setPointerCapture(e.pointerId); e.preventDefault(); return; }   /* watching after a defeat: any drag pans the camera */
   if(ui.mode!=='game'||!G||G.over) return; cv.setPointerCapture(e.pointerId);
   const w=toWorld(e.clientX,e.clientY);
   if(e.pointerType==='touch'){ ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,touch:true,cam:{...G.cam}}; return; }
@@ -66,7 +67,7 @@ window.addEventListener('pointerup',e=>{
 // minimap
 let mmDrag=false;
 function minimapPointer(e){ const r=mm.getBoundingClientRect(); const x=(e.clientX-r.left)/G.mmScale*TILE, y=(e.clientY-r.top)/G.mmScale*TILE; return {x,y,move:()=>{ stopFollow(); centerOn(x,y); }}; }
-mm.addEventListener('pointerdown',e=>{ if(!G) return; e.preventDefault(); const p=minimapPointer(e); if(e.button===2){ smartCommand(p.x,p.y); return; } mmDrag=true; p.move(); });
+mm.addEventListener('pointerdown',e=>{ if(!G) return; e.preventDefault(); const p=minimapPointer(e); if(e.button===2){ if(!G.over) smartCommand(p.x,p.y); return; } mmDrag=true; p.move(); });
 mm.addEventListener('pointermove',e=>{ if(mmDrag&&G) minimapPointer(e).move(); });
 // HUD clicks (delegated, on pointerdown so rebuilt markup never swallows a click)
 $('#cmdcard').addEventListener('pointerdown',e=>{ const b=e.target.closest('[data-cmd]'); if(!b) return; e.preventDefault(); const c=CMDS[+b.dataset.cmd]; if(c) c.act(); G.selDirty=true; });
@@ -90,6 +91,7 @@ function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.targe
   tip.style.left=clamp(e.clientX+14,8,innerWidth-r.width-8)+'px'; tip.style.top=clamp(e.clientY-r.height-14,8,innerHeight-r.height-8)+'px'; }
 window.addEventListener('keydown',e=>{
   if(e.target&&e.target.closest&&e.target.closest('#dev')) return;   /* typing in the dev panel */
+  if(G&&afterDefeat()&&ui.mode==='end'&&e.key.startsWith('Arrow')){ ui.keys[e.key]=true; e.preventDefault(); return; }   /* arrow keys pan while you watch after a defeat */
   if(ui.mode!=='game'||!G) { if(e.key==='Escape'&&ui.mode==='pause'){ if($('#s-pause').hidden) show('pause'); else pause(false); } return; }   /* Esc in the Field Manual (from pause) goes back to the pause menu */
   if(e.key==='Enter'&&G.vars&&G.vars.cardOpen){ e.preventDefault(); tutConfirm(); return; }   /* a training card is open: Enter closes it, every other key still plays */
   ui.keys[e.key]=true;
@@ -126,7 +128,7 @@ window.addEventListener('keyup',e=>{ ui.keys[e.key]=false; });
 function startFollow(){ if(ui.follow&&G) G.following=true; }
 function stopFollow(){ if(G) G.following=false; }
 function updateCamera(dt){
-  if(!G||ui.mode!=='game') return; let vx=0, vy=0; const sp=760*dt, edge=10;
+  if(!G||!(ui.mode==='game'||ui.mode==='end'&&afterDefeat())) return; let vx=0, vy=0; const sp=760*dt, edge=10;
   if(ui.keys.ArrowLeft) vx-=sp; if(ui.keys.ArrowRight) vx+=sp; if(ui.keys.ArrowUp) vy-=sp; if(ui.keys.ArrowDown) vy+=sp;
   if(ui.mouse.inWin && !ui.overDev && !ui.drag && !ui.pan && !mmDrag && matchMedia('(pointer:fine)').matches){ if(ui.mouse.x<edge) vx-=sp; if(ui.mouse.x>ui.vw-edge) vx+=sp; if(ui.mouse.y<edge) vy-=sp; if(ui.mouse.y>ui.vh-edge) vy+=sp; }
   if(vx||vy){ stopFollow(); G.cam.x+=vx; G.cam.y+=vy; clampCam(); }

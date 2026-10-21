@@ -1,6 +1,7 @@
 'use strict';
 /* ---------- 2l. fog of war ---------- */
 function computeFog(){
+  if(afterDefeat()){ G.vis.fill(1); G.seen.fill(1); return; }   /* the mission is lost: the fog lifts so you can watch the Swarm */
   const m=G.map, W=m.w; G.vis.fill(0);
   const mark=(x,y,r)=>{ const cx=Math.floor(x/TILE), cy=Math.floor(y/TILE), R=Math.ceil(r);
     for(let j=-R;j<=R;j++) for(let i=-R;i<=R;i++){ if(i*i+j*j>r*r+0.5) continue; const X=cx+i, Y=cy+j; if(X<0||Y<0||X>=W||Y>=m.h) continue; const k=Y*W+X; G.vis[k]=1; G.seen[k]=1; } };

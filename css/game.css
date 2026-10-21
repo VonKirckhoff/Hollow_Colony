@@ -536,3 +536,10 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #dev .dv-export{margin:0 8px 8px;height:120px;font:11px monospace;color:var(--ink);background:rgba(0,0,0,.6);border:1px solid var(--line);}
 #dev select[data-dv=unit]{width:100%;margin-bottom:6px;}
 #dev .dv-help{padding:6px 8px;min-height:44px;border-top:1px solid var(--line);font-size:11px;line-height:1.4;color:#c9cedb;background:rgba(0,0,0,.25);} #dev .dv-help b{color:#ffb347;font-weight:normal;margin-right:4px;} #dev .dv-help i{color:var(--dim);}
+
+/* ---------- a lost mission: the battle stays visible (and keeps running) behind the report ---------- */
+#s-end.aftermath{pointer-events:none;background:linear-gradient(90deg,rgba(7,8,12,.9) 0%,rgba(7,8,12,.72) 38%,rgba(7,8,12,.12) 62%,rgba(7,8,12,0) 100%);}
+#s-end.aftermath .sheet{pointer-events:auto;}
+#s-end.watching{background:none;}
+#s-end.watching .sheet{display:none;}
+#e-report{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);pointer-events:auto;z-index:11;}
