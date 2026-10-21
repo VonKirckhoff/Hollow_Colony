@@ -92,6 +92,8 @@ const BUILDINGS = {
   uplink:    { name:'Uplink Beacon', faction:'corps', size:2, hp:1, sight:3, art:'uplink', noBlock:true, ground:true, capture:true, captureTime:20, loseTime:15,
                desc:'Stand next to it with no Swarm close by to capture it. The Swarm takes it back if it holds the beacon unopposed.' },
   /* Mission objects (placed by mission scripts, never built by the player) */
+  shaft:     { name:'Mine Shaft', faction:'swarm', size:2, hp:1, sight:0, art:'shaft', noBlock:true, ground:true,
+               desc:'An old mine shaft that goes down into the deep tunnels. Once the hives are gone, the Swarm keeps coming up out of it. It cannot be destroyed.' },
   generator: { name:'Generator', faction:'corps', size:2, hp:2000, sight:2, art:'generator', generator:true, noDestroy:true,
                startHp:0.05, failAt:0.6, light:9,
                desc:'Colony power. Starts broken: Engineers repair it. Running, it lights the area around it, and the Swarm comes for the light. It shuts down when badly damaged.' },

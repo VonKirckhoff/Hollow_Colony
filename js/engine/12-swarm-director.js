@@ -8,6 +8,7 @@ function pickSwarmType(maxCost,only){
   let tot=opts.reduce((s,k)=>s+UNITS[k].weight,0), r=Math.random()*tot; for(const k of opts){ r-=UNITS[k].weight; if(r<=0) return k; } return opts[0]; }
 function swarmCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss).length; }
 function hives(){ return G.ents.filter(e=>e.type==='hive'&&!e.dead); }
+function shafts(){ return G.ents.filter(e=>e.type==='shaft'&&!e.dead); }
 /* Waves: they grow for the first few waves and then stop growing, they shrink as you burn hives, and the Swarm never
    fields more than a set number of creatures at once (a wave that would go over waits).
    Per mission in swarm.waves: max (biggest wave budget), growWaves (how many waves keep growing); in swarm: maxAlive. */
@@ -22,7 +23,7 @@ function nextWaveDue(){ const S=G.swarm; if(roamCount()>=swarmCap()*0.85){ S.nex
 function updateSwarm(dt){
   const S=G.swarm, cfg=S.cfg, hs=hives();
   if(S.hives0==null) S.hives0=hs.length;
-  if(!hs.length){ if(cfg.burrows && cfg.waves && G.time>=S.nextWave && swarmCount()<=14*G.diff.budget){ S.waveN++; launchWave(waveBudget()); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
+  if(!hs.length){ if((cfg.burrows||shafts().length) && cfg.waves && G.time>=S.nextWave && nextWaveDue()){   /* no hive left: they burrow up, or come up the mine shafts */ S.waveN++; launchWave(waveBudget()); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
   S.biomass+=cfg.rate*hs.length*dt;
   for(const h of hs){
     hiveWatch(h,dt);
@@ -55,7 +56,16 @@ function burrowSpot(aim){
 }
 function launchWave(budget,aim){
   let hs=hives(); const out=[]; let left=budget, guard=0;
-  if(!hs.length){
+  if(!hs.length&&shafts().length){   /* mine shafts: the wave comes up out of one (the nearest to its goal, not one your troops stand on) */
+    const corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'), ok=shafts().filter(s=>!corps.some(c=>dist(c,s)<6*TILE)), pool=ok.length?ok:shafts();
+    const sh=aim?pool.sort((a,b)=>dist(a,aim)-dist(b,aim))[0]:pick(pool), room=swarmCap()-roamCount(), wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types;
+    const tiles=freeTilesNear(Math.floor(sh.x/TILE),Math.floor(sh.y/TILE),24);
+    while(left>=15 && guard++<80 && out.length<Math.min(room,tiles.length)){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
+      const s=tiles[out.length], u=makeUnit(type,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u);
+      for(let j=0;j<5;j++) G.fx.push({k:'ember',x:sh.x+rand(-14,14),y:sh.y+rand(-6,8),vx:rand(-40,40),vy:rand(-90,-30),t:0.8,max:0.8,col:pick(['#8a7a6a','#a6ff4a'])}); }
+    if(out.length){ if(isVisible(sh)||G.seen[Math.floor(sh.y/TILE)*G.map.w+Math.floor(sh.x/TILE)]) G.pings.push({x:sh.x,y:sh.y,t:0,col:'#a6ff4a'}); SFX.play('hatch',sh.x,sh.y);
+      if(!G.shaftWarned){ G.shaftWarned=true; say('Dr. Maas','The hives are gone, but listen: they are climbing up the old mine shafts. The tunnels under this town go deep.','alert'); } }
+  } else if(!hs.length){
     const spot=burrowSpot(aim); if(!spot) return [];
     const types=[], wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types; while(left>=15 && guard++<80){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass; types.push(type); }
     const tiles=freeTilesNear(spot.x,spot.y,types.length);
@@ -72,7 +82,7 @@ function launchWave(budget,aim){
   }
   for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery&&!deadGen(u,e)) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed);
     if(t){ u.order={type:'amove',x:t.x+rand(-30,30),y:t.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); } }
-  if(hs.length) waveTactic(out);
+  if(hs.length||shafts().length) waveTactic(out);
   if(out.length){ SFX.play('horn'); say('Alert','Swarm movement detected. A wave is coming.','alert'); }
   return out;
 }

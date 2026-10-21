@@ -89,6 +89,15 @@ const ART = {
     disc(x,16,16,14,P.k); disc(x,16,16,13,'#3a4150'); disc(x,16,16,9,'#2c323e');
     for(let a=0;a<8;a++){ const ang=a*Math.PI/4; x.fillStyle=a%2?P.y:P.k; x.fillRect(Math.round(16+Math.cos(ang)*11)-1,Math.round(16+Math.sin(ang)*11)-1,3,3); }
     x.fillStyle=P.k; x.fillRect(14,5,4,20); x.fillStyle=P.a; x.fillRect(15,5,2,20); oval(x,16,6,6,3,P.k); oval(x,16,6,5,2,P.a); x.fillStyle=P.v; x.fillRect(15,4,2,2); return c; },
+  /* an old mine shaft: rubble, a broken timber frame and a pit that goes down forever (the Swarm comes up out of it) */
+  shaft(){ const [c,x]=pxCtx(32,32);
+    oval(x,16,18,15,11,'#1d1a16'); oval(x,16,18,14,10,'#2a2620');
+    for(const [a,b,w,h,col] of [[3,14,3,2,'#4b4640'],[5,24,4,2,'#5d574f'],[24,25,3,2,'#4b4640'],[27,15,3,3,'#5d574f'],[10,27,3,2,'#3d3934'],[20,28,4,2,'#5d574f'],[2,19,2,2,'#5d574f']]){ x.fillStyle=col; x.fillRect(a,b,w,h); }
+    oval(x,16,19,10,7,'#0c0b0d'); oval(x,16,20,7,5,'#000000');
+    oval(x,16,22,4,1,'rgba(130,210,50,.45)'); x.fillStyle='rgba(166,255,74,.6)'; x.fillRect(14,22,1,1); x.fillRect(18,21,1,1);
+    x.fillStyle='#3a2a18'; x.fillRect(6,7,3,14); x.fillRect(23,7,3,14); x.fillStyle='#5a4128'; x.fillRect(7,7,1,13); x.fillRect(24,7,1,13);
+    x.fillStyle='#3a2a18'; x.fillRect(4,5,24,3); x.fillStyle='#6b4c2c'; x.fillRect(4,5,24,1); x.fillStyle='#000'; x.fillRect(17,5,2,3);
+    x.fillStyle='#5a4128'; x.fillRect(19,12,7,2); return c; },
   generator(){ const [c,x]=pxCtx(32,32); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(2,5,28,25); x.fillStyle=P.G; x.fillRect(3,6,26,23); x.fillStyle=P.A; x.fillRect(5,8,22,10);
     for(let i=0;i<5;i++){ x.fillStyle=P.k; x.fillRect(7+i*4,9,2,8); }

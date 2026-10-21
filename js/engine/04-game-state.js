@@ -29,6 +29,8 @@ function newGame(mission, diffKey){
   initPathBuffers();
   const st=mission.start;
   for(const [type,at] of st.buildings||[]){ const p=pt(at); const s=BUILDINGS[type].size; makeBuilding(type,'corps',p.x-Math.floor(s/2),p.y-Math.floor(s/2),true); }
+  /* mine shafts (start.shafts): when no hive is left, waves come up out of these */
+  for(const at of st.shafts||[]){ const p=pt(at); if(!p) continue; const s=makeBuilding('shaft','swarm',p.x-1,p.y-1,true); s.invuln=true; }
   for(const [at,label] of st.uplinks||[]){ const p=pt(at); const u=makeBuilding('uplink','corps',p.x-1,p.y-1,true); u.invuln=true; u.r=TILE; u.label=label; u.cap=0; u.owned=false; u.point=at; }
   if(mission.landingZone){ const L=mission.landingZone; const lz=makeBuilding('lz','corps',L.tx,L.ty,true); lz.flight=null; lz.invuln=true; lz.r=TILE*1.5; }
   /* hives: a map point ('a'), or { at:'a', hp, guardMax, guardEvery, guards:[types], aggro, aggroBrood, aggroCooldown, brood, rage } to tune one hive */
