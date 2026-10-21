@@ -28,7 +28,7 @@ function render(now){
   // decals
   for(const d of G.decals){ if(!inView(d)) continue; ctx.fillStyle=d.col; for(let i=0;i<5;i++){ const a=d.seed+i*1.7, rr=d.r*(0.35+0.25*((i*37+d.seed)%1)); ctx.fillRect(Math.round(d.x+Math.cos(a)*d.r*0.5-rr/2),Math.round(d.y+Math.sin(a)*d.r*0.35-rr/3),Math.round(rr),Math.round(rr*0.66)); } }
   drawPools(now);
-  for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||!inView(e)) continue; const a=ARTC[e.def.art]; ctx.globalAlpha=0.9; ctx.drawImage(a,e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); ctx.globalAlpha=1;
+  for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||!inView(e)) continue; if(e.wall){ drawTunnel(e,now); continue; }   /* a Swarm tunnel in the map wall */ const a=ARTC[e.def.art]; ctx.globalAlpha=0.9; ctx.drawImage(a,e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); ctx.globalAlpha=1;
     if(e.def.capture){ const r=e.size*TILE*0.62, col=e.state==='contested'?'#ff9a3c':e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffb347';
       ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.stroke();
       ctx.strokeStyle=col; ctx.beginPath(); ctx.arc(e.x,e.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*(e.cap||0)); ctx.stroke();
@@ -217,3 +217,11 @@ function drawFacingPreview(r){ const us=myUnits(); if(us.length<2||!us[0].format
   for(const o of pts){ const x=ox+o.x*c-o.y*s, y=oy+o.x*s+o.y*c; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); }
   ctx.strokeStyle='#5fe3b0'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(r.x1,r.y1); ctx.stroke();
   ctx.save(); ctx.translate(r.x1,r.y1); ctx.rotate(dir); ctx.fillStyle='#5fe3b0'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-6,-7); ctx.lineTo(-6,7); ctx.fill(); ctx.restore(); }
+
+/* a Swarm tunnel in the map wall (start.shafts entry with wall:'n'|'s'|'e'|'w'): the hole sits against the rock, its mouth faces the map */
+const WALL_ROT={ n:0, e:Math.PI/2, s:Math.PI, w:-Math.PI/2 };
+function drawTunnel(b,now){ const a=WALL_ROT[b.wall]||0, art=ARTC.tunnel, w=art.width*2, h=art.height*2, p=1+Math.sin(now/600+b.id)*0.02;
+  ctx.save(); ctx.translate(Math.round(b.x+Math.sin(a)*8),Math.round(b.y-Math.cos(a)*8)); ctx.rotate(a); ctx.scale(p,p);
+  ctx.drawImage(art,-w/2,-h/2,w,h);
+  const g=ctx.createRadialGradient(0,-2,2,0,-2,18); g.addColorStop(0,`rgba(166,255,74,${0.12+0.08*Math.sin(now/350+b.id)})`); g.addColorStop(1,'rgba(166,255,74,0)');
+  ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(-20,-22,40,40); ctx.globalCompositeOperation='source-over'; ctx.restore(); }

@@ -11,11 +11,14 @@ MISSIONS.push(
     ],
     start:{ salvage:0, camera:'P',
       units:[ ['trooper','P',4], ['gunner','P',1], ['pyro','P',1], ['medic','P',1], ['engineer','P',1,{carry:'sentry'}] ],
-      buildings:[], hives:['a','b','c'] },
+      buildings:[], hives:['a','b','c'],
+      /* Swarm tunnels breaking out of the map wall, each with a little creep: bodies are dragged there and Husks hatch there.
+         Once every hive is burnt, the rescue waves come out of these, so the escort is never quiet. */
+      shafts:[ {x:40,y:2,wall:'n',creep:3,eggs:1}, {x:61,y:21,wall:'e',creep:3,eggs:1}, {x:38,y:41,wall:'s',creep:3,eggs:1} ] },
     limits:{ sentry:1 },
     noBuild:['sentry'],   /* one Sentry Gun: the Engineer cannot build one here; a lost sentry is replaced by dropship on the landing pad */
     tough:{ sentry:{ hp:2, armor:0.3 }, husk:{ hp:1.6, armor:0.3 } },   /* the one sentry and the Husks take a lot more killing here */
-    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null },   /* no waves, but the hives watch the road */
+    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null, shaftScale:0.85 },   /* no waves, but the hives watch the road; with the hives gone the rescue waves climb out of the wall tunnels, almost as big */
     objectives:[ { id:'lab', text:'Find Dr. Maas in the research lab' } ],
     // Dropship timer starts at the rescue; the mission is won once it has landed and Dr. Maas is on the pad.
     triggers:[
@@ -23,7 +26,9 @@ MISSIONS.push(
           /* the first rescue dropship, crashed outside the lab; and the door of the back room Maas locked herself into */
           makeBuilding('wreck','none',41,9,true); const d=makeBuilding('door','corps',53,4,true); d.tag='maasdoor';
           g.pad('P','home');   /* the landing pad where the squad was set down: replacement sentries land here */
-          g.marker('lab',{x:53,y:5},'Research lab'); g.reveal('1',3,5); } },
+          g.marker('lab',{x:53,y:5},'Research lab'); g.reveal('1',3,5); G.shaftWarned=true; } },   /* (our own line about the wall tunnels, below) */
+      { when:g=>g.near('corps',{x:40,y:3},5)>0 || g.near('corps',{x:60,y:21},5)>0 || g.near('corps',{x:38,y:40},5)>0, do:g=>g.say('Sgt. Kessler','Look at the wall. They chewed a tunnel straight through the rock, and that purple muck is growing round it.') },
+      { when:g=>g.vars.rescueT && g.hives()===0, do:g=>g.say('Dr. Maas','Burning the nests is not enough. They come out of the walls: the whole colony is riddled with their tunnels. Keep moving!','alert') },
       { when:g=>g.near('corps',{x:42,y:10},6)>0, do:g=>g.say('Sgt. Kessler','That is the Osprey. The first bird they sent for her. Still burning... nobody walked away from that.') },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, the colony is a maze of ruins. Stay together. The lab is in the north-east block.') },
       { when:g=>g.time>10, do:g=>g.say('Sgt. Kessler','Our Engineer is hauling our one Sentry Gun. Press D to set it up, U to pack it again. We cannot build another out here.') },

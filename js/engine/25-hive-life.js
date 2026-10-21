@@ -14,10 +14,10 @@ const HUSK  = { root:18, clear:13, spacing:16, reach:34, max:2, hiveHp:0.55, gua
 /* ---- creep ---- */
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
 function updateCreep(dt){
-  const m=G.map, W=m.w, H=m.h;
+  const m=G.map, W=m.w, H=m.h;   /* creep grows round every nest: hives and shafts with creep (nests()) */
   if(!G.creep){ G.creep=new Float32Array(W*H); G.creepTgt=new Float32Array(W*H); G.creepT=0; }
   if(!G.creepCv){ G.creepCv=document.createElement('canvas'); G.creepCv.width=W; G.creepCv.height=H; }   /* (also after loading a saved game: canvases are not saved) */
-  const hs=hives();
+  const hs=nests();
   for(const h of hs){ const max=hiveOpt(h,'creep',CREEP.max); if(h.creepR==null) h.creepR=Math.min(max,CREEP.start); if(h.creepR<max) h.creepR=Math.min(max,h.creepR+dt*Math.max(0.5,max-CREEP.start)/CREEP.grow); }
   G.creepT-=dt;
   if(G.creepT<=0){ const step=CREEP.every-G.creepT; G.creepT=CREEP.every;
@@ -156,7 +156,7 @@ function founderThink(u,dt){
 function mendThink(u){
   if(u.hp>=u.maxHp*HUSK_WARRIOR.mendDone){ u.mend=null; u.order=null; u.target=null; u.role='hunt';
     if(isVisible(u)) G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.2,max:1.2,txt:'HUNTING',col:'#ff5a4f'}); return false; }
-  const h=nearestOf(u,e=>e.type==='hive'&&!e.dead&&(e.creepR||0)>=1);
+  const h=nearestOf(u,e=>isNest(e)&&(e.creepR||0)>=1);
   if(!h){ u.mend=null; return false; }   /* no creep left anywhere: it fights on */
   if(creepAt(u.x,u.y)>CREEP.at && dist(u,h)<((h.creepR||2)+0.5)*TILE){   /* on the creep: it stays and heals */
     if(!u.order||u.order.type!=='hold'){ u.order={type:'hold'}; u.path=null; u.target=null; }
@@ -165,7 +165,7 @@ function mendThink(u){
     if(!u.path){ u.mend=null; u.order=null; return false; } }   /* no way back to the creep: it fights on */
   return true; }
 /* still turning: it guards the creep of the nearest hive (fights what comes close, but does not chase you off the creep) */
-function stayOnCreep(u){ const h=nearestOf(u,e=>e.type==='hive'&&!e.dead); if(!h){ u.role='hunt'; return false; }
+function stayOnCreep(u){ const h=nearestOf(u,isNest); if(!h){ u.role='hunt'; return false; }
   if(u.role!=='guard'||!u.guardAt||Math.hypot(u.guardAt.x-h.x,u.guardAt.y-h.y)>TILE){ u.role='guard'; u.homeHive=u.homeHive||h.id; u.guardAt={x:h.x,y:h.y}; u.order={type:'guard',x:h.x,y:h.y,wait:0}; u.target=null; setPath(u,h.x,h.y); }
   /* off the creep with nothing to fight: back onto it */
   if(creepAt(u.x,u.y)<CREEP.at && !u.target && (!u.order||u.order.type!=='move')){ const a=Math.atan2(u.y-h.y,u.x-h.x), r=Math.min(dist(u,h),3*TILE), x=h.x+Math.cos(a)*r, y=h.y+Math.sin(a)*r;
@@ -178,7 +178,7 @@ function huskScream(u){ if(!u||u.dead) return; const vis=isVisible(u); u.kills=(
   for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&dist(e,u)<HUSK_WARRIOR.screamR*TILE) e.suppressT=Math.max(e.suppressT||0,SQUAD.suppress.time);
   if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&u.kills>=HUSK_WARRIOR.matriarch&&canFound()){ becomeMatriarch(u); return; }
   /* wounded after its kill: back to the creep to heal first */
-  if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&!u.mend&&u.hp<u.maxHp*HUSK_WARRIOR.mendAt&&hives().some(h=>(h.creepR||0)>=1)){
+  if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&!u.mend&&u.hp<u.maxHp*HUSK_WARRIOR.mendAt&&nests().some(h=>(h.creepR||0)>=1)){
     u.mend=true; u.target=null; u.order=null;
     if(vis){ G.fx.push({k:'text',x:u.x,y:u.y-48,t:1.4,max:1.4,txt:'FALLS BACK',col:'#c38bff'});
       if(!G.saidMend){ G.saidMend=true; say('Dr. Maas','It is going back to the creep to heal. It will come out again for the next one of us. Do not let it get there!','alert'); } } } }
@@ -241,9 +241,10 @@ function eggsOf(h){ return G.ents.filter(e=>!e.dead&&e.type==='egg'&&e.hive===h.
 function layHiveEgg(h,x,y,target){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(!walkableT(tx,ty)) return null;
   const e=makeBuilding('egg','swarm',tx,ty,true); e.x=x; e.y=y; e.r=7; e.hive=h.id; if(target){ e.target=target; e.openT=EGG.open; } return e; }
 function updateHatchery(dt){
-  for(const h of hives()){ const max=hiveOpt(h,'eggs',EGG.max); if(!max) continue;
-    if(!h.eggInit){ h.eggInit=true; h.eggT=EGG.every; for(let i=0;i<max;i++) placeEgg(h,2.2,3.2); continue; }   /* a few eggs already waiting */
-    h.eggT-=dt; if(h.eggT<=0){ h.eggT=EGG.every; if(eggsOf(h).length<max&&(h.creepR||0)>=2.5) placeEgg(h,2.2,Math.min(5,Math.max(2.6,h.creepR-0.4))); } }
+  for(const h of nests()){ const max=hiveOpt(h,'eggs',EGG.max); if(!max) continue;
+    const r0=h.type==='hive'?2.2:1.4, cr=hiveOpt(h,'creep',CREEP.max);   /* a shaft's creep is small: eggs lie closer */
+    if(!h.eggInit){ h.eggInit=true; h.eggT=EGG.every; for(let i=0;i<max;i++) placeEgg(h,r0,Math.max(r0+0.6,Math.min(3.2,cr-0.6))); continue; }   /* a few eggs already waiting */
+    h.eggT-=dt; if(h.eggT<=0){ h.eggT=EGG.every; if(eggsOf(h).length<max&&(h.creepR||0)>=Math.min(2.5,cr)) placeEgg(h,r0,Math.min(5,Math.max(r0+0.4,h.creepR-0.4))); } }
   for(const e of G.ents){ if(e.dead||e.type!=='egg') continue;
     if(!G.ents.some(h=>!h.dead&&h.id===e.hive)){ e.hp-=5*dt; if(e.hp<=0){ kill(e,null); continue; } }   /* its hive is dead: it withers */
     if(e.target&&(e.target.dead||!e.target.home)){ e.target=null; e.openT=null; }

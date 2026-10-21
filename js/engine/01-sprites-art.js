@@ -113,6 +113,16 @@ const ART = {
     x.fillStyle='#3a2a18'; x.fillRect(6,7,3,14); x.fillRect(23,7,3,14); x.fillStyle='#5a4128'; x.fillRect(7,7,1,13); x.fillRect(24,7,1,13);
     x.fillStyle='#3a2a18'; x.fillRect(4,5,24,3); x.fillStyle='#6b4c2c'; x.fillRect(4,5,24,1); x.fillStyle='#000'; x.fillRect(17,5,2,3);
     x.fillStyle='#5a4128'; x.fillRect(19,12,7,2); return c; },
+  /* a Swarm tunnel breaking out of a rock wall (drawn with the wall at the top; rotated for other walls) */
+  tunnel(){ const [c,x]=pxCtx(32,32);
+    x.fillStyle='#2b2a2e'; x.fillRect(0,0,32,12); oval(x,16,8,16,8,'#2b2a2e');
+    for(const [a,b,w,h,col] of [[1,2,6,4,'#3a3940'],[9,0,7,3,'#45434b'],[20,1,8,4,'#3a3940'],[27,6,5,4,'#45434b'],[0,8,4,3,'#45434b'],[24,10,4,3,'#3a3940']]){ x.fillStyle=col; x.fillRect(a,b,w,h); }
+    oval(x,16,13,11,10,'#1c1720'); oval(x,16,14,9,8,'#0b080d'); oval(x,16,15,6,6,'#000000');
+    x.fillStyle='#3d2a46'; for(const [a,b] of [[7,9],[24,9],[9,5],[22,5],[16,3]]) x.fillRect(a,b,2,3);   /* ribs of hardened resin round the hole */
+    oval(x,16,24,12,5,'#4a2552'); oval(x,16,25,9,4,'#5f2f6a'); oval(x,16,23,6,2,'#2a1030');
+    for(const [a,b,w,h,col] of [[3,26,4,2,'#4b4640'],[25,27,4,2,'#5d574f'],[12,29,3,2,'#3d3934'],[20,29,3,2,'#4b4640']]){ x.fillStyle=col; x.fillRect(a,b,w,h); }
+    x.fillStyle='rgba(166,255,74,.75)'; x.fillRect(13,17,1,1); x.fillRect(19,16,1,1); x.fillRect(11,25,2,1); x.fillRect(21,24,1,1);
+    oval(x,16,18,3,1,'rgba(130,210,50,.4)'); return c; },
   generator(){ const [c,x]=pxCtx(32,32); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(2,5,28,25); x.fillStyle=P.G; x.fillRect(3,6,26,23); x.fillStyle=P.A; x.fillRect(5,8,22,10);
     for(let i=0;i<5;i++){ x.fillStyle=P.k; x.fillRect(7+i*4,9,2,8); }

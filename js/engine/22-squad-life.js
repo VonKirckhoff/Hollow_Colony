@@ -339,7 +339,7 @@ function updateBodies(dt){ const B=SQUAD.body;
     /* now and then the body calls the nearest free Swarm units: one to carry it home, a few to guard it */
     b.seekT=(b.seekT||0)-dt; if(b.seekT>0) continue; b.seekT=1;
     const mine=G.ents.filter(e=>!e.dead&&e.claim===b), R=B.seek*TILE*(G.side==='swarm'?1.8:1);
-    if(hives().length&&!b.carrier&&!mine.some(e=>e.claimMode==='haul')){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='haul'; u.target=null; } }
+    if(nests().length&&!b.carrier&&!mine.some(e=>e.claimMode==='haul')){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='haul'; u.target=null; } }
     if(mine.filter(e=>e.claimMode==='guard').length<B.escorts){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='guard'; } } } }
 /* a Swarm unit with a job at a body. Returns true while it is busy (swarmThink then leaves it alone). */
 function claimThink(u,dt){ const b=u.claim; if(!b) return false;
@@ -352,7 +352,7 @@ function claimThink(u,dt){ const b=u.claim; if(!b) return false;
     if(!u.order||u.order.type!=='guard'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>1.5*TILE){ u.order={type:'guard',x:b.x,y:b.y,wait:rand(1,3)}; if(d>2*TILE) setPath(u,b.x,b.y); }
     return true; }
   /* haul: carry it to the creep of the nearest hive */
-  if(b.carrier===u){ const h=nearestOf(u,e=>e.type==='hive'&&!e.dead);
+  if(b.carrier===u){ const h=nearestOf(u,isNest);   /* the nearest hive, or a shaft with creep */
     if(!h){ dropBody(b); return true; }
     if(gapTo(u,h)<TILE*0.9||(creepAt(u.x,u.y)>0.3&&dist(u,h)<((h.creepR||2)+0.5)*TILE)){ bodyHome(b,h,u); return false; }
     if(!u.order||u.order.type!=='move'){ const s=spawnSpotToward(h,u); u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y);
