@@ -64,7 +64,7 @@ const HUSK_STAGES = [
   { name:'Husk',     sprite:'husk',  hp:1,    speed:1,   dmg:1 }
 ];
 const MOLT = { time:1.6, vuln:1.5 };
-function huskStage(u,i){ const st=HUSK_STAGES[i], f=u.maxHp?u.hp/u.maxHp:1, base=u.def.hp*G.diff.hp;
+function huskStage(u,i){ const st=HUSK_STAGES[i], f=u.maxHp?u.hp/u.maxHp:1, base=toughHp(u.type)*G.diff.hp;
   u.stage=i; u.sprite=st.sprite; u.stageName=i<HUSK_STAGES.length-1?st.name:null; u.speedMul=st.speed; u.dmgMul=(G.diff.dmg||1)*st.dmg;
   u.maxHp=base*st.hp; u.hp=Math.min(u.maxHp,Math.max(u.maxHp*f,u.maxHp*0.5)); u.stageT=st.time||0; }
 function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=0;
@@ -141,14 +141,29 @@ function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* The Husk is a warrior. While it is still turning (Twitcher, Shambler) it stays on the creep of its hive and only fights what comes there;
    full grown, it leaves the creep and hunts (role 'hunt', see swarmThink). Only the creature you steer yourself in The Graft takes root (F).
    When a Husk kills a soldier it screams: the soldiers close by flinch (suppressed). Returns true while it is busy (molting, rooting). */
-const HUSK_WARRIOR = { stay:true, screamR:3.5, matriarch:4 };   /* matriarch: soldiers a full Husk must bring down (or kill) to grow into a Matriarch */
+const HUSK_WARRIOR = { stay:true, screamR:3.5, matriarch:4, mendAt:0.65, mendDone:0.95 };   /* matriarch: soldiers a full Husk must bring down (or kill) to grow into a Matriarch.
+   mendAt: a Husk that brings a soldier down while below this share of its health goes back to the creep to heal; mendDone: it hunts again from this share */
 function founderThink(u,dt){
   if(u.def.matriarch) return founderRoot(u,dt);   /* the Matriarch looks for a quiet place and takes root */
   if(huskGrow(u,dt)) return true;
   if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }   /* only your own creature (The Graft) */
   if(u.avatar||G.side==='swarm') return false;   /* yours: you decide */
   if(u.stage!=null&&u.stage<HUSK_STAGES.length-1&&HUSK_WARRIOR.stay) return stayOnCreep(u);
+  if(u.mend) return mendThink(u);
   return false; }
+/* a wounded Husk that just made a kill goes back to the creep of the nearest hive, heals there (it only fights what comes right up to it)
+   and goes hunting again once it is whole. Returns true while it is mending. */
+function mendThink(u){
+  if(u.hp>=u.maxHp*HUSK_WARRIOR.mendDone){ u.mend=null; u.order=null; u.target=null; u.role='hunt';
+    if(isVisible(u)) G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.2,max:1.2,txt:'HUNTING',col:'#ff5a4f'}); return false; }
+  const h=nearestOf(u,e=>e.type==='hive'&&!e.dead&&(e.creepR||0)>=1);
+  if(!h){ u.mend=null; return false; }   /* no creep left anywhere: it fights on */
+  if(creepAt(u.x,u.y)>CREEP.at && dist(u,h)<((h.creepR||2)+0.5)*TILE){   /* on the creep: it stays and heals */
+    if(!u.order||u.order.type!=='hold'){ u.order={type:'hold'}; u.path=null; u.target=null; }
+    return true; }
+  if(!u.order||u.order.type!=='move'){ const s=spawnSpotToward(h,u); u.target=null; u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y);
+    if(!u.path){ u.mend=null; u.order=null; return false; } }   /* no way back to the creep: it fights on */
+  return true; }
 /* still turning: it guards the creep of the nearest hive (fights what comes close, but does not chase you off the creep) */
 function stayOnCreep(u){ const h=nearestOf(u,e=>e.type==='hive'&&!e.dead); if(!h){ u.role='hunt'; return false; }
   if(u.role!=='guard'||!u.guardAt||Math.hypot(u.guardAt.x-h.x,u.guardAt.y-h.y)>TILE){ u.role='guard'; u.homeHive=u.homeHive||h.id; u.guardAt={x:h.x,y:h.y}; u.order={type:'guard',x:h.x,y:h.y,wait:0}; u.target=null; setPath(u,h.x,h.y); }
@@ -161,7 +176,12 @@ function huskScream(u){ if(!u||u.dead) return; const vis=isVisible(u); u.kills=(
   G.fx.push({k:'boom',x:u.x,y:u.y-14,t:0.5,max:0.5,r:HUSK_WARRIOR.screamR*TILE,col:'#ff5a4f'});
   if(vis){ SFX.play('huskroar',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.2,max:1.2,txt:'SCREAM',col:'#ff5a4f'}); G.shake=Math.max(G.shake||0,0.2); }
   for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&dist(e,u)<HUSK_WARRIOR.screamR*TILE) e.suppressT=Math.max(e.suppressT||0,SQUAD.suppress.time);
-  if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&u.kills>=HUSK_WARRIOR.matriarch&&canFound()) becomeMatriarch(u); }
+  if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&u.kills>=HUSK_WARRIOR.matriarch&&canFound()){ becomeMatriarch(u); return; }
+  /* wounded after its kill: back to the creep to heal first */
+  if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&!u.mend&&u.hp<u.maxHp*HUSK_WARRIOR.mendAt&&hives().some(h=>(h.creepR||0)>=1)){
+    u.mend=true; u.target=null; u.order=null;
+    if(vis){ G.fx.push({k:'text',x:u.x,y:u.y-48,t:1.4,max:1.4,txt:'FALLS BACK',col:'#c38bff'});
+      if(!G.saidMend){ G.saidMend=true; say('Dr. Maas','It is going back to the creep to heal. It will come out again for the next one of us. Do not let it get there!','alert'); } } } }
 /* may one more hive be founded? (swarm.husks new hives per mission, default HUSK.max; never more hives at once than hiveMax()) */
 function canFound(){ return (G.swarm.founded||0)+rooting()<huskCap() && hives().length+rooting()<hiveMax(); }
 /* a Husk that has fed enough grows into a Matriarch: bigger, tougher, and it will take root */

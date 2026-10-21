@@ -33,6 +33,8 @@ function cancelTrain(b,i){ const type=b.queue[i]; if(!type) return; G.salvage+=U
    a sentry folded up on an Engineer's back does not, so you leapfrog by packing one up first. */
 function fielded(type){ let n=0; for(const e of G.ents){ if(e.dead||e.faction!=='corps') continue;
     if(e.kind==='building'&&e.type===type) n++; else if(e.kind==='unit'&&e.order&&e.order.type==='build'&&!e.order.site&&e.order.btype===type) n++; } return n; }
+/* mission.noBuild:['sentry'] = Engineers cannot build that type here; it only comes folded up (start carry or a supply drop) */
+function noBuild(type){ return (G.mission.noBuild||[]).includes(type); }
 function limitOf(type){ const l=(G.mission.limits||{})[type]; return l===undefined?Infinity:l; }
 function atLimit(type){ return fielded(type)>=limitOf(type); }
 function limitMsg(type){ return `Limit reached: ${limitOf(type)} ${BUILDINGS[type].name}s in this mission. Pack one up first.`; }

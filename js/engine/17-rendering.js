@@ -51,7 +51,7 @@ function render(now){
   for(const e of G.sel){ if(!e.dead&&e.def&&e.def.ground){ ctx.strokeStyle='#5fe3b0'; ctx.lineWidth=2; ctx.strokeRect(e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); continue; }
     if(e.dead||!list.includes(e)) continue; ctx.strokeStyle=e.faction===G.side?'#5fe3b0':'#ff5a4f'; ctx.lineWidth=2;
     ctx.beginPath(); if(e.kind==='building') ctx.ellipse(e.x,e.y+e.r*0.35,e.r*1.1,e.r*0.75,0,0,Math.PI*2); else ctx.ellipse(e.x,e.y+4,e.r+4,(e.r+4)*0.55,0,0,Math.PI*2); ctx.stroke(); }
-  for(const e of list){ if(e.kind==='unit') drawUnit(e); else if(e.kind==='building') drawBuilding(e,now); else if(e.kind==='body') drawBody(e,now); else if(e.relic) drawRelic(e,now); else ctx.drawImage(ARTC.crate,Math.round(e.x-12),Math.round(e.y-10+Math.sin(now/300+e.id)*1.5),24,20); }
+  for(const e of list){ if(e.kind==='unit') drawUnit(e); else if(e.kind==='building') drawBuilding(e,now); else if(e.kind==='body') drawBody(e,now); else if(e.relic) drawRelic(e,now); else if(e.supply) drawSupply(e,now); else ctx.drawImage(ARTC.crate,Math.round(e.x-12),Math.round(e.y-10+Math.sin(now/300+e.id)*1.5),24,20); }
   for(const e of shimmer){ const sp=SPR[e.def.sprite], s=2; ctx.globalAlpha=0.1+0.08*Math.sin(now/90+e.id); ctx.drawImage(e.face>0?sp.flash:sp.flashFlip,Math.round(e.x-sp.w+Math.sin(now/60)*2),Math.round(e.y-sp.h*s+4),sp.w*s,sp.h*s); ctx.globalAlpha=1; }
   // heal beams
   for(const e of list){ if(e.beam&&!e.beam.dead){ ctx.strokeStyle='rgba(120,255,190,.75)'; ctx.lineWidth=2; ctx.setLineDash([2,3]); ctx.lineDashOffset=-now/40; ctx.beginPath(); ctx.moveTo(e.x+e.face*4,e.y-12); ctx.lineTo(e.beam.x,e.beam.y-10); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='#9fffd0'; ctx.fillRect(e.beam.x-1,e.beam.y-22-((now/120)%8),2,2); } }

@@ -7,12 +7,14 @@ MISSIONS.push(
     briefing:[
       'A faint distress beacon is transmitting from Hollow Colony, the first settlement on the moon and the place where the Swarm first appeared.',
       'The signal belongs to Dr. Elin Maas, the biologist who studied the Swarm before the colony fell. She is holed up in the research lab with a data core that could explain how the Swarm breeds.',
-      'Find her and bring her and the core to the extraction pad in the south-east. Your Engineer carries a folded Sentry Gun. Use it well.'
+      'Find her and bring her and the core to the extraction pad in the south-east. Your Engineer carries a folded Sentry Gun, the only one we could spare. Lose it and Kestrel can fly a new one to your landing pad, but your Engineer will have to walk back for it.'
     ],
     start:{ salvage:0, camera:'P',
       units:[ ['trooper','P',4], ['gunner','P',1], ['pyro','P',1], ['medic','P',1], ['engineer','P',1,{carry:'sentry'}] ],
       buildings:[], hives:['a','b','c'] },
     limits:{ sentry:1 },
+    noBuild:['sentry'],   /* one Sentry Gun: the Engineer cannot build one here; a lost sentry is replaced by dropship on the landing pad */
+    tough:{ sentry:{ hp:2, armor:0.3 }, husk:{ hp:1.6, armor:0.3 } },   /* the one sentry and the Husks take a lot more killing here */
     swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null },   /* no waves, but the hives watch the road */
     objectives:[ { id:'lab', text:'Find Dr. Maas in the research lab' } ],
     // Dropship timer starts at the rescue; the mission is won once it has landed and Dr. Maas is on the pad.
@@ -20,10 +22,15 @@ MISSIONS.push(
       { when:g=>g.time>0.2, do:g=>{
           /* the first rescue dropship, crashed outside the lab; and the door of the back room Maas locked herself into */
           makeBuilding('wreck','none',41,9,true); const d=makeBuilding('door','corps',53,4,true); d.tag='maasdoor';
+          g.pad('P','home');   /* the landing pad where the squad was set down: replacement sentries land here */
           g.marker('lab',{x:53,y:5},'Research lab'); g.reveal('1',3,5); } },
       { when:g=>g.near('corps',{x:42,y:10},6)>0, do:g=>g.say('Sgt. Kessler','That is the Osprey. The first bird they sent for her. Still burning... nobody walked away from that.') },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, the colony is a maze of ruins. Stay together. The lab is in the north-east block.') },
-      { when:g=>g.time>10, do:g=>g.say('Sgt. Kessler','Our Engineer is hauling a folded Sentry Gun. Press D to set it up, U to pack it again.') },
+      { when:g=>g.time>10, do:g=>g.say('Sgt. Kessler','Our Engineer is hauling our one Sentry Gun. Press D to set it up, U to pack it again. We cannot build another out here.') },
+      /* the sentry is gone (destroyed, or lost with the Engineer carrying it): Kestrel flies a new one to the landing pad */
+      { repeat:true, when:g=>g.time>3 && g.supplies('sentry')===0, do:g=>{ const n=g.vars.sentryDrops=(g.vars.sentryDrops||0)+1, t=({easy:60,normal:80,hard:100})[G.diffKey]||80;
+          g.supplyDrop('sentry','home',t);
+          g.say('Cmdr. Varga',n===1?`We lost the Sentry Gun. Kestrel is flying a replacement to your landing pad, ${t} seconds out. Your Engineer has to go and get it.`:`Another sentry down. One more on its way to the landing pad, ${t} seconds. Make this one count.`); } },
       { when:g=>g.near('corps','3',5)>0 || g.near('corps','5',4)>0, do:g=>{
           g.say('Sgt. Kessler','Swarm bodies here. Shot clean through, skulls taken. That was not us.'); g.vars.clue=true; } },
       /* the door of her back room opens, and she steps out to the squad */

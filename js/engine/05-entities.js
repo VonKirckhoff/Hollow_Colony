@@ -7,8 +7,13 @@ function makeUnit(type,faction,x,y){
   if(faction==='swarm') u.dmgMul=(G&&G.diff&&G.diff.dmg)||1;   /* difficulty: Swarm damage */
   if(faction==='corps' && G && G.corpsDiff){ u.hp=u.maxHp=d.hp*G.corpsDiff.hp; u.dmgMul=G.corpsDiff.dmg; }   /* playing the Swarm: difficulty makes the Lunar Corps tougher */
   if(faction==='corps' && isSoldierType(type)) u.vet={ id:'v'+Date.now().toString(36)+NEXT_ID, name:freshName(), type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
+  const tg=toughOf(type); if(tg){ u.hp*=tg.hp||1; u.maxHp*=tg.hp||1; if(tg.armor!=null) u.armor=tg.armor; }
   G.ents.push(u); return u;
 }
+/* Per-mission toughness: mission.tough = { sentry:{ hp:2, armor:0.3 }, husk:{ hp:1.5, armor:0.3 } }.
+   hp multiplies the health, armor replaces the type's own armour (share of damage blocked). */
+function toughOf(type){ const t=G&&G.mission&&G.mission.tough; return (t&&t[type])||null; }
+function toughHp(type){ const d=UNITS[type]||BUILDINGS[type], tg=toughOf(type); return d.hp*((tg&&tg.hp)||1); }
 /* ---------- veterans ---------- */
 function isSoldierType(type){ return (BUILDINGS.hq.trains||[]).includes(type); }
 /* Every soldier name is unique: across the roster, the fallen and everyone fielded in this mission.
@@ -88,9 +93,10 @@ function settleRoster(){
   saveRoster(); G.rosterResult=res;
 }
 function makeBuilding(type,faction,tx,ty,built){
-  const d=BUILDINGS[type], s=d.size;
+  const d=BUILDINGS[type], s=d.size, hp=toughHp(type), tg=toughOf(type);
   const b={ id:NEXT_ID++, kind:'building', type, def:d, faction, tx, ty, size:s, x:(tx+s/2)*TILE, y:(ty+s/2)*TILE, r:s*TILE*0.42,
-    hp:built?d.hp:d.hp*0.1, maxHp:d.hp, built, progress:built?1:0, queue:[], prodT:0, rally:null, cd:0, angle:0, flash:0, target:null, acq:0 };
+    hp:built?hp:hp*0.1, maxHp:hp, built, progress:built?1:0, queue:[], prodT:0, rally:null, cd:0, angle:0, flash:0, target:null, acq:0 };
+  if(tg&&tg.armor!=null) b.armor=tg.armor;
   G.ents.push(b); if(!d.noBlock) setBlock(b,2);
   if(built && faction==='corps') G.stats.built++;
   return b;

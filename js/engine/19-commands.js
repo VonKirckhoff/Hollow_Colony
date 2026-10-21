@@ -24,7 +24,7 @@ function stanceOf(units){ if(!units.length) return null;
   if(units.every(u=>u.stance==='hold')) return 'hold';
   const f=units.filter(u=>u.def.damage&&!u.def.heal);   /* Medics and unarmed units never take the attack stance */
   return f.length&&f.every(u=>u.stance==='attack')?'attack':null; }
-function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; }
+function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(!deploy&&noBuild(type)){ toast(`No ${d.name}s can be built in this mission.`); return; } if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; }
 function tryPlace(keep){
   const s=placementSpot(), d=BUILDINGS[ui.placing.type];
   if(atLimit(ui.placing.type)){ toast(limitMsg(ui.placing.type)); ui.placing=null; G.selDirty=true; return; }

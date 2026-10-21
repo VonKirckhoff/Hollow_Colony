@@ -55,7 +55,7 @@ function damage(t,amt,src){
   if(t.invuln){ if(Math.random()<0.05) G.fx.push({k:'text',x:t.x,y:t.y-12,t:0.8,max:0.8,txt:'SEALED',col:'#ff9a3c'}); return; }
   if(t.bossState) t.bossState.calm=0;
   t.calm=0; t.hitAt=G.time;
-  if(t.def.armor) amt*=1-t.def.armor;
+  const armor=t.armor!=null?t.armor:t.def.armor; if(armor) amt*=1-armor;   /* t.armor: per mission (mission.tough) */
   amt=coverDamage(t,amt,src);
   if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */
   if(t.molt>0) amt*=MOLT.vuln;   /* a Husk shedding its skin is soft */

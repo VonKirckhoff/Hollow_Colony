@@ -76,7 +76,7 @@ function cmdButtons(){
     const lim=t=>limitOf(t)===Infinity?'':` (${fielded(t)}/${limitOf(t)} in the field)`;
     if(eng.some(e=>e.carry)) out.push({row:'Sentry',key:'D',img:ARTURL.sentry,off:atLimit('sentry'),cost:limitOf('sentry')===Infinity?0:`${fielded('sentry')}/${limitOf('sentry')}`,tip:`Deploy sentry|Set up the carried Sentry Gun. Takes 3 seconds and keeps its damage.${lim('sentry')}`,act:()=>startPlacing('sentry',true)});
     const free=eng.filter(e=>!e.carry);
-    if(free.length){ for(const bt of free[0].def.builds){ const d=BUILDINGS[bt];
+    if(free.length){ for(const bt of free[0].def.builds){ const d=BUILDINGS[bt]; if(noBuild(bt)) continue;   /* this mission flies it in instead (mission.noBuild) */
       out.push({row:'Build',key:d.key,img:ARTURL[d.art],cost:d.cost,off:G.salvage<d.cost||atLimit(bt),tip:`${d.name}|${d.desc} Cost ${d.cost}.${lim(bt)}`,act:()=>startPlacing(bt)}); }
       out.push({row:'Sentry',key:'U',glyph:'⇪',active:ui.picking==='pack',off:!G.ents.some(e=>e.type==='sentry'&&e.built&&!e.dead&&e.faction==='corps'),tip:'Pack up sentry|Then click one of your Sentry Guns. The Engineer folds it up and carries it, but walks slower. Right-clicking an undamaged sentry does the same.',
         act:()=>{ ui.picking='pack'; ui.placing=null; ui.amove=false; cv.classList.add('amove'); G.selDirty=true; }}); }

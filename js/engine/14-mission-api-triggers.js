@@ -58,6 +58,12 @@ function makeApi(){
     /* pad(at, tag): an extra landing pad (no orders), e.g. for a pickup. landShip(tag, seconds): a dropship lands there and waits. */
     pad(at,tag){ const p=pt(at); if(!p) return; const b=makeBuilding('lz','corps',p.x-1,p.y-1,true); b.flight=null; b.invuln=true; b.r=TILE*1.5; b.noOrders=true; b.tag=tag; G.stats.built--; return b; },
     landShip(tag,seconds=60){ const b=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&e.tag===tag); if(b) b.flight={ t:seconds, total:seconds, cargo:[], pickup:true }; },
+    /* supplyDrop(type, tag, seconds): the dropship flies a folded-up structure (e.g. 'sentry') to a pad (g.pad tag, or the mission's
+       Landing Zone without a tag). It is set down on the pad; an Engineer picks it up by walking onto it.
+       supplies(type): how many the Corps has anywhere (standing, carried, on a pad or on the way). */
+    supplyDrop(type,tag,seconds=60){ const lz=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&(tag?e.tag===tag:!e.noOrders)); if(!lz) return;
+      if(lz.flight) lz.flight.cargo.push(type); else lz.flight={ t:Math.max(5,seconds), total:Math.max(5,seconds), cargo:[type] }; G.selDirty=true; },
+    supplies:type=>suppliesOf(type),
     troops:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps').length,
     openWall(tag){ for(const e of G.ents) if((e.type==='membrane'||e.def&&e.def.scenery)&&e.tag===tag&&!e.dead){
         if(e.def.scenery){ e.dead=true; e.hp=0; setBlock(e,0); for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y,vx:rand(-50,50),vy:rand(-60,0),t:0.5,max:0.5,col:'#ffd23f'}); SFX.play('ack',e.x,e.y); }

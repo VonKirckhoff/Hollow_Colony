@@ -199,7 +199,7 @@ function builderThink(u,dt){
     const bd=b.def;
     const sp=hasPerk(u)?PERKS.engineer.speed:1;   /* Lieutenant Engineer: twice as fast */
     if(b.deploy){ b.progress+=dt*sp/bd.deployTime; b.hp=b.carryHp*(0.3+0.7*Math.min(1,b.progress)); }
-    else { b.progress+=dt*sp/bd.buildTime; b.hp=Math.min(b.maxHp,b.hp+bd.hp*0.9*dt*sp/bd.buildTime); }
+    else { b.progress+=dt*sp/bd.buildTime; b.hp=Math.min(b.maxHp,b.hp+b.maxHp*0.9*dt*sp/bd.buildTime); }
     if(b.progress>=1){ b.built=true; b.progress=1; if(!b.deploy){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; SFX.play('complete'); say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }
   } else { const rr=Math.min(b.maxHp-b.hp,d.repair*dt*(hasPerk(u)?PERKS.engineer.speed:1)); b.hp+=rr; if(u.vet){ u.vet.repaired=(u.vet.repaired||0)+rr; u.vet.rb=(u.vet.rb||0)+rr; if(u.vet.rb>=VET_XP.repairPerXp){ u.vet.rb-=VET_XP.repairPerXp; gainXP(u,1); } } }
 }

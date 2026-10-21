@@ -37,7 +37,7 @@ function newGame(mission, diffKey){
   for(const entry of st.hives||[]){ const hc=(entry&&typeof entry==='object'&&entry.at!==undefined)?entry:{at:entry}; const p=pt(hc.at); if(!p) continue;
     const h=makeBuilding('hive','swarm',p.x-1,p.y-1,true); h.spawnT=rand(2,6); h.cfg=hc; h.hp=h.maxHp=BUILDINGS.hive.hp*(hc.hp||st.hiveHp||1)*(G.diff.hiveHp||1); }
   G.reserve=[]; G.deployedIds=new Set();
-  for(const [type,at,n,opt] of st.units||[]) spawnAt(type,'corps',at,n).forEach(u=>{ u.home={x:u.x,y:u.y}; if(opt&&opt.carry) u.carry={type:opt.carry,hp:BUILDINGS[opt.carry].hp}; });
+  for(const [type,at,n,opt] of st.units||[]) spawnAt(type,'corps',at,n).forEach(u=>{ u.home={x:u.x,y:u.y}; if(opt&&opt.carry) u.carry={type:opt.carry,hp:toughHp(opt.carry)}; });
   for(const [type,at,n] of st.swarmUnits||[]) spawnAt(type,'swarm',at,n).forEach(u=>{ u.role='guard'; u.guardAt={x:u.x,y:u.y}; u.order={type:'guard',x:u.x,y:u.y,wait:rand(0,4)}; });
   for(const w of map.wild) spawnAt('grazer','wild',w,2).forEach(u=>u.home={x:u.x,y:u.y});
   for(const c of map.crates) G.ents.push({ id:NEXT_ID++, kind:'crate', x:(c.x+.5)*TILE, y:(c.y+.5)*TILE, value:40+Math.floor(Math.random()*3)*10, r:8, faction:'none' });

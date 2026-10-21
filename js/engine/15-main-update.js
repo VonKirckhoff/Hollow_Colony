@@ -18,6 +18,7 @@ function update(dt){
   // crates
   relicTick(dt);
   for(const c of G.ents){ if(c.kind!=='crate'||c.dead||c.relic) continue;
+    if(c.supply){ supplyPickup(c); continue; }   /* a flown-in structure: only an Engineer takes it */
     for(const u of G.ents){ if(u.kind==='unit'&&!u.dead&&u.faction==='corps'&&dist(u,c)<u.r+12){ c.dead=true; G.salvage+=c.value; G.stats.crates++; SFX.play('pickup'); G.fx.push({k:'text',x:c.x,y:c.y-10,t:1.2,max:1.2,txt:'+'+c.value,col:'#ffb347'}); break; } } }
   if(G.ents.some(e=>e.dead)) G.ents=G.ents.filter(e=>!e.dead);
   updateSwarm(dt);

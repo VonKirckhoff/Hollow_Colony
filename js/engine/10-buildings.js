@@ -27,9 +27,9 @@ function updateBuilding(b,dt){
     if(b.flight.t<1.6 && Math.random()<dt*30) dustPuff(b.x,b.y,1);
     if(b.flight.t<=0){ const cargo=b.flight.cargo, rally=b.flight.rally||b.rally, otype=b.flight.rally?'amove':'move', pickup=b.flight.pickup, ang=b.flight.ang; b.flight=null; if(rally!==b.rally) b.rallyN=0;
       b.ship={ phase:pickup?'parked':'ground', t:2.6, ang }; dustPuff(b.x,b.y,22); SFX.play('land',b.x,b.y);
-      for(const type of cargo){ const u=spawnNearBuilding(type,'corps',b,rally); if(!u) continue; fromReserve(u); G.stats.trained++;
+      for(const type of cargo){ if(!UNITS[type]){ dropSupply(b,type); continue; }   /* a folded-up structure (a Sentry Gun): set down on the pad for an Engineer */ const u=spawnNearBuilding(type,'corps',b,rally); if(!u) continue; fromReserve(u); G.stats.trained++;
         if(rally){ const n=(b.rallyN=(b.rallyN||0)+1), a=n*2.4, r=n===1?0:12+4*Math.sqrt(n), rx=rally.x+Math.cos(a)*r, ry=rally.y+Math.sin(a)*r; u.order={type:otype,x:walkableP(rx,ry)?rx:rally.x,y:walkableP(rx,ry)?ry:rally.y}; setPath(u,u.order.x,u.order.y); } else u.home={x:u.x,y:u.y}; }
-      if(cargo.length){ SFX.play('complete'); say('Dropship Kestrel',`${cargo.length} reinforcement${cargo.length>1?'s':''} on the ground.`,'sys'); } G.selDirty=true; } }
+      const men=cargo.filter(t=>UNITS[t]).length; if(men){ SFX.play('complete'); say('Dropship Kestrel',`${men} reinforcement${men>1?'s':''} on the ground.`,'sys'); } G.selDirty=true; } }
   if(d.trains && b.queue.length){
     b.prodT+=dt; const type=b.queue[0];
     if(b.prodT>=UNITS[type].buildTime){
@@ -75,3 +75,26 @@ function updateCharge(b,dt){
 /* A destroyed charge leaves its site behind, so an Engineer can arm a new one. */
 function chargeLost(c){ const s=makeBuilding('chargesite','corps',c.tx,c.ty,true); s.tag=c.tag; s.invuln=true; s.arm=0; G.stats.built--;
   if(G.charges&&G.charges[c.tag]) G.charges[c.tag].state='site'; say('Alert','The charge is destroyed! Arm it again.','alert'); }
+
+/* ---------- supply drops: a folded-up structure flown in by dropship (g.supplyDrop) ----------
+   It is set down on the pad as a crate. An Engineer with free hands who walks onto it picks it up and carries it,
+   exactly like a sentry he packed up himself (D to deploy). The Swarm leaves it alone. */
+function dropSupply(lz,type){ const a=rand(0,Math.PI*2), r=TILE*0.6, x=lz.x+Math.cos(a)*r, y=lz.y+TILE*0.4+Math.sin(a)*r*0.4;
+  G.ents.push({ id:NEXT_ID++, kind:'crate', supply:type, x, y, r:10, faction:'none', hp:toughHp(type) });
+  G.pings.push({x,y,t:0,col:'#ffb347'}); SFX.play('complete');
+  say('Dropship Kestrel',`${BUILDINGS[type].name} is on the pad, folded up. Send an Engineer to pick it up.`,'sys'); }
+/* an Engineer with free hands who walks onto a supply crate takes it */
+function supplyPickup(c){ const u=G.ents.find(e=>e.kind==='unit'&&!e.dead&&!e.downed&&e.faction==='corps'&&e.def.builder&&!e.carry&&dist(e,c)<e.r+16); if(!u) return;
+  c.dead=true; u.carry={type:c.supply,hp:c.hp}; SFX.play('ready'); bark(u,'build');
+  G.fx.push({k:'text',x:c.x,y:c.y-14,t:1.4,max:1.4,txt:BUILDINGS[c.supply].name.toUpperCase(),col:'#ffb347'});
+  say('Engineer',`Got the ${BUILDINGS[c.supply].name}. Tell me where you want it.`,'sys'); G.selDirty=true; }
+/* how many of a portable type the Lunar Corps has anywhere: standing, being set up, on an Engineer's back, on a pad or on a dropship */
+function suppliesOf(type){ let n=0; for(const e of G.ents){ if(e.dead) continue;
+    if(e.kind==='building'&&e.faction==='corps'&&e.type===type) n++;
+    else if(e.kind==='unit'&&e.carry&&e.carry.type===type) n++;
+    else if(e.kind==='crate'&&e.supply===type) n++;
+    if(e.flight&&e.flight.cargo) n+=e.flight.cargo.filter(t=>t===type).length; } return n; }
+function drawSupply(c,now){ const a=ARTC[BUILDINGS[c.supply].art], bob=Math.sin(now/300+c.id)*1.5, p=0.5+0.5*Math.sin(now/260);
+  ctx.strokeStyle=`rgba(255,179,71,${0.35+0.45*p})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(c.x,c.y+4,15,8,0,0,Math.PI*2); ctx.stroke();
+  ctx.drawImage(ARTC.crate,Math.round(c.x-13),Math.round(c.y-8+bob),26,21);
+  ctx.globalAlpha=0.95; ctx.drawImage(a,Math.round(c.x-9),Math.round(c.y-24+bob),18,18); ctx.globalAlpha=1; }
