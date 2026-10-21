@@ -62,6 +62,7 @@ function engage(u,dt,hold){
 }
 function swarmThink(u,dt){
   if(u.def.founder && founderThink(u,dt)) return;   /* a Husk looking for a place to root */
+  if(u.role==='eggrun'){ eggRunThink(u); return; }   /* sent for an ancient egg (29-relics.js) */
   if(claimThink(u,dt)) return;   /* busy with a fallen soldier: infecting, carrying or guarding it */
   if(u.role==='avatar') return;   /* the creature you steer yourself */
   if(u.role==='wave' && tacticThink(u,dt)) return;

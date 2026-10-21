@@ -15,7 +15,8 @@ const HUSK  = { root:18, clear:13, spacing:16, reach:34, max:2, hiveHp:0.55, gua
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
 function updateCreep(dt){
   const m=G.map, W=m.w, H=m.h;
-  if(!G.creep){ G.creep=new Float32Array(W*H); G.creepTgt=new Float32Array(W*H); G.creepT=0; G.creepCv=document.createElement('canvas'); G.creepCv.width=W; G.creepCv.height=H; }
+  if(!G.creep){ G.creep=new Float32Array(W*H); G.creepTgt=new Float32Array(W*H); G.creepT=0; }
+  if(!G.creepCv){ G.creepCv=document.createElement('canvas'); G.creepCv.width=W; G.creepCv.height=H; }   /* (also after loading a saved game: canvases are not saved) */
   const hs=hives();
   for(const h of hs){ const max=hiveOpt(h,'creep',CREEP.max); if(h.creepR==null) h.creepR=Math.min(max,CREEP.start); if(h.creepR<max) h.creepR=Math.min(max,h.creepR+dt*Math.max(0.5,max-CREEP.start)/CREEP.grow); }
   G.creepT-=dt;
@@ -140,8 +141,9 @@ function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* The Husk is a warrior. While it is still turning (Twitcher, Shambler) it stays on the creep of its hive and only fights what comes there;
    full grown, it leaves the creep and hunts (role 'hunt', see swarmThink). Only the creature you steer yourself in The Graft takes root (F).
    When a Husk kills a soldier it screams: the soldiers close by flinch (suppressed). Returns true while it is busy (molting, rooting). */
-const HUSK_WARRIOR = { stay:true, screamR:3.5 };
+const HUSK_WARRIOR = { stay:true, screamR:3.5, matriarch:4 };   /* matriarch: soldiers a full Husk must bring down (or kill) to grow into a Matriarch */
 function founderThink(u,dt){
+  if(u.def.matriarch) return founderRoot(u,dt);   /* the Matriarch looks for a quiet place and takes root */
   if(huskGrow(u,dt)) return true;
   if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }   /* only your own creature (The Graft) */
   if(u.avatar||G.side==='swarm') return false;   /* yours: you decide */
@@ -155,12 +157,24 @@ function stayOnCreep(u){ const h=nearestOf(u,e=>e.type==='hive'&&!e.dead); if(!h
     u.order={type:'move',x,y}; setPath(u,x,y); }
   if(u.target && creepAt(u.target.x,u.target.y)<CREEP.at && dist(u.target,h)>(CREEP.max*0.8)*TILE){ u.target=null; u.order={type:'guard',x:h.x,y:h.y,wait:0}; setPath(u,h.x,h.y); }   /* it will not follow you out */
   return false; }
-function huskScream(u){ if(!u||u.dead) return; const vis=isVisible(u);
+function huskScream(u){ if(!u||u.dead) return; const vis=isVisible(u); u.kills=(u.kills||0)+1;
   G.fx.push({k:'boom',x:u.x,y:u.y-14,t:0.5,max:0.5,r:HUSK_WARRIOR.screamR*TILE,col:'#ff5a4f'});
   if(vis){ SFX.play('huskroar',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.2,max:1.2,txt:'SCREAM',col:'#ff5a4f'}); G.shake=Math.max(G.shake||0,0.2); }
-  for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&dist(e,u)<HUSK_WARRIOR.screamR*TILE) e.suppressT=Math.max(e.suppressT||0,SQUAD.suppress.time); }
-/* (old: an AI Husk walking off to root a hive; kept for the creature you steer) */
+  for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&dist(e,u)<HUSK_WARRIOR.screamR*TILE) e.suppressT=Math.max(e.suppressT||0,SQUAD.suppress.time);
+  if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&u.kills>=HUSK_WARRIOR.matriarch&&canFound()) becomeMatriarch(u); }
+/* may one more hive be founded? (swarm.husks new hives per mission, default HUSK.max; never more hives at once than hiveMax()) */
+function canFound(){ return (G.swarm.founded||0)+rooting()<huskCap() && hives().length+rooting()<hiveMax(); }
+/* a Husk that has fed enough grows into a Matriarch: bigger, tougher, and it will take root */
+function becomeMatriarch(u){ const sel=G.sel.includes(u), m=makeUnit('matriarch','swarm',u.x,u.y); m.role='hunt'; m.face=u.face; m.foundT=3; m.molt=0;
+  u.dead=true; if(sel){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
+  const vis=isVisible(m); G.fx.push({k:'boom',x:m.x,y:m.y-10,t:0.8,max:0.8,r:60,col:'#c38bff'}); addDecal(m.x,m.y,22,'rgba(90,40,110,.6)');
+  for(let i=0;i<30;i++) G.fx.push({k:'ember',x:m.x+rand(-10,10),y:m.y-10,vx:rand(-130,130),vy:rand(-180,-20),t:rand(.5,1.2),max:1.2,col:pick(['#c38bff','#a6ff4a','#d23a3a'])});
+  if(vis){ SFX.play('huskroar',m.x,m.y); SFX.play('molt',m.x,m.y); G.shake=Math.max(G.shake||0,0.4); G.fx.push({k:'text',x:m.x,y:m.y-56,t:1.8,max:1.8,txt:'MATRIARCH',col:'#c38bff'}); }
+  say('Dr. Maas',vis?'That Husk has fed enough. It is changing again: a Matriarch. It will go somewhere quiet and seed a new hive. Kill it before it takes root!':'Something out there just changed. A Matriarch: it will try to seed a new hive.','alert');
+  return m; }
+/* the Matriarch walking off to a quiet place to root a hive (if the hive limits still allow it; otherwise it just hunts) */
 function founderRoot(u,dt){
+  if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }
   if(u.noFound) return false;
   u.foundT=(u.foundT??0)-dt; if(u.foundT>0) return false;
   if((G.swarm.founded||0)+rooting()>=huskCap()||hives().length+rooting()>=hiveMax()){ u.noFound=true; return false; }   /* enough new hives: it just hunts */
@@ -174,7 +188,7 @@ function founderRoot(u,dt){
     if(!ok){ u.site=null; u.siteT=1; return false; }
     u.x=sx; u.y=sy; u.rootT=u.rootMax=HUSK.root; u.order={type:'hold'}; u.target=null; u.path=null;
     G.pings.push({x:sx,y:sy,t:0,col:'#c38bff'}); if(isVisible(u)) SFX.play('squelch',u.x,u.y);
-    say('Dr. Maas',isVisible(u)?'The Husk is taking root. Stop it before a new hive grows out of it!':'Something out there is taking root. Our sensors picked up a new nest forming.','alert');
+    say('Dr. Maas',isVisible(u)?'The Matriarch is taking root. Stop it before a new hive grows out of it!':'Something out there is taking root. Our sensors picked up a new nest forming.','alert');
     return true; }
   if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:sx,y:sy}; setPath(u,sx,sy); if(!u.path){ u.site=null; return false; } }
   return true; }
@@ -188,7 +202,7 @@ function rootHive(u){
     if(tx>=h.tx&&tx<h.tx+3&&ty>=h.ty&&ty<h.ty+3){ const f=nearestWalkable(tx,ty); if(f){ e.x=(f.x+.5)*TILE; e.y=(f.y+.5)*TILE; e.path=null; } } }
   G.fx.push({k:'boom',x:h.x,y:h.y,t:0.6,max:0.6,r:40,col:'#c38bff'}); addDecal(h.x,h.y,30,'rgba(70,30,90,.5)');
   G.pings.push({x:h.x,y:h.y,t:0,col:'#a6ff4a'}); SFX.play('horn');
-  say('Alert','A new hive has grown where the Husk took root.','alert'); G.objDirty=true;
+  say('Alert',`A new hive has grown where the ${u.def.matriarch?'Matriarch':'Husk'} took root.`,'alert'); G.objDirty=true;
   return h; }
 function drawRooting(u,now){
   const p=1-u.rootT/u.rootMax, R=10+p*22;

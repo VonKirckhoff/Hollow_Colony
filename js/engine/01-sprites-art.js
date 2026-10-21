@@ -85,6 +85,21 @@ const ART = {
     R(P.k,1,16,3,8); R(P.g,0,17,2,6); R(P.y,0,17,1,1); R(P.y,0,22,1,1);                  // rear ramp
     R(P.v,12,24,4,1); R(P.v,12,15,4,1);                                                 // markings
     return c; },
+  /* the first rescue dropship, crashed nose-first: tilted, burnt black, one wing torn, the hull split open */
+  wreck(){ const [c,x]=pxCtx(64,52); const ship=ART.dropship();
+    x.save(); x.translate(32,28); x.rotate(-0.32); x.drawImage(ship,-28,-20); x.restore();
+    x.globalCompositeOperation='source-atop'; x.fillStyle='rgba(20,14,10,.55)'; x.fillRect(0,0,64,52);
+    for(const [a,b,r] of [[22,24,9],[40,30,7],[30,18,5]]){ const g=x.createRadialGradient(a,b,0,a,b,r); g.addColorStop(0,'rgba(0,0,0,.85)'); g.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g; x.fillRect(a-r,b-r,r*2,r*2); }
+    x.globalCompositeOperation='destination-out'; x.fillRect(12,31,7,9); x.fillRect(44,9,6,4); x.globalCompositeOperation='source-over';
+    x.fillStyle='#1a1410'; x.fillRect(27,25,10,2); x.fillStyle='#ff8a2a'; x.fillRect(29,25,3,1); x.fillRect(34,26,2,1);
+    for(const [a,b] of [[8,44],[14,46],[50,40],[56,44],[44,47],[20,48]]){ x.fillStyle='#2a2b33'; x.fillRect(a,b,3,2); x.fillStyle='#4c4e58'; x.fillRect(a,b,2,1); }
+    return c; },
+  /* a relic: a small battered case with a bright edge, something worth picking up */
+  relic(){ const [c,x]=pxCtx(12,12); disc(x,6,6,5,'rgba(120,230,255,.25)'); disc(x,6,6,4,'#0a0b10'); disc(x,6,6,3,'#3fb6d8'); disc(x,5,5,2,'#9ff0ff'); x.fillStyle='#ffffff'; x.fillRect(4,4,1,1);
+    x.fillStyle='#ffd23f'; x.fillRect(6,0,1,2); x.fillRect(6,10,1,2); x.fillRect(0,6,2,1); x.fillRect(10,6,2,1); return c; },
+  /* an ancient egg: tall, petrified, cracked, with amber light inside */
+  ancientegg(){ const [c,x]=pxCtx(14,18); oval(x,7,10,6,8,'#0a0b10'); oval(x,7,10,5,7,'#5b544a'); oval(x,6,9,3,5,'#776e60'); oval(x,7,12,2,3,'#c97a24'); oval(x,7,12,1,2,'#ffd23f');
+    x.fillStyle='#2a2620'; x.fillRect(4,6,1,4); x.fillRect(5,10,2,1); x.fillRect(9,4,1,5); x.fillRect(8,9,1,2); x.fillStyle='#8f8676'; x.fillRect(5,4,2,1); x.fillStyle='#0a0b10'; x.fillRect(3,17,8,1); return c; },
   uplink(){ const [c,x]=pxCtx(32,32); const P=PALETTE;
     disc(x,16,16,14,P.k); disc(x,16,16,13,'#3a4150'); disc(x,16,16,9,'#2c323e');
     for(let a=0;a<8;a++){ const ang=a*Math.PI/4; x.fillStyle=a%2?P.y:P.k; x.fillRect(Math.round(16+Math.cos(ang)*11)-1,Math.round(16+Math.sin(ang)*11)-1,3,3); }

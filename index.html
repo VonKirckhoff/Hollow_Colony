@@ -61,6 +61,7 @@
     <h1 class="title">Hollow<br><span>Colony</span></h1>
     <p class="lede">The terraforming colonies on the moon have gone quiet. Something woke beneath the regolith, and it is spreading. Command the Lunar Corps and burn the Swarm back into the dark.</p>
     <div class="menu-list">
+      <button class="menu-btn" type="button" id="m-continue" hidden>Continue</button>
       <button class="menu-btn" type="button" data-go="campaign">Campaign <small>Lunar Corps operations</small></button>
       <button class="menu-btn" type="button" data-go="skirmish">Skirmish <small>Pick a map, destroy every hive</small></button>
       <button class="menu-btn" type="button" data-go="manual">Field manual <small>Controls and factions</small></button>
@@ -235,6 +236,7 @@
     <h2 class="h" id="p-title">Mission</h2>
     <div class="menu-list">
       <button class="menu-btn" type="button" id="p-resume">Resume</button>
+      <button class="menu-btn" type="button" id="p-save">Save game <small>One slot: replaces the last save</small></button>
       <button class="menu-btn" type="button" id="p-manual">Field manual</button>
       <button class="menu-btn" type="button" id="p-restart">Restart mission</button>
       <button class="menu-btn" type="button" id="p-quit">Quit to menu</button>
@@ -311,6 +313,7 @@
 <script src="js/content/units.js"></script>
 <script src="js/content/veterans.js"></script>
 <script src="js/content/intel.js"></script>
+<script src="js/content/relics.js"></script>
 <script src="js/content/difficulty.js"></script>
 
 <!-- Maps: one file per map. New map? Add its line here (and in map-editor/index.html). -->
@@ -371,6 +374,8 @@
 <script src="js/engine/27-training.js"></script>
 <script src="js/engine/28-dev-help.js"></script>
 <script src="js/engine/28-dev.js"></script>
+<script src="js/engine/29-relics.js"></script>
+<script src="js/engine/30-save.js"></script>
 <script src="js/engine/23-main-loop.js"></script>
 <script src="js/engine/24-music.js"></script>
 </body>

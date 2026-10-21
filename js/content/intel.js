@@ -4,8 +4,9 @@
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
-  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
-  { id:'other',  name:'Other',       units:['hunter','grazer'] }
+  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','bloater','grafter','husk','matriarch','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
+  { id:'other',  name:'Other',       units:['hunter','grazer'] },
+  { id:'relics', name:'Relics',      relics:true }
 ];
 const INTEL_NOTES = {
   trooper:  'The backbone of every squad. Range 5 outreaches every Swarm unit, the Spitter (4.6) just barely.',
@@ -28,6 +29,7 @@ const INTEL_NOTES = {
   drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up. Drones guard the bodies of the fallen and drag them home to the creep around a hive.',
   spitter:  'Acid artillery at range 4.6: it outreaches Pyros and Medics. Its acid leaves a burning pool for a few seconds.',
   husk:     'A fallen soldier, remade. Dragged onto the creep, infected by a Grafter from a hive egg, the cocoon beats like a heart until it cracks, and a Twitcher crawls out (40% of these numbers). It molts into a Shambler (70%), then into the Husk. Each molt takes 1.6 seconds and it takes 50% more damage meanwhile: that is your moment. While it is turning it stays on the creep of its hive and defends it. The full Husk leaves the creep and hunts your squad, and screams over every kill: the soldiers close to it flinch.',
+  matriarch:'A Husk that brought down four soldiers grows once more, into a Matriarch: bigger, armoured, and with a purple glow. It leaves the fight, walks to a quiet place far from your troops and takes root for 18 seconds; if you do not kill it, a young hive grows there. At most two per mission, and never more hives than the map can feed.',
   brute:    'Armoured siege beast that goes for walls and structures. Focus fire and keep your distance.',
   broodmother:'Boss. Rooted most of the time, but charges into your lines, lays eggs and sprays acid. Regenerates when left alone.',
   hive:     'Notices soldiers who come close: its guards attack and it births a brood. Every hit makes it scream for more. Badly hurt, it calls the other hives. Regrows when left alone. The creep around it heals every Swarm unit standing on it, and it withers once the hive is dead. Bring a squad, not a hero.',

@@ -17,14 +17,22 @@ MISSIONS.push(
     objectives:[ { id:'lab', text:'Find Dr. Maas in the research lab' } ],
     // Dropship timer starts at the rescue; the mission is won once it has landed and Dr. Maas is on the pad.
     triggers:[
-      { when:g=>g.time>0.2, do:g=>{ g.marker('lab','1','Research lab'); g.reveal('1',3,5); } },
+      { when:g=>g.time>0.2, do:g=>{
+          /* the first rescue dropship, crashed outside the lab; and the door of the back room Maas locked herself into */
+          makeBuilding('wreck','none',41,9,true); const d=makeBuilding('door','corps',53,4,true); d.tag='maasdoor';
+          g.marker('lab',{x:53,y:5},'Research lab'); g.reveal('1',3,5); } },
+      { when:g=>g.near('corps',{x:42,y:10},6)>0, do:g=>g.say('Sgt. Kessler','That is the Osprey. The first bird they sent for her. Still burning... nobody walked away from that.') },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, the colony is a maze of ruins. Stay together. The lab is in the north-east block.') },
       { when:g=>g.time>10, do:g=>g.say('Sgt. Kessler','Our Engineer is hauling a folded Sentry Gun. Press D to set it up, U to pack it again.') },
       { when:g=>g.near('corps','3',5)>0 || g.near('corps','5',4)>0, do:g=>{
           g.say('Sgt. Kessler','Swarm bodies here. Shot clean through, skulls taken. That was not us.'); g.vars.clue=true; } },
-      { when:g=>g.near('corps','1',3)>0, do:g=>{
+      /* the door of her back room opens, and she steps out to the squad */
+      { when:g=>g.near('corps',{x:53,y:5},3.5)>0||g.near('corps','1',2)>0, do:g=>{ g.vars.doorAt=g.time; g.openWall('maasdoor'); SFX.play('ready');
+          g.say('Dr. Maas','Corps? Is that the Corps? Wait, wait, I am opening the door!'); } },
+      { when:g=>g.vars.doorAt && g.time>g.vars.doorAt+1.4, do:g=>{
           g.complete('lab'); g.unmark('lab');
-          g.vars.maas=g.spawn('scientist','1',1)[0]; g.vars.rescueT=g.time;
+          g.vars.maas=g.spawn('scientist',{x:53,y:4},1)[0]; g.vars.rescueT=g.time;
+          const s=g.vars.maas, near=nearestOf(s,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort); if(near){ s.order={type:'move',x:near.x,y:near.y+TILE}; setPath(s,s.order.x,s.order.y); }
           g.say('Dr. Maas','Thank God. I have the core. Get me to the extraction pad, quickly. They hear everything.'); g.setTimer(240,'Dropship');
           g.addObjective('escort','Bring Dr. Maas to the extraction pad and hold until the dropship lands'); g.addObjective('maas','Dr. Maas must survive');
           g.marker('lz','2','Extraction'); g.vars.nextWave=g.time+30; } },

@@ -41,6 +41,7 @@ function newGame(mission, diffKey){
   for(const [type,at,n] of st.swarmUnits||[]) spawnAt(type,'swarm',at,n).forEach(u=>{ u.role='guard'; u.guardAt={x:u.x,y:u.y}; u.order={type:'guard',x:u.x,y:u.y,wait:rand(0,4)}; });
   for(const w of map.wild) spawnAt('grazer','wild',w,2).forEach(u=>u.home={x:u.x,y:u.y});
   for(const c of map.crates) G.ents.push({ id:NEXT_ID++, kind:'crate', x:(c.x+.5)*TILE, y:(c.y+.5)*TILE, value:40+Math.floor(Math.random()*3)*10, r:8, faction:'none' });
+  if(typeof spawnRelics==='function') spawnRelics(mission);   /* hidden relics and ancient eggs (29-relics.js) */
   for(const o of mission.objectives) G.objectives.push({ ...o, state:'active' });
   const cp=pt(st.camera||'P'); centerOn((cp.x+.5)*TILE,(cp.y+.5)*TILE);
   deployRoster();

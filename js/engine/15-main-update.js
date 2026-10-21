@@ -16,7 +16,8 @@ function update(dt){
   G.fx=G.fx.filter(f=>f.t>0);
   for(const p of G.pings) p.t+=dt; G.pings=G.pings.filter(p=>p.t<3);
   // crates
-  for(const c of G.ents){ if(c.kind!=='crate'||c.dead) continue;
+  relicTick(dt);
+  for(const c of G.ents){ if(c.kind!=='crate'||c.dead||c.relic) continue;
     for(const u of G.ents){ if(u.kind==='unit'&&!u.dead&&u.faction==='corps'&&dist(u,c)<u.r+12){ c.dead=true; G.salvage+=c.value; G.stats.crates++; SFX.play('pickup'); G.fx.push({k:'text',x:c.x,y:c.y-10,t:1.2,max:1.2,txt:'+'+c.value,col:'#ffb347'}); break; } } }
   if(G.ents.some(e=>e.dead)) G.ents=G.ents.filter(e=>!e.dead);
   updateSwarm(dt);

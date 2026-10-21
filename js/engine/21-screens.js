@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
 const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel','trophies'];
-function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name;
+function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name; if(name==='menu'&&typeof refreshContinue==='function') refreshContinue();
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
   if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission||(!name&&G&&ui.mode==='game')?'game':name);   /* menu screens have music; a mission only if you switch it on (top-bar Music) */
   const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission;
@@ -95,7 +95,7 @@ $('#s-cenotaph').addEventListener('click',e=>{
 /* Trophy wall: a plaque per role and difficulty column. Earned plaques carry every soldier who earned them; your own soldier's progress shows on his row. */
 const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
 function buildTrophies(){
-  checkGrand(); const T=trophies(), hero=heroOf(), gs=grandStatus(), earned=Object.values(T).filter(l=>l&&l.length).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0), total=HERO_TYPES.length*TROPHY_COLS.length+2;
+  checkGrand(); let T=trophies(), hero=heroOf(), gs=grandStatus(), earned=Object.values(T).filter(l=>l&&l.length).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0), total=HERO_TYPES.length*TROPHY_COLS.length+4, rs=relicStatus(); earned+=(rs.item.at?1:0)+(rs.egg.at?1:0);
   $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${hero.tp&&hero.tp.void?'<span class="tvoid">Not on a trophy run: this soldier did not start at mission 1.</span>':TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
   const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}${c.sub?`<i>${c.sub}</i>`:''}</span>`).join('')}</div>`;
@@ -107,8 +107,14 @@ function buildTrophies(){
     `<div class="trow grand"><span class="trole">Grand</span>${[
       ['corps','Hollow Light','Every trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need],
       ['swarm','The Long Hunger','Every Swarm mission on every difficulty',`Easy ${gs.swarm.easy} · Normal ${gs.swarm.normal} · Hard ${gs.swarm.hard} / ${gs.swarm.need}`,gs.swarm.need?(gs.swarm.easy+gs.swarm.normal+gs.swarm.hard)/(3*gs.swarm.need):0]
-    ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`;
+    ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`+relicRow();
 }
+/* relics on the trophy wall: Archivist (every hidden item) and Egg Hunter (every ancient egg) */
+function relicStatus(){ const F=relicsFound(), part=k=>{ const all=RELICS.filter(r=>r.kind===k), got=all.filter(r=>F[r.id]); return { have:got.length, need:all.length, at:got.length===all.length&&all.length?Math.max(...got.map(r=>F[r.id].at)):null }; };
+  return { item:part('item'), egg:part('egg') }; }
+function relicRow(){ const R=relicStatus();
+  return `<div class="trow grand"><span class="trole">Relics</span>${[['item','Archivist','Every hidden relic of the campaign'],['egg','Egg Hunter','Every ancient egg, taken before the Swarm woke it']].map(([k,name,what])=>{ const r=R[k], w=r.at;
+    return `<div class="plaque grandp relic ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w).toLocaleDateString():`${r.have} / ${r.need} found`}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(r.have/Math.max(1,r.need)*100)}%"></span></span>`}</div>`; }).join('')}</div>`; }
 /* Intel: a card per unit or structure, numbers straight from UNITS / BUILDINGS, tips from INTEL_NOTES */
 let intelTab='corps';
 const ATTACK_NAME={ bullet:'Gunfire', flame:'Flame, hits a group', acid:'Lobbed acid, splash', plasma:'Plasma bolt', melee:'Melee' };
@@ -149,6 +155,7 @@ function intelCard(img,name,role,fac,desc,note,st,tags,perk){
 function buildIntel(){
   $('#intel-tabs').innerHTML=INTEL_TABS.map(t=>`<button type="button" role="tab" class="${t.id==='swarm'?'swarm':''}" data-itab="${t.id}" aria-selected="${t.id===intelTab}">${t.name}</button>`).join('');
   const T=INTEL_TABS.find(t=>t.id===intelTab)||INTEL_TABS[0];
+  if(T.relics){ buildRelicIntel(); return; }
   /* list on the left, the full card of the selected entry on the right: no scrolling, however many entries a tab has */
   const items=[...(T.units||[]).map(id=>({id,u:true})),...(T.buildings||[]).map(id=>({id,u:false}))].filter(x=>x.u?UNITS[x.id]:BUILDINGS[x.id]);
   const sel=Math.min(intelSel[T.id]||0,items.length-1);
@@ -157,6 +164,15 @@ function buildIntel(){
   const it=items[sel]; $('#intel-grid').innerHTML=it?(it.u?intelUnit(it.id):intelBuilding(it.id)):'';
 }
 const intelSel={};
+/* the Relics tab: what you have found, and a hint for what you have not */
+function buildRelicIntel(){ const F=relicsFound(), sel=Math.min(intelSel.relics||0,RELICS.length-1), mt=id=>(MISSIONS.find(m=>m.id===id)||{}).title||id;
+  $('#intel-list').innerHTML=RELICS.map((r,i)=>{ const f=!!F[r.id];
+    return `<button type="button" role="option" class="ili f-none ${i===sel?'on':''} ${f?'':'rel-un'}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic"><img alt="" src="${ARTURL[r.kind==='egg'?'ancientegg':'relic']}" style="${f?'':'filter:brightness(.25)'}"></span><span><b>${f?r.name:'???'}</b><small>${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}</small></span></button>`; }).join('');
+  const r=RELICS[sel], f=r&&F[r.id], n=Object.keys(F).filter(k=>RELICS.some(x=>x.id===k)).length;
+  const img=ARTURL[r.kind==='egg'?'ancientegg':'relic'];
+  $('#intel-grid').innerHTML=r?intelCard(img,f?r.name:'Not found yet',`${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}`,'none',
+    f?r.text:(r.kind==='egg'?'Somewhere on this map lies an ancient egg. Hold it with a soldier and keep the Swarm off it: if they hold it, it wakes and grows into a new hive.':'Somewhere on this map, off the beaten track, something is waiting to be found. Walk a soldier over it.'),
+    `${n} of ${RELICS.length} relics found.`,[],[f?`Found ${new Date(f.at).toLocaleDateString()}`:'Not found'],''):''; }
 $('#intel-list').addEventListener('click',e=>{ const b=e.target.closest('[data-isel]'); if(!b) return; intelSel[intelTab]=+b.dataset.isel; buildIntel(); const nb=$(`[data-isel="${b.dataset.isel}"]`); if(nb) nb.focus({preventScroll:true}); });
 $('#intel-list').addEventListener('keydown',e=>{ if(e.key!=='ArrowDown'&&e.key!=='ArrowUp') return; e.preventDefault(); const n=$('#intel-list').children.length, i=(intelSel[intelTab]||0)+(e.key==='ArrowDown'?1:-1);
   intelSel[intelTab]=(i+n)%n; buildIntel(); const nb=$(`[data-isel="${intelSel[intelTab]}"]`); if(nb) nb.focus({preventScroll:true}); });
@@ -217,7 +233,7 @@ function startMission(m){
   if(G.side==='swarm'){ const r=ptWorld(m.start.rally||m.start.camera||'P'); if(r) G.swarm.rally=r; selectEntities([],false); }
   else selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
 }
-function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
+function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; const ps=$('#p-save'); if(ps) ps.hidden=!(typeof canSave==='function'&&canSave()); show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
 $('#p-manual').addEventListener('click',()=>goMenu('manual'));
 $('#manual-back').addEventListener('click',()=>{ if(ui.manualFrom==='pause'&&G&&!G.over&&ui.mode==='pause'){ show('pause'); $('#p-resume').focus({preventScroll:true}); } else goMenu('menu'); });
@@ -254,6 +270,8 @@ function showEnd(){
   else ev.hidden=true;
   if(G.grandWon&&G.grandWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Grand trophy</span>${G.grandWon.map(k=>`<div>${k==='corps'?'Hollow Light: every trophy of the Lunar Corps.':'The Long Hunger: every Swarm mission on every difficulty.'} It hangs on the Trophy wall.</div>`).join('')}</div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
+  if(G.relicsGot&&G.relicsGot.length){ const html=`<div class="vsec troph"><span class="lbl">✦ Relic found</span>${G.relicsGot.map(id=>{ const r=relicDef(id); return r?`<div>${r.name}. Read about it in Intel, tab Relics.</div>`:''; }).join('')}</div>`;   /* kept even if the mission was lost */
+    if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=ev.innerHTML+html; }
   const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Losses',S.lost],['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
   const LM=m.side==='swarm'?SWARM_MISSIONS:MISSIONS, idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=m.side==='swarm'?'swarm':'corps';
   if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;

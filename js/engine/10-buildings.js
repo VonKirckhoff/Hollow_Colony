@@ -3,6 +3,9 @@
 function updateBuilding(b,dt){
   b.flash=Math.max(0,b.flash-dt);
   if(b.type==='cocoon'){ b.hatchT-=dt; if(b.husk) huskCocoonThink(b,dt); if(b.hatchT<=0){ b.dead=true; const u=makeUnit(b.hatchType,'swarm',b.x,b.y); u.role='hunt'; if(u.def.founder) huskHatched(u); if(b.avatar){ u.role='avatar'; setAvatar(u); } if(isVisible(b)) SFX.play('hatch',b.x,b.y); G.fx.push({k:'boom',x:b.x,y:b.y,t:0.3,max:0.3,r:16,col:'#a6ff4a'}); addDecal(b.x,b.y,10,'rgba(90,190,30,.55)'); if(G.sel.includes(b)){G.sel=G.sel.filter(x=>x!==b);G.selDirty=true;} } return; }
+  if(b.def.smoke && Math.random()<dt*10){   /* a smouldering wreck: smoke rising, now and then a spark */
+    G.fx.push({k:'dust',x:b.x+rand(-26,26),y:b.y+rand(-14,10),vx:rand(-6,6),vy:rand(-34,-18),t:rand(2.2,3.6),max:3.6,r0:rand(5,9),r1:rand(16,28),col:pick(['#77726c','#8a857e','#5e5a55'])});
+    if(Math.random()<0.25) G.fx.push({k:'ember',x:b.x+rand(-14,14),y:b.y+rand(-10,4),vx:rand(-20,20),vy:rand(-60,-30),t:0.8,max:0.8,col:pick(['#ff8a2a','#ffd23f'])}); }
   if(!b.built) return;
   const d=b.def;
   if(d.generator) updateGenerator(b,dt);

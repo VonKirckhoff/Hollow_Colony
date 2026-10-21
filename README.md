@@ -275,6 +275,7 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
   - De **eindvorm** is een **krijger**: hij verlaat de schimmel en jaagt op je squad. Hij schiet **geen wortel** meer en wordt nooit een hive (alleen je eigen wezen in *The Graft* doet dat nog, met F).
   - **Schreeuw:** brengt een Husk een soldaat neer of doodt hij er een, dan schreeuwt hij (*SCREAM*, een rode schokgolf): de soldaten binnen 3,5 tegels deinzen terug (ze zijn even onderdrukt: trager, zoals onder zwaar vuur). `HUSK_WARRIOR` in js/engine/25-hive-life.js.
   - In het selectiepaneel zie je in welk stadium hij zit (*Twitcher (turning into a Husk)*).
+  - **Matriarch:** heeft een volgroeide Husk **4 soldaten** neergehaald of gedood (`HUSK_WARRIOR.matriarch`), dan vervelt hij nog één keer tot een **Matriarch**: groter (×1,5), 340 HP, 20% pantser, met een paarse gloed en *MATRIARCH* boven zijn hoofd. Die vecht niet meer maar loopt naar een rustige plek (minstens 13 tegels van je troepen en gebouwen, 16 van een andere hive, hooguit 34 tegels ver) en **schiet daar 18 seconden wortel**. Dood je hem niet op tijd, dan groeit er een **jonge hive** (55% van de levenspunten, 2 bewakers). Per missie hoogstens 2 (`swarm.husks`), en nooit meer hives dan de missie plus één (`swarm.maxHives`). Zijn die grenzen bereikt, dan blijft hij gewoon een zware krijger.
 
 ### Landing Zone en troepenlimiet (missie 1, 5, 6, 7 en 8)
 - Bij de basis ligt een **Landing Zone**: een markering op de grond met een grote H. Eenheden lopen er gewoon over, de vijand negeert ze en kan ze niet beschadigen, en je kan er niets op bouwen. Klik erop om ze te selecteren. Selecteer ze om versterkingen te bestellen: Trooper, Gunner, Medic, Pyro of Engineer, met dezelfde prijs en sneltoetsen als bij de Command Post.
@@ -386,7 +387,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 | 1 | **Dust Landing** | Kappa Canyons | Volg de brede kloven (minstens 7 tegels breed) vanaf de landingsplaats (twee routes) naar Kappa Station en overleef de hinderlaag uit de oostelijke tunnel. Het dropship landt versterking op het platform van het station. Daarna gaan de blast doors naar de noordelijke grotten open: vernietig de hive in de westelijke grot en daarna die in de oostelijke. De tweede versterking landt op het platform en loopt zelf door de tunnel naar je squad. Breng daarna **iedereen** terug naar het landingsplatform: het dropship vertrekt pas als de hele squad er staat (de doelenlijst telt mee). Tot de deuren opengaan, zijn de hives onbereikbaar en ver buiten schootsafstand. Je speelt zonder basis. |
 | 2 | **Hold Kappa** | Kappa Basin | Bouw 2 Relay Towers en houd 15 minuten stand tot het konvooi komt. De Command Post moet overleven. |
 | 3 | **Burn the Brood** | Tycho Maw | Vernietig vijf extra stevige hives en houd daarna 2 minuten stand tegen de laatste stormloop. Een **Landing Zone** oostelijk van de Command Post vliegt vervangers in voor wie sneuvelt (hoogstens de 14 waarmee je begint). |
-| 4 | **The Hollow Colony** | Hollow Colony | Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
+| 4 | **The Hollow Colony** | Hollow Colony | Voor het lab ligt het smeulende wrak van het eerste reddingsschip. Achteraan in het lab gaat een deur open zodra je squad dichtbij komt: Dr. Maas stapt uit en sluit aan. Vind Dr. Elin Maas in het lab en breng haar naar de extraction pad. Houd 4 minuten stand tot het dropship landt, terwijl een Grey Hunter je squad bejaagt. |
 | 5 | **Blackout** | Mare Colony | Mijnstadje zonder stroom, **in het donker**. Je ziet maar half zo ver. Herstel met je Engineers de vier generatoren in de hoeken; een draaiende generator verlicht zijn straten maar trekt de Swarm aan, en valt uit onder 60%. Je wint als ze **alle vier tegelijk** draaien. De Command Post in het plein moet overleven. Naast de Command Post staat een kleine **kampgenerator** die vanaf het begin draait en het kamp verlicht (telt niet mee voor het doel). Zijn de hives verbrand, dan blijven de golven komen, maar dan uit drie oude **mijnschachten**. |
 | 6 | **Dead Signal** | Ridgeback Canyon | Kleine squad zonder basis. Maak naast drie nesten een **seismische lading** scherp (een Engineer staat 20 s op de plek) en houd elke lading 75 s heel tot ze ontploft; elke ontploffing begraaft het nest. Na elke lading brengt het dropship twee schutters naar je toe. Daarna: iedereen naar het lanceerplatform in het oosten, waar de pickup 90 s later landt. |
 | 7 | **Brood Mother** | Maw Depths | Lange missie in de grotten onder Tycho Maw. Bouw een basis bij de grotingang, brand drie zwaar bewaakte eierkamers plat (ze groeien terug als je ze met rust laat) en dood daarna de Brood Mother in haar lair. Het levende membraan voor de lair verdwijnt pas als alle kamers weg zijn. Maximaal 15 man; verliezen vul je aan via de Landing Zone. |
@@ -439,6 +440,24 @@ Op het campagnescherm kies je bovenaan **Lunar Corps** of **The Swarm** (onthoud
 De andere missies volgen. Getest met een eenvoudige automatische speler: op Easy en Normal winbaar, op Hard verloor die.
 
 ---
+
+## Opslaan en verdergaan
+
+- In het **pauzemenu** (P of Esc) staat **Save game**: de hele lopende missie wordt in deze browser bewaard (`hc-save`, één plaats: een nieuwe save vervangt de vorige). Je ziet een melding met de missie en de klok.
+- In het **hoofdmenu** verschijnt dan **Continue** met de missie, de klok en wanneer je bewaarde. Klik erop en je speelt verder waar je was: elke soldaat, elk gebouw, de schimmel, de golven, je groepen en formaties, de missie-doelen en de tijd.
+- Een save blijft staan tot je opnieuw bewaart; je kan dus vaker terugkeren naar hetzelfde punt.
+- Trainingen kan je niet bewaren. Werkt voor de Lunar Corps- en de Swarm-campagne en skirmish.
+- Hoe: js/engine/30-save.js schrijft de spelstatus `G` als een graaf (elke eenheid één keer, verwijzingen per id; gedeelde objecten zoals een formatie één keer; tabellen als `UNITS` per naam). Functies, canvassen en voorbijgaande effecten worden niet bewaard. Een save is zo'n 50 tot 150 kB.
+
+## Relics: verborgen voorwerpen en oeroude eieren
+
+Op elke kaart van de Lunar Corps-campagne ligt iets verstopt, ver van de gebaande paden (js/content/relics.js).
+- **Voorwerpen** (8, één per missie): een blauw gloeiend artefact dat af en toe flonkert. Loop er met een soldaat over en je hebt het. Elk vertelt een stukje van het verhaal (de zwarte doos van het eerste bevoorradingsschip, de mok van de stationschef, de knuffel van een kind uit Mare Colony …).
+- **Oeroude eieren** (4: Burn the Brood, Blackout, Dead Signal, Brood Mother): een groot versteend ei met amberlicht. Zet er een soldaat naast zonder Swarm binnen 3,5 tegels en houd het **5 seconden** vast (gele ring): het is van jou. Maar de Swarm wil het ook: na 2,5 tot 5 minuten stuurt de dichtstbijzijnde hive 3 Drones (en later opnieuw als die sneuvelen). Houden zij het **15 seconden** zonder soldaat in de buurt (groene ring), dan **ontwaakt het ei tot een nieuwe hive**.
+- Wat je vindt, wordt onthouden (`hc-relics`) en verschijnt niet opnieuw. Ook als je de missie verliest, hou je het.
+- **Intel → Relics**: alles wat je vond, met het verhaal; wat je nog niet vond staat er als *???* met de missie waarin het ligt.
+- **Trofeemuur**, rij *Relics*: **Archivist** (alle voorwerpen) en **Egg Hunter** (alle oeroude eieren). Op het eindscherm staat wat je die missie vond.
+- Instelbaar: `EGG_RELIC` in js/engine/29-relics.js (hoe lang vasthouden, wanneer de Swarm komt, hoeveel Drones).
 
 ## Dev-modus (waarden testen tijdens het spelen)
 
