@@ -176,7 +176,7 @@ function huskEscort(u,dt){ u.escortT=(u.escortT||0)-dt; if(u.escortT>0) return; 
   if(escortsOf(u).length&&isVisible(u)&&!G.saidEscort&&G.side==='corps'){ G.saidEscort=true; say('Dr. Maas','The Husk is not alone: the brood gathers round it like an honour guard. It leads them now.','alert'); } }
 function joinEscort(e,u){ e.role='escort'; e.leader=u; e.guardAt=null; e.order=null; e.target=null; e.path=null; e.slot=(escortsOf(u).length*2.1)%(Math.PI*2); }
 /* an escort stays round its Husk: it fights what comes close and walks with the Husk otherwise */
-function escortThink(e){ const L=e.leader;
+function huskEscortThink(e){ const L=e.leader;
   if(!L||L.dead){ e.role='hunt'; e.leader=null; e.order=null; return; }
   if(e.target) return;
   const d=dist(e,L); if(d<2.6*TILE&&!(e.order&&e.order.type==='amove')) return;

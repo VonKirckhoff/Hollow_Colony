@@ -304,6 +304,9 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - Je soldaten pakken eerst de kleinere vijanden rond haar aan en schieten daarna op haar.
 - Instelbaar bij `UNITS.broodmother`: `hp`, `damage`, `regen`, `eggEvery`, `eggs`, `spitEvery`, `spit`, `spitDamage`, `chargeEvery`, `chargeTime`, `chargeSpeed`, `rootSpeed`.
 
+### Dr. Maas als doelwit (missie 4)
+De Swarm wil Dr. Maas boven alles (`SWARM_VIP` in js/engine/08-combat.js): in een gevecht kiest een Swarm-wezen haar boven een soldaat die tot 3 tegels dichter staat, jagers binnen 22 tegels gaan recht op haar af, en elke golf na de redding wordt op haar gericht. Je kan haar mee selecteren en verplaatsen; zonder bevel volgt ze de dichtste soldaat.
+
 ### The Grey Hunter (missie 4 en 7)
 - Hij is gecamoufleerd: in je zichtveld zie je alleen een flikkering. Je kan hem pas aanvallen wanneer hij net gevuurd heeft, geraakt werd of dichtbij komt.
 - Hij jaagt op je sterkste eenheid met plasmaschoten en valt ook de Swarm aan.

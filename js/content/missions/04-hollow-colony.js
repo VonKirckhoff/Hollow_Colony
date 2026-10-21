@@ -49,7 +49,7 @@ MISSIONS.push(
           g.addObjective('escort','Bring Dr. Maas to the extraction pad and hold until the dropship lands'); g.addObjective('maas','Dr. Maas must survive');
           g.marker('lz','2','Extraction'); g.vars.nextWave=g.time+30; } },
       { when:g=>g.vars.rescueT && g.timerLeft()<=60, do:g=>g.say('Dropship Kestrel','Kestrel here. One minute out. Keep that pad clear.') },
-      { repeat:true, when:g=>g.vars.rescueT && g.time>g.vars.nextWave, do:g=>{ g.wave(60+(g.vars.waveN=(g.vars.waveN||0)+1)*18); g.vars.nextWave=g.time+40; } },
+      { repeat:true, when:g=>g.vars.rescueT && g.time>g.vars.nextWave, do:g=>{ g.wave(60+(g.vars.waveN=(g.vars.waveN||0)+1)*18, g.vars.maas&&!g.vars.maas.dead?g.vars.maas:undefined);   /* every wave comes for Dr. Maas */ g.vars.nextWave=g.time+40; } },
       { when:g=>g.vars.rescueT && g.time>g.vars.rescueT+14, do:g=>{
           const m=g.vars.maas.dead?g.where('1'):g.vars.maas; g.vars.grey=g.spawn('hunter',{x:Math.floor(m.x/32)-7,y:Math.floor(m.y/32)+3},1)[0]; g.vars.grey.escape=g.where('6');
           g.say('Cmdr. Varga','Unknown heat signature right on top of you... and gone. Something is stalking your squad.'); } },

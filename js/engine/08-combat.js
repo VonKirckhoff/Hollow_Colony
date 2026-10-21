@@ -8,6 +8,8 @@ function deadGen(u,t){ return u.faction==='swarm' && t.def && t.def.generator &&
 function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
+/* the Swarm wants the escort (Dr. Maas) above all: in a fight it picks her over a soldier up to pull tiles closer, and hunters within hunt tiles of her go for her */
+const SWARM_VIP = { pull:3, hunt:22 };
 function findTarget(u,rangeTiles,unitsOnly){
   const R=rangeTiles*TILE; let best=null, bs=Infinity;
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)) continue;
@@ -17,7 +19,7 @@ function findTarget(u,rangeTiles,unitsOnly){
     if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue;
-    let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0);
+    let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0) + (e.def.escort&&u.faction==='swarm' ? -SWARM_VIP.pull*TILE : 0);   /* the Swarm goes for an escort (Dr. Maas) first */
     if(score<bs){ bs=score; best=e; } }
   return best;
 }
