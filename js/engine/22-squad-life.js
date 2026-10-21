@@ -360,8 +360,8 @@ function claimThink(u,dt){ const b=u.claim; if(!b) return false;
   /* haul: carry it to the creep of the nearest hive */
   if(b.carrier===u){ const h=nearestOf(u,isNest);   /* the nearest hive, or a shaft with creep */
     if(!h){ dropBody(b); return true; }
-    if(gapTo(u,h)<TILE*0.9||(creepAt(u.x,u.y)>0.3&&dist(u,h)<((h.creepR||2)+0.5)*TILE)){ bodyHome(b,h,u); return false; }
-    if(!u.order||u.order.type!=='move'){ const s=spawnSpotToward(h,u); u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y);
+    if(gapTo(u,h)<TILE*0.9||(creepAt(u.x,u.y)>0.3&&dist(u,h)<((h.creepR||2)+0.5)*TILE)||(h.type!=='hive'&&dist(u,h)<((h.creepR||2)+1.5)*TILE)){ bodyHome(b,h,u); return false; }   /* a tunnel takes it anywhere on or at the edge of its creep */
+    if(!u.order||u.order.type!=='move'){ const s=h.type==='hive'?spawnSpotToward(h,u):creepSpot(h,u); u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y);
       if(!canReach(u,s)){ tunnelTo(u,s); if(isVisible(u)) SFX.play('land',u.x,u.y); } }   /* the way is shut: it digs down with the body */
     return true; }
   if(b.carrier){ u.claimMode='guard'; return true; }
