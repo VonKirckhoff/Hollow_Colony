@@ -535,3 +535,4 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #dev .dv-save.on{background:#ffb347;color:#111;border-color:#ffb347;}
 #dev .dv-export{margin:0 8px 8px;height:120px;font:11px monospace;color:var(--ink);background:rgba(0,0,0,.6);border:1px solid var(--line);}
 #dev select[data-dv=unit]{width:100%;margin-bottom:6px;}
+#dev .dv-help{padding:6px 8px;min-height:44px;border-top:1px solid var(--line);font-size:11px;line-height:1.4;color:#c9cedb;background:rgba(0,0,0,.25);} #dev .dv-help b{color:#ffb347;font-weight:normal;margin-right:4px;} #dev .dv-help i{color:var(--dim);}

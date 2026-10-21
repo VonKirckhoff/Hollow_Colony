@@ -3,7 +3,7 @@
 const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel','trophies'];
 function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name;
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
-  if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission?null:name);   /* menu screens have music, missions do not */
+  if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission||(!name&&G&&ui.mode==='game')?'game':name);   /* menu screens have music; a mission only if you switch it on (top-bar Music) */
   const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission;
   if(name){ $('#tut-card').hidden=true; $('#tut-open').hidden=true; } else if(G&&G.tutSteps) tutRefresh(); }   /* the training card only shows during play */
 function goMenu(name){

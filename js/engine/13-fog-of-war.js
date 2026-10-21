@@ -12,6 +12,7 @@ function computeFog(){
     if(r>0) mark(e.x,e.y,r); }
   G.reveals=G.reveals.filter(r=>r.until>G.time); for(const r of G.reveals) mark(r.x,r.y,r.r);
   for(const f of G.flareList) if(flareLit(f)) mark(f.x,f.y,SQUAD.flare.light);
+  if(G.devReveal){ G.vis.fill(1); G.seen.fill(1); }   /* dev panel: the whole map stays revealed */
   if(G.side==='swarm'&&G.creep){ const C=G.creep; for(let k=0;k<C.length;k++) if(C[k]>0.3){ G.vis[k]=1; G.seen[k]=1; } }   /* the Swarm feels everything that touches its creep */
 }
 let fogCanvas=null, fogCtx=null, fogImg=null;

@@ -1,6 +1,7 @@
 'use strict';
 /* ---------- 2v. music: the Hollow Colony soundtrack ----------
-   Generated live with Web Audio: no audio files. Plays on the menu screens only, never during a mission.
+   Generated live with Web Audio: no audio files. Plays on the menu screens; during a mission only if you switch it on
+   (top-bar button "Music", hc-game-music), and then softer (GAME_MUSIC_LEVEL × the music volume).
    Every track is a list of sections (a few bars each) with its own tempo, key, reverb and colour; see TRACKS below.
      Hollow Light            doom, black metal, industrial and cyberpunk in four movements (the original)
      Hollow Light: Drowned   the same, slower, a whole tone lower and deeper in the hall
@@ -21,7 +22,9 @@ const MUSIC=(()=>{
     vol=store.get('hc-music-vol',0.3), 
     menuTrack=store.get('hc-music-track','hollow'), 
     shuffle=store.get('hc-music-shuffle',false), 
-    autoplay=store.get('hc-music-auto',false);
+    autoplay=store.get('hc-music-auto',false),
+    gameOn=store.get('hc-game-music',false);
+  const GAME_MUSIC_LEVEL=0.45;   /* in a mission the music stays in the background */
   if(shuffle&&autoplay) autoplay=false;
   if(menuTrack==='shuffle'){ menuTrack='hollow'; store.set('hc-music-track',menuTrack); }   /* older saves kept shuffle as a track; shuffle is now its own switch, off by default */
   let S=null, timer=null, preview=null;          // S = the running session (own buses, so stopping cuts everything cleanly)
@@ -302,13 +305,15 @@ const MUSIC=(()=>{
   function stop(fade=1.6){ if(!S) return; const s=S; S=null; clearInterval(timer); timer=null;
     const now=ac.currentTime; s.out.gain.cancelScheduledValues(now); s.out.gain.setValueAtTime(Math.max(0.0001,s.out.gain.value),now); s.out.gain.exponentialRampToValueAtTime(0.0001,now+fade);
     setTimeout(()=>{ try{ s.out.disconnect(); }catch(e){} },fade*1000+4000); refreshPanel(); }
-  const level=()=>Math.max(0.0001,vol*0.6*((S&&S.track&&S.track.gain)||1));
-  const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', trophies:'menu', brief:'brief', cenotaph:'requiem', end:'end' };
+  const level=()=>Math.max(0.0001,vol*0.6*((S&&S.track&&S.track.gain)||1)*(scene==='game'?GAME_MUSIC_LEVEL:1));
+  const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', trophies:'menu', brief:'brief', cenotaph:'requiem', end:'end', game:'game' };
   let scene='menu', armed=false;                 /* browsers only allow sound after the first click or key press */
-  function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu';   /* victory: your menu music; defeat: the Cenotaph piece */
+  function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu'; if(m==='game'){ if(!gameOn) return null; m='menu'; }   /* victory: your menu music; defeat: the Cenotaph piece */
     if(m!=='menu') return m; if(shuffle) return S&&S.shuffle&&!S.track.screen?S.track.id:pick(MENU_TRACKS).id;
     if(autoplay) return S&&S.auto&&!S.track.screen?S.track.id:menuTrack; return menuTrack; }
-  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed) start(id,{shuffle:!TRACK[id].screen&&shuffle, auto:!TRACK[id].screen&&autoplay}); }
+  function applyScene(){ if(preview) return; const id=sceneTrack(); if(!id){ stop(1.2); return; } if(on&&armed){ start(id,{shuffle:!TRACK[id].screen&&shuffle, auto:!TRACK[id].screen&&autoplay}); if(S) S.out.gain.setTargetAtTime(level(),ac.currentTime,0.8); } }   /* same track, other scene: only the loudness changes */
+  function setGameOn(v){ gameOn=!!v; store.set('hc-game-music',gameOn); if(gameOn&&!on){ on=true; store.set('hc-music',true); label(); } armed=true; if(scene==='game') applyScene(); gameLabel(); }
+  function gameLabel(){ const b=document.getElementById('btn-gmusic'); if(b){ b.textContent=gameOn?'Music on':'Music off'; b.setAttribute('aria-pressed',gameOn); } }
   function setScene(name){ scene=name; if(!MOODS[name]){ preview=null; stop(name==null?1.2:2.5); closePanel(); return; } applyScene(); }
   function setOn(v){ on=!!v; store.set('hc-music',on); if(on){ armed=true; applyScene(); } else { preview=null; stop(0.8); } label(); }
   function setVol(v){ vol=clamp(+v,0,1); store.set('hc-music-vol',vol); if(S) S.out.gain.setTargetAtTime(level(),ac.currentTime,0.1); }
@@ -391,7 +396,8 @@ const MUSIC=(()=>{
   async function renderOffline(sec,id){ const keep={ac,noiseBuf,irBuf,S}, trk=TRACK[id]||TRACK.hollow;
     prep(new OfflineAudioContext(2,Math.ceil(44100*sec),44100)); setTempo(trk); S=buildSession(trk); S.track=trk; S.queue=[]; S.bar=0; S.cycle=0; S.next=0.05; S.out.gain.value=level();
     scheduleUntil(sec); const buf=await ac.startRendering(); ({ac,noiseBuf,irBuf,S}=keep); return buf; }
-  return { renderOffline, setScene, setOn, setVol, initUI, playPreview, stopPreview, setMenuTrack, tracks:TRACKS.map(t=>t.id),
+  return { renderOffline, setScene, setGameOn, gameLabel, get gameOn(){ return gameOn; }, setOn, setVol, initUI, playPreview, stopPreview, setMenuTrack, tracks:TRACKS.map(t=>t.id),
     get on(){ return on; }, get playing(){ return !!S; }, get track(){ return S&&S.track.id; }, get mood(){ return S&&S.track.id; } };
 })();
 MUSIC.initUI(); MUSIC.setScene('menu');
+{ const b=document.getElementById('btn-gmusic'); if(b) b.addEventListener('click',()=>{ MUSIC.setGameOn(!MUSIC.gameOn); if(typeof uiUsed==='function') uiUsed('gamemusic'); }); MUSIC.gameLabel(); }

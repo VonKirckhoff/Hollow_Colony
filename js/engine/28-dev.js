@@ -53,17 +53,21 @@ function devEl(){ let el=$('#dev'); if(el) return el;
       <span class="dv-sp"></span><button type="button" data-dv="alpha" title="See-through">◐</button><button type="button" data-dv="close" title="Close (F9)">✕</button></div>
     <div class="dv-fold"><div class="dv-tabs">${DEV_TABS.map(t=>`<button type="button" data-tab="${t.id}">${t.name}</button>`).join('')}</div>
     <div class="dv-body"></div>
+    <div class="dv-help"><i>Hover a name to see what it does.</i></div>
     <div class="dv-foot"><span class="dv-status"></span><span class="dv-sp"></span><button type="button" data-dv="export">Export</button><button type="button" data-dv="resetall">Reset all</button><button type="button" data-dv="save" class="dv-save">Save</button></div>
     <textarea class="dv-export" hidden readonly></textarea></div>`;
   document.body.appendChild(el);
   el.addEventListener('pointerenter',()=>{ ui.overDev=true; }); el.addEventListener('pointerleave',()=>{ ui.overDev=false; });
   el.addEventListener('click',devClick); el.addEventListener('change',devChange);
+  /* the explanation of a value shows in the panel itself, under the list (hover, or tap the name) */
+  const showHelp=e=>{ const s=e.target.closest&&e.target.closest('[data-help]'); if(!s) return; const [t,b]=s.dataset.help.split('|'); el.querySelector('.dv-help').innerHTML=`<b>${t}</b> ${b}`; };
+  el.addEventListener('pointerover',showHelp); el.addEventListener('focusin',e=>{ const r=e.target.closest('.dv-row'); if(r) showHelp({target:r.querySelector('[data-help]')||r}); });
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'){ e.target.blur(); } });
   return el; }
 function devToggle(on){ if(!G||ui.mode==='menu') return; const el=devEl(); el.hidden=on==null?!el.hidden:!on; ui.overDev=false; if(!el.hidden){ store.set('hc-dev',true); devRender(); } }
 function devFmt(v){ return typeof v==='number'?String(Math.round(v*1000)/1000):''; }
 function devRow(key,label){ const v=devGet(key), t=devTarget(key); if(!t) return ''; const ch=getP(t.obj,t.path)!==t.orig;
-  const tip=` data-tip="${key.split('|')[1]}|${(devHelp(key)||'No description yet.').replace(/"/g,'&quot;')} Default: ${t.orig==null?'not set (the game default)':devFmt(t.orig)||String(t.orig)}."`;
+  const tip=` data-help="${key.split('|')[1]}|${(devHelp(key)||'No description yet.').replace(/"/g,'&quot;')} Default: ${t.orig==null?'not set (the game default)':devFmt(t.orig)||String(t.orig)}."`;
   if(typeof v==='boolean'||typeof t.orig==='boolean') return `<label class="dv-row ${ch?'ch':''}"><span${tip}>${label}</span><input type="checkbox" data-k="${key}" ${v?'checked':''}><button type="button" class="dv-rs" data-rs="${key}" title="Back to ${t.orig}">↺</button></label>`;
   return `<label class="dv-row ${ch?'ch':''}"><span${tip}>${label}</span><input type="number" step="any" data-k="${key}" value="${devFmt(v)}" placeholder="${t.orig==null?'default':devFmt(t.orig)}"><button type="button" class="dv-rs" data-rs="${key}" title="Back to ${t.orig==null?'default':devFmt(t.orig)}">↺</button></label>`; }
 /* every number in an object, as rows grouped by the object they sit in */
@@ -100,7 +104,7 @@ function devLive(){ const S=G.swarm, hs=hives().length, nx=S.nextWave-G.time;
     <label class="dv-row"><span>Biomass</span><input type="number" step="10" data-live-set="biomass" value="${Math.floor(S.biomass)}"></label>
     <label class="dv-row"><span>Flares</span><input type="number" step="1" data-live-set="flares" value="${G.flares}"></label>
     <label class="dv-row"><span>Next wave in (s)</span><input type="number" step="5" data-live-set="nextWave" value="${isFinite(nx)?Math.max(0,Math.ceil(nx)):''}"></label>
-    <div class="dv-tools"><button type="button" data-dv="wave">Wave now</button><button type="button" data-dv="reveal">Reveal map</button><button type="button" data-dv="heal">Heal everyone</button>
+    <div class="dv-tools"><button type="button" data-dv="wave">Wave now</button><button type="button" data-dv="reveal" class="${G.devReveal?'on':''}">${G.devReveal?'Reveal map: on':'Reveal map: off'}</button><button type="button" data-dv="heal">Heal everyone</button>
       <button type="button" data-dv="clear">Kill all roaming Swarm</button><button type="button" data-dv="win">Win mission</button><button type="button" data-dv="lose">Lose mission</button></div>
     <div class="dv-note">These change only this game. The other tabs hold the settings you can save.</div>`; }
 function devTick(){ const el=$('#dev'); if(!el||el.hidden||!G) return; if(ui.mode==='menu'||!G){ el.hidden=true; return; }
@@ -131,7 +135,7 @@ function devClick(e){ const b=e.target.closest('button,.dv-title'); if(!b) retur
     const lines=Object.entries(now).map(([k,v])=>{ const t=devTarget(k); return `${k.replace('|','  ')}: ${t.orig==null?'(default)':t.orig} → ${v}`; });
     ta.value=lines.length?lines.join('\n')+'\n\n'+JSON.stringify(now,null,1):'No changes.'; ta.hidden=false; ta.select(); try{ navigator.clipboard.writeText(ta.value).then(()=>toast('Changes copied to the clipboard.',true),()=>toast('Select the text and copy it (Ctrl+C).',true)); }catch(err){} }
   else if(a==='wave'){ if(G.mission.swarm&&G.mission.swarm.waves){ S.waveN++; launchWave(waveBudget()); } else launchWave(80); }
-  else if(a==='reveal'){ G.seen.fill(1); for(let i=0;i<G.vis.length;i++) G.vis[i]=1; G.reveals.push({x:G.map.w*TILE/2,y:G.map.h*TILE/2,r:999,until:G.time+20}); }
+  else if(a==='reveal'){ G.devReveal=!G.devReveal; computeFog(); }   /* stays on for the rest of the mission */
   else if(a==='heal'){ for(const u of G.ents) if(!u.dead&&u.faction===G.side&&u.maxHp&&!u.downed) u.hp=u.maxHp; }
   else if(a==='clear'){ for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='swarm'&&u.role!=='guard'&&!u.def.boss&&G.side!=='swarm') u.dead=true; }
   else if(a==='win'){ api.win('Won from the dev panel.'); }
