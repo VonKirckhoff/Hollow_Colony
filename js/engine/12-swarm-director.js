@@ -12,7 +12,7 @@ function shafts(){ return G.ents.filter(e=>e.type==='shaft'&&!e.dead); }
 /* Waves: they grow for the first few waves and then stop growing, they shrink as you burn hives, and the Swarm never
    fields more than a set number of creatures at once (a wave that would go over waits).
    Per mission in swarm.waves: max (biggest wave budget), growWaves (how many waves keep growing); in swarm: maxAlive. */
-const WAVES = { growWaves:8, maxAlive:40, hiveScale:0.6, waitFull:15 };
+const WAVES = { growWaves:8, maxAlive:40, hiveScale:0.6, waitFull:15, shaftScale:0.4 };   /* shaftScale: waves out of mine shafts (no hive left) are this size */
 function swarmCap(){ return (G.swarm.cfg.maxAlive??WAVES.maxAlive)*G.diff.budget; }
 function roamCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&e.role!=='guard').length; }   /* the cap is for what roams: the guards at home do not count */
 function waveBudget(){ const S=G.swarm, w=S.cfg.waves, hs=hives().length;
@@ -57,6 +57,7 @@ function burrowSpot(aim){
 function launchWave(budget,aim){
   let hs=hives(); const out=[]; let left=budget, guard=0;
   if(!hs.length&&shafts().length){   /* mine shafts: the wave comes up out of one (the nearest to its goal, not one your troops stand on) */
+    left*=WAVES.shaftScale;   /* the hives are gone: what climbs out of the shafts is a lot less */
     const corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'), ok=shafts().filter(s=>!corps.some(c=>dist(c,s)<6*TILE)), pool=ok.length?ok:shafts();
     const sh=aim?pool.sort((a,b)=>dist(a,aim)-dist(b,aim))[0]:pick(pool), room=swarmCap()-roamCount(), wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types;
     const tiles=freeTilesNear(Math.floor(sh.x/TILE),Math.floor(sh.y/TILE),24);

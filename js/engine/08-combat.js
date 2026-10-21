@@ -69,7 +69,7 @@ function damage(t,amt,src){
     else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction)) t.target=src;
   }
   if(t.type==='hive' && src) hiveAlarm(t,src);
-  if(t.hp<=0 && canGoDown(t,src)){ goDown(t,src); return; }   /* a soldier first goes down; a Medic can still patch him up */
+  if(t.hp<=0 && canGoDown(t,src)){ goDown(t,src); if(src&&src.type==='husk'&&!src.dead) huskScream(src); return; }   /* a Husk screams when it brings one down, too */   /* a soldier first goes down; a Medic can still patch him up */
   if(t.hp<=0) kill(t,src);
 }
 function kill(e,src){
@@ -93,7 +93,8 @@ function kill(e,src){
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
     if(e.faction===G.side) G.stats.lost++;
     if(e.faction==='corps') obituary(e);
-    if(src&&src.avatar) avatarFed(src,e);   /* the creature you steer grows by feeding */
+    if(src&&src.avatar) avatarFed(src,e);
+    if(src&&src.type==='husk'&&!src.dead&&e.faction==='corps'&&e.kind==='unit') huskScream(src);   /* a Husk screams over its kill */   /* the creature you steer grows by feeding */
     if(G.side==='swarm' && e.faction==='corps' && !e.def.escort){ G.stats.kills++; G.swarm.biomass+=SWARM_PLAY.kill; }   /* playing the Swarm: every soldier who dies (also one who bleeds out) feeds the brood */
     if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
     if(e.def.burst) bloaterBurst(e);

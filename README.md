@@ -70,7 +70,6 @@ Alles wat de Swarm doet, stel je in op drie niveaus. Het meest specifieke wint: 
 | `unlock` | Na hoeveel seconden een type mag verschijnen | `{ spitter:120, brute:480 }` |
 | `burrows` | Als alle hives weg zijn, graven golven zich uit de grond op | `true` |
 | `creep` | Straal (tegels) die de schimmel rond elke hive uiteindelijk haalt (`0` = geen schimmel) | `6` |
-| `husks` | Hoeveel nieuwe hives Husks in deze missie mogen stichten (standaard 2, `0` = nooit) | `1` |
 
 Ook in `start:{ … }`: `hiveHp` (factor op de levenspunten van alle hives in die missie).
 
@@ -272,8 +271,10 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
   4. **Shambler:** rechtop, half pantser half vlees (70% levenspunten, 90% snelheid, 75% schade). Na 8 seconden vervelt hij opnieuw.
   5. **Husk:** de eindvorm (150 HP, 10% pantser, zware klauwen, 3 XP, met een brul).
   - **Vervellen** duurt 1,6 seconden: hij staat stil en schudt, zijn huid licht op, de volgende vorm groeit erdoorheen en stukken pantser vliegen eraf (geluid: knakkende botten en gekreun). Ondertussen valt hij niet aan en krijgt hij **50% meer schade**. Dat is je kans.
-  - De **Twitcher** vecht mee. De **Shambler** (vlak voor zijn eindvorm) **trekt zich terug**: hij vecht niet meer, zoekt een plek minstens 11 tegels van je troepen (`HUSK.hide`) en wacht daar tot hij klaar is; komen je troepen dichterbij, dan vlucht hij verder.
-  - De **eindvorm** gaat meteen wortel schieten: hij zoekt een rustige plek (minstens 13 tegels van je troepen en gebouwen, 11 van een andere hive, hooguit 34 tegels ver) en loopt erheen zonder te stoppen. Daar **schiet hij wortel** (18 seconden, een paarse balk *ROOTING* en tentakels). Dood je hem niet op tijd, dan groeit er een **nieuwe, jonge hive** (55% van de levenspunten van een gewone hive, 2 bewakers), met zijn eigen schimmel. Per missie stichten Husks hoogstens 2 hives (`swarm.husks`), minstens 16 tegels van een andere hive, en er mogen **nooit meer hives tegelijk** zijn dan de hives van de missie plus één (minstens 3; per missie `swarm.maxHives`). Nieuwe hives tellen mee in *Destroy all hives*. In het selectiepaneel zie je in welk stadium hij zit (*Twitcher (turning into a Husk)*).
+  - **Zolang hij nog verandert** (Twitcher en Shambler) **blijft hij op de schimmel** van de dichtstbijzijnde hive en verdedigt die: hij valt aan wat op de schimmel komt, maar volgt je er niet af. Is er geen hive meer, dan jaagt hij meteen.
+  - De **eindvorm** is een **krijger**: hij verlaat de schimmel en jaagt op je squad. Hij schiet **geen wortel** meer en wordt nooit een hive (alleen je eigen wezen in *The Graft* doet dat nog, met F).
+  - **Schreeuw:** brengt een Husk een soldaat neer of doodt hij er een, dan schreeuwt hij (*SCREAM*, een rode schokgolf): de soldaten binnen 3,5 tegels deinzen terug (ze zijn even onderdrukt: trager, zoals onder zwaar vuur). `HUSK_WARRIOR` in js/engine/25-hive-life.js.
+  - In het selectiepaneel zie je in welk stadium hij zit (*Twitcher (turning into a Husk)*).
 
 ### Landing Zone en troepenlimiet (missie 1, 5, 6, 7 en 8)
 - Bij de basis ligt een **Landing Zone**: een markering op de grond met een grote H. Eenheden lopen er gewoon over, de vijand negeert ze en kan ze niet beschadigen, en je kan er niets op bouwen. Klik erop om ze te selecteren. Selecteer ze om versterkingen te bestellen: Trooper, Gunner, Medic, Pyro of Engineer, met dezelfde prijs en sneltoetsen als bij de Command Post.
@@ -308,7 +309,7 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - Een missie met `dark:{ sight:0.5 }` speelt **in het donker**: alle eenheden en gebouwen zien maar de helft zo ver (minstens 2 tegels), en wat je eerder zag, zakt bijna helemaal weg in het zwart.
 - **Generatoren** zijn missiegebouwen. Ze starten kapot (5% hp). Engineers herstellen ze (automatisch in de buurt of met rechtsklik). Op 100% gaan ze **online**: ze geven licht in een straal van 9 tegels, en dat gebied zie je dan gewoon.
 - Licht trekt de Swarm aan: in Blackout komt er 10 seconden nadat een generator aanslaat een golf op af, en daarna elke 45 seconden zolang hij draait (niet als er al 40 of meer Swarm op het veld zijn).
-- **Mijnschachten** (`start.shafts:[punten]`): oude schachten die je niet kan vernietigen. Zolang er nog hives zijn, gebeurt er niets. Zijn alle hives weg, dan komen de golven (en de golven die op licht afkomen) uit de schacht die het dichtst bij hun doel ligt, maar nooit uit een schacht waar je soldaten binnen 6 tegels staan. Blackout heeft er drie.
+- **Mijnschachten** (`start.shafts:[punten]`): oude schachten die je niet kan vernietigen. Zolang er nog hives zijn, gebeurt er niets. Zijn alle hives weg, dan komen de golven (en de golven die op licht afkomen) uit de schacht, maar maar 40% zo groot (`WAVES.shaftScale`): hives verbranden blijft lonen. Ze komen uit de schacht die het dichtst bij hun doel ligt, maar nooit uit een schacht waar je soldaten binnen 6 tegels staan. Blackout heeft er drie.
 - Een generator die uitgevallen is (offline), laat de Swarm met rust: er valt niets meer aan te breken, want een generator gaat niet kapot. Ze lopen door naar je troepen en de Command Post. Zodra hij weer draait, komen ze er opnieuw op af.
 - Zakt een generator onder **60%**, dan valt hij uit. Kapot gaan kan hij niet: hij blijft op minstens 1 hp en moet weer helemaal hersteld worden.
 - Boven elke generator staat ONLINE of OFFLINE met het percentage. Instelbaar in `BUILDINGS.generator`: `hp`, `startHp`, `failAt`, `light`.
@@ -423,7 +424,7 @@ Op het campagnescherm kies je bovenaan **Lunar Corps** of **The Swarm** (onthoud
 
 - **Biomassa:** elke hive levert biomassa per seconde (`swarm.rate`). Elke soldaat die sterft (ook wie doodbloedt) geeft er 12. Een lichaam dat thuis op de schimmel van een hive belandt, geeft er 20.
 - **Limiet:** je kan hoogstens 30 tot 40 brood tegelijk hebben (`swarm.cap`). De paar bewakers die elke hive zelf kweekt, tellen niet mee en kosten niets.
-- **Alles uit de Swarm werkt mee:** lichamen infecteren en wegslepen, Husks die nieuwe hives stichten, schimmel die je eenheden geneest, hives die krijsen en broed uitspuwen als ze geraakt worden.
+- **Alles uit de Swarm werkt mee:** lichamen infecteren en wegslepen, Husks die als krijgers jagen, schimmel die je eenheden geneest, hives die krijsen en broed uitspuwen als ze geraakt worden.
 - **Wat je ziet:** je ziet wat je eenheden, hives en schimmel zien. De bovenbalk toont *Biomass*, *Brood* (jouw brood / limiet) en *Swarm* (alles samen). De radio van de Lunar Corps vang je op als *Intercept*; de stem van de Brood staat in het groen. De motion tracker toont nu de soldaten.
 - **De computer (Lunar Corps):** de soldaten houden hun positie, schieten op wat binnen bereik komt en komen helpen als een gebouw of soldaat in de buurt geraakt wordt (14 tegels). Medics lappen op, Engineers herstellen. Het missiescript laat ze verplaatsen, stuurt versterking met het dropship, traint nieuwe soldaten en stuurt aanvalsploegen naar je hives.
 - **Moeilijkheid** maakt de Lunar Corps sterker (`SWARM_DIFF` in js/engine/26-swarm-command.js): Easy 85% levenspunten en schade, Hard 125% levenspunten, 115% schade en 35% meer versterking (`g.n(x)` in de scripts). In *Kappa Siege* staan op Easy/Normal/Hard 2/3/4 Sentry Guns.
@@ -504,7 +505,7 @@ js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
                                 pathfinding, beweging, gevecht, gedrag, gebouwen, economie,
                                 Swarm-AI, fog of war, mission API, update, berichten, tekenen,
                                 HUD, bevelen, invoer, schermen, hoofdlus, muziek
-                                (25-hive-life.js: schimmel rond hives, Husks die wortel schieten)
+                                (25-hive-life.js: schimmel rond hives, eieren, Husks)
                                 (26-swarm-command.js: spelen als de Swarm, de Lunar Corps als computer)
                                 (27-training.js: één wezen besturen van ei tot hive)
 map-editor/                     de kaarteditor (leest de kaarten uit js/content/maps/)
