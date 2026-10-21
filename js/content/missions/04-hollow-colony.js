@@ -18,7 +18,8 @@ MISSIONS.push(
     limits:{ sentry:1 },
     noBuild:['sentry'],   /* one Sentry Gun: the Engineer cannot build one here; a lost sentry is replaced by dropship on the landing pad */
     tough:{ sentry:{ hp:2, armor:0.3 }, husk:{ hp:1.6, armor:0.3 } },   /* the one sentry and the Husks take a lot more killing here */
-    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null, shaftScale:0.85 },   /* no waves, but the hives watch the road; with the hives gone the rescue waves climb out of the wall tunnels, almost as big */
+    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null, shaftScale:1,   /* no waves, but the hives watch the road; with the hives gone the rescue waves climb out of the wall tunnels, just as big */
+      hunt:{ every:25, afterEvery:18, budget:60, afterBudget:80, grow:0.25, growMax:14 } },   /* the colony is theirs: the hunt comes sooner, bigger and keeps growing longer than elsewhere */
     objectives:[ { id:'lab', text:'Find Dr. Maas in the research lab' } ],
     // Dropship timer starts at the rescue; the mission is won once it has landed and Dr. Maas is on the pad.
     triggers:[
@@ -49,7 +50,7 @@ MISSIONS.push(
           g.addObjective('escort','Bring Dr. Maas to the extraction pad and hold until the dropship lands'); g.addObjective('maas','Dr. Maas must survive');
           g.marker('lz','2','Extraction'); g.vars.nextWave=g.time+30; } },
       { when:g=>g.vars.rescueT && g.timerLeft()<=60, do:g=>g.say('Dropship Kestrel','Kestrel here. One minute out. Keep that pad clear.') },
-      { repeat:true, when:g=>g.vars.rescueT && g.time>g.vars.nextWave, do:g=>{ g.wave(60+(g.vars.waveN=(g.vars.waveN||0)+1)*18, g.vars.maas&&!g.vars.maas.dead?g.vars.maas:undefined);   /* every wave comes for Dr. Maas */ g.vars.nextWave=g.time+40; } },
+      { repeat:true, when:g=>g.vars.rescueT && g.time>g.vars.nextWave, do:g=>{ g.wave(80+(g.vars.waveN=(g.vars.waveN||0)+1)*25, g.vars.maas&&!g.vars.maas.dead?g.vars.maas:undefined);   /* every wave comes for Dr. Maas */ g.vars.nextWave=g.time+35; } },
       { when:g=>g.vars.rescueT && g.time>g.vars.rescueT+14, do:g=>{
           const m=g.vars.maas.dead?g.where('1'):g.vars.maas; g.vars.grey=g.spawn('hunter',{x:Math.floor(m.x/32)-7,y:Math.floor(m.y/32)+3},1)[0]; g.vars.grey.escape=g.where('6');
           g.say('Cmdr. Varga','Unknown heat signature right on top of you... and gone. Something is stalking your squad.'); } },

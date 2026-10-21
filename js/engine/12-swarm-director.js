@@ -165,9 +165,11 @@ function hiveWatch(h,dt){
    - idle hunters go looking for soldiers;
    - with no Husk about, a plain wave goes for a soldier.
    This comes on top of the mission's own waves. Each round is a little bigger (grow, up to growMax rounds).
-   A mission can switch it off with swarm.hunt:false (the hunt after a defeat still runs). */
-const HUNT = { every:30, afterEvery:20, first:6, budget:40, afterBudget:60, grow:0.2, growMax:10, partyMax:8 };
+   A mission can switch it off with swarm.hunt:false (the hunt after a defeat still runs), or tune it with swarm.hunt:{ every, budget, grow, growMax, … }. */
+const HUNT_DEFAULT = { every:30, afterEvery:20, first:6, budget:40, afterBudget:60, grow:0.2, growMax:10, partyMax:8 };
+function huntCfg(){ const h=G.swarm.cfg.hunt; return h&&typeof h==='object'?{...HUNT_DEFAULT,...h}:HUNT_DEFAULT; }
 function swarmHunt(dt){ if(G.side!=='corps'||G.mission.training) return; const S=G.swarm, lost=afterDefeat(); if(!lost&&S.cfg.hunt===false) return;
+  const HUNT=huntCfg();
   S.huntT=(S.huntT??(lost?HUNT.first:HUNT.every))-dt; if(S.huntT>0) return; S.huntT=lost?HUNT.afterEvery:HUNT.every;
   const corps=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.def.ground); if(!corps.length) return;
   const near=u=>{ let b=null, bd=Infinity; for(const e of corps){ const d=dist(u,e); if(d<bd){ bd=d; b=e; } } return b; };
