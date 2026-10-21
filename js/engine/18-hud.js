@@ -31,7 +31,7 @@ function renderSelection(){
   if(sel.length===1){ const e=sel[0], d=e.def, img=iconUrl(e.type), f=clamp(e.hp/e.maxHp,0,1);
     let stats='';
     if(e.kind==='unit'){ stats = d.heal ? `<span>Heal <b>${d.heal}/s</b></span><span>Range <b>${d.healRange}</b></span>` : d.damage ? `<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span><span>Rate <b>${(1/d.cooldown).toFixed(1)}/s</b></span>` : '';
-      stats+=`<span>Speed <b>${Math.round(speedOf(e))}</b></span>`; if(e.carry) stats+=`<span>Carrying <b>${BUILDINGS[e.carry.type].name}</b></span>`; }
+      stats+=`<span>Speed <b>${Math.round(speedOf(e))}</b></span>`; if(d.founder&&!e.avatar&&(e.kills||e.def.matriarch||e.stage===HUSK_STAGES.length-1)) stats+=`<span>Kills <b>${e.kills||0}${d.matriarch?'':` / ${HUSK_WARRIOR.matriarch}`}</b></span>`; if(e.mend) stats+=`<span><b>Falling back to heal</b></span>`; if(e.carry) stats+=`<span>Carrying <b>${BUILDINGS[e.carry.type].name}</b></span>`; }
     else { if(d.supply) stats+=`<span>Supply <b>+${d.supply}</b></span>`; if(d.income) stats+=`<span>Income <b>${d.income}/s</b></span>`; if(d.damage) stats+=`<span>Damage <b>${d.damage}</b></span><span>Range <b>${d.range}</b></span>`;
       if(e.type==='cocoon') stats+=`<span>Hatches in <b>${Math.max(0,e.hatchT).toFixed(1)}s</b></span>`; if(!e.built) stats+=`<span>Built <b>${Math.floor(e.progress*100)}%</b></span>`; }
     if(e.vet&&e.vet.hero) stats+=`<span><b style="color:#ffd23f">★ Your soldier</b></span>`;
