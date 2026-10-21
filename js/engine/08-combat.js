@@ -3,7 +3,9 @@
 function hostile(a,b){ if(a===b||a==='none'||b==='none') return false; if(a==='wild') return false; if(b==='wild') return a==='swarm'; return true; }
 function visibleTo(faction,e){ if(faction!==(G?G.side:'corps')) return true; return isVisible(e); }   /* the computer's side sees everything its units could */
 function isVisible(e){ if(e.faction===G.side) return true; if(e.def&&e.def.cloak&&!(e.revealT>0)) return false; const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE), i=ty*G.map.w+tx; return (e.kind==='building'&&e.type!=='cocoon') ? G.seen[i]>0 : G.vis[i]>0; }
-function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
+/* the Swarm leaves a generator alone once it is off: there is nothing left in it to break (it cannot be destroyed) */
+function deadGen(u,t){ return u.faction==='swarm' && t.def && t.def.generator && !t.powered; }
+function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 function findTarget(u,rangeTiles,unitsOnly){
@@ -11,6 +13,7 @@ function findTarget(u,rangeTiles,unitsOnly){
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)) continue;
     if(unitsOnly && (e.kind!=='unit'||e.def.passive)) continue;
     if(e.downed&&spareDowned(u)) continue;
+    if(deadGen(u,e)) continue;
     if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue;

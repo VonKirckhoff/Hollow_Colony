@@ -62,7 +62,7 @@ function smartCommand(wx,wy){ if(G.side==='swarm'){ swarmRight(wx,wy); return; }
   if(t && t.faction==='corps' && t.kind==='building' && t.def.portable && t.built && t.hp>=t.maxHp && units.some(u=>u.def.builder&&!u.carry)){ packSentry(t); const rest=units.filter(u=>!u.def.builder); if(rest.length) moveGroup(rest,wx,wy,'move'); return; }
   if(t && t.faction==='corps' && t.kind==='building' && (t.hp<t.maxHp||!t.built)){ const eng=units.filter(u=>u.def.builder);
     if(eng.length){ for(const u of eng){ u.order={type:'repair',target:t}; u.path=null; u.goal=null; } const rest=units.filter(u=>!u.def.builder); if(rest.length) moveGroup(rest,wx,wy,'move'); return; } }
-  moveGroup(units,wx,wy,'move'); SFX.play('ack'); startFollow();
+  leaveFormation(units); moveGroup(units,wx,wy,'move'); SFX.play('ack'); startFollow();
   G.pings.push({x:wx,y:wy,t:2.5,col:'#5fe3b0'});
 }
 /* Group moves keep the squad's current shape: every unit keeps its offset from the group centre,
@@ -101,24 +101,26 @@ function formationSlots(shape,nf,ns,sp){
     for(let k=1;f.length<nf;k++){ f.push({x:a+sp*0.4-k*sp*0.85,y:-k*sp*0.8}); if(f.length<nf) f.push({x:a+sp*0.4-k*sp*0.85,y:k*sp*0.8}); } }
   else if(shape==='line'){ const w=sp*1.6; for(let i=0;i<nf;i++) f.push({x:0,y:(i-(nf-1)/2)*w}); }   /* wide: every gun needs a clear line of fire */
   else if(shape==='zigzag'){ const nF=Math.ceil(nf/2), nB=nf-nF, w=sp*1.4, sh=nB===nF?w/2:0;   /* a little closer than a line */
-    for(let i=0;i<nF;i++) f.push({x:sp*0.65,y:(i-(nF-1)/2)*w});
-    for(let i=0;i<nB;i++) f.push({x:-sp*0.65,y:(i-(nB-1)/2)*w+sh}); }
+    for(let i=0;i<nF;i++) f.push({x:sp*0.42,y:(i-(nF-1)/2)*w});   /* the two rows close together */
+    for(let i=0;i<nB;i++) f.push({x:-sp*0.42,y:(i-(nB-1)/2)*w+sh}); }
   else { const per=Math.max(1,Math.ceil(nf/4)), h=Math.max(sp*1.7,per*sp*0.7), P=8*h;
     for(let i=0;i<nf;i++){ let d=i/nf*P, x,y; if(d<2*h){ x=h; y=-h+d; } else if(d<4*h){ x=h-(d-2*h); y=h; } else if(d<6*h){ x=-h; y=h-(d-4*h); } else { x=-h+(d-6*h); y=-h; } f.push({x,y}); } }
   // support in the middle (slightly behind the tip for a wedge)
   const cx = shape==='wedge' ? -sp*0.5 : 0;
-  if(FACING.has(shape)){ const bx=shape==='line'?-sp*1.2:-sp*1.8; for(let i=0;i<ns;i++) s.push({x:bx,y:(i-(ns-1)/2)*sp*1.3}); }
+  if(FACING.has(shape)){ const bx=shape==='line'?-sp*1.2:-sp*1.4; for(let i=0;i<ns;i++) s.push({x:bx,y:(i-(ns-1)/2)*sp*1.3}); }
   else if(ns===1) s.push({x:cx,y:0}); else for(let i=0;i<ns;i++){ const a=i/ns*Math.PI*2; s.push({x:cx+Math.cos(a)*sp*0.7,y:Math.sin(a)*sp*0.7}); }
   return {f,s};
 }
 /* which unit goes to which place: a plan of slots (local, facing +x) for a shape */
 function slotPlan(units,shape,sp){
   if(shape==='custom'){ const c=customForm(); if(c) return customPlan(units,c,sp/(FORMATION.spacing*1.15)); shape='circle'; }
-  const sup=units.filter(isSupport); let fig=units.filter(u=>!isSupport(u));
+  let sup=units.filter(isSupport), fig=units.filter(u=>!isSupport(u));
   if(!fig.length){ fig=sup.splice(0); }
   /* a circle or square needs at least 4 points on its outline: with fewer fighters, support takes a place on the outline too
      (otherwise 2 fighters + support in the middle make a straight line) */
   if(shape!=='wedge' && !FACING.has(shape) && fig.length<4 && sup.length){ const all=[]; while(fig.length||sup.length){ if(fig.length) all.push(fig.shift()); if(sup.length) all.push(sup.shift()); } fig=all; }
+  /* behind a line or zigzag the support stands in a row: Medics in the middle, Engineers and escorts on both sides */
+  if(FACING.has(shape)&&sup.length>2){ const med=sup.filter(u=>u.def.heal), oth=sup.filter(u=>!u.def.heal), h=Math.ceil(oth.length/2); sup=[...oth.slice(0,h),...med,...oth.slice(h)]; }
   return { shape, fig, sup, slots:formationSlots(shape,fig.length,sup.length,sp) }; }
 /* your own formation: every place remembers the type that stood there; a Medic goes to a Medic's place, else to a support place, else anywhere.
    More soldiers than places: the rest line up behind. */
@@ -182,6 +184,11 @@ function cmdGap(){ const us=myUnits(), f=sharedForm(us); if(!f){ toast('Pick a f
   const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length; placeFormation(us,cx,cy,f.dir,'move');
   uiUsed('gap'); SFX.play('ack'); toast(`Spacing: ${gapName(f)}`,true); G.selDirty=true;
 }
+/* You order part of a formation somewhere on its own (one Medic, or two of the squad): they leave that formation, so they do not walk
+   back to their old place afterwards. Two or more moved together keep the shape between them. Called with the whole selection. */
+function leaveFormation(sel){ const byForm=new Map(); for(const u of sel) if(u.formation){ if(!byForm.has(u.formation)) byForm.set(u.formation,[]); byForm.get(u.formation).push(u); }
+  for(const [f,us] of byForm){ const members=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.formation===f); if(members.every(m=>us.includes(m))) continue;
+    if(us.length>1){ const nf={...f}; us.forEach(u=>u.formation=nf); } else us.forEach(u=>{ u.formation=null; u.slot=null; u.rejoin=false; }); } }
 /* where a soldier belongs in his formation now (it follows the squad when it moves on without him), or null */
 function formationSpot(u){ const f=u.formation; if(!f||!f.at||!u.slot||u.faction!=='corps') return null;
   if(!G.ents.some(e=>e!==u&&!e.dead&&e.kind==='unit'&&e.formation===f)) return null;
@@ -192,7 +199,7 @@ function rejoinFormation(u){ const p=formationSpot(u); if(!p||Math.hypot(u.x-p.x
 /* right mouse held and dragged: the squad goes to where you pressed and faces the way you dragged */
 function canFace(){ const us=myUnits(); return us.length>1&&us[0].formation&&us.every(u=>u.formation===us[0].formation); }
 function moveFacing(wx,wy,dir){ const us=myUnits(); if(!canFace()) { smartCommand(wx,wy); return; }
-  us[0].formation.dir=dir; anyBarker(us,stanceOf(us)==='attack'?'attack':'move'); placeFormation(us,wx,wy,dir,'move');
+  leaveFormation(us); us[0].formation.dir=dir; anyBarker(us,stanceOf(us)==='attack'?'attack':'move'); placeFormation(us,wx,wy,dir,'move');
   SFX.play('ack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.5,col:'#5fe3b0'}); uiUsed('facing'); G.selDirty=true; }
 /* put a squad straight into a formation where it stands (no walking): used at the start of a mission */
 function formUp(units,shape,dir=-Math.PI/2){ if(units.length<2) return; const f={shape,dir,gap:1}; units.forEach(u=>u.formation=f);

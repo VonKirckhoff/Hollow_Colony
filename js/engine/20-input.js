@@ -22,7 +22,7 @@ cv.addEventListener('pointerdown',e=>{
     ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,box:false,shift:e.shiftKey};
   }
 });
-function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits();
+function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits(); leaveFormation(units);
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
   for(const u of units){ u.stance = u.def.damage&&!u.def.heal ? 'attack' : null; u.quiet=false; }   /* an attack order also lifts hold fire */   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
   if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
