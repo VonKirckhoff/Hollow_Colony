@@ -360,6 +360,10 @@ Ook op het **eindscherm** speelt muziek: na een overwinning je menumuziek, na ee
 | Cold Quarters | depressive black metal | 58 | Lo-fi (cassette, gekraak): een eenzaam pianomotief, een huilende lead, slepende drums |
 | Dead Satellite | dark ambient | 50 | Geen drums: pulsartikken, morse (SOS, LUNAR, DUST), een drijvende pad |
 | Funeral Orbit | funeral doom | 48 | Een processie onder luidende klokken; het zwaarste op de Maan |
+| Hollow Light: Starfall | variant · space black metal | 72 | Het black-gedeelte van Hollow Light uitgegroeid tot een volledig nummer: vallende sterren boven het akkoordenschema, een tremolomelodie met een terts erboven, en een storm van blastbeats |
+| Mare Tranquillitatis | atmosferische space black metal | 66 | B mineur. Een stille kust van cleane gitaar en sterrenlicht, dan een vloed van tremolomelodie die stijgt tot het apogeum en terugvalt |
+| Cold Light of Distant Suns | space black metal | 84 | E mineur. Een pulserende arpeggiator, dan tremolo-gepickte riffs op volle snelheid, een eclips in half tempo en op het einde een aurora in majeur |
+| Perihelion | kosmische black metal | 70 | C mineur. Een arpeggiator in een baan rond een black metal-riff, een trage zwaai langs de zon en de brand van de dichtste nadering |
 | Briefing / Cenotaph | schermstukken | 72 | Hartslag en radioruis bij de briefing; doodsklok en koor op de Cenotaph, in zombie mode met een valse speeldoos |
 
 Elk stuk is een lijst secties (`TRACKS` in `js/engine/24-music.js`) met eigen tempo (`bpm`), toonhoogte (`tr`, in halve tonen), galm (`rev`) en volume (`gain`); `lofi:true` zet er een cassettefilter op. Een eigen stuk toevoegen: schrijf secties in `SECTIONS` en zet ze in een `plan`.

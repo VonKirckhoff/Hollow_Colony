@@ -11,6 +11,10 @@
      Cold Quarters           depressive black metal: lo-fi, a lonely piano motif, a howling lead
      Dead Satellite          dark ambient: pulsar ticks, Morse, a drifting pad
      Funeral Orbit           funeral doom: a procession at 48 BPM under tolling bells
+     Hollow Light: Starfall  the black movement of Hollow Light, grown into a whole song under the stars
+     Mare Tranquillitatis    atmospheric space black metal in B minor: a tide of tremolo melody over a quiet shore
+     Cold Light of Distant Suns  fast space black metal in E minor: tremolo-picked riffs, an eclipse, and an aurora at the end
+     Perihelion              cosmic black metal: an arpeggiator orbit, a slow swing past the sun and the burn of the close pass
    The briefing and the Cenotaph have their own pieces (in zombie mode with an out-of-tune music box).
    The music player (button "Tracks", bottom right of the menu screens) lets you listen to each one and pick the menu music. */
 const MUSIC=(()=>{
@@ -143,6 +147,15 @@ const MUSIC=(()=>{
       env(e,t+k,0.004,0.03*v,d,0.01); osc('sine',880,t+k,t+k+d+0.02,e); k+=d+0.07; } }
   function sub(t,note,dur,v=1){ const e=g(0); e.connect(S.mix); const end=env(e,t,1.5,0.18*v,Math.max(0.1,dur-2),1.5); osc('sine',N(note),t,end,e); osc('triangle',N(note),t,end,e,4); }
   function blast(t,v=1){ for(let k=0;k<16;k++){ if(k%2===0) kick(at(t,k),0.28*v); else snare(at(t,k),0.35*v); } }
+  /* a tremolo-picked riff note on the rhythm guitar (note + octave), for melodic black metal riffs */
+  function tremRiff(t,note,dur,v=1){ for(let k=0;k*S16/2<dur-0.01;k++){ const tt=t+k*S16/2, e=g(0); e.connect(S.gtr); const end=env(e,tt,0.003,0.075*v*(k%2?0.8:1),0.025,0.04);
+      osc('sawtooth',N(note),tt,end,e,k%2?-7:7); osc('sawtooth',N(note+12),tt,end,e,k%2?5:-5); } }
+  /* a slow swell that rises out of nothing (like a reversed cymbal) */
+  function swellUp(t,dur,v=1){ const e=g(0), hp=filt('highpass',3000); hp.frequency.setValueAtTime(5000,t); hp.frequency.exponentialRampToValueAtTime(900,t+dur);
+    hp.connect(e); e.connect(S.mix); e.connect(S.revIn); e.gain.setValueAtTime(0.0001,t); e.gain.exponentialRampToValueAtTime(0.08*v,t+dur); e.gain.linearRampToValueAtTime(0.0001,t+dur+0.05); noise(t,dur+0.05,hp); }
+  /* a shimmering high chord: three detuned sines per note, slow tremble, very far away */
+  function shimmer(t,notes,dur,v=1){ for(const nt of notes){ const e=g(0); e.connect(pan(Math.random()*1.6-0.8)).connect(S.mix); e.connect(g(1.4)).connect(S.revIn);
+      const end=env(e,t,Math.min(2.5,dur*0.4),0.02*v,Math.max(0.1,dur-Math.min(2.5,dur*0.4)),2.5); for(const c of [-9,0,11]) osc('sine',N(nt),t,end,e,c); } }   /* the detuned sines beat against each other: the shimmer */
   function tom(t,v=1,note=-5){ const e=g(0); e.connect(S.mix); e.connect(g(0.6)).connect(S.revIn); const end=env(e,t,0.003,0.4*v,0.02,0.5);
     const o=osc('sine',N(note)*2,t,end,e); o.frequency.exponentialRampToValueAtTime(N(note),t+0.25); }
 
@@ -174,6 +187,24 @@ const MUSIC=(()=>{
   const COLD_WAIL=[31,29,32,35];
   // Funeral Orbit
   const PROCESSION=[0,0,1,1,-2,-2,-4,-5], FUNERAL_MEL=[31,32,31,29,27,29,25,24];
+  // Hollow Light: Starfall (D minor, the black progression of Hollow Light). The melody gets a diatonic third above it.
+  const D_MINOR=[0,2,3,5,7,8,10];
+  const dia=(nt,steps,scale=D_MINOR)=>{ const o=Math.floor(nt/12), pc=((nt%12)+12)%12; let i=scale.indexOf(pc); if(i<0) return nt+3; i+=steps; return o*12+scale[((i%7)+7)%7]+Math.floor(i/7)*12; };
+  const STARFALL_MEL=[[31,32,34,32],[31,29,27,29],[27,29,31,29],[29,31,35,31],[36,34,32,34],[32,31,29,31],[27,29,31,32],[32,31,29,25]];   // four notes a bar, over BLACK_ROOTS
+  // Mare Tranquillitatis (B minor: 0 = B): Bm G D A | Bm G Em F#
+  const TIDE=[[0,1],[-4,0],[3,0],[-2,0],[0,1],[-4,0],[5,1],[7,0]];
+  const TIDE_MEL=[[31,29,27,26],[27,26,24,26],[27,29,31,34],[34,31,29,26],[36,34,31,34],[32,31,27,31],[29,31,32,34],[38,35,31,35]];
+  const SHORE_PICK=[0,7,12,15,19,15,12,7];                                    // a slow arpeggio: root, fifth, octave, third, fifth …
+  // Cold Light of Distant Suns (E minor: 0 = E): Em D C B, twice; then the aurora in G
+  const SUNS=[[0,1],[-2,0],[-4,0],[-5,0],[0,1],[-2,0],[-4,0],[-5,0]];
+  const SUNS_RIFF=[[24,22,19,22,24,22,19,15],[22,19,17,19,22,19,17,14],[20,19,15,19,20,19,15,12],[19,23,26,23,19,23,26,27],
+                   [27,26,24,26,27,26,24,19],[26,22,17,22,26,22,17,14],[24,20,19,20,24,27,24,20],[23,19,26,23,31,26,23,19]];
+  const AURORA=[[3,0],[-2,0],[-5,0],[0,1],[3,0],[-2,0],[-4,0],[-2,0]];          // G D B Em G D C D: the light comes up
+  const AURORA_MEL=[31,34,35,36,38,41,39,38];
+  // Perihelion (C minor: 0 = C): Cm Ab Eb Bb, then Db for the close pass (the burn)
+  const PERI=[[0,1],[-4,0],[3,0],[-2,0],[0,1],[-4,0],[1,0],[-2,0]];
+  const PERI_ARP=[12,19,24,27,31,27,24,19,15,19,24,31,36,31,24,19];
+  const PERI_MEL=[[31,32],[32,31],[34,31],[29,27],[31,34],[36,32],[37,36],[34,31]];
 
   const SECTIONS={
     /* --- Hollow Light (+ Drowned, Iron Psalm) --- */
@@ -238,6 +269,68 @@ const MUSIC=(()=>{
     procession(t,i){ const r=PROCESSION[i]; guitar(t,r,16,false,1); bass(t,r,16,1); if(i%2===0) choir(t,tri(r+12,r!==0&&r!==-5?0:1),BAR*2-0.2,0.7);
       kick(at(t,0),1,true); snare(at(t,8),1.1); for(let k=0;k<16;k+=4) hat(at(t,k),0.35); if(i%2===0) crash(t,0.9);
       leadLong(at(t,0),FUNERAL_MEL[i],BAR,0.85); if(i%4===0) bell(at(t,0),12,0.6); },
+    /* --- Hollow Light: Starfall --- */
+    fallIntro(t,i){ const r=BLACK_ROOTS[i]; if(i===0) sub(t,-12,BAR*8+2,0.8);
+      if(i%2===0) pad(t,BLACK_CHORD(r).map(x=>x-12),BAR*2-0.1,0.9,0.7);
+      for(let k=0;k<3;k++) if(Math.random()<0.75) star(at(t,k*5+Math.floor(Math.random()*4)),STARS[Math.floor(Math.random()*8)],0.7);
+      if(i>=4) for(let k=0;k<16;k+=4) clean(at(t,k),STARFALL_MEL[i][k/4]-12,0.5);
+      if(i===6) swellUp(at(t,0),BAR*2-0.1,0.8); if(i===7) for(let k=8;k<16;k++) tom(at(t,k),0.2+0.07*(k-8),-5+(k%2)*3); },
+    blackStar(t,i){ const r=BLACK_ROOTS[i], mel=STARFALL_MEL[i]; guitar(t,r,16,false,0.8); bass(t,r,16,0.9);
+      mel.forEach((nt,k)=>{ tremolo(at(t,k*4),nt,BAR/4,0.95); tremolo(at(t,k*4),dia(nt,2),BAR/4,0.55); });
+      if(i%2===0) choir(t,BLACK_CHORD(r),BAR*2-0.2,0.7); if(i%4===0) crash(t,1);
+      for(let k=0;k<16;k++) kick(at(t,k),0.32); for(let k=4;k<16;k+=8) snare(at(t,k),0.8); for(let k=0;k<16;k+=2) hat(at(t,k),0.4);
+      for(let k=2;k<16;k+=4) if(Math.random()<0.6) star(at(t,k),STARS[(i*3+k)%8]+12,0.45); },
+    blackStorm(t,i){ const r=BLACK_ROOTS[i]; tremChord(t,r,BAR,0.75,r===0?3:4); bass(t,r,16,0.9); pad(t,BLACK_CHORD(r),BAR,0.7,1.4);
+      leadLong(at(t,0),STARFALL_MEL[i][0]+12,BAR/2,0.8); leadLong(at(t,8),STARFALL_MEL[i][2]+12,BAR/2,0.8);
+      if(i%2===0) choir(t,BLACK_CHORD(r),BAR*2-0.2,0.9); blast(t,0.95); if(i%4===0) crash(t,1.2); if(i===7) crash(at(t,12),0.9); },
+    /* --- Mare Tranquillitatis --- */
+    shore(t,i){ const [r,m]=TIDE[i%8]; if(i===0) sub(t,-12,BAR*8+2,0.7);
+      if(i%2===0) pad(t,tri(r+12,m),BAR*2-0.1,0.8,0.7); if(i%4===0) shimmer(t,tri(r+36,m),BAR*4-0.2,1);
+      for(let k=0;k<8;k++) clean(at(t,k*2),r+SHORE_PICK[k]+(!m&&SHORE_PICK[k]===15?1:0),0.7);
+      if(Math.random()<0.6) star(at(t,4+Math.floor(Math.random()*10)),STARS[Math.floor(Math.random()*8)],0.6);
+      if(i===3) wind(t,BAR*3,0.5); if(i===7){ swellUp(at(t,0),BAR-0.05,0.9); for(let k=12;k<16;k++) tom(at(t,k),0.25+0.1*(k-12),r); } },
+    tide(t,i,hi){ const [r,m]=TIDE[i%8], up=hi?12:0; guitar(t,r,16,false,0.8); bass(t,r,16,0.9);
+      TIDE_MEL[i%8].forEach((nt,k)=>tremolo(at(t,k*4),nt+up,BAR/4,0.9));
+      if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.6); if(i%4===0) crash(t,1);
+      for(let k=0;k<16;k++) kick(at(t,k),0.3); for(let k=4;k<16;k+=8) snare(at(t,k),0.8); for(let k=0;k<16;k+=2) hat(at(t,k),0.35);
+      if(i%2===1) star(at(t,10),STARS[(i*2)%8]+(hi?12:0),0.5); },
+    tideHigh(t,i){ SECTIONS.tide(t,i,true); pad(t,tri(TIDE[i%8][0]+24,TIDE[i%8][1]),BAR,0.5,1.2); },
+    apogee(t,i){ const [r,m]=TIDE[i%8], mel=TIDE_MEL[i%8]; tremChord(t,r,BAR,0.8,m?3:4); bass(t,r,16,0.9); pad(t,tri(r+24,m),BAR,0.8,1.5);
+      leadLong(at(t,0),mel[0]+12,BAR/2,0.85); leadLong(at(t,8),mel[2]+12,BAR/2,0.85); if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.85);
+      blast(t,0.9); if(i%4===0) crash(t,1.1); if(i%4===0) shimmer(t,tri(r+36,m),BAR*4-0.2,0.8); },
+    /* --- Cold Light of Distant Suns --- */
+    pulse(t,i){ const [r,m]=SUNS[i%8]; if(i===0) sub(t,-12,BAR*8+2,0.8);
+      for(let k=0;k<16;k++) arp(at(t,k),r+[12,19,24,19,15+(m?0:1),19,24,27][k%8],0.3+0.04*i);
+      kick(at(t,0),0.6,true); if(i>=2) kick(at(t,8),0.5,true); for(let k=0;k<16;k+=8) pulsar(at(t,k+5),0.6);
+      if(i%2===0) pad(t,tri(r+24,m),BAR*2-0.1,0.6,0.8); if(i>=4) for(let k=2;k<16;k+=4) hat(at(t,k),0.35);
+      if(i===7){ swellUp(at(t,0),BAR-0.05,1); for(let k=8;k<16;k++) snare(at(t,k),0.2+0.08*(k-8)); } },
+    distant(t,i){ const [r,m]=SUNS[i%8], riff=SUNS_RIFF[i%8]; riff.forEach((nt,k)=>tremRiff(at(t,k*2),nt,S16*2,0.95)); bass(t,r,16,0.9);
+      if(i%2===0) pad(t,tri(r+24,m),BAR*2-0.1,0.6,1.2); blast(t,0.95); if(i%4===0) crash(t,1.1);
+      if(i>=4) tremolo(at(t,0),riff[0]+12,BAR,0.5); },
+    eclipse(t,i){ const [r,m]=SUNS[i%8]; guitar(t,r,16,false,0.85); bass(t,r,16,0.9); if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.8);
+      kick(at(t,0),1,true); snare(at(t,8),1.1); if(i%2) kick(at(t,12),0.6,true); for(let k=0;k<16;k+=4) hat(at(t,k),0.4);
+      wail(at(t,0),SUNS_RIFF[i%8][0]+12,BAR,0.8); if(i%2===0) shimmer(t,tri(r+36,m),BAR*2-0.1,0.8);
+      for(let k=0;k<4;k++) if(Math.random()<0.5) star(at(t,k*4+2),STARS[Math.floor(Math.random()*8)]+2,0.5); if(i===7) crash(at(t,12),0.8); },
+    aurora(t,i){ const [r,m]=AURORA[i%8]; tremChord(t,r,BAR,0.75,m?3:4); bass(t,r,16,0.9); pad(t,tri(r+24,m),BAR,0.9,1.6);
+      leadLong(at(t,0),AURORA_MEL[i%8],BAR,0.9); tremolo(at(t,0),AURORA_MEL[i%8]+12,BAR,0.35); if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.9);
+      blast(t,0.9); if(i%4===0){ crash(t,1.1); shimmer(t,tri(r+36,m),BAR*4-0.2,1); } if(i===7) for(let k=0;k<16;k+=2) star(at(t,k),STARS[k/2],0.6); },
+    /* --- Perihelion --- */
+    approach(t,i){ const [r,m]=PERI[i%8]; if(i%4===0) sub(t,r-12,BAR*4+1,0.7);
+      for(let k=0;k<16;k++) arp(at(t,k),r+PERI_ARP[k]-(m?0:(PERI_ARP[k]%12===3?-1:0)),0.25+0.05*i);
+      if(i%2===0) pad(t,tri(r+12,m),BAR*2-0.1,0.7,0.6+0.1*i); if(i>=4) heartbeat(at(t,0),0.7);
+      if(i===7) swellUp(at(t,0),BAR-0.05,1); },
+    orbitBlack(t,i){ const [r,m]=PERI[i%8], mel=PERI_MEL[i%8]; guitar(t,r,16,false,0.8); bass(t,r,16,0.9);
+      tremolo(at(t,0),mel[0],BAR/2,0.9); tremolo(at(t,8),mel[1],BAR/2,0.9);
+      for(let k=0;k<16;k+=2) arp(at(t,k),r+PERI_ARP[k]+12-(m?0:(PERI_ARP[k]%12===3?-1:0)),0.3);
+      if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.6); if(i%4===0) crash(t,1);
+      for(let k=0;k<16;k++) kick(at(t,k),0.3); for(let k=4;k<16;k+=8) snare(at(t,k),0.8); for(let k=0;k<16;k+=2) hat(at(t,k),0.35); },
+    swing(t,i){ const [r,m]=PERI[i%8]; guitar(t,r,16,false,0.9); bass(t,r,16,1); pad(t,tri(r+24,m),BAR,0.6,1);
+      kick(at(t,0),1,true); snare(at(t,8),1.1); for(let k=0;k<16;k+=4) hat(at(t,k),0.4); if(i%2===0) crash(t,0.8);
+      leadLong(at(t,0),PERI_MEL[i%8][0]+12,BAR,0.85); if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.7); if(i===3||i===7) for(let k=12;k<16;k++) tom(at(t,k),0.3+0.1*(k-12),r); },
+    burn(t,i){ const [r,m]=PERI[i%8], mel=PERI_MEL[i%8]; tremChord(t,r,BAR,0.85,m?3:4); bass(t,r,16,0.95); pad(t,tri(r+24,m),BAR,0.8,1.6);
+      tremolo(at(t,0),mel[0]+12,BAR/2,0.6); tremolo(at(t,8),mel[1]+12,BAR/2,0.6); leadLong(at(t,0),mel[0]+12,BAR,0.7);
+      if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.9); blast(t,1); if(i%2===0) crash(t,1.1); if(i===6) swellUp(at(t,0),BAR-0.05,0.8);
+      if(i%4===0) shimmer(t,tri(r+36,m),BAR*4-0.2,1); },
     /* --- screen moods --- */
     brief(t,i){ if(i===0) drone(t,BAR*8+2); heartbeat(at(t,0)); heartbeat(at(t,8),0.8);
       if(i%4===0) choir(t,[12,15],BAR*4-0.3,0.5); if(Math.random()<0.6) radio(at(t,Math.floor(Math.random()*12)),0.4+Math.random()*1.2,1.2);
@@ -275,6 +368,18 @@ const MUSIC=(()=>{
     { id:'orbit',   title:'Funeral Orbit', style:'Funeral doom', bpm:48, tr:-4, rev:1.5,
       desc:'A procession at 48 beats per minute under tolling bells. The heaviest thing on the Moon.',
       plan:c=>[['toll',4],['procession',8]] },
+    { id:'starfall', title:'Hollow Light: Starfall', style:'Variant · space black metal', bpm:72, rev:1.35,
+      desc:'The black movement of Hollow Light, grown into a whole song: stars falling over the progression, a melody in thirds and a storm of blast beats.',
+      plan:c=>[['fallIntro',c?4:8],['black',8],['blackStar',8],['blackStorm',8],['blackStar',8]] },
+    { id:'tranquility', title:'Mare Tranquillitatis', style:'Atmospheric space black metal', bpm:66, tr:-3, rev:1.45,
+      desc:'A quiet shore of clean guitar and starlight, then a tide of tremolo melody that rises to its apogee and falls back.',
+      plan:c=>[['shore',8],['tide',8],['tideHigh',8],['apogee',8],['shore',4]] },
+    { id:'suns', title:'Cold Light of Distant Suns', style:'Space black metal', bpm:84, tr:2, rev:1.3,
+      desc:'A pulsing arpeggiator, then tremolo-picked riffs at full speed. An eclipse in half time, and at the end an aurora in a major key.',
+      plan:c=>[['pulse',c?4:8],['distant',8],['eclipse',8],['distant',8],['aurora',8]] },
+    { id:'perihelion', title:'Perihelion', style:'Cosmic black metal', bpm:70, tr:-2, rev:1.4,
+      desc:'An arpeggiator in orbit around a black metal riff, a slow swing past the sun, and the burn of the closest pass.',
+      plan:c=>[['approach',8],['orbitBlack',8],['swing',8],['burn',8],['orbitBlack',8]] },
     { id:'brief',   title:'Briefing', style:'Screen · mission briefing', bpm:72, screen:true,
       desc:'A heartbeat, static on the radio and a sparse arpeggio. Plays while you read the briefing.', plan:c=>[['brief',8]] },
     { id:'requiem', title:'Cenotaph', style:'Screen · Cenotaph', bpm:72, screen:true,
@@ -331,7 +436,9 @@ const MUSIC=(()=>{
 
   /* ---------- timeline: one pass through a track's plan ---------- */
   const SECTION_NAME={ ruins:'Ruins', doom:'Doom', doomLead:'Doom', black:'Black', machine:'Machine', forge:'Forge', void:'Void', nebula:'Nebula', drift:'Drift',
-    forest:'Forest', swell:'Swell', storm:'Storm', room:'Room', ache:'Ache', orbit:'Orbit', toll:'Toll', procession:'Procession', brief:'Briefing', requiem:'Requiem' };
+    forest:'Forest', swell:'Swell', storm:'Storm', room:'Room', ache:'Ache', orbit:'Orbit', toll:'Toll', procession:'Procession', brief:'Briefing', requiem:'Requiem',
+    fallIntro:'Starfall', blackStar:'Black stars', blackStorm:'Storm', shore:'Shore', tide:'Tide', tideHigh:'High tide', apogee:'Apogee',
+    pulse:'Pulse', distant:'Distant suns', eclipse:'Eclipse', aurora:'Aurora', approach:'Approach', orbitBlack:'Orbit', swing:'Swing-by', burn:'Burn' };
   function newPass(at0,skip){ const parts=S.queue.map(([n,b])=>({n,b})); let pre=0; for(let k=0;k<skip;k++) pre+=parts[k].b;
     S.pass={ id:(S.pass?S.pass.id+1:1), parts, bars:parts.reduce((a,p)=>a+p.b,0), bar:BAR, start:at0-pre*BAR, plan:parts.map(p=>[p.n,p.b]), cycle:S.cycle }; }
   function passLen(trk){ setTempo(trk); const L=[]; for(let k=0;k<12;k++) L.push(trk.plan(0).reduce((a,p)=>a+p[1],0)*BAR); if(S) setTempo(S.track); return [Math.min(...L),Math.max(...L)]; }
