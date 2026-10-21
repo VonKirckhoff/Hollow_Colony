@@ -2,7 +2,7 @@
 /* ---------- 2v. squad life: motion tracker, acid blood, voices, cover, suppression, flares, obituaries ---------- */
 const SQUAD = {
   downed:{ time:15, hp:0.35, patch:4, reviveHp:0.3 },               // seconds to bleed out / health while down (× max) / seconds of Medic work / health after revive (× max)
-  body:{ time:35, infect:3, seek:8, guard:1.6, burn:1.2, escorts:2, haulSpeed:0.7, biomass:20, heal:0.1, huskHatch:1.6 },   // seconds a body lies / seconds a Grafter needs to infect it / tiles a Swarm unit comes from (×1.8 when you play the Swarm) / tiles a soldier guards it / seconds a Pyro needs to burn it / Swarm guards per body / carrier speed / biomass and share of hive health when a body is brought home / Husk cocoon takes this × longer
+  body:{ time:35, fetch:15, infect:3, seek:8, guard:1.6, burn:1.2, escorts:2, haulSpeed:0.7, biomass:20, heal:0.1, huskHatch:1.6 },   // seconds a body lies / seconds a Grafter needs to infect it / tiles a Swarm unit comes from (×1.8 when you play the Swarm) / tiles a soldier guards it / seconds a Pyro needs to burn it / Swarm guards per body / carrier speed / biomass and share of hive health when a body is brought home / Husk cocoon takes this × longer   // a body never rots away: time only fades it in; fetch = seconds a body lies unclaimed before the nearest nest sends a Crawler for it, wherever it lies
   tracker:{ range:20, size:64 },                                     // range in tiles, radius on screen in px
   acid:{ splash:1.2, splashDmg:6, pool:3, poolDps:5, poolR:14 },     // tiles / hp / seconds / hp per second / px
   cover:{ factor:0.6 },                                              // ranged damage taken in cover (×)
@@ -316,7 +316,7 @@ function updateBodies(dt){ const B=SQUAD.body;
   for(const b of G.ents){ if(b.dead||b.kind!=='body') continue;
     if(b.carrier&&(b.carrier.dead||b.carrier.haul!==b)) dropBody(b);
     if(b.carrier){ b.x=b.carrier.x; b.y=b.carrier.y+3; b.face=b.carrier.face; b.hidden=!!b.carrier.hidden; }
-    else if(!b.home){ b.t-=dt; if(b.t<=0){ b.dead=true; continue; } }
+    /* a body no longer rots away: it stays until the Swarm takes it home or a Pyro burns it */
     if(b.home&&b.home.dead) b.home=null;   /* its hive is gone: it is just a body again */
     b.guarded=G.ents.some(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&Math.hypot(e.x-b.x,e.y-b.y)<B.guard*TILE);
     const pyro=b.hidden?null:G.ents.find(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.def.attack==='flame'&&!e.target&&Math.hypot(e.x-b.x,e.y-b.y)<(e.def.range+(e.rangeBonus||0)+0.5)*TILE);
@@ -336,9 +336,15 @@ function updateBodies(dt){ const B=SQUAD.body;
       if(!G.ents.some(e=>!e.dead&&((e.def&&e.def.grafter&&e.graft===b)||(e.type==='egg'&&e.target===b)))) callGrafter(b);
       continue; }
     b.claim=0;
+    /* lying on the creep of a nest already (a soldier fell right next to the hive): the nest takes it at once */
+    if(!b.carrier&&!b.avatarBody){ const h=nearestOf(b,isNest); if(h&&creepAt(b.x,b.y)>CREEP.at&&dist(b,h)<((h.creepR||2)+0.5)*TILE){ bodyHome(b,h,null); continue; } }
     /* now and then the body calls the nearest free Swarm units: one to carry it home, a few to guard it */
     b.seekT=(b.seekT||0)-dt; if(b.seekT>0) continue; b.seekT=1;
     const mine=G.ents.filter(e=>!e.dead&&e.claim===b), R=B.seek*TILE*(G.side==='swarm'?1.8:1);
+    /* nobody came for it: the nearest nest sends a Crawler, however far away it lies (one at a time) */
+    if(G.side!=='swarm'&&!b.carrier&&!mine.length){ b.lonely=(b.lonely||0)+1;
+      if(b.lonely>=B.fetch&&nests().length){ b.lonely=0; const h=nearestOf(b,isNest), u=h&&spawnNearBuilding('crawler','swarm',h,b); if(u){ u.role='hunt'; u.claim=b; u.claimMode='haul'; } } }
+    else b.lonely=0;
     if(nests().length&&!b.carrier&&!mine.some(e=>e.claimMode==='haul')){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='haul'; u.target=null; } }
     if(mine.filter(e=>e.claimMode==='guard').length<B.escorts){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='guard'; } } } }
 /* a Swarm unit with a job at a body. Returns true while it is busy (swarmThink then leaves it alone). */

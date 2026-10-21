@@ -141,8 +141,11 @@ function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* The Husk is a warrior. While it is still turning (Twitcher, Shambler) it stays on the creep of its hive and only fights what comes there;
    full grown, it leaves the creep and hunts (role 'hunt', see swarmThink). Only the creature you steer yourself in The Graft takes root (F).
    When a Husk kills a soldier it screams: the soldiers close by flinch (suppressed). Returns true while it is busy (molting, rooting). */
-const HUSK_WARRIOR = { stay:true, screamR:3.5, matriarch:4, mendAt:0.65, mendDone:0.95 };   /* matriarch: soldiers a full Husk must bring down (or kill) to grow into a Matriarch.
-   mendAt: a Husk that brings a soldier down while below this share of its health goes back to the creep to heal; mendDone: it hunts again from this share */
+const HUSK_WARRIOR = { stay:true, screamR:3.5, matriarch:4, mendAt:0.65, mendDone:0.95, escort:3, escortR:14, finishR:6, escortEvery:12 };   /* matriarch: soldiers a full Husk must bring down (or kill) to grow into a Matriarch.
+   mendAt: a Husk that brings a soldier down while below this share of its health goes back to the creep to heal; mendDone: it hunts again from this share.
+   escort: a full-grown Husk goes to war with this many Swarm creatures round it (gathered within escortR tiles, the rest hatched from the nest it stands at;
+   topped up every escortEvery seconds). They leave the last blow to the Husk: a soldier within finishR tiles of it is held at 1 HP until the Husk brings him down,
+   so the kill counts towards its Matriarch. */
 function founderThink(u,dt){
   if(u.def.matriarch) return founderRoot(u,dt);   /* the Matriarch looks for a quiet place and takes root */
   if(huskGrow(u,dt)) return true;
@@ -150,11 +153,45 @@ function founderThink(u,dt){
   if(u.avatar||G.side==='swarm') return false;   /* yours: you decide */
   if(u.stage!=null&&u.stage<HUSK_STAGES.length-1&&HUSK_WARRIOR.stay) return stayOnCreep(u);
   if(u.mend) return mendThink(u);
+  if(u.type==='husk'&&u.stage===HUSK_STAGES.length-1){ huskEscort(u,dt); huskFinish(u); }
   return false; }
+/* ---- the Husk's war party ---- */
+function escortsOf(u){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.role==='escort'&&e.leader===u); }
+function escortFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.def.founder&&!e.def.boss&&!e.def.grafter&&!e.claim&&!e.haul&&!e.tunnel&&!e.avatar
+  &&(e.role==='guard'||e.role==='hunt'||e.role==='wave'||!e.role||(e.role==='escort'&&(!e.leader||e.leader.dead))); }
+function huskEscort(u,dt){ u.escortT=(u.escortT||0)-dt; if(u.escortT>0) return; u.escortT=HUSK_WARRIOR.escortEvery;
+  let need=HUSK_WARRIOR.escort-escortsOf(u).length; if(need<=0) return;
+  const free=G.ents.filter(e=>escortFree(e)&&dist(e,u)<HUSK_WARRIOR.escortR*TILE).sort((a,b)=>dist(a,u)-dist(b,u));
+  for(const e of free.slice(0,need)){ joinEscort(e,u); need--; }
+  /* not enough round it: the nest it stands at hatches the rest */
+  const h=nearestOf(u,isNest); if(need>0&&h&&dist(u,h)<((h.creepR||2)+4)*TILE){
+    for(let i=0;i<need;i++){ const e=spawnNearBuilding(i%2?'crawler':'drone','swarm',h,u); if(e){ joinEscort(e,u); if(isVisible(e)) G.fx.push({k:'boom',x:e.x,y:e.y,t:0.3,max:0.3,r:14,col:'#a6ff4a'}); } } }
+  if(escortsOf(u).length&&isVisible(u)&&!G.saidEscort&&G.side==='corps'){ G.saidEscort=true; say('Dr. Maas','The Husk is not alone: the brood gathers round it like an honour guard. It leads them now.','alert'); } }
+function joinEscort(e,u){ e.role='escort'; e.leader=u; e.guardAt=null; e.order=null; e.target=null; e.path=null; e.slot=(escortsOf(u).length*2.1)%(Math.PI*2); }
+/* an escort stays round its Husk: it fights what comes close and walks with the Husk otherwise */
+function escortThink(e){ const L=e.leader;
+  if(!L||L.dead){ e.role='hunt'; e.leader=null; e.order=null; return; }
+  if(e.target) return;
+  const d=dist(e,L); if(d<2.6*TILE&&!(e.order&&e.order.type==='amove')) return;
+  const x=L.x+Math.cos(e.slot||0)*1.5*TILE, y=L.y+Math.sin(e.slot||0)*1.5*TILE, ok=walkableP(x,y), tx=ok?x:L.x, ty=ok?y:L.y;
+  if(d>=2.6*TILE&&(!e.order||e.order.type!=='amove'||Math.hypot(e.order.x-tx,e.order.y-ty)>TILE)){ e.order={type:'amove',x:tx,y:ty}; setPath(e,tx,ty); } }
+/* the escorts held a soldier for it: the Husk goes for him */
+function huskFinish(u){ const t=u.finish; if(!t) return;
+  if(t.dead||t.downed||t.hp>2||dist(u,t)>HUSK_WARRIOR.finishR*1.5*TILE){ u.finish=null; if(u.order&&u.order.type==='attack'&&u.order.target===t) u.order=null; return; }
+  if(!u.order||u.order.type!=='attack'||u.order.target!==t){ u.order={type:'attack',target:t}; u.target=t; u.path=null; } }
+/* called from damage(): a Swarm creature would bring a soldier down while a full-grown Husk is close by (its own Husk if it is an escort).
+   It holds him at 1 HP instead and the Husk comes for the last blow. Returns the damage to deal. */
+function huskHunter(e){ return e.type==='husk'&&!e.dead&&!e.avatar&&!e.mend&&!(e.molt>0)&&e.stage===HUSK_STAGES.length-1; }
+function escortSpare(src,t,amt){ const own=src.role==='escort'&&src.leader&&huskHunter(src.leader)?src.leader:null;
+  const L=own&&dist(own,t)<=HUSK_WARRIOR.finishR*TILE?own:nearestOf(t,e=>huskHunter(e)&&dist(e,t)<=HUSK_WARRIOR.finishR*TILE);
+  if(!L) return amt;
+  if(!L.finish||L.finish.dead||L.finish.downed) L.finish=t;
+  if(isVisible(t)&&!G.saidHold&&G.side==='corps'){ G.saidHold=true; say('Sgt. Kessler','They are not finishing him! They are holding him down for that Husk. Get him out of there!','alert'); }
+  return Math.max(0,t.hp-1); }
 /* a wounded Husk that just made a kill goes back to the creep of the nearest hive, heals there (it only fights what comes right up to it)
    and goes hunting again once it is whole. Returns true while it is mending. */
 function mendThink(u){
-  if(u.hp>=u.maxHp*HUSK_WARRIOR.mendDone){ u.mend=null; u.order=null; u.target=null; u.role='hunt';
+  if(u.hp>=u.maxHp*HUSK_WARRIOR.mendDone){ u.mend=null; u.order=null; u.target=null; u.role='hunt'; u.escortT=0;   /* healed: top up its war party here at the nest */
     if(isVisible(u)) G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.2,max:1.2,txt:'HUNTING',col:'#ff5a4f'}); return false; }
   const h=nearestOf(u,e=>isNest(e)&&(e.creepR||0)>=1);
   if(!h){ u.mend=null; return false; }   /* no creep left anywhere: it fights on */
@@ -187,6 +224,7 @@ function canFound(){ return (G.swarm.founded||0)+rooting()<huskCap() && hives().
 /* a Husk that has fed enough grows into a Matriarch: bigger, tougher, and it will take root */
 function becomeMatriarch(u){ const sel=G.sel.includes(u), m=makeUnit('matriarch','swarm',u.x,u.y); m.role='hunt'; m.face=u.face; m.foundT=3; m.molt=0;
   u.dead=true; if(sel){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
+  for(const e of escortsOf(u)) e.leader=m;   /* its war party stays with it */
   const vis=isVisible(m); G.fx.push({k:'boom',x:m.x,y:m.y-10,t:0.8,max:0.8,r:60,col:'#c38bff'}); addDecal(m.x,m.y,22,'rgba(90,40,110,.6)');
   for(let i=0;i<30;i++) G.fx.push({k:'ember',x:m.x+rand(-10,10),y:m.y-10,vx:rand(-130,130),vy:rand(-180,-20),t:rand(.5,1.2),max:1.2,col:pick(['#c38bff','#a6ff4a','#d23a3a'])});
   if(vis){ SFX.play('huskroar',m.x,m.y); SFX.play('molt',m.x,m.y); G.shake=Math.max(G.shake||0,0.4); G.fx.push({k:'text',x:m.x,y:m.y-56,t:1.8,max:1.8,txt:'MATRIARCH',col:'#c38bff'}); }

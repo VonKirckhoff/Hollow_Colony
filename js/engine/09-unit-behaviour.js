@@ -65,6 +65,7 @@ function swarmThink(u,dt){
   if(u.role==='eggrun'){ eggRunThink(u); return; }   /* sent for an ancient egg (29-relics.js) */
   if(claimThink(u,dt)) return;   /* busy with a fallen soldier: infecting, carrying or guarding it */
   if(u.role==='avatar') return;   /* the creature you steer yourself */
+  if(u.role==='escort'){ escortThink(u); return; }   /* walking with its Husk (25-hive-life.js) */
   if(u.role==='wave' && tacticThink(u,dt)) return;
   if(u.role==='brood'){ broodThink(u); return; }   /* playing the Swarm: waiting at the gathering point for your call */
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;
