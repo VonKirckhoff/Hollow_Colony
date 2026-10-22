@@ -64,7 +64,9 @@ function devEl(){ let el=$('#dev'); if(el) return el;
   el.addEventListener('pointerover',showHelp); el.addEventListener('focusin',e=>{ const r=e.target.closest('.dv-row'); if(r) showHelp({target:r.querySelector('[data-help]')||r}); });
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'){ e.target.blur(); } });
   return el; }
-function devToggle(on){ if(!G||ui.mode==='menu') return; const el=devEl(); el.hidden=on==null?!el.hidden:!on; ui.overDev=false; if(!el.hidden){ store.set('hc-dev',true); devRender(); } }
+function devToggle(on){ const el=$('#dev'), open=on==null?!(el&&!el.hidden):!!on; ui.overDev=false;
+  if(!open){ if(el) el.hidden=true; return; }   /* closing always works, also outside a mission */
+  if(!G||ui.mode==='menu') return; devEl().hidden=false; store.set('hc-dev',true); devRender(); }
 function devFmt(v){ return typeof v==='number'?String(Math.round(v*1000)/1000):''; }
 function devRow(key,label){ const v=devGet(key), t=devTarget(key); if(!t) return ''; const ch=getP(t.obj,t.path)!==t.orig;
   const tip=` data-help="${key.split('|')[1]}|${(devHelp(key)||'No description yet.').replace(/"/g,'&quot;')} Default: ${t.orig==null?'not set (the game default)':devFmt(t.orig)||String(t.orig)}."`;
@@ -107,7 +109,7 @@ function devLive(){ const S=G.swarm, hs=hives().length, nx=S.nextWave-G.time;
     <div class="dv-tools"><button type="button" data-dv="wave">Wave now</button><button type="button" data-dv="reveal" class="${G.devReveal?'on':''}">${G.devReveal?'Reveal map: on':'Reveal map: off'}</button><button type="button" data-dv="heal">Heal everyone</button>
       <button type="button" data-dv="clear">Kill all roaming Swarm</button><button type="button" data-dv="win">Win mission</button><button type="button" data-dv="lose">Lose mission</button></div>
     <div class="dv-note">These change only this game. The other tabs hold the settings you can save.</div>`; }
-function devTick(){ const el=$('#dev'); if(!el||el.hidden||!G) return; if(ui.mode==='menu'||!G){ el.hidden=true; return; }
+function devTick(){ const el=$('#dev'); if(!el||el.hidden) return; if(!G||ui.mode==='menu'){ devToggle(false); return; }   /* out of the mission: the panel goes away */
   if(dev.tab==='live'&&!el.contains(document.activeElement)) devRender(); else devStatus(); }
 setInterval(devTick,500);
 function devChangesNow(){ const out={};
@@ -123,9 +125,9 @@ function devClick(e){ const b=e.target.closest('button,.dv-title'); if(!b) retur
   if(b.classList.contains('dv-title')){ dev.collapsed=!dev.collapsed; b.textContent=dev.collapsed?'DEV ▸':'DEV ▾'; devRender(); return; }
   if(b.dataset.tab){ dev.tab=b.dataset.tab; store.set('hc-dev-tab',dev.tab); el.querySelector('.dv-export').hidden=true; devRender(); return; }
   if(b.dataset.rs){ e.preventDefault(); const t=devTarget(b.dataset.rs); devSet(b.dataset.rs,t.orig==null?undefined:t.orig); devRender(); return; }
+  if(b.dataset.dv==='close'||!G){ devToggle(false); return; }
   const a=b.dataset.dv, S=G.swarm, api=G.api;
-  if(a==='close') devToggle(false);
-  else if(a==='pause'){ G.devPause=!G.devPause; devRender(); }
+  if(a==='pause'){ G.devPause=!G.devPause; devRender(); }
   else if(a==='alpha'){ dev.alpha=(dev.alpha+1)%DEV_ALPHA.length; devRender(); }
   else if(a==='save'){ store.set('hc-dev-tune',devChangesNow()); toast('Dev settings saved. They load with the game from now on.',true); devStatus(); }
   else if(a==='resetall'){ for(const [r,o] of Object.entries(DEV_ORIG)) for(const p of devLeaves(DEV_ROOTS[r])){ const v=getP(o,p); if(getP(DEV_ROOTS[r],p)!==v) devSet(r+'|'+p,v); }

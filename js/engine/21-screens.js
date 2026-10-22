@@ -7,6 +7,7 @@ function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name; if(na
   const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission;
   if(name){ $('#tut-card').hidden=true; $('#tut-open').hidden=true; } else if(G&&G.tutSteps) tutRefresh(); }   /* the training card only shows during play */
 function goMenu(name){
+  if(typeof devToggle==='function') devToggle(false);   /* the dev panel belongs to a mission, not to the menu screens */
   if(name==='menu'){ ui.mode='menu'; G=null; $('#hud').hidden=true; resize(); }
   if(name==='campaign') buildCampaign();
   if(name==='skirmish') buildSkirmish();
