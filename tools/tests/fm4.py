@@ -1,0 +1,43 @@
+from playwright.sync_api import sync_playwright
+errs=[]
+def shot(pg,name):
+    pg.evaluate('()=>{__hc.G.vars.cardOpen=false; tutRefresh();}'); pg.wait_for_timeout(80)
+    r=pg.evaluate("()=>{ const us=tut.corpsUnits(); const x=us.reduce((s,u)=>s+u.x,0)/us.length-__hc.G.cam.x, y=us.reduce((s,u)=>s+u.y,0)/us.length-__hc.G.cam.y; return [x,y]; }")
+    pg.screenshot(path=name, clip={'x':max(0,r[0]-160),'y':max(0,r[1]-130),'width':320,'height':230})
+J=lambda pg,s: pg.evaluate(s)
+with sync_playwright() as p:
+    b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
+    pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
+    J(pg,"()=>{ localStorage.removeItem('hc-myform'); __hc.startMission(TRAINING.corps); }"); pg.wait_for_timeout(900)
+    J(pg,"()=>{ moveGroup(tut.corpsUnits(),24.5*TILE,24.5*TILE,'move'); }"); pg.wait_for_timeout(9000)
+    J(pg,"()=>{ centerOn(24.5*TILE,24.5*TILE); __hc.G.following=false; selectEntities(tut.corpsUnits(),false); }")
+    pg.keyboard.press('Control+Digit1'); pg.wait_for_timeout(100)
+    print('g1 form', J(pg,"()=>__hc.G.groupForm['1']&&__hc.G.groupForm['1'].shape"))
+    pg.keyboard.press('i'); pg.wait_for_timeout(3000); shot(pg,'g_line.png')
+    pg.keyboard.press('w'); pg.wait_for_timeout(3000); shot(pg,'g_zig.png')
+    pg.keyboard.press('e'); pg.wait_for_timeout(3000); shot(pg,'g_zigwide.png'); print('gap', J(pg,"()=>tut.corpsUnits()[0].formation.gap"))
+    # own formation: arrange as a T: place units manually
+    J(pg,"()=>{ const us=tut.corpsUnits(); const cx=24.5*TILE, cy=24.5*TILE; const pos=[[0,-2],[-1,-1],[1,-1],[0,0],[0,1],[-1.5,1.5],[1.5,1.5]]; us.forEach((u,i)=>{ u.x=cx+pos[i][0]*TILE*1.2; u.y=cy+pos[i][1]*TILE*1.2; u.order=null; u.path=null; }); }")
+    pg.keyboard.press('f'); pg.wait_for_timeout(300); print('saved', J(pg,"()=>JSON.parse(localStorage.getItem('hc-myform')).slots.length"))
+    pg.keyboard.press('z'); pg.wait_for_timeout(3000); shot(pg,'g_circle.png')
+    pg.keyboard.press('y'); pg.wait_for_timeout(3500); shot(pg,'g_own.png')
+    print('own types/pos', J(pg,"()=>tut.corpsUnits().map(u=>u.type[0]+((u.x/TILE-24.5)).toFixed(1)+','+((u.y/TILE-24.5)).toFixed(1)).join(' ')"))
+    # group memory
+    J(pg,"()=>{ selectEntities(tut.corpsUnits().filter(u=>u.type==='trooper').slice(0,3),false); }")
+    pg.keyboard.press('Control+Digit2'); pg.wait_for_timeout(100); pg.keyboard.press('Digit2'); pg.wait_for_timeout(100)
+    pg.keyboard.press('i'); pg.wait_for_timeout(2500)
+    pg.keyboard.press('Digit1'); pg.wait_for_timeout(3000)
+    print('after 1:', J(pg,"()=>[__hc.G.groupForm['1'].shape, tut.corpsUnits().map(u=>u.formation&&u.formation.shape).join(',')]"))
+    pg.keyboard.press('Digit2'); pg.wait_for_timeout(3000)
+    print('after 2:', J(pg,"()=>[__hc.G.groupForm['2'].shape, __hc.G.sel.map(u=>u.formation&&u.formation.shape).join(','), __hc.G.uiUse.groupform]"))
+    print('chips', J(pg,"()=>document.querySelector('.gchips').innerText.replace(/\\n/g,' ')"))
+    pg.screenshot(path='g_chips.png', clip={'x':0,'y':560,'width':900,'height':240})
+    # sweep: group 1 in line, attack-move toward dummies
+    pg.keyboard.press('Digit1'); pg.wait_for_timeout(2500); pg.keyboard.press('i'); pg.wait_for_timeout(2500)
+    J(pg,"()=>{ window.__d=__hc.G.vars.dd=[]; for(let i=0;i<3;i++){ const d=makeUnit('crawler','swarm',(22+i*2)*TILE,31*TILE); d.hp=d.maxHp=60; d.dmgMul=0; d.role='guard'; __d.push(d);} }")
+    J(pg,"()=>{ cmdAttack(); attackMoveAt(23.5*TILE,33*TILE); }"); pg.wait_for_timeout(300)
+    print('orders', J(pg,"()=>tut.corpsUnits().map(u=>u.order?(u.order.type+(u.order.sweep?'*':'')):'-').join(' ')"))
+    pg.wait_for_timeout(1500); shot(pg,'g_sweep.png'); pg.wait_for_timeout(5000)
+    print('dummies left', J(pg,"()=>__d.filter(d=>!d.dead).length"))
+    b.close()
+print(errs)
