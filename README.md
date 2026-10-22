@@ -469,9 +469,10 @@ Mislukt een missie, dan is het rapport (*Defeat*) **doorzichtig** en speelt het 
 Op elke kaart van de Lunar Corps-campagne ligt iets verstopt, ver van de gebaande paden (js/content/relics.js).
 - **Voorwerpen** (8, één per missie): een blauw gloeiend artefact dat af en toe flonkert. Loop er met een soldaat over en je hebt het. Elk vertelt een stukje van het verhaal (de zwarte doos van het eerste bevoorradingsschip, de mok van de stationschef, de knuffel van een kind uit Mare Colony …).
 - **Oeroude eieren** (4: Burn the Brood, Blackout, Dead Signal, Brood Mother): een groot versteend ei met amberlicht. Zet er een soldaat naast zonder Swarm binnen 3,5 tegels en houd het **5 seconden** vast (gele ring): het is van jou. Maar de Swarm wil het ook: na 2,5 tot 5 minuten stuurt de dichtstbijzijnde hive 3 Drones (en later opnieuw als die sneuvelen). Houden zij het **15 seconden** zonder soldaat in de buurt (groene ring), dan **ontwaakt het ei tot een nieuwe hive**.
-- Wat je vindt, wordt onthouden (`hc-relics`) en verschijnt niet opnieuw. Ook als je de missie verliest, hou je het.
+- Wat je vindt, wordt onthouden (`hc-relics`). Ook als je de missie verliest, hou je het. Een **voorwerp** is daarna voorgoed weg van de kaart. Een **oeroud ei** ligt er bij elke nieuwe keer dat je de missie speelt opnieuw: de Swarm wil het nog altijd, en laat je het liggen, dan kan er nog steeds een hive uit groeien. Een ei dat je al had, telt niet nog eens mee op de trofeemuur.
 - **Intel → Relics**: alles wat je vond, met het verhaal; wat je nog niet vond staat er als *???* met de missie waarin het ligt.
 - **Trofeemuur**, rij *Relics*: **Archivist** (alle voorwerpen) en **Egg Hunter** (alle oeroude eieren). Op het eindscherm staat wat je die missie vond.
+- **Elk relic heeft een eigen sprite** (js/engine/01b-relic-art.js, `RELIC_ART`, op relic-id): de flight recorder, de mok, de dronekern, het charter, het pluche konijn, de cassette, de fossiele scherf, de vlag en vier verschillende oeroude eieren. Op de kaart en in Intel. Een nieuw relic zonder eigen sprite krijgt het algemene kistje of ei.
 - Instelbaar: `EGG_RELIC` in js/engine/29-relics.js (hoe lang vasthouden, wanneer de Swarm komt, hoeveel Drones).
 
 ## Dev-modus (waarden testen tijdens het spelen)

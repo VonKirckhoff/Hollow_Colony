@@ -4,7 +4,8 @@
    kind 'egg':  an ancient egg. Stand a soldier next to it with no Swarm close by for EGG_RELIC.secure seconds to take it.
                 The Swarm wants it too: some time into the mission a hive sends a few Drones for it, and if they hold it
                 for EGG_RELIC.hatch seconds with no soldier close by, it wakes and grows into a new hive.
-   at: a tile on the map of that mission. Found relics show in Intel (tab Relics) and on the trophy wall. */
+   at: a tile on the map of that mission. Found relics show in Intel (tab Relics) and on the trophy wall.
+   An item, once found, is gone from the map for good. An ancient egg lies there again every time you play the mission. */
 const RELICS = [
   { id:'blackbox', mission:'dust-landing', kind:'item', at:{x:78,y:8}, name:'Flight Recorder',
     text:'The black box of the supply lander Ibis-2. The last thing on the tape is the pilot: "There is movement in the dust. Lots of it. Coming to the ship." Then nothing.' },

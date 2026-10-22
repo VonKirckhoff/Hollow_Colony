@@ -167,9 +167,9 @@ const intelSel={};
 /* the Relics tab: what you have found, and a hint for what you have not */
 function buildRelicIntel(){ const F=relicsFound(), sel=Math.min(intelSel.relics||0,RELICS.length-1), mt=id=>(MISSIONS.find(m=>m.id===id)||{}).title||id;
   $('#intel-list').innerHTML=RELICS.map((r,i)=>{ const f=!!F[r.id];
-    return `<button type="button" role="option" class="ili f-none ${i===sel?'on':''} ${f?'':'rel-un'}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic"><img alt="" src="${ARTURL[r.kind==='egg'?'ancientegg':'relic']}" style="${f?'':'filter:brightness(.25)'}"></span><span><b>${f?r.name:'???'}</b><small>${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}</small></span></button>`; }).join('');
+    return `<button type="button" role="option" class="ili f-none ${i===sel?'on':''} ${f?'':'rel-un'}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic"><img alt="" src="${ARTURL[relicArt(r)]}" style="${f?'':'filter:brightness(.25)'}"></span><span><b>${f?r.name:'???'}</b><small>${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}</small></span></button>`; }).join('');
   const r=RELICS[sel], f=r&&F[r.id], n=Object.keys(F).filter(k=>RELICS.some(x=>x.id===k)).length;
-  const img=ARTURL[r.kind==='egg'?'ancientegg':'relic'];
+  const img=ARTURL[relicArt(r)];
   $('#intel-grid').innerHTML=r?intelCard(img,f?r.name:'Not found yet',`${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}`,'none',
     f?r.text:(r.kind==='egg'?'Somewhere on this map lies an ancient egg. Hold it with a soldier and keep the Swarm off it: if they hold it, it wakes and grows into a new hive.':'Somewhere on this map, off the beaten track, something is waiting to be found. Walk a soldier over it.'),
     `${n} of ${RELICS.length} relics found.`,[],[f?`Found ${new Date(f.at).toLocaleDateString()}`:'Not found'],''):''; }
