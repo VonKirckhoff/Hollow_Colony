@@ -174,7 +174,7 @@ function anyBarker(units,kind,arg){ const u=squadVoice(units); if(u) bark(u,kind
 /* ---- personal veterans: an obituary on the radio, kept for the memorial ---- */
 function obituary(u){
   if(!u.vet) return;
-  (G.fallenVets=G.fallenVets||{})[u.vet.id]={...u.vet};
+  (G.fallenVets=G.fallenVets||{})[u.vet.id]={...u.vet}; commitFallen(u);   /* real death: on the Cenotaph right away */
   const near=G.ents.filter(e=>!e.dead&&e!==u&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&Math.hypot(e.x-u.x,e.y-u.y)<9*TILE);
   if(near.length) bark(pick(near),'down',u.vet.name);
   if(u.vet.hero||u.vet.rank>=1||(u.vet.missions||0)>=1){

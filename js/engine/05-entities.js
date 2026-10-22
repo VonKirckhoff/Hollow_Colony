@@ -76,8 +76,9 @@ function settleRoster(){
   for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
     const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined, sex:v.sex||undefined, risen:v.risen||undefined };
     R.fallen.unshift(rec); res.fallen.push(rec); } }
-  // soldiers who earned a rank in this mission and fell are remembered too
-  for(const [id,f] of Object.entries(FV)){ if(ids.has(id)||!(f.rank>=1)) continue;
+  // soldiers who earned a rank in this mission and fell are remembered too (real death: already on the Cenotaph since the moment they fell)
+  const RC=G.rdCommitted||{}; res.fallen.push(...(G.rdFallen||[]));
+  for(const [id,f] of Object.entries(FV)){ if(ids.has(id)||RC[id]||!(f.rank>=1)) continue;
     const rec={ name:f.name, type:f.type, rank:f.rank, xp:f.xp, kills:f.kills||0, missions:f.missions||0, mission:G.mission.title, at:Date.now() };
     R.fallen.unshift(rec); res.fallen.push(rec); }
   // promotions of soldiers who made it out, highest rank only
@@ -92,6 +93,18 @@ function settleRoster(){
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
   saveRoster(); G.rosterResult=res;
 }
+/* Real death is iron: a soldier who falls goes on the Cenotaph the moment he falls (written to hc-roster at once),
+   so no save, restart, quit or closed browser tab can bring him back. settleRoster skips him later (G.rdCommitted). */
+function commitFallen(u){
+  if(!G||!G.realDeath||!isCampaign()||!u.vet) return; const v=u.vet, id=v.id, RC=G.rdCommitted=G.rdCommitted||{}; if(RC[id]) return; RC[id]=true;
+  const R=ui.roster, P=G.promoted||{}, i=R.active.findIndex(x=>x.id===id), base=i>=0&&G.deployedIds.has(id)?R.active[i]:null;
+  if(!base&&!(v.rank>=1)) return;   /* a fresh private without a rank leaves no name on the Cenotaph (as after a mission) */
+  const rec={ name:v.name, type:v.type||u.type, rank:Math.max(v.rank||0,base?base.rank:0,P[id]?P[id].rank:0), xp:v.xp||(base&&base.xp)||0, kills:v.kills||(base&&base.kills)||0, missions:(base?base.missions:v.missions)||0,
+    mission:G.mission.title, at:Date.now(), hero:v.hero||undefined, sex:v.sex||undefined, risen:v.risen||undefined };
+  if(base) R.active.splice(i,1); R.fallen.unshift(rec); R.fallen=R.fallen.slice(0,60); (G.rdFallen=G.rdFallen||[]).push(rec); saveRoster(); }
+/* Real death: quitting or restarting a running campaign mission counts as losing it (the same as a defeat with real death on) */
+function rdLive(){ return !!G&&!G.over&&G.realDeath&&isCampaign(); }
+function abandonMission(){ if(!rdLive()) return; G.over={ win:false, abandoned:true }; settleRoster(); }
 function makeBuilding(type,faction,tx,ty,built){
   const d=BUILDINGS[type], s=d.size, hp=toughHp(type), tg=toughOf(type);
   const b={ id:NEXT_ID++, kind:'building', type, def:d, faction, tx, ty, size:s, x:(tx+s/2)*TILE, y:(ty+s/2)*TILE, r:s*TILE*0.42,

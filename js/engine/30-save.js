@@ -5,7 +5,10 @@
    How: the game state G is written as a graph. Every entity is written once (in G.ents) and referred to by id elsewhere;
    objects that appear in more places (a formation shared by a squad, a group list) are written once and referred to;
    the game's own tables (UNITS, BUILDINGS, DIFFICULTY …) are written by name. Functions, canvases and passing effects are left out.
-   Training missions cannot be saved (their steps live in code that keeps its own place). */
+   Training missions cannot be saved (their steps live in code that keeps its own place).
+   Real death (iron mode): saving ends the session (save and quit), and Continue uses the save up: it is gone the moment it loads.
+   The fallen are on the Cenotaph the moment they fall (commitFallen), quitting counts as a lost mission (abandonMission),
+   and starting another campaign mission gives up a suspended real-death mission. So no save brings anyone back. */
 const SAVE_KEY='hc-save', SAVE_VERSION=1;
 const SAVE_SKIP_G=new Set(['map','mission','api','triggers','tutSteps','tutHL','fx','shots','ents']);
 const SAVE_SKIP_ENT=new Set(['path']);
@@ -33,7 +36,7 @@ function encodeGame(){
     if(v instanceof Map) return {__i:id,__map:[...v].map(([k,x])=>[enc(k),enc(x)])};
     if(Array.isArray(v)) return {__i:id,__a:v.map(x=>{ const e=enc(x); return e===undefined?null:e; })};
     const out={__i:id}; for(const k of Object.keys(v)){ if(skip&&skip.has(k)) continue; const e=enc(v[k]); if(e!==undefined) out[k]=e; } return out; };
-  const save={ v:SAVE_VERSION, at:Date.now(), missionId:G.mission.id, mapId:G.mission.map, title:G.mission.title, side:G.side, diffKey:G.diffKey, time:G.time, nextId:NEXT_ID };
+  const save={ v:SAVE_VERSION, at:Date.now(), missionId:G.mission.id, mapId:G.mission.map, title:G.mission.title, side:G.side, diffKey:G.diffKey, time:G.time, nextId:NEXT_ID, rd:!!G.realDeath||undefined };
   save.ents=ents.map(e=>enc(e,true,SAVE_SKIP_ENT));
   const g={}; for(const k of Object.keys(G)){ if(SAVE_SKIP_G.has(k)) continue; const e=enc(G[k]); if(e!==undefined) g[k]=e; } save.G=g;
   save.triggers=G.triggers.map(t=>{ const o={}; for(const [k,x] of Object.entries(t)) if(typeof x!=='function'){ const e=enc(x); if(e!==undefined) o[k]=e; } return o; });
@@ -60,12 +63,15 @@ function decodeGame(save){
 function findMission(save){ if(save.missionId==='skirmish') return skirmishMission(save.mapId);
   return [...MISSIONS,...(typeof SWARM_MISSIONS!=='undefined'?SWARM_MISSIONS:[])].find(m=>m.id===save.missionId)||null; }
 function saveGame(){ if(!canSave()){ toast(G&&G.mission.training?'Training cannot be saved.':'Nothing to save.'); return false; }
-  try{ const s=encodeGame(), txt=JSON.stringify(s); localStorage.setItem(SAVE_KEY,txt); refreshContinue(); toast(`Game saved: ${s.title}, ${fmtTime(s.time)}.`,true); SFX.play('ack'); return true; }
+  try{ const s=encodeGame(), txt=JSON.stringify(s); localStorage.setItem(SAVE_KEY,txt); refreshContinue(); SFX.play('ack');
+    if(s.rd){ goMenu('menu'); toast(`Saved and left ${s.title} at ${fmtTime(s.time)}. ☠ Real death: Continue picks it up once.`,true); return true; }   /* iron mode: save and quit */
+    toast(`Game saved: ${s.title}, ${fmtTime(s.time)}.`,true); return true; }
   catch(err){ console.error(err); toast('Could not save: the browser has no room left for it.'); return false; } }
 function savedInfo(){ try{ const t=localStorage.getItem(SAVE_KEY); if(!t) return null; const s=JSON.parse(t); return s&&s.v===SAVE_VERSION?s:null; }catch(e){ return null; } }
 function loadGame(){ const save=savedInfo(); if(!save){ toast('No saved game.'); return false; }
   const m=findMission(save); if(!m){ toast('The saved mission no longer exists.'); return false; }
-  const keep=ui.diff; ui.diff=save.diffKey; startMission(m); ui.diff=keep;
+  if(save.rd) localStorage.removeItem(SAVE_KEY);   /* real death: the save is used up as it loads */
+  const keep=ui.diff, keepRd=ui.realDeath; ui.diff=save.diffKey; ui.realDeath=!!save.rd; startMission(m); ui.diff=keep; ui.realDeath=keepRd;
   try{ const { ents, g, triggers }=decodeGame(save);
     const cfg=g.swarm&&g.swarm.cfg; for(const [k,v] of Object.entries(g)) G[k]=v;
     if(cfg&&G.mission.swarm){ for(const k of Object.keys(G.mission.swarm)) if(!(k in cfg)) delete G.mission.swarm[k]; Object.assign(G.mission.swarm,cfg); G.swarm.cfg=G.mission.swarm; }
@@ -75,10 +81,14 @@ function loadGame(){ const save=savedInfo(); if(!save){ toast('No saved game.');
     for(const e of G.ents){ if(e.kind==='unit'&&e.order&&(e.order.x!=null)&&!e.path) e.path=null; }
     computeFog(); G.selDirty=true; G.objDirty=true; G.msgDirty=true; $('#btn-speed').textContent=(G.speed||1)+'×'; if(typeof setupSideHud==='function') setupSideHud();
     toast(`Continuing ${G.mission.title} at ${fmtTime(G.time)}.`,true); return true; }
-  catch(err){ console.error(err); toast('The saved game could not be loaded.'); goMenu('menu'); return false; } }
+  catch(err){ console.error(err); if(save.rd) try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){}   /* not used up when it could not load */
+    toast('The saved game could not be loaded.'); goMenu('menu'); return false; } }
+/* real death: starting another campaign mission gives up a suspended real-death mission (its fallen are already on the Cenotaph) */
+function dropRdSave(m){ const s=savedInfo(); if(!s||!s.rd||m.id==='skirmish'||m.side==='swarm'||m.training) return;
+  localStorage.removeItem(SAVE_KEY); toast(`☠ ${s.title} (real death, saved at ${fmtTime(s.time)}) is given up. The fallen stay fallen.`,true); }
 /* the main menu shows Continue only when there is a save */
 function refreshContinue(){ const b=document.getElementById('m-continue'); if(!b) return; const s=savedInfo(); b.hidden=!s;
-  if(s) b.innerHTML=`Continue <small>${s.title} · ${fmtTime(s.time)} · saved ${new Date(s.at).toLocaleString([], {dateStyle:'short',timeStyle:'short'})}</small>`; }
+  if(s) b.innerHTML=`Continue <small>${s.rd?'☠ Real death, one time · ':''}${s.title} · ${fmtTime(s.time)} · saved ${new Date(s.at).toLocaleString([], {dateStyle:'short',timeStyle:'short'})}</small>`; }
 document.getElementById('m-continue').addEventListener('click',()=>loadGame());
 document.getElementById('p-save').addEventListener('click',()=>{ if(saveGame()) pause(false); });
 refreshContinue();

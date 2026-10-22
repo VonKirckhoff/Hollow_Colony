@@ -32,11 +32,12 @@ Read this first in every new session. The README holds the full design (in Dutch
   - `splittest2.py`: corps regression (must end with `('DIFF', None)`).
   - `trainc2.py corps|swarm`: plays both trainings to the end (skipping steps).
   - `save.py`: save, reload, continue, compare state.
-  - `fm4.py`: formations, groups, sweep. `relic.py`: relics and eggs. `matri.py`: Matriarch rooting.
+  - `fm4.py`: formations, groups, sweep. `relic.py`: relics and eggs. `matri.py`: Matriarch rooting. `rdsave.py`: Real death iron mode (save and quit, one-time Continue, fallen at once, quit = lost mission).
 - Music: `MUSIC.renderOffline(sec,id)` renders a track; compare peak/RMS with 'hollow'.
 - Always look at a screenshot when something is visual.
 
 ## Where things stand (Oct 2026)
 - Corps campaign 8 missions + training, Swarm campaign 3 missions + training (more Swarm missions still to come), skirmish, map editor.
 - Recent: dev panel, save/continue, relics and ancient eggs, Matriarch, Husk as warrior, mine shafts, formations (line, zigzag, own formation, spacing, groups remember formation, sweep), hold fire, four new music tracks.
-- Ideas mentioned but not built: relics for the Swarm campaign, more Swarm missions, spore sac for new hives, a Real death rule for saving.
+- Real death is iron mode (save and quit, Continue once, the fallen go on the Cenotaph at once, quitting = a lost mission).
+- Ideas mentioned but not built: relics for the Swarm campaign, more Swarm missions, spore sac for new hives.

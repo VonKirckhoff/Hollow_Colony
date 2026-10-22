@@ -169,7 +169,7 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
   - Staat er een soldaat naast het lichaam (1,6 tegel), dan kan niemand het oppakken of infecteren: de Swarm valt eerst die bewaker aan. Een **Pyro** verbrandt het (ook als zijn vlam ernaast landt, ook als het net wordt weggedragen). Schiet ook de eieren en Grafters. Instellingen: `SQUAD.body` in js/engine/22-squad-life.js.
 - **Bij een nederlaag** kies je op het campagnescherm (*On defeat*, onthouden als `hc-real-death`):
   - **Retry with the same soldiers** (standaard): het rooster blijft zoals voor de missie, je kan opnieuw proberen met dezelfde soldaten. Het eindscherm noemt wie viel, met de vermelding dat niemand verloren is.
-  - **☠ Real death**: ook bij een nederlaag is wie sneuvelde weg en komt op de Cenotaph; wie overleeft, houdt zijn XP en promoties. Het spel vermeldt dit overal: een rode rand en uitleg op het campagnescherm, een rode regel in de briefing, een badge *☠ Real death* in de bovenbalk tijdens de missie, en een rode regel op het eindscherm.
+  - **☠ Real death**: ook bij een nederlaag is wie sneuvelde weg en komt op de Cenotaph; wie overleeft, houdt zijn XP en promoties. Real death is **iron mode**: wie sneuvelt, staat **meteen** op de Cenotaph (niet pas op het einde van de missie), zodat geen save, herstart, afsluiten of gesloten tabblad hem terugbrengt. Zie ook *Opslaan en verdergaan*. Het spel vermeldt dit overal: een rode rand en uitleg op het campagnescherm, een rode regel in de briefing, een badge *☠ Real death* in de bovenbalk tijdens de missie, en een rode regel op het eindscherm.
 - De knop **Veterans** in de campagnelijst toont links het rooster (een lang rooster scrollt in zijn eigen vak) en rechts de rangen; de knop **Cenotaph** toont de gesneuvelden. De briefing toont wie meegaat. Het eindscherm toont promoties (per soldaat alleen de hoogste rang die hij haalde, en alleen van wie de missie overleefde) en nieuwkomers, **gegroepeerd per rang** (hoogste eerst, namen alfabetisch, je eigen soldaat met ★), en **alle** gesneuvelden van die missie (ook soldaten zonder rang) elk op een eigen regel, gesorteerd op rang, met type, missies en kills. Op de Cenotaph komen alleen de veteranen (wie op het rooster stond of een rang had).
 - **Namen:** alleen Nederlandstalige familienamen (`SURNAMES` in js/content/veterans.js). De eerste soldaten van een nieuwe campagne heten altijd, in deze volgorde, **Van Kerckhove, Heem, Van Damme, Vikernes en Verstappen** (`STARTER_NAMES`), zolang die namen vrij zijn. Een bewaard rooster met namen die niet in de lijst staan, krijgt bij het laden nieuwe namen.
 - **Wie spreekt:** geef je een groep een bevel of selecteer je hem, dan antwoordt **de hoogste in rang** (bij gelijke rang je eigen soldaat, dan wie de meeste XP heeft).
@@ -460,8 +460,16 @@ Mislukt een missie, dan is het rapport (*Defeat*) **doorzichtig** en speelt het 
 
 - In het **pauzemenu** (P of Esc) staat **Save game**: de hele lopende missie wordt in deze browser bewaard (`hc-save`, één plaats: een nieuwe save vervangt de vorige). Je ziet een melding met de missie en de klok.
 - In het **hoofdmenu** verschijnt dan **Continue** met de missie, de klok en wanneer je bewaarde. Klik erop en je speelt verder waar je was: elke soldaat, elk gebouw, de schimmel, de golven, je groepen en formaties, de missie-doelen en de tijd.
-- Een save blijft staan tot je opnieuw bewaart; je kan dus vaker terugkeren naar hetzelfde punt.
+- Een save blijft staan tot je opnieuw bewaart; je kan dus vaker terugkeren naar hetzelfde punt (niet met ☠ Real death, zie hieronder).
 - Trainingen kan je niet bewaren. Werkt voor de Lunar Corps- en de Swarm-campagne en skirmish.
+- **Met ☠ Real death aan** (iron mode) gelden strengere regels, zodat je trofee op de Real death-muur echt verdiend is:
+  - In het pauzemenu heet de knop **Save and quit**: bewaren beëindigt de sessie en brengt je naar het hoofdmenu. Je kan niet bewaren en verder spelen.
+  - **Continue** werkt **één keer**: de save wordt opgebruikt zodra hij laadt (het hoofdmenu toont *☠ Real death, one time*). Wil je opnieuw stoppen, dan bewaar je opnieuw.
+  - Wie sneuvelt, staat meteen op de Cenotaph; ook een oudere save brengt hem niet terug.
+  - **Restart mission** en **Quit to menu** vragen een tweede klik en tellen dan als een **verloren missie**: de gesneuvelden blijven weg, de overlevenden houden hun XP, de missie telt niet als gewonnen.
+  - Sluit je het tabblad zonder te bewaren, dan zijn de gesneuvelden ook weg; de missie en de XP van die sessie gaan verloren.
+  - Begin je een andere campagnemissie terwijl er een Real death-save klaarstaat, dan geef je die bewaarde missie op (met een melding).
+  - Hoe: `commitFallen` (05-entities.js, opgeroepen in `obituary`) schrijft een gesneuvelde meteen naar `hc-roster`; `settleRoster` slaat hem later over (`G.rdCommitted`). `abandonMission` regelt opgeven, `dropRdSave` (30-save.js) het opgeven van een bewaarde missie.
 - Hoe: js/engine/30-save.js schrijft de spelstatus `G` als een graaf (elke eenheid één keer, verwijzingen per id; gedeelde objecten zoals een formatie één keer; tabellen als `UNITS` per naam). Functies, canvassen en voorbijgaande effecten worden niet bewaard. Een save is zo'n 50 tot 150 kB.
 
 ## Relics: verborgen voorwerpen en oeroude eieren
@@ -754,4 +762,5 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 - **The Grey** zijn nog niet speelbaar als factie (renown-economie, eigen eenheden).
 - De muren in de ruïnes van Hollow Colony zijn in het donker soms moeilijk te onderscheiden.
 - Het spel is gemaakt voor muis en toetsenbord. Aanraken werkt basaal: tik om te selecteren of een bevel te geven, sleep om te scrollen.
-- Mogelijke uitbreidingen: een Swarm-campagne, upgrades en veteranen, de Grey als speelbare factie.
+- De Swarm-campagne telt nu 3 missies (en een training); er komen er meer.
+- Ideeën die nog niet gebouwd zijn: relics in de Swarm-campagne, meer Swarm-missies, een sporenzak waarmee de Swarm een nieuwe hive sticht, de Grey als speelbare factie.

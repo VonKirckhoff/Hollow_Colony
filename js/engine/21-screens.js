@@ -37,7 +37,7 @@ function buildCampaign(){
 function buildDefeatRow(){ const rd=!!ui.realDeath;
   document.querySelectorAll('[data-rd]').forEach(b=>{ const on=(b.dataset.rd==='1')===rd; b.classList.toggle('on',on); b.setAttribute('aria-checked',on); });
   $('#defeat-row').classList.toggle('real',rd);
-  $('#rd-note').innerHTML=rd?'<b>☠ Real death.</b> Whoever falls is gone and goes on the Cenotaph, also when you lose the mission. Survivors keep the experience they earned.'
+  $('#rd-note').innerHTML=rd?'<b>☠ Real death.</b> Whoever falls is gone and goes on the Cenotaph the moment he falls, also when you lose the mission. Survivors keep the experience they earned. Iron mode: saving quits the mission and Continue works once; quitting or restarting counts as a lost mission.'
     :'Lose a mission and the roster is restored: the same soldiers, with the experience they had, are ready for another try.'; }
 $('#defeat-row').addEventListener('click',e=>{ const b=e.target.closest('[data-rd]'); if(!b) return; ui.realDeath=b.dataset.rd==='1'; store.set('hc-real-death',ui.realDeath); buildDefeatRow();
   toast(ui.realDeath?'Real death: the fallen are gone, win or lose.':'Retry: a lost mission does not cost you anyone.',true); });
@@ -192,7 +192,7 @@ function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swar
   const res=ui.progress.results[m.id]; $('#b-eyebrow').textContent+= res?` · COMPLETED ON ${DIFFICULTY[res.diff].label.toUpperCase()}`:'';
   const nv=sw?0:ui.roster.active.length; $('#b-text').innerHTML+= nv?`<p class="rdim">${nv} veteran${nv>1?'s':''} on the roster will join this mission: ${ui.roster.active.slice(0,6).map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(', ')}${nv>6?'…':''}.</p>`:'';
   if(sw) $('#b-text').innerHTML+=`<p class="rdim">Difficulty makes the Lunar Corps tougher: Easy ${Math.round(SWARM_DIFF.easy.hp*100)}%, Hard ${Math.round(SWARM_DIFF.hard.hp*100)}% health, and more reinforcements on Hard.</p>`;
-  else if(ui.realDeath) $('#b-text').innerHTML+='<p class="rd-brief">☠ Real death is on: whoever falls in this mission is gone, even if you lose it.</p>';
+  else if(ui.realDeath) $('#b-text').innerHTML+='<p class="rd-brief">☠ Real death is on: whoever falls in this mission is gone, even if you lose it. Saving quits the mission (Continue works once); quitting or restarting counts as a lost mission.</p>';
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
   show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true}); }
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
@@ -226,6 +226,7 @@ function skirmishMission(mapId){
 }
 let lastMission=null;
 function startMission(m){
+  if(typeof dropRdSave==='function') dropRdSave(m);
   lastMission=m; newGame(m,ui.diff); G.realDeath=!!ui.realDeath && m.id!=='skirmish' && m.side!=='swarm'; $('#rd-badge').hidden=!G.realDeath; ui.mode='game'; ui.placing=null; ui.amove=false; cv.classList.remove('amove');
   show(null); const bt=$('#boot'); if(bt) bt.hidden=true; $('#hud').hidden=false; $('#tooltip').hidden=true; resize(); sizeMinimap();
   const cp=ptWorld(m.start.camera||'P'); centerOn(cp.x,cp.y);
@@ -233,7 +234,7 @@ function startMission(m){
   if(G.side==='swarm'){ const r=ptWorld(m.start.rally||m.start.camera||'P'); if(r) G.swarm.rally=r; selectEntities([],false); }
   else selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
 }
-function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; const ps=$('#p-save'); if(ps) ps.hidden=!(typeof canSave==='function'&&canSave()); show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
+function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; const ps=$('#p-save'); if(ps) ps.hidden=!(typeof canSave==='function'&&canSave()); pauseLabels(); show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
 $('#p-manual').addEventListener('click',()=>goMenu('manual'));
 $('#manual-back').addEventListener('click',()=>{ if(ui.manualFrom==='pause'&&G&&!G.over&&ui.mode==='pause'){ show('pause'); $('#p-resume').focus({preventScroll:true}); } else goMenu('menu'); });
@@ -244,8 +245,17 @@ $('#btn-fresh').addEventListener('click',()=>{ const b=$('#btn-fresh');
   clearTimeout(freshArm); const maps=$('#fresh-maps').checked, keepT=$('#fresh-troph').checked;
   try{ const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('hc-')&&(maps||k!=='hc-custom-maps')&&(!keepT||k!=='hc-trophies')) keys.push(k); } keys.forEach(k=>localStorage.removeItem(k)); }catch(e){}
   location.reload(); });
-$('#p-restart').addEventListener('click',()=>{ startMission(lastMission); });
-$('#p-quit').addEventListener('click',()=>goMenu('menu'));
+/* Real death: the pause menu says what saving and leaving cost; Restart and Quit ask a second click, then count as a lost mission */
+let leaveArm=null;
+function pauseLabels(){ const rd=rdLive(); clearTimeout(leaveArm); leaveArm=null;
+  $('#p-save').innerHTML=rd?'Save and quit <small>☠ Real death: Continue picks it up once</small>':'Save game <small>One slot: replaces the last save</small>';
+  $('#p-restart').innerHTML='Restart mission'+(rd?' <small>☠ Counts as a lost mission</small>':''); $('#p-quit').innerHTML='Quit to menu'+(rd?' <small>☠ Counts as a lost mission</small>':'');
+  $('#p-restart').classList.remove('armed'); $('#p-quit').classList.remove('armed'); }
+function leaveMission(b,go){ if(!rdLive()){ go(); return; }
+  if(leaveArm!==b.id){ pauseLabels(); leaveArm=b.id; b.classList.add('armed'); b.innerHTML='Click again to give up <small>☠ A lost mission: the fallen stay fallen</small>'; return; }
+  leaveArm=null; abandonMission(); go(); }
+$('#p-restart').addEventListener('click',e=>leaveMission(e.currentTarget,()=>startMission(lastMission)));
+$('#p-quit').addEventListener('click',e=>leaveMission(e.currentTarget,()=>goMenu('menu')));
 function showEnd(){
   const o=G.over, m=G.mission; ui.mode='end';
   $('#e-eyebrow').textContent=o.win?'MISSION COMPLETE':'MISSION FAILED';
