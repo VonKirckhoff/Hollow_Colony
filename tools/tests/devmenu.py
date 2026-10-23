@@ -10,7 +10,7 @@ with sync_playwright() as p:
     print('2 hidden after quit', pg.evaluate(H)); pg.evaluate("()=>goMenu('campaign')"); pg.evaluate("()=>goMenu('cenotaph')"); pg.wait_for_timeout(700)
     print('3 hidden on cenotaph', pg.evaluate(H))
     pg.keyboard.press('F9'); pg.wait_for_timeout(200); print('4 F9 in menu keeps it hidden', pg.evaluate(H))
-    pg.evaluate("()=>{ document.getElementById('dev').hidden=false; }"); pg.click('#dev [data-dv=close]'); pg.wait_for_timeout(100)
+    pg.evaluate("()=>{ const el=document.getElementById('dev'); el.hidden=false; el.querySelector('[data-dv=close]').click(); }"); pg.wait_for_timeout(100)   # show and click in one go (the 0.5 s tick may hide it first)
     print('5 stuck panel closes with X', pg.evaluate(H))
     pg.evaluate("()=>{ document.getElementById('dev').hidden=false; }"); pg.wait_for_timeout(700); print('6 tick hides a stray panel', pg.evaluate(H))
     pg.evaluate("()=>startMission(MISSIONS[1])"); pg.wait_for_timeout(200); pg.keyboard.press('F9'); pg.wait_for_timeout(300)

@@ -277,7 +277,7 @@ function downedThink(u,dt){ const d=u.downed; u.flash=Math.max(0,u.flash-dt); u.
   d.t-=dt; if(d.t<=0){ u.downed=null; kill(u,null); } }
 function patchUp(m,t,dt){ const D=SQUAD.downed, d=t.downed; d.tended=0.2; d.patch+=dt/D.patch*(hasPerk(m)?1.5:1);
   m.beam=t; SFX.play('heal',m.x,m.y); if(Math.abs(t.x-m.x)>2) m.face=t.x>m.x?1:-1;
-  if(d.patch>=1){ t.downed=null; t.hp=Math.max(t.hp,t.maxHp*D.reviveHp); t.home={x:t.x,y:t.y}; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1.4,max:1.4,txt:'BACK UP',col:'#7dffbf'});
+  if(d.patch>=1){ t.downed=null; t.hp=Math.max(t.hp,t.maxHp*D.reviveHp); t.home={x:t.x,y:t.y}; backInFormation(t);   /* his old order is gone: he takes up a place in his formation as it is now */ G.fx.push({k:'text',x:t.x,y:t.y-24,t:1.4,max:1.4,txt:'BACK UP',col:'#7dffbf'});
     SFX.play('complete',t.x,t.y); G.barkNext=0; bark(t,'revived'); gainXP(m,2); G.selDirty=true; } }
 function drawDowned(u,sp,w,h,now){ const d=u.downed;
   drawShadow(u.x,u.y+2,u.r*1.3,u.r*0.45);

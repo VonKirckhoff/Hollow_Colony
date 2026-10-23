@@ -43,10 +43,11 @@ function updateUnit(u,dt){
     else if(o && o.type==='guard' && Math.hypot(u.x-o.x,u.y-o.y)>11*TILE){ u.target=null; setPath(u,o.x,o.y); }
     return;
   }
+  /* idle in a formation (after a fight, an order of his own, or back on his feet): back to his place */
+  if((!o||o.type==='hold') && u.faction==='corps' && u.formation){ u.rjT=(u.rjT||0)-dt; if(u.rjT<=0){ u.rjT=0.4; if(rejoinFormation(u)) return; } }
   if(!o) return;
-  if((o.type==='move'||o.type==='amove') && !u.path){ setPath(u,o.x,o.y); }
   if(o.type==='move' && u.faction==='corps' && d.damage) snapFire(u,dt);   /* keep walking, but shoot back on the way */
-  if(o.type==='move'||o.type==='amove'){ if(stepMove(u,dt)){ u.order=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; } }
+  if(o.type==='move'||o.type==='amove'){ if(walkOrder(u,dt)&&u.order===o){ u.order=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; } }
   else if(o.type==='guard'){ if(stepMove(u,dt)){ o.wait=(o.wait||0)-dt; if(o.wait<=0){ o.wait=rand(3,8); const a=rand(0,Math.PI*2), r=rand(1,3.5)*TILE; setPath(u,o.x+Math.cos(a)*r,o.y+Math.sin(a)*r); } } }
 }
 /* distance from a unit to the edge of its target: buildings are square blocks, not circles */
@@ -105,7 +106,7 @@ function bossThink(u,dt){
 }
 function escortThink(u,dt){
   const o=u.order;
-  if(o && (o.type==='move'||o.type==='amove')){ if(!u.path) setPath(u,o.x,o.y); if(stepMove(u,dt)){ u.order=null; } return; }
+  if(o && (o.type==='move'||o.type==='amove')){ if(walkOrder(u,dt)&&u.order===o){ u.order=null; } return; }
   if(o && o.type==='hold') return;
   u.order=null; u.follT=(u.follT||0)-dt;
   if(u.follT<=0){ u.follT=0.5; u.lead=nearestOf(u,e=>e.kind==='unit'&&e.faction===u.faction&&!e.def.escort&&e.def.damage&&dist(e,u)<12*TILE); }
@@ -161,7 +162,7 @@ function medicThink(u,dt){
     if(!lead){ u.order=null; u.home={x:u.x,y:u.y}; return; }
     if(dist(u,lead)>2*TILE) goTo(u,lead.x,lead.y,dt,0.6);
     return; }
-  if(u.order && (u.order.type==='move'||u.order.type==='amove')){ if(!u.path) setPath(u,u.order.x,u.order.y); if(stepMove(u,dt)){ u.order=null; u.home={x:u.x,y:u.y}; } return; }
+  if(u.order && (u.order.type==='move'||u.order.type==='amove')){ const mo=u.order; if(walkOrder(u,dt)&&u.order===mo){ u.order=null; u.home={x:u.x,y:u.y}; } return; }
   if(t && !inRange) goTo(u,t.x,t.y,dt,0.6);
   else if(!t && (!u.order||u.order.type==='hold') && formationSpot(u)){ const p=formationSpot(u), d=Math.hypot(u.x-p.x,u.y-p.y); if(d>TILE*0.8) u.rejoin=true; if(u.rejoin&&d>4){ goTo(u,p.x,p.y,dt); } else { u.rejoin=false; u.home={x:u.x,y:u.y}; } }   /* patient done: back into his place in the formation */
   else if(!t && u.home && Math.hypot(u.x-u.home.x,u.y-u.home.y)>2*TILE) goTo(u,u.home.x,u.home.y,dt);

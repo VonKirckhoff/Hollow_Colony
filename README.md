@@ -182,7 +182,7 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - De **Field Manual** is ook te openen vanuit het pauzemenu (*Field manual*); *Back* of Esc brengt je terug naar het pauzemenu, en tijdens een missie blijft de muziek stil.
 - **Reset veterans** (knop op het Veterans-scherm, twee keer klikken) wist het rooster en de Cenotaph, maar niet je campagnevoortgang. **Reset campaign** wist allebei.
 - **Unieke namen:** geen twee soldaten hebben dezelfde naam: niet in het rooster, niet op de Cenotaph en niet in de lopende missie. Pas als alle namen uit `SURNAMES` op zijn, krijgt een nieuwe soldaat een voorletter ("J. Torres"). Een bewaard rooster met dubbele namen wordt bij het laden rechtgezet.
-- **Reset campaign** wist ook het rooster. In skirmish wordt niets bewaard.
+- **Reset campaign** wist ook het rooster en de bewaarde missie. In skirmish wordt niets bewaard.
 - Instelbaar bovenaan in de code: `RANKS`, `VET_XP`, `ROSTER_MAX` en de namenlijst `SURNAMES`.
 
 ### Bovenbalk
@@ -223,7 +223,7 @@ Midden in de bovenbalk staan de **titel van de missie** en de **mode**: welke ca
 Eenheden schieten altijd eerst op **vijandelijke eenheden** en pas daarna op gebouwen, ook als je zelf een hive als doelwit aanklikte. Zijn de aanvallers dood, dan gaan ze vanzelf verder op het gebouw. Dezelfde regel geldt voor de Swarm.
 
 ### Formatie
-Een groep die je verplaatst houdt zijn vorm: elke eenheid bewaart haar positie ten opzichte van het midden van de groep. De hele groep loopt op het tempo van de traagste eenheid.
+Een groep **zonder** tactische formatie die je verplaatst, houdt zijn vorm: elke eenheid bewaart haar positie ten opzichte van het midden van de groep. De hele groep loopt op het tempo van de traagste eenheid. (Een squad **in** een tactische formatie marcheert als één geheel, zie hieronder.)
 - Staat de groep te ver uit elkaar (`maxRadius`), dan schuift ze samen tot een blok.
 - Staan eenheden te dicht op elkaar (`minGap`), dan worden ze ook netjes in een blok gezet, zodat er nooit eenheden onzichtbaar op elkaar staan.
 - Valt een plek op een rots, dan neemt die eenheid de dichtstbijzijnde vrije plek.
@@ -240,11 +240,19 @@ Selecteer minstens twee eenheden en druk **Z** (cirkel), **X** (wig/speer), **V*
 - **Richting kiezen:** houd de rechtermuisknop ingedrukt waar de squad moet staan en sleep in de richting waarin ze moet kijken. Tijdens het slepen zie je de plekken en een pijl. Een gewone rechtsklik (zonder slepen) werkt zoals altijd; dan kijkt de formatie in de looprichting.
 - **Kleine groepen:** heeft een cirkel of vierkant minder dan vier strijders, dan staan Medics en Engineers mee op de rand (afwisselend met de strijders); anders zou de groep in een rechte lijn staan.
 - **Ondersteuning in het midden:** Medics, Engineers en escortes (zoals Dr. Maas) staan beschermd in het centrum. Bij de wig staan ze net achter de punt.
-- **Wig:** Pyros komen vooraan, dan Gunners, en Troopers vullen de vleugels. De punt wijst altijd in de looprichting.
-- **Cirkel en vierkant:** elke strijder neemt de dichtstbijzijnde plek op de rand.
-- De squad **houdt de formatie** bij elke verplaatsing en attack-move, en draait mee met de looprichting.
-- Druk dezelfde toets nog eens om de formatie los te laten. Selecteer je een groep met eenheden die niet in de formatie zaten, dan gebruikt die groep de gewone formatie.
-- De vormen staan in `FORMATIONS` en `formationSlots()` in de code. De afstand tussen eenheden volgt `FORMATION.spacing`.
+- **Wig:** Pyros komen vooraan (de punt), dan Gunners, en Troopers vullen de vleugels. De punt wijst in de looprichting en loopt ook onderweg vooraan.
+- **Marcheren als één geheel:** een squad in formatie verplaatst zich als één blok. Een onzichtbaar gidspunt volgt het pad op het tempo van de traagste soldaat (× `FORMATION.march`), en elke soldaat loopt naar zijn eigen plek rond dat gidspunt. Zo blijft de vorm onderweg staan, en loopt de punt van een wig echt vooraan.
+  - Raakt iemand achterop, dan vertraagt het gidspunt (nooit tot stilstand: tot `FORMATION.slowest` van het tempo), en de achterblijver loopt sneller om bij te benen (`catchUp`).
+  - Bij een **attack-move** stopt de squad om te vechten en marcheert daarna verder. Een **Sweep** (lijn in de aanval) loopt door en vuurt al lopend.
+  - Een wig, lijn, zigzag of je eigen formatie **draait** mee met het pad (rustig, `FORMATION.turn`); een cirkel en een vierkant houden hun richting.
+  - In een **smalle doorgang** knijpt de formatie samen naar het midden; wie dan nog geen plek heeft, volgt het gidspunt in een rij. Na de doorgang gaan ze weer open. Bij aankomst in een te kleine ruimte wordt de vorm kleiner (tot de helft) voor iemand naar een losse plek moet, en schuift ze nooit door een muur naar de andere kant.
+- **Wie waar staat:** de rol gaat voor (Medics en Engineers in het midden of erachter, Pyros en Gunners vooraan in de wig). Binnen die rol worden de plekken zo verdeeld dat **iedereen aan zijn eigen kant van de squad blijft**: de goedkoopste verdeling, zodat niemand dwars door de squad loopt om met een ander van plaats te wisselen. Dat geldt bij elke verplaatsing, ook als de formatie omkeert.
+- **Nieuwe formatie of afstand onderweg:** druk je een formatietoets (of E) terwijl de squad loopt, dan nemen ze de nieuwe vorm aan **al lopend**. Ze stoppen niet en lopen door naar dezelfde bestemming.
+- **Terug in de rij na een gevecht:** een soldaat die niets te doen heeft (na een gevecht, of als hij een vijand achternaging) gaat terug naar zijn plek in de formatie. Geef je de squad zelf een aanval op één vijand (rechtsklik op de vijand), dan blijven ze na het gevecht staan waar ze zijn; bij de volgende verplaatsing gaan ze weer in formatie.
+- **Weer recht na neergaan:** een soldaat die neerging en door een Medic wordt opgelapt, krijgt een plek in de formatie zoals die **nu** is. Is de squad intussen verder gestapt, dan maakt ze plaats voor hem; hij loopt niet meer naar een oude plek.
+- **Cirkel en vierkant:** elke strijder blijft op zijn eigen plek van de rand; bij een verplaatsing wisselt niemand van plaats.
+- Druk dezelfde toets nog eens om de formatie los te laten (onderweg lopen ze dan zonder formatie door naar dezelfde plek). Selecteer je een groep met eenheden die niet in de formatie zaten, dan gebruikt die groep de gewone formatie.
+- Code: js/engine/19b-formations.js. De vormen staan in `FORMATIONS` en `formationSlots()`, het verdelen van de plekken in `assignPlaces()` (met de Hongaarse methode in `assignCheapest()`), het marcheren in `marchTo()`, `marchStep()` en `walkOrder()`. De afstand tussen eenheden volgt `FORMATION.spacing`.
 
 ### Medic: triage
 De levensbalken hebben drie zones: **rood** (≤ 25%), **oranje** (25–50%) en **groen** (> 50%).
@@ -407,7 +415,7 @@ Een oranje ruit met label toont waar je naartoe moet. Ze knippert op de minimap,
 
 **Voortgang:**
 - De campagnelijst toont bij elke gewonnen missie de **moeilijkheidsgraad** (Easy, Normal of Hard) en je beste tijd. Win je later op een hogere moeilijkheidsgraad, dan wordt die bewaard. Ook de briefing en het eindscherm tonen het.
-- **Reset campaign** onderaan de campagnelijst wist alle voortgang. Je moet twee keer klikken binnen 4 seconden, zodat het niet per ongeluk gebeurt.
+- **Reset campaign** onderaan de campagnelijst wist alle voortgang, en ook de bewaarde missie (*Continue* verdwijnt). Je moet twee keer klikken binnen 4 seconden, zodat het niet per ongeluk gebeurt.
 
 De missies zijn nu bewust langer gemaakt. Sentry-limieten per missie: Hold Kappa 4, Burn the Brood 5, The Hollow Colony 1, Brood Mother 6, High Ground 8 (waarvan 2 al bij de start). Een missie wordt vrijgegeven als je de vorige wint. De voortgang wordt in de browser bewaard.
 
@@ -548,6 +556,7 @@ js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
                                 pathfinding, beweging, gevecht, gedrag, gebouwen, economie,
                                 Swarm-AI, fog of war, mission API, update, berichten, tekenen,
                                 HUD, bevelen, invoer, schermen, hoofdlus, muziek
+                                (19b-formations.js: tactische formaties en marcheren als één geheel)
                                 (25-hive-life.js: schimmel rond hives, eieren, Husks)
                                 (26-swarm-command.js: spelen als de Swarm, de Lunar Corps als computer)
                                 (27-training.js: één wezen besturen van ei tot hive)
@@ -705,13 +714,16 @@ Een `punt` is een kaartteken (`'P'`, `'1'`, `'a'`) of een tegelcoördinaat `{x, 
 
 ## Instelbare waarden
 
-De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` staat in `js/engine/19-commands.js`, `HP_ZONES` in `js/engine/09-unit-behaviour.js`, `DIFFICULTY` in `js/content/difficulty.js`, en de missiewaarden in het bestand van die missie.
+De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` staat in `js/engine/19b-formations.js`, `HP_ZONES` in `js/engine/09-unit-behaviour.js`, `DIFFICULTY` in `js/content/difficulty.js`, en de missiewaarden in het bestand van die missie.
 
 | Waar | Waarde | Betekenis |
 |---|---|---|
 | `FORMATION` | `maxRadius` (4.5) | Hoe ver (in tegels) een groep uit elkaar mag staan voor ze samenschuift |
 | | `spacing` (24) | Afstand in pixels tussen eenheden in een blokformatie |
 | | `minGap` (14) | Staan eenheden dichter bij elkaar dan dit, dan worden ze in een blok gezet |
+| | `march` (0.9) | Een squad in formatie marcheert op dit deel van het tempo van de traagste, zodat iedereen nog wat over heeft om zijn plek te houden |
+| | `catchUp` (2), `wait` (1.5), `slowest` (0.4) | Bijbenen (extra px/s per pixel naast zijn plek); vanaf hoeveel tegels achterstand het gidspunt vertraagt; hoe traag het gidspunt minstens blijft gaan |
+| | `turn` (1.8), `file` (0.9) | Hoe snel een formatie met een voorkant draait (radialen/s); afstand tussen soldaten in een rij door een smalle doorgang (× spacing) |
 | `BUILDINGS.uplink` | `captureTime` (20), `loseTime` (15) | Seconden om een baken in te nemen of te verliezen |
 | `HP_ZONES` | `red` (0.25), `orange` (0.5) | Grenzen voor de kleuren van de levensbalk en de triage van de Medic |
 | `MAX_SUPPLY` | 50 | Maximale supply |

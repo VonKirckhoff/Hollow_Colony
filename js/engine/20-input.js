@@ -26,8 +26,10 @@ cv.addEventListener('pointerdown',e=>{
 function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } const t=entityAt(wx,wy,e=>e.faction!=='corps'&&e.kind!=='crate'); const units=myUnits(); leaveFormation(units);
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
   for(const u of units){ u.stance = u.def.damage&&!u.def.heal ? 'attack' : null; u.quiet=false; }   /* an attack order also lifts hold fire */   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
-  if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
-  for(const u of medics){ if(squad.length){ u.order={type:'support',squad}; u.path=null; } else moveGroup([u],wx,wy,'move'); }
+  if(!t && squad.length && sharedForm(units)) moveGroup(units,wx,wy,'amove');   /* a squad in formation attack-moves as one body: its Medics walk in their place and heal on the way */
+  else { if(t) formationsEngage(units);
+    if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
+    for(const u of medics){ if(squad.length){ u.order={type:'support',squad}; u.path=null; } else moveGroup([u],wx,wy,'move'); } }
   SFX.play('attack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.4,col:'#ff5a4f'}); ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }
 window.addEventListener('pointermove',e=>{
   ui.mouse.x=e.clientX; ui.mouse.y=e.clientY; ui.mouse.inWin=true;
@@ -114,8 +116,7 @@ window.addEventListener('keydown',e=>{
       G.selDirty=true; }
     else { const g=(G.groups[n]||[]).filter(x=>!x.dead); if(g.length){ const again=G.sel.length===g.length&&g.every(x=>G.sel.includes(x)); selectEntities(g,false); uiUsed('groupsel'); if(again) centerOn(g[0].x,g[0].y);
         /* the group remembers its formation: back into it if they are not in it now */
-        const f=(G.groupForm||{})[n], us=myUnits(); if(f&&us.length>1&&!us.every(u=>u.formation===f)&&(f.shape!=='custom'||customForm())){ us.forEach(u=>u.formation=f);
-          placeFormation(us,us.reduce((s,u)=>s+u.x,0)/us.length,us.reduce((s,u)=>s+u.y,0)/us.length,f.dir,'move'); uiUsed('groupform'); toast(`Group ${n}: back in ${FORMATIONS[f.shape].name} formation.`,true); } } }
+        const f=(G.groupForm||{})[n], us=myUnits(); if(f&&us.length>1&&!us.every(u=>u.formation===f)&&(f.shape!=='custom'||customForm())){ groupFormUp(us,f); uiUsed('groupform'); toast(`Group ${n}: back in ${FORMATIONS[f.shape].name} formation.`,true); } } }
     return; }
   if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;

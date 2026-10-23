@@ -184,7 +184,9 @@ $('#intel-back').addEventListener('click',()=>goMenu(ui.intelFrom||'menu'));
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }
-  clearTimeout(resetArm); resetArm=null; ui.progress={results:{}}; ui.roster={active:[],fallen:[]}; saveRoster(); store.set('hc-progress',ui.progress); b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress erased.',true); });
+  clearTimeout(resetArm); resetArm=null; ui.progress={results:{}}; ui.roster={active:[],fallen:[]}; saveRoster(); store.set('hc-progress',ui.progress);
+  try{ localStorage.removeItem('hc-save'); }catch(e){} if(typeof refreshContinue==='function') refreshContinue();   /* the saved mission belongs to the old campaign: it goes too */
+  b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress and the saved game erased.',true); });
 let briefIdx=0;
 function briefMission(i){ return i<0?TRAINING[ui.campSide==='swarm'?'swarm':'corps']:campList()[i]; }
 function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swarm';
