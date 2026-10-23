@@ -6,7 +6,7 @@ function broodShaftSurge(g){ const all=shafts();
   if(!all.length){ const at=pick(['1','2','3']); g.spawn('drone',at,3); g.spawn('spitter',at,1); if(g.time%40<20) g.spawn('brute',at,1); return; }
   const corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'), ok=all.filter(s=>!corps.some(c=>dist(c,s)<6*TILE)), sh=pick(ok.length?ok:all);
   const at={x:Math.floor(sh.x/TILE),y:Math.floor(sh.y/TILE)};
-  g.spawn('drone',at,3); g.spawn('spitter',at,1); if(g.time%40<20) g.spawn('brute',at,1);
+  g.spawn('drone',at,5); g.spawn('spitter',at,2); if(g.time%40<20) g.spawn('brute',at,2);
   for(let j=0;j<8;j++) G.fx.push({k:'ember',x:sh.x+rand(-14,14),y:sh.y+rand(-6,8),vx:rand(-40,40),vy:rand(-90,-30),t:0.8,max:0.8,col:pick(['#8a7a6a','#a6ff4a'])});
   g.ping(at); SFX.play('hatch',sh.x,sh.y); }
 MISSIONS.push(
@@ -42,7 +42,7 @@ MISSIONS.push(
           g.say('Cmdr. Varga','The hives are down, but the ground is shaking. They are coming up the old mine shafts, west, north and east, and all of it is heading for the Command Post. Hold for two minutes!');
           for(const sh of shafts()){ const at={x:Math.floor(sh.x/TILE),y:Math.floor(sh.y/TILE)}; g.reveal(at,3,8); g.ping(at); }
           g.addObjective('final','Hold the Command Post for two minutes'); g.setTimer(120,'Hold'); g.vars.surgeT=g.time; } },
-      { repeat:true, when:g=>g.vars.final && g.timerLeft()>0 && g.time>=g.vars.surgeT, do:g=>{ g.vars.surgeT=g.time+20; broodShaftSurge(g); } },   // the last surge climbs out of the mine shafts
+      { repeat:true, when:g=>g.vars.final && g.timerLeft()>0 && g.time>=g.vars.surgeT, do:g=>{ g.vars.surgeT=g.time+12; broodShaftSurge(g); } },   // the last surge climbs out of the mine shafts
       { when:g=>g.vars.final && g.timerLeft()===0, do:g=>{ g.complete('final'); g.complete('hq'); g.win('Tycho Maw is silent. The brood is broken.'); } }
     ]
   }
