@@ -32,7 +32,7 @@ Read this first in every new session. The README holds the full design (in Dutch
   - `splittest2.py`: corps regression (must end with `('DIFF', None)`).
   - `trainc2.py corps|swarm`: plays both trainings to the end (skipping steps).
   - `save.py`: save, reload, continue, compare state.
-  - `fm4.py`: formations, groups, sweep. `relic.py`: relics and eggs. `matri.py`: Matriarch rooting. `rdsave.py`: Real death iron mode (save and quit, one-time Continue, fallen at once, quit = lost mission). `devmenu.py`: the dev panel closes when you leave a mission. `rdtrack.py`: Real death as its own campaign (must end with `ALL OK`). `formations.py`: the formation engine (no swaps, shape on the march, re-forming on the move, fights, save, the ruins of Hollow Colony); must end with `ALL OK`.
+  - `fm4.py`: formations, groups, sweep. `relic.py`: relics and eggs. `matri.py`: Matriarch rooting. `rdsave.py`: Real death iron mode (save and quit, one-time Continue, fallen at once, quit = lost mission). `devmenu.py`: the dev panel closes when you leave a mission. `rdtrack.py`: Real death as its own campaign (must end with `ALL OK`). `broodshafts.py`: Burn the Brood's mine shafts (waves and the last surge come up out of them; must end with `ALL OK`). `formations.py`: the formation engine (no swaps, shape on the march, re-forming on the move, fights, save, the ruins of Hollow Colony); must end with `ALL OK`.
 - Music: `MUSIC.renderOffline(sec,id)` renders a track; compare peak/RMS with 'hollow'.
 - Always look at a screenshot when something is visual.
 
