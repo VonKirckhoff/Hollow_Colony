@@ -41,17 +41,19 @@ function buildDefeatRow(){ const rd=!!ui.realDeath, nRd=Object.keys(ui.rdProgres
   $('#defeat-row').classList.toggle('real',rd);
   $('#rd-note').innerHTML=rd?`<b>☠ Real death</b> is a campaign of its own: it starts at mission 1 with fresh soldiers, and has its own Veterans and Cenotaph. Whoever falls is gone the moment he falls, also when you lose the mission; survivors keep the experience they earned. Iron mode: saving quits the mission and Continue works once; quitting or restarting counts as a lost mission. The missions go in order. Your normal campaign (${nN} of ${MISSIONS.length}) is kept: switch back any time.`
     :`Lose a mission and the roster is restored: the same soldiers, with the experience they had, are ready for another try. ☠ Real death is a campaign of its own${nRd?` (${nRd} of ${MISSIONS.length} done)`:''}: from mission 1 with fresh soldiers. This campaign is kept.`; }
-$('#defeat-row').addEventListener('click',e=>{ const b=e.target.closest('[data-rd]'); if(!b) return; const rd=b.dataset.rd==='1'; if(rd===!!ui.realDeath) return; setTrack(rd); buildCampaign();
+$('#defeat-row').addEventListener('click',e=>{ const b=e.target.closest('[data-rd]'); if(!b) return; const rd=b.dataset.rd==='1'; if(rd===!!ui.realDeath) return; setTrack(rd); heroEdit=false; heroType=null; heroSex=null; buildCampaign();
   toast(rd?'Real death campaign: from mission 1, with fresh soldiers. The fallen are gone, win or lose. Your normal campaign is kept.':'Back to your normal campaign: a lost mission does not cost you anyone.',true); });
 /* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
 let heroEdit=false, heroType=null, heroSex=null;
+/* your soldier in the other campaign (normal or Real death): the enlist form starts with his name, sex and type */
+function otherHero(){ try{ const r=store.get(rosterKey(!ui.roster.rd),{}); return (r.active||[]).find(v=>v.hero)||null; }catch(e){ return null; } }
 function buildHero(){
-  const el=$('#hero-card'), h=heroOf();
+  const el=$('#hero-card'), h=heroOf(), o=h?null:otherHero();
   if(h && !heroEdit){ el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><img alt="" src="${iconUrl(h.type)}" style="width:28px;height:28px;image-rendering:pixelated"><span class="hname">★ ${RANKS[h.rank].abbr} ${h.name}</span><span class="rdim">${h.sex==='f'?'♀ Woman':'♂ Man'} · ${UNITS[h.type].name} · ${h.missions||0} mission${h.missions===1?'':'s'} · ${h.kills||0} kills</span><span style="flex:1"></span><button class="btn" type="button" id="hero-edit">Edit</button></div>`; return; }
-  heroType=heroType||(h?h.type:'trooper'); heroSex=heroSex||(h&&h.sex)||'m'; const locked=h&&(h.missions||0)>0, P=f=>pron({sex:heroSex},f);
+  heroType=heroType||(h?h.type:o&&HERO_TYPES.includes(o.type)?o.type:'trooper'); heroSex=heroSex||(h&&h.sex)||(o&&o.sex)||'m'; const locked=h&&(h.missions||0)>0, P=f=>pron({sex:heroSex},f);
   el.innerHTML=`<div class="lbl">${h?'Edit your soldier':'Enlist your own soldier'}</div>
     <p class="lede" style="margin:0">${h?`Rename ${P('him')} any time. ${P('his').replace(/^./,c=>c.toUpperCase())} type is fixed once ${P('he')} has been on a mission.`:`Give ${P('him')} a name, pick man or woman (that sets the voice) and pick ${P('his')} job. ${P('He')} goes on every campaign mission, marked with a gold star, and earns rank like any veteran. If ${P('he')} falls, you can enlist a new one.`}</p>
-    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" value="${h?h.name:''}" aria-label="Soldier name">
+    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" value="${h?h.name:o?o.name:''}" aria-label="Soldier name">
       <span class="hsex" role="group" aria-label="Man or woman"><button type="button" class="htype ${heroSex==='m'?'on':''}" data-hsex="m" aria-pressed="${heroSex==='m'}">♂ Man</button><button type="button" class="htype ${heroSex==='f'?'on':''}" data-hsex="f" aria-pressed="${heroSex==='f'}">♀ Woman</button></span></div>
     <div class="hrow">${HERO_TYPES.map(t=>`<button type="button" class="htype ${t===heroType?'on':''}" data-htype="${t}" ${locked&&t!==h.type?'disabled':''}><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</button>`).join('')}</div>
     <div class="hrow"><button class="btn primary" type="button" id="hero-save">${h?'Save':'Enlist'}</button>${h?'<button class="btn" type="button" id="hero-cancel">Cancel</button>':''}</div>`;
@@ -61,7 +63,7 @@ $('#hero-card').addEventListener('click',e=>{
   if(e.target.closest('#hero-cancel')){ heroEdit=false; buildHero(); return; }
   const sx=e.target.closest('[data-hsex]'); if(sx){ heroSex=sx.dataset.hsex; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; voiceSample(heroSex); return; }
   const t=e.target.closest('[data-htype]'); if(t&&!t.disabled){ heroType=t.dataset.htype; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; return; }
-  if(e.target.closest('#hero-save')){ const err=setHero($('#hero-name').value,heroType||'trooper',heroSex||'m'); if(err){ toast(err); return; } heroEdit=false; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
+  if(e.target.closest('#hero-save')){ const err=setHero($('#hero-name').value,heroType||'trooper',heroSex); if(!err){ heroType=null; heroSex=null; } if(err){ toast(err); return; } heroEdit=false; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return;
