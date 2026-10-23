@@ -27,7 +27,7 @@ MISSIONS.push(
       shafts:[ {x:2,y:21,wall:'w'}, {x:36,y:3,wall:'n'}, {x:69,y:18,wall:'e'} ] },   // old mine shafts in the west, north and east ridges: with the hives gone, the Swarm comes up out of these
     limits:{ sentry:5 },
     landingZone:{ tx:40, ty:41, max:14, delay:25 },   // pad east of the Command Post: order replacements, never more than the 14 you start with
-    swarm:{ biomass:80, rate:0.5, guardMax:6, guardEvery:12, aggro:8, aggroBrood:55, waves:{ first:140, every:85, budget:80, growth:32 } },
+    swarm:{ biomass:80, rate:0.5, guardMax:6, guardEvery:12, aggro:8, aggroBrood:55, waves:{ first:140, every:85, budget:100, growth:42 } },
     objectives:[
       { id:'hives', text:'Destroy all hives (0/5)' },
       { id:'hq',    text:'The Command Post must survive' }
