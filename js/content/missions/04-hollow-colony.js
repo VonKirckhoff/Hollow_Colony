@@ -18,7 +18,7 @@ MISSIONS.push(
     limits:{ sentry:1 },
     noBuild:['sentry'],   /* one Sentry Gun: the Engineer cannot build one here; a lost sentry is replaced by dropship on the landing pad */
     tough:{ sentry:{ hp:2, armor:0.3 }, husk:{ hp:1.6, armor:0.3 } },   /* the one sentry and the Husks take a lot more killing here */
-    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null, shaftScale:1,   /* no waves, but the hives watch the road; with the hives gone the rescue waves climb out of the wall tunnels, just as big */
+    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:9, aggroBrood:60, aggroCooldown:15, waves:null,   /* no waves, but the hives watch the road; with the hives gone the rescue waves climb out of the wall tunnels */
       hunt:{ every:25, afterEvery:18, budget:60, afterBudget:80, grow:0.25, growMax:14 } },   /* the colony is theirs: the hunt comes sooner, bigger and keeps growing longer than elsewhere */
     objectives:[ { id:'lab', text:'Find Dr. Maas in the research lab' } ],
     // Dropship timer starts at the rescue; the mission is won once it has landed and Dr. Maas is on the pad.

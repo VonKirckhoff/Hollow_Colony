@@ -26,7 +26,7 @@ MISSIONS.push(
       buildings:[], hives:['c','a'],
       shafts:[ {...DUST_SHAFT_E, wall:'e'}, {...DUST_SHAFT_W, wall:'w'} ] },   // old mine shafts in the canyon walls: the Swarm keeps coming up out of these
     landingZone:{ tx:45, ty:37, scripted:true },   // the station pad: only this script sends the dropship
-    swarm:{ biomass:30, rate:0.3, guardMax:4, guardEvery:16, aggro:0, waves:null, shaftScale:0.8, unlock:{ spitter:300, brute:9999 } },   /* aggro:0 until the blast doors open */
+    swarm:{ biomass:30, rate:0.3, guardMax:4, guardEvery:16, aggro:0, waves:null, unlock:{ spitter:300, brute:9999 } },   /* aggro:0 until the blast doors open */
     objectives:[
       { id:'reach',  text:'Reach Kappa Station' },
       { id:'crates', text:'Recover 3 salvage crates (0/3)', optional:true }

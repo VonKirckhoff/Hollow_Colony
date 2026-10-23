@@ -5,17 +5,17 @@
    Hover a name to see what it does. Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
    loads; ↺ puts one value back, "Reset all" puts everything back. "Export" lists every change so you can copy it.
    Unit stats count for units that appear after the change; health is also adjusted on the units already on the map. */
-const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, SWARM_PLAY, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, UNITS, BUILDINGS };
+const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, SWARM_PLAY, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, UNITS, BUILDINGS };
 const DEV_TABS = [
   { id:'live', name:'Live' }, { id:'mission', name:'Mission' },
   { id:'diff', name:'Difficulty', roots:['DIFFICULTY','SWARM_DIFF'] },
-  { id:'swarm', name:'Swarm', roots:['WAVES','HIVE_DEFENCE','TACTICS','CREEP','HUSK','EGG','MOLT','SWARM_PLAY','AVATAR'] },
+  { id:'swarm', name:'Swarm', roots:['WAVES','HIVE_DEFENCE','TACTICS','CREEP','HUSK','EGG','MOLT','SWARM_PLAY','AVATAR','BROOD_SURGE'] },
   { id:'squad', name:'Squad', roots:['SQUAD','FORMATION','AURA','RISEN','VET_XP'] },
   { id:'units', name:'Units' } ];
 /* mission settings that may be missing in a mission but can be set (empty = the default) */
 const DEV_MISSION_KEYS = ['start.salvage','flares','landingZone.max','landingZone.delay','limits.sentry',
   'swarm.biomass','swarm.rate','swarm.guardMax','swarm.guardEvery','swarm.aggro','swarm.aggroBrood','swarm.brood','swarm.hiveRage','swarm.maxAlive',
-  'swarm.waves.first','swarm.waves.every','swarm.waves.budget','swarm.waves.growth','swarm.waves.growWaves','swarm.waves.max',
+  'swarm.waves.first','swarm.waves.every','swarm.waves.budget','swarm.waves.growth','swarm.waves.growWaves','swarm.waves.max','swarm.shaftScale',
   'swarm.unlock.spitter','swarm.unlock.brute'];
 const devClone=o=>JSON.parse(JSON.stringify(o,(k,v)=>typeof v==='function'?undefined:v));
 const DEV_ORIG={}; for(const [k,v] of Object.entries(DEV_ROOTS)) DEV_ORIG[k]=devClone(v);
