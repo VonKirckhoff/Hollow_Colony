@@ -10,5 +10,5 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 window.addEventListener('resize',resize);
-ui.roster=loadRoster(); trackerLabel(); voicesLabel(); initVoiceVolume(); loadCustomMaps(); resize(); goMenu('menu'); requestAnimationFrame(frame);
+ui.roster=loadRoster(); if(heroOf()) syncHeroOther(heroOf()); else ensureHero();   /* your soldier has the same name in both campaigns */ trackerLabel(); voicesLabel(); initVoiceVolume(); loadCustomMaps(); resize(); goMenu('menu'); requestAnimationFrame(frame);
 window.__hc={ get G(){ return G; }, startMission, MISSIONS, skirmishMission, update, moveGroup, selectEntities, orderDrop:(...a)=>orderDrop(...a), troopCount:()=>troopCount(), makeBuilding:(...a)=>makeBuilding(...a), fielded:(t)=>fielded(t), atLimit:(t)=>atLimit(t), startPlacing:(...a)=>startPlacing(...a), get ui(){ return ui; } };

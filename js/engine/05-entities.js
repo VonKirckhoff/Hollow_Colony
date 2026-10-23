@@ -34,7 +34,7 @@ function loadRoster(rd=ui.realDeath){ const r=store.get(rosterKey(rd),{}); r.act
 function saveRoster(){ store.set(rosterKey(ui.roster.rd),ui.roster); }
 const emptyRoster=()=>({active:[],fallen:[],rd:!!(ui.roster&&ui.roster.rd)});
 /* switch between the normal campaign and the Real death campaign (its own progress from mission 1, its own roster) */
-function setTrack(rd){ rd=!!rd; ui.realDeath=rd; store.set('hc-real-death',rd); if(!ui.roster||!!ui.roster.rd!==rd) ui.roster=loadRoster(rd); }
+function setTrack(rd){ rd=!!rd; ui.realDeath=rd; store.set('hc-real-death',rd); if(!ui.roster||!!ui.roster.rd!==rd){ ui.roster=loadRoster(rd); ensureHero(); } }
 function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
   for(const v of ui.roster.active) t.add(v.name); for(const v of ui.roster.fallen) t.add(v.name); return t; }
 function freshName(){ const t=takenNames(), n=STARTER_NAMES.find(x=>!t.has(x))||uniqueName(t); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
@@ -177,8 +177,16 @@ function setHero(name,type,sex){
   sex=sex==='f'?'f':'m';
   if(h){ if(h.type!==type && (h.missions||0)>0) return `Your soldier has seen action: ${pron(h,'his')} type can no longer change.`; h.name=name; h.type=type; h.sex=sex; }
   else ui.roster.active.unshift({ id:'hero-'+Date.now().toString(36), name, type, sex, rank:0, xp:0, kills:0, missions:0, hero:true });
-  saveRoster(); return null;
+  saveRoster(); syncHeroOther(heroOf()); return null;
 }
+/* Your own soldier is one person in both campaigns (normal and Real death): the same name and sex in both.
+   Rank, XP, kills and missions belong to each campaign: in a campaign where he is new, he starts from zero. */
+function otherRoster(){ const rd=!ui.roster.rd, r=store.get(rosterKey(rd),{}); r.active=r.active||[]; r.fallen=r.fallen||[]; r.rd=rd; return r; }
+function syncHeroOther(h){ if(!h) return; const o=otherRoster(), oh=o.active.find(v=>v.hero); if(!oh||(oh.name===h.name&&oh.sex===h.sex)) return;
+  for(const v of o.active) if(!v.hero&&v.name===h.name){ const busy=new Set([...o.active,...o.fallen].map(x=>x.name)); busy.add(h.name); v.name=uniqueName(busy); }   /* a namesake there gets another name */
+  oh.name=h.name; oh.sex=h.sex; store.set(rosterKey(o.rd),o); }
+/* no soldier of your own in this campaign yet, but there is one in the other: he joins here too, from zero */
+function ensureHero(){ if(heroOf()) return; const oh=otherRoster().active.find(v=>v.hero); if(oh) setHero(oh.name,HERO_TYPES.includes(oh.type)?oh.type:'trooper',oh.sex); }
 
 /* ---- zombie mode: raise a fallen soldier from the Cenotaph ---- */
 function setZombie(on){ ui.zombie=!!on; store.set('hc-zombie',ui.zombie); }

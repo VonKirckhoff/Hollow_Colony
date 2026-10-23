@@ -82,7 +82,7 @@ function buildVeterans(){
 let vetArm=null;
 $('#btn-reset-vets').addEventListener('click',()=>{ const b=$('#btn-reset-vets');
   if(!vetArm){ b.classList.add('armed'); b.textContent='Click again to erase all veterans'; vetArm=setTimeout(()=>{ vetArm=null; b.classList.remove('armed'); b.textContent='Reset veterans'; },4000); return; }
-  clearTimeout(vetArm); vetArm=null; ui.roster=emptyRoster(); saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased.',true); });
+  clearTimeout(vetArm); vetArm=null; ui.roster=emptyRoster(); saveRoster(); ensureHero(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased.',true); });
 /* The Cenotaph: every fallen veteran's name in stone. In zombie mode (Halloween) the fallen can be raised again. */
 function buildCenotaph(){
   const R=ui.roster, z=ui.zombie;
@@ -192,7 +192,7 @@ $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }
   clearTimeout(resetArm); resetArm=null; const rd=!!ui.realDeath;   /* resets the campaign you are looking at: the normal one or the Real death one */
   if(rd){ ui.rdProgress={results:{}}; store.set('hc-progress-rd',ui.rdProgress); } else { ui.progress={results:{}}; store.set('hc-progress',ui.progress); }
-  ui.roster=emptyRoster(); saveRoster();
+  ui.roster=emptyRoster(); saveRoster(); ensureHero();
   const sv=typeof savedInfo==='function'?savedInfo():null; if(sv&&!!sv.rd===rd){ try{ localStorage.removeItem('hc-save'); }catch(e){} }   /* the saved mission of this campaign goes too */
   if(typeof refreshContinue==='function') refreshContinue();
   b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast(rd?'Real death campaign erased: from mission 1 again.':'Campaign progress and the saved game erased.',true); });
