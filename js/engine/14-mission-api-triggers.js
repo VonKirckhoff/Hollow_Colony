@@ -109,7 +109,7 @@ function afterDefeat(){ return !!(G&&G.over&&!G.over.win); }
 function endGame(win,text){
   if(G.over) return; G.over={win,text,at:performance.now()}; SFX.play(win?'win':'lose');
   if(win || G.realDeath) settleRoster();   /* real death: a lost mission counts too */
-  if(win && G.mission.id!=='skirmish'){ G.prevBest=ui.progress.results[G.mission.id]?{...ui.progress.results[G.mission.id]}:null; recordWin(G.mission.id,G.diffKey,Math.round(G.time)); G.grandWon=checkGrand(); }
+  if(win && G.mission.id!=='skirmish'){ G.prevBest=resultOf(G.mission.id,G.realDeath)?{...resultOf(G.mission.id,G.realDeath)}:null; recordWin(G.mission.id,G.diffKey,Math.round(G.time)); G.grandWon=checkGrand(); }
   ui.placing=null; ui.amove=false;
   setTimeout(()=>{ if(G&&G.over) showEnd(); },1800);
 }

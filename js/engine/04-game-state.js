@@ -1,18 +1,23 @@
 'use strict';
 /* ---------- 2c. game state ---------- */
 let G=null;
-/* Campaign progress: per mission the best difficulty it was won on, the best time and the date. */
+/* Campaign progress: per mission the best difficulty it was won on, the best time and the date.
+   The Lunar Corps campaign is kept twice: the normal one (hc-progress) and the Real death campaign (hc-progress-rd), which is a run
+   of its own from mission 1 with its own roster (hc-roster-rd). Training and the Swarm campaign are only in hc-progress. */
 const DIFF_RANK={ easy:1, normal:2, hard:3 };
-function loadProgress(){ const p=store.get('hc-progress',{}); p.results=p.results||{};
+function loadProgress(key='hc-progress'){ const p=store.get(key,{}); p.results=p.results||{};
   for(const id of p.done||[]) if(!p.results[id]) p.results[id]={ diff:'normal', time:null, at:null };   // older saves
   delete p.done; return p; }
-function isDone(id){ return !!ui.progress.results[id]; }
-function recordWin(id,diff,time){ const r=ui.progress.results[id];
-  if(!r || DIFF_RANK[diff]>DIFF_RANK[r.diff]) ui.progress.results[id]={ diff, time, at:Date.now() };
+const isCorpsMission=id=>MISSIONS.some(m=>m.id===id);
+/* the result of a mission in a campaign: rd = the Real death campaign (default: the one chosen on the campaign screen) */
+function resultOf(id,rd=ui.realDeath){ return ((rd&&isCorpsMission(id))?ui.rdProgress:ui.progress).results[id]||null; }
+function isDone(id,rd){ return !!resultOf(id,rd); }
+function recordWin(id,diff,time){ const rd=!!(G&&G.realDeath)&&isCorpsMission(id), P=rd?ui.rdProgress:ui.progress, r=P.results[id];
+  if(!r || DIFF_RANK[diff]>DIFF_RANK[r.diff]) P.results[id]={ diff, time, at:Date.now() };
   else if(diff===r.diff && (r.time==null||time<r.time)) r.time=time;
-  store.set('hc-progress',ui.progress); }
+  store.set(rd?'hc-progress-rd':'hc-progress',P); }
 const ui={ mode:'menu', mouse:{x:0,y:0,wx:0,wy:0,inWin:false}, drag:null, pan:null, placing:null, amove:false, keys:{}, dpr:1, vw:0, vh:0, hudH:0,
-  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.3), zombie:store.get('hc-zombie',false), realDeath:store.get('hc-real-death',false), campSide:store.get('hc-camp-side','corps') /* on defeat: false = retry with the same soldiers, true = the fallen are gone */, skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
+  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.3), zombie:store.get('hc-zombie',false), realDeath:store.get('hc-real-death',false), campSide:store.get('hc-camp-side','corps') /* on defeat: false = retry with the same soldiers, true = the fallen are gone */, skMap:'kappa', progress:loadProgress(), rdProgress:loadProgress('hc-progress-rd'), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
 let NEXT_ID=1;
 
 function newGame(mission, diffKey){

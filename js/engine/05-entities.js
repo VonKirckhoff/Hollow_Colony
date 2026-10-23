@@ -24,13 +24,17 @@ function uniqueName(taken){
   const free=SURNAMES.filter(n=>!taken.has(n)); if(free.length) return pick(free);
   for(const L of NAME_INITIALS){ const f=SURNAMES.filter(n=>!taken.has(`${L}. ${n}`)); if(f.length) return `${L}. ${pick(f)}`; }
   for(let i=2;;i++){ const n=`${pick(SURNAMES)} ${i}`; if(!taken.has(n)) return n; } }
-function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[]; r.fallen=r.fallen||[];
+const rosterKey=rd=>rd?'hc-roster-rd':'hc-roster';   /* the Real death campaign has a roster of its own */
+function loadRoster(rd=ui.realDeath){ const r=store.get(rosterKey(rd),{}); r.active=r.active||[]; r.fallen=r.fallen||[]; r.rd=!!rd;
   // names no longer in SURNAMES, and doubles, get a fresh unique name
   const all=[...r.active,...r.fallen], taken=new Set();
   all.sort((a,b)=>(b.hero||b.risen?1:0)-(a.hero||a.risen?1:0));
   for(const v of all){ if((v.hero||v.risen)&&!taken.has(v.name)){ taken.add(v.name); continue; } if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
   return r; }
-function saveRoster(){ store.set('hc-roster',ui.roster); }
+function saveRoster(){ store.set(rosterKey(ui.roster.rd),ui.roster); }
+const emptyRoster=()=>({active:[],fallen:[],rd:!!(ui.roster&&ui.roster.rd)});
+/* switch between the normal campaign and the Real death campaign (its own progress from mission 1, its own roster) */
+function setTrack(rd){ rd=!!rd; ui.realDeath=rd; store.set('hc-real-death',rd); if(!ui.roster||!!ui.roster.rd!==rd) ui.roster=loadRoster(rd); }
 function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
   for(const v of ui.roster.active) t.add(v.name); for(const v of ui.roster.fallen) t.add(v.name); return t; }
 function freshName(){ const t=takenNames(), n=STARTER_NAMES.find(x=>!t.has(x))||uniqueName(t); (G.usedNames=G.usedNames||new Set()).add(n); return n; }

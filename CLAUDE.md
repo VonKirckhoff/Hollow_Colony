@@ -32,7 +32,7 @@ Read this first in every new session. The README holds the full design (in Dutch
   - `splittest2.py`: corps regression (must end with `('DIFF', None)`).
   - `trainc2.py corps|swarm`: plays both trainings to the end (skipping steps).
   - `save.py`: save, reload, continue, compare state.
-  - `fm4.py`: formations, groups, sweep. `relic.py`: relics and eggs. `matri.py`: Matriarch rooting. `rdsave.py`: Real death iron mode (save and quit, one-time Continue, fallen at once, quit = lost mission). `devmenu.py`: the dev panel closes when you leave a mission. `formations.py`: the formation engine (no swaps, shape on the march, re-forming on the move, fights, save, the ruins of Hollow Colony); must end with `ALL OK`.
+  - `fm4.py`: formations, groups, sweep. `relic.py`: relics and eggs. `matri.py`: Matriarch rooting. `rdsave.py`: Real death iron mode (save and quit, one-time Continue, fallen at once, quit = lost mission). `devmenu.py`: the dev panel closes when you leave a mission. `rdtrack.py`: Real death as its own campaign (must end with `ALL OK`). `formations.py`: the formation engine (no swaps, shape on the march, re-forming on the move, fights, save, the ruins of Hollow Colony); must end with `ALL OK`.
 - Music: `MUSIC.renderOffline(sec,id)` renders a track; compare peak/RMS with 'hollow'.
 - Always look at a screenshot when something is visual.
 
@@ -40,5 +40,5 @@ Read this first in every new session. The README holds the full design (in Dutch
 - Corps campaign 8 missions + training, Swarm campaign 3 missions + training (more Swarm missions still to come), skirmish, map editor.
 - Recent: dev panel, save/continue, relics and ancient eggs, Matriarch, Husk as warrior, mine shafts, formations (line, zigzag, own formation, spacing, groups remember formation, sweep), hold fire, four new music tracks.
 - Formations march as one body (19b-formations.js): no place swaps, the wedge tip (Pyro) leads, a new formation is taken up on the move, a soldier back up rejoins the squad as it is now.
-- Real death is iron mode (save and quit, Continue once, the fallen go on the Cenotaph at once, quitting = a lost mission).
+- Real death is a campaign of its own (hc-progress-rd, hc-roster-rd; switch with setTrack, results via resultOf): from mission 1, fresh soldiers, missions in order. It is iron mode (save and quit, Continue once, the fallen go on the Cenotaph at once, quitting = a lost mission).
 - Ideas mentioned but not built: relics for the Swarm campaign, more Swarm missions, spore sac for new hives.

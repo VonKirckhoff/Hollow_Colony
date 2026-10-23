@@ -71,7 +71,8 @@ function savedInfo(){ try{ const t=localStorage.getItem(SAVE_KEY); if(!t) return
 function loadGame(){ const save=savedInfo(); if(!save){ toast('No saved game.'); return false; }
   const m=findMission(save); if(!m){ toast('The saved mission no longer exists.'); return false; }
   if(save.rd) localStorage.removeItem(SAVE_KEY);   /* real death: the save is used up as it loads */
-  const keep=ui.diff, keepRd=ui.realDeath; ui.diff=save.diffKey; ui.realDeath=!!save.rd; startMission(m); ui.diff=keep; ui.realDeath=keepRd;
+  if(isCorpsMission(m.id)) setTrack(!!save.rd);   /* a campaign save plays on in its own campaign (normal or Real death) and roster */
+  const keep=ui.diff; ui.diff=save.diffKey; startMission(m); ui.diff=keep;
   try{ const { ents, g, triggers }=decodeGame(save);
     const cfg=g.swarm&&g.swarm.cfg; for(const [k,v] of Object.entries(g)) G[k]=v;
     if(cfg&&G.mission.swarm){ for(const k of Object.keys(G.mission.swarm)) if(!(k in cfg)) delete G.mission.swarm[k]; Object.assign(G.mission.swarm,cfg); G.swarm.cfg=G.mission.swarm; }
@@ -84,7 +85,7 @@ function loadGame(){ const save=savedInfo(); if(!save){ toast('No saved game.');
   catch(err){ console.error(err); if(save.rd) try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){}   /* not used up when it could not load */
     toast('The saved game could not be loaded.'); goMenu('menu'); return false; } }
 /* real death: starting another campaign mission gives up a suspended real-death mission (its fallen are already on the Cenotaph) */
-function dropRdSave(m){ const s=savedInfo(); if(!s||!s.rd||m.id==='skirmish'||m.side==='swarm'||m.training) return;
+function dropRdSave(m){ const s=savedInfo(); if(!s||!s.rd||!ui.realDeath||m.id==='skirmish'||m.side==='swarm'||m.training) return;
   localStorage.removeItem(SAVE_KEY); toast(`☠ ${s.title} (real death, saved at ${fmtTime(s.time)}) is given up. The fallen stay fallen.`,true); }
 /* the main menu shows Continue only when there is a save */
 function refreshContinue(){ const b=document.getElementById('m-continue'); if(!b) return; const s=savedInfo(); b.hidden=!s;
