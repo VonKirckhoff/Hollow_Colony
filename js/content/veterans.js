@@ -26,17 +26,17 @@ const AURA = { radius:4, rate:1.10, armor:0.10, waver:{ radius:9, time:10, rate:
    but shamble, cannot be healed by a Medic, and rest for good if they fall a second time. They only heal out of combat. */
 const RISEN = { hp:1.25, speed:0.85, regen:2, calm:4 };   /* regen only after `calm` seconds without being hit */
 const VET_XP = { kill:1, spitter:2, brute:4, husk:3, hive:5, broodmother:10, healPerXp:60, repairPerXp:250, build:1 };
-const ROSTER_MAX = 30;
-const STARTER_NAMES = ['Van Hoorick','De Lepeleire','Verheyden','Van Steenkiste','Vandewalle'];   /* made-up everyday Flemish names, no famous namesakes */
+const ROSTER_MAX = 30; 
+const STARTER_NAMES = ['Kirckhoffs','Staelens','De Ridder','De Vos','Wolfaert'];   /* made-up everyday Flemish names, no famous namesakes */
 const SURNAMES = [
-  'Van Hoorick','De Lepeleire','Verheyden','Van Steenkiste','Vandewalle','Peeters','Janssens','Maes','Jacobs','Mertens','Willems','Claes',
+  'Kirckhoffs','Staelens','De Ridder','De Vos','Wolfaert', 'Sterckx', 'Peeters','Janssens','Maes','Jacobs','Mertens','Willems','Claes',
   'Goossens','Wouters','De Smet','Hermans','Aerts','Pauwels','Michiels','Van den Bossche','Lambrecht','Vermeulen','Verbeke','Hendrickx',
   'Smets','Coppens','De Clercq','Stevens','Martens','Dewitte','Vandenberghe','De Vos','Verhoeven','Bogaerts','Cools','Segers',
   'Van Hecke','Verlinden','Leemans','Wuyts','Thys','Bosmans','Geerts','Van Acker','De Backer','Van de Velde','Vervoort','Willaert',
   'Baert','Verschueren','Van Hoof','De Meyer','De Wilde','Dhondt','De Ridder','Van Dyck','Verhaegen','Nijs','Van Loo','Verbruggen',
-  'Raes','Moens','Dierickx','Huysmans','Van Gorp','Deckers','Daems','Schepers','Govaerts','Lenaerts','Verstraete','Vercammen',
+  'Raes','Moens','Dierickx','Huysmans','De Lepeleire','Deckers','Daems','Schepers','Govaerts','Lenaerts','Verstraete','Vercammen',
   'De Keyser','Callens','Van Laere','Sels','Bastiaens','Verbeeck','Van Hove','De Coster','Vandeputte','Lauwers','Van Daele','Vanneste',
-  'Bauwens','Van Hulle','Lemmens','Coene','Ghijs','Vermeiren','Van Wesemael','Dewulf','Verbist','Van Rompaey','Haesaert','Vanhaecke',
+  'Bauwens','Van Hulle','Lemmens','Coene','Ghijs','Vermeiren','Van Wesemael','Van Steenkiste','Verbist','Van Rompaey','Haesaert','Vanhaecke',
   'Braet','Cnudde','Neyt','Roels','Van Belle','Sterckx','Van Peteghem','Swinnen','Wyns','Tack','Mortier'];
 /* Flemish names only (no Walloon, no names from the Netherlands, no famous namesakes). The first soldiers of a fresh campaign always get STARTER_NAMES, in this order
    (while those names are free: not on the roster, not on the memorial, not already in the mission).
