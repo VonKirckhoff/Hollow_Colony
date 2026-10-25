@@ -17,7 +17,7 @@ const DEV_HELP = {
   'WAVES|growWaves':'Only the first this many waves grow (budget + growth per wave); after that every wave is the same size.',
   'WAVES|maxAlive':'Most Swarm creatures roaming at once (hive guards do not count), × difficulty budget. A mission can set its own (swarm.maxAlive).',
   'WAVES|hiveScale':'How much smaller the waves get as you burn hives. 0.6: with no hives left of the start they would be 40% of the size; 0 = burning hives does not shrink them.',
-  'WAVES|shaftScale':'Waves out of mine shafts (once every hive is gone) are this size, × (0.8 = 80%).',
+  'WAVES|shaftScale':'Waves out of mine shafts (once every hive is gone) are this size, × (0.9 = 90%).',
   'BROOD_SURGE|every':'Burn the Brood, last surge: seconds between two groups out of the mine shafts (Normal; × the difficulty interval).',
   'BROOD_SURGE|drone':'Burn the Brood, last surge: Drones per group (Normal; × the difficulty budget, at least 1).',
   'BROOD_SURGE|spitter':'Burn the Brood, last surge: Spitters per group (Normal; × the difficulty budget, at least 1).',

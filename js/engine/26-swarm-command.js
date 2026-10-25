@@ -14,7 +14,7 @@
    near the gathering point after SWARM_PLAY.tunnel seconds.
    SWARM_PLAY: cap = most brood you can have hatched at once (hive guards do not count) · kill = biomass per soldier killed
    SWARM_DIFF: per difficulty, how tough the Lunar Corps is (health, damage) and how many reinforcements the scripts send. */
-const SWARM_PLAY = { cap:40, kill:12, tunnel:4, burrow:{ cost:45, cooldown:25, clear:6, units:['drone','drone','crawler','crawler','crawler'] },
+const SWARM_PLAY = { cap:58, kill:12, tunnel:4, burrow:{ cost:45, cooldown:25, clear:6, units:['drone','drone','crawler','crawler','crawler'] },
   brood:['crawler','drone','spitter','brute'], keys:{ crawler:'Q', drone:'W', spitter:'E', brute:'R' } };
 const SWARM_DIFF = {
   easy:   { hp:0.85, dmg:0.85, reinforce:0.75 },
