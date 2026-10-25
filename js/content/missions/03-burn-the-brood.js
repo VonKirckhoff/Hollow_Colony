@@ -25,7 +25,7 @@ MISSIONS.push(
     ],
     start:{ salvage:350, camera:'P',
       units:[ ['engineer','P',2], ['trooper','P',6], ['gunner','P',2], ['pyro','P',2], ['medic','P',2] ],
-      buildings:[ ['hq','P'] ], hiveHp:1.6,
+      buildings:[ ['hq','P'] ], hiveHp:4,
       /* per hive: c is the big nest with spitters among its guards; e is tougher and angrier */
       hives:[ 'a', 'b', { at:'c', guardMax:8, guards:['drone','drone','spitter'], aggro:10 }, 'd', { at:'e', hp:2.4, rage:1.4 } ],
       shafts:[ {x:2,y:21,wall:'w'}, {x:36,y:3,wall:'n'}, {x:69,y:18,wall:'e'} ] },   // old mine shafts in the west, north and east ridges: with the hives gone, the Swarm comes up out of these
@@ -45,7 +45,7 @@ MISSIONS.push(
       { when:g=>g.hives()===0, do:g=>{ g.complete('hives'); g.vars.final=true;
           g.say('Cmdr. Varga','The hives are down, but the ground is shaking. They are coming up the old mine shafts, west, north and east, and all of it is heading for the Command Post. Hold for two minutes!');
           for(const sh of shafts()){ const at={x:Math.floor(sh.x/TILE),y:Math.floor(sh.y/TILE)}; g.reveal(at,3,8); g.ping(at); }
-          g.addObjective('final','Hold the Command Post for two minutes'); g.setTimer(120,'Hold'); g.vars.surgeT=g.time; } },
+          g.addObjective('final','Hold the Command Post for three minutes'); g.setTimer(180,'Hold'); g.vars.surgeT=g.time; } },
       { repeat:true, when:g=>g.vars.final && g.timerLeft()>0 && g.time>=g.vars.surgeT, do:g=>{ g.vars.surgeT=g.time+BROOD_SURGE.every*G.diff.interval; broodShaftSurge(g); } },   // the last surge climbs out of the mine shafts
       { when:g=>g.vars.final && g.timerLeft()===0, do:g=>{ g.complete('final'); g.complete('hq'); g.win('Tycho Maw is silent. The brood is broken.'); } }
     ]

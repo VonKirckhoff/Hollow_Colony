@@ -12,9 +12,11 @@ MISSIONS.push(
     ],
     start:{ salvage:250, camera:'Q',
       units:[ ['engineer','Q',2], ['trooper','Q',4], ['gunner','Q',1], ['medic','Q',1] ],
-      buildings:[ ['hq','Q'] ], hives:['a','b','c'], hiveHp:4 },
+      buildings:[ ['hq','Q'] ], 
+      hives:['a','b','c'], hiveHp:8,
+      shafts:[ {x:32,y:2,wall:'n'}, {x:54,y:31,wall:'e'}, {x:51,y:2,wall:'ne'}, {x:54,y:7,wall:'e'} ]},  
     limits:{ sentry:4 },
-    swarm:{ biomass:60, rate:0.45, guardMax:5, guardEvery:12, hiveRage:1.8, waves:{ first:100, every:70, budget:70, growth:28 } },
+    swarm:{ biomass:100, rate:0.45, guardMax:5, guardEvery:12, hiveRage:2.4, waves:{ first:100, every:70, budget:100, growth:42 } },
     objectives:[
       { id:'relays', text:'Build 2 Relay Towers (0/2)' },
       { id:'hold',   text:'Hold the station until the convoy arrives' },
@@ -31,7 +33,7 @@ MISSIONS.push(
       { when:g=>g.time>780, do:g=>{ g.say('Cmdr. Varga','Two minutes! Everything they have left is coming.'); g.wave(220); } },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen.'); } },
       { when:g=>g.timerLeft()===0, do:g=>{ g.complete('hold'); g.complete('hq'); g.win('The convoy rolls in under your guns. Kappa Station holds.'); } },
-      { when:g=>g.hives()===0, do:g=>{ g.complete('hold'); g.win('All three hives destroyed. The basin is clear before the convoy even arrives.'); } }
+
     ]
   }
 );

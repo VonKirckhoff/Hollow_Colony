@@ -29,15 +29,15 @@ const VET_XP = { kill:1, spitter:2, brute:4, husk:3, hive:5, broodmother:10, hea
 const ROSTER_MAX = 30; 
 const STARTER_NAMES = ['Kirckhoffs','Staelens','De Ridder','De Vos','Wolfaert'];   /* made-up everyday Flemish names, no famous namesakes */
 const SURNAMES = [
-  'Kirckhoffs','Staelens','De Ridder','De Vos','Wolfaert', 'Sterckx', 'Peeters','Janssens','Maes','Jacobs','Iserbyter','Willems','Claes',
-  'Goossens','Wouters','De Smet','Hermans','Aerts','Pauwels','Michiels','Van den Bossche','Lambrecht','Vermeulen','Verbeke','Hendrickx',
-  'Smets','Coppens','De Clercq','Stevens','Martens','Dewitte','Vandenberghe','Daems','Verhoeven','Bogaerts','Cools','Segers',
+  'Kirckhoffs','Staelens','De Ridder','De Vos','Wolfaert', 'Sterckx', 'Peeters','Janssens','Maes','Jacobs','Iserbyt','Willems','Claes',
+  'Goossens','Wouters','De Smet','Hermans','Aerts','Pauwels','De Groote','Van den Bossche','Lambrechts','Vermeulen','Verbeke','Hendrickx',
+  'Smets','Coppens','De Brabander','Stevens','De Geest','Dewitte','Vandenberghe','Daems','Verhoeven','Bogaerts','Cools','Segers',
   'Van Hecke','Verlinden','Leemans','Wuyts','Thys','Bosmans','Geerts','Van Acker','De Backer','Van de Velde','Vervoort','Willaert',
-  'Baert','Verschueren','Van Hoof','De Meyer','De Wilde','Dhondt','De Bruyne','Van Dyck','Verhaegen','Nijs','Van Loo','Verbruggen',
+  'Baert','Verschueren','Van Hoof','De Meyer','De Wilde','Dhondt','De Bruyne','Van Dyck','Verhaegen','Dehandschutter','Van Loo','Verbruggen',
   'Raes','Moens','Dierickx','Huysmans','De Lepeleire','Deckers','Vincke','Schepers','Govaerts','Lenaerts','Verstraete','Vercammen',
-  'De Keyser','Callens','Van Laere','Sels','Bastiaens','Verbeeck','Van Hove','De Coster','Vandeputte','Lauwers','Van Daele','Vanneste',
+  'De Keyser','Callens','Van Laere','De Mesmaeker','Bastiaens','Verbeeck','Van Hove','De Coster','Vandeputte','Lauwers','Van Daele','Vanneste',
   'Bauwens','Van Hulle','Lemmens','Coene','Ghijs','Vermeiren','Van Wesemael','Van Steenkiste','Verbist','Van Rompaey','Haesaert','Vanhaecke',
-  'Braet','Cnudde','Neyt','Roels','Van Belle','Sterckx','Van Peteghem','Swinnen','Wyns','Tack','Mortier'];
+  'Braet','Cnudde','Neyt','De Vlaeminck','Van Belle','Berkhof','Van Peteghem','Swinnen','Wyns','Tack','Mortier', 'Devreese'];
 /* The first soldiers of a fresh campaign always get STARTER_NAMES, in this order
    (while those names are free: not on the roster, not on the memorial, not already in the mission).
    Names are unique: nobody in the roster, among the fallen or in the current mission shares a name.
@@ -50,7 +50,7 @@ const VOICE = {
   attack:  ['Weapons free!','Engaging!','Let\'s go!','Light them up!','Going hot!'],
   contact: ['Contact!','Movement, front!','Here they come!','Eyes up!','Hostiles!'],
   down:    ['Man down!','We lost {name}!','{name} is down!','No! {name}!','Medic! ...too late.'],
-  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!'],
+  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!','Just a flesh wound!'],
   downed:  ['I\'m down!','Medic! I can\'t move!','Don\'t leave me here!','I\'m hit bad!'],
   revived: ['Back in it.','Thanks, doc.','On my feet.','Still breathing.'],
   heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.'],
