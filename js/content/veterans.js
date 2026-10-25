@@ -50,7 +50,7 @@ const VOICE = {
   attack:  ['Weapons free!','Engaging!','Let\'s go!','Light them up!','Going hot!'],
   contact: ['Contact!','Movement, front!','Here they come!','Eyes up!','Hostiles!'],
   down:    ['Man down!','We lost {name}!','{name} is down!','No! {name}!','Medic! ...too late.'],
-  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!','Just a flesh wound!'],
+  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!','Just a fleshwound!'],
   downed:  ['I\'m down!','Medic! I can\'t move!','Don\'t leave me here!','I\'m hit bad!'],
   revived: ['Back in it.','Thanks, doc.','On my feet.','Still breathing.'],
   heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.'],

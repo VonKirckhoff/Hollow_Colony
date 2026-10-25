@@ -14,7 +14,7 @@ MISSIONS.push(
       units:[ ['engineer','Q',2], ['trooper','Q',4], ['gunner','Q',1], ['medic','Q',1] ],
       buildings:[ ['hq','Q'] ], 
       hives:['a','b','c'], hiveHp:8,
-      shafts:[ {x:32,y:2,wall:'n'}, {x:54,y:31,wall:'e'}, {x:51,y:2,wall:'ne'}, {x:54,y:7,wall:'e'} ]},  
+      shafts:[ {x:32,y:2,wall:'n'}, {x:54,y:31,wall:'e'}, {x:51,y:2,wall:'n'}, {x:54,y:7,wall:'e'} ]},  
     limits:{ sentry:4 },
     swarm:{ biomass:100, rate:0.45, guardMax:5, guardEvery:12, hiveRage:2.4, waves:{ first:100, every:70, budget:100, growth:42 } },
     objectives:[
