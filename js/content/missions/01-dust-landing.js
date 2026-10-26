@@ -8,9 +8,17 @@ const DUST_SHAFT_E={x:79,y:35}, DUST_SHAFT_W={x:8,y:8};
 /* a group out of a mine shaft: picks types for the budget (× difficulty), they come up at the shaft and hunt the squad */
 function dustShaftWave(g,shaft,budget){
   let left=budget*g.diffBudget(), out=[], guard=0;
-  while(left>=15 && guard++<40){ const t=pickSwarmType(left); if(!t) break; left-=UNITS[t].biomass; out.push(...g.spawn(t,shaft,1,{order:'hunt'})); }
-  const w=g.where(shaft); for(let j=0;j<8;j++) G.fx.push({k:'ember',x:w.x+rand(-14,14),y:w.y+rand(-6,8),vx:rand(-40,40),vy:rand(-90,-30),t:0.8,max:0.8,col:pick(['#8a7a6a','#a6ff4a'])});
-  if(out.length){ g.ping(shaft); SFX.play('hatch',w.x,w.y); }
+  while(left>=15 && guard++<40){ 
+    const t=pickSwarmType(left); 
+    if(!t) break; 
+    left-=UNITS[t].biomass; 
+    out.push(...g.spawn(t,shaft,1,{order:'hunt'})); }
+  const w=g.where(shaft); 
+  for(let j=0;j<8;j++) 
+    G.fx.push({k:'ember',x:w.x+rand(-14,14),y:w.y+rand(-6,8),vx:rand(-40,40),vy:rand(-90,-30),t:0.8,max:0.8,col:pick(['#8a7a6a','#a6ff4a'])});
+  if(out.length){ 
+    g.ping(shaft); 
+    SFX.play('hatch',w.x,w.y); }
   return out; }
 MISSIONS.push(
   {
@@ -26,7 +34,7 @@ MISSIONS.push(
       buildings:[], hives:['c','a'],
       shafts:[ {...DUST_SHAFT_E, wall:'e'}, {...DUST_SHAFT_W, wall:'w'} ] },   // old mine shafts in the canyon walls: the Swarm keeps coming up out of these
     landingZone:{ tx:45, ty:37, scripted:true },   // the station pad: only this script sends the dropship
-    swarm:{ biomass:50, rate:2.3, guardMax:7, guardEvery:16, hiveRage:4, aggro:7, waves:null, unlock:{ spitter:300, brute:9999 } },   /* aggro:0 until the blast doors open */
+    swarm:{ biomass:50, rate:2.3, guardMax:7, guardEvery:16, hiveRage:4, aggro:0, waves:null, unlock:{ spitter:300, brute:9999 } },   /* aggro:0 until the blast doors open */
     objectives:[
       { id:'reach',  text:'Reach Kappa Station' },
       { id:'crates', text:'Recover 3 salvage crates (0/3)', optional:true }

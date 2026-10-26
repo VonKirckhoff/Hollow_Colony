@@ -9,6 +9,16 @@ function pickSwarmType(maxCost,only){
 function swarmCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss).length; }
 function hives(){ return G.ents.filter(e=>e.type==='hive'&&!e.dead); }
 function shafts(){ return G.ents.filter(e=>e.type==='shaft'&&!e.dead); }
+/* Heir shafts (mission swarm.shaftHeirs:true): every mine shaft belongs to the hive nearest to it. When that hive is burnt, its shaft(s)
+   take over its role: guards, watching the ground, biomass and the waves, as strong as the hive was (two shafts behind one hive share it).
+   spawners(): living hives plus shafts that took over. */
+function spawners(){ return G.ents.filter(e=>!e.dead&&(e.type==='hive'||(e.type==='shaft'&&e.heir))); }
+function spawnerCount(){ const s=new Set(); for(const e of spawners()) s.add(e.type==='hive'?e.id:'h'+e.heirOf); return s.size; }   /* a hive and its heirs count as one */
+function assignHeirs(){ const hs=hives(); for(const s of shafts()){ const h=hs.length?hs.reduce((a,b)=>dist(a,s)<=dist(b,s)?a:b):null; if(h) s.heirOf=h.id; } }
+function heirTakeover(){ for(const s of shafts()){ if(s.heir||s.heirOf==null) continue; const h=G.ents.find(e=>e.id===s.heirOf); if(h&&!h.dead) continue;
+    const group=shafts().filter(o=>o.heirOf===s.heirOf); for(const o of group){ o.heir=true; o.share=1/group.length; o.cfg={...((h&&h.cfg)||{}), creep:0, eggs:0}; o.spawnT=rand(3,6);
+      G.pings.push({x:o.x,y:o.y,t:0,col:'#a6ff4a'}); if(isVisible(o)||G.seen[Math.floor(o.y/TILE)*G.map.w+Math.floor(o.x/TILE)]) SFX.play('hatch',o.x,o.y); }
+    if(G.side==='corps') say('Sgt. Kessler',G.saidHeir?'Another one. That shaft has taken over from the hive we burnt.':'The hive is ash, but listen: they are coming up the old mine shaft behind it now. Same numbers as before.','alert'); G.saidHeir=true; } }
 /* nests: everything with creep the Swarm brings its dead home to and where Husks heal: hives, and shafts with creep of their own (shaft entry creep:<tiles>) */
 function isNest(e){ return !e.dead&&(e.type==='hive'||(e.type==='shaft'&&e.cfg&&e.cfg.creep>0)); }
 function nests(){ return G.ents.filter(isNest); }
@@ -18,21 +28,23 @@ function nests(){ return G.ents.filter(isNest); }
 const WAVES = { growWaves:8, maxAlive:40, hiveScale:0.6, waitFull:15, shaftScale:0.9 };   /* shaftScale: waves out of mine shafts (no hive left) are this size */
 function swarmCap(){ return (G.swarm.cfg.maxAlive??WAVES.maxAlive)*G.diff.budget; }
 function roamCount(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.def.boss&&e.role!=='guard').length; }   /* the cap is for what roams: the guards at home do not count */
-function waveBudget(){ const S=G.swarm, w=S.cfg.waves, hs=hives().length;
+function waveBudget(){ const S=G.swarm, w=S.cfg.waves, hs=spawnerCount();
   let b=w.budget+w.growth*Math.min(S.waveN-1, w.growWaves??WAVES.growWaves); if(w.max!=null) b=Math.min(b,w.max);
   if(S.hives0&&hs) b*=1-WAVES.hiveScale*(1-Math.min(1,hs/S.hives0));   /* every burnt hive makes the waves smaller */
   return b*G.diff.budget; }
 function nextWaveDue(){ const S=G.swarm; if(roamCount()>=swarmCap()*0.85){ S.nextWave=G.time+WAVES.waitFull; return false; } return true; }
 function updateSwarm(dt){
-  const S=G.swarm, cfg=S.cfg, hs=hives();
-  if(S.hives0==null) S.hives0=hs.length;
+  const S=G.swarm, cfg=S.cfg;
+  if(S.hives0==null){ S.hives0=hives().length; if(cfg.shaftHeirs) assignHeirs(); }
+  if(cfg.shaftHeirs) heirTakeover();
+  const hs=spawners();
   if(!hs.length){ if((cfg.burrows||shafts().length) && cfg.waves && G.time>=S.nextWave && nextWaveDue()){   /* no hive left: they burrow up, or come up the mine shafts */ S.waveN++; launchWave(waveBudget()); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
-  S.biomass+=cfg.rate*hs.length*dt;
+  S.biomass+=cfg.rate*hs.reduce((n,h)=>n+(h.share||1),0)*dt;
   for(const h of hs){
     hiveWatch(h,dt);
     h.spawnT-=dt; if(h.spawnT>0) continue; h.spawnT=hiveOpt(h,'guardEvery',14)*rand(0.8,1.2);
     const guards=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.homeHive===h.id&&e.role==='guard').length;
-    if(guards>=hiveOpt(h,'guardMax',4)) continue;
+    if(guards>=Math.ceil(hiveOpt(h,'guardMax',4)*(h.share||1))) continue;   /* heir shafts behind one hive share its guards */
     const own=G.side==='swarm';   /* playing the Swarm, a hive grows its own few guards for free: your biomass is yours */
     const type=pickSwarmType(own?40:S.biomass,hiveOpt(h,'guards',own?['drone','crawler']:null)); if(!type) continue;
     if(!own) S.biomass-=UNITS[type].biomass;
@@ -58,7 +70,7 @@ function burrowSpot(aim){
   return best;
 }
 function launchWave(budget,aim){
-  let hs=hives(); const out=[]; let left=budget, guard=0;
+  let hs=spawners(); const out=[]; let left=budget, guard=0;
   if(!hs.length&&shafts().length){   /* mine shafts: the wave comes up out of one (the nearest to its goal, not one your troops stand on) */
     left*=G.swarm.cfg.shaftScale!=null?G.swarm.cfg.shaftScale:WAVES.shaftScale;   /* the hives are gone: what climbs out of the shafts is less (a mission can set swarm.shaftScale) */
     const corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'), ok=shafts().filter(s=>!corps.some(c=>dist(c,s)<6*TILE)), pool=ok.length?ok:shafts();
@@ -87,6 +99,7 @@ function launchWave(budget,aim){
   for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery&&!deadGen(u,e)) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed);
     if(t){ u.order={type:'amove',x:t.x+rand(-30,30),y:t.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); } }
   if(hs.length||shafts().length) waveTactic(out);
+  makePacks(out);
   if(out.length){ SFX.play('horn'); say('Alert','Swarm movement detected. A wave is coming.','alert'); }
   return out;
 }
@@ -114,6 +127,28 @@ function waveTactic(out,forced){
   }
   return plan;
 }
+/* ---------- a wave moves as a pack ----------
+   The units of one wave (or of one part of it: the bait, the waiting rest, the flankers) march together at the pace of the slowest,
+   and one that has run ahead waits for the others. Only when any of them is within PACK.contact tiles of the Lunar Corps
+   (or fights one of them) is the pack let loose: then the fast ones storm ahead.
+   PACK: contact = tiles to the enemy that let the pack loose · lead = tiles a unit may be ahead of the pack's middle before it waits
+   · wait = share of the pace it walks at while it waits · every = seconds between two checks of a pack. */
+const PACK = { contact:7, lead:2.5, wait:0.35, every:0.5 };
+function makePacks(out){ const groups=new Map();
+  for(const u of out){ if(!u.order&&!(u.waveDelay>0)) continue; const k=(u.viaGoal?1:0)+(u.waveDelay>0?2:0); if(!groups.has(k)) groups.set(k,{ members:[], t:-1 }); groups.get(k).members.push(u); }
+  for(const P of groups.values()) if(P.members.length>1) for(const u of P.members) u.pack=P; }
+function packUpdate(P){ if(G.time<P.t) return; P.t=G.time+PACK.every;
+  const live=P.members.filter(u=>!u.dead&&u.pack===P&&u.role==='wave'&&!u.claim&&!u.haul); P.live=live.length;
+  if(live.length<2){ P.contact=true; return; }
+  P.slow=Math.min(...live.map(u=>u.def.speed*(u.speedMul||1))); P.cx=live.reduce((s,u)=>s+u.x,0)/live.length; P.cy=live.reduce((s,u)=>s+u.y,0)/live.length;
+  const R=PACK.contact*TILE, foes=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery);
+  P.contact=live.some(u=>(u.target&&u.target.faction==='corps')||foes.some(e=>Math.abs(e.x-u.x)<R&&Math.abs(e.y-u.y)<R&&Math.hypot(e.x-u.x,e.y-u.y)<R));
+  if(P.contact) for(const u of P.members) if(u.pack===P) u.pack=null; }   /* let loose for good: from here every one fights on its own */
+/* the pace a pack holds a unit to (0 = no limit) */
+function packPace(u){ const P=u.pack; if(!P||u.role!=='wave'||u.target||u.claim||u.haul||u.waveDelay>0) return 0; packUpdate(P); if(P.contact||!u.pack) return 0;
+  let pace=P.slow; const o=u.order;
+  if(o&&o.x!=null&&Math.hypot(u.x-P.cx,u.y-P.cy)>PACK.lead*TILE&&Math.hypot(o.x-u.x,o.y-u.y)<Math.hypot(o.x-P.cx,o.y-P.cy)-PACK.lead*TILE) pace*=PACK.wait;   /* ahead of the others: wait for them */
+  return pace; }
 /* Called from swarmThink: waiting lure groups and flankers on their way to the side point. */
 function tacticThink(u,dt){
   if(u.waveDelay>0){ u.waveDelay-=dt; if(u.waveDelay<=0&&u.waveGoal){ u.order={type:'amove',x:u.waveGoal.x,y:u.waveGoal.y}; setPath(u,u.order.x,u.order.y); u.waveGoal=null; } return true; }

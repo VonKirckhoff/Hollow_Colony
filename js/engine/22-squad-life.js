@@ -174,7 +174,7 @@ function anyBarker(units,kind,arg){ const u=squadVoice(units); if(u) bark(u,kind
 /* ---- personal veterans: an obituary on the radio, kept for the memorial ---- */
 function obituary(u){
   if(!u.vet) return;
-  (G.fallenVets=G.fallenVets||{})[u.vet.id]={...u.vet}; commitFallen(u);   /* real death: on the Cenotaph right away */
+  (G.fallenVets=G.fallenVets||{})[u.vet.id]={...u.vet}; G.stats.fallen=(G.stats.fallen||0)+1;   /* a soldier lost: no flawless trophy for this mission */
   const near=G.ents.filter(e=>!e.dead&&e!==u&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&Math.hypot(e.x-u.x,e.y-u.y)<9*TILE);
   if(near.length) bark(pick(near),'down',u.vet.name);
   if(u.vet.hero||u.vet.rank>=1||(u.vet.missions||0)>=1){
@@ -296,9 +296,10 @@ function drawDowned(u,sp,w,h,now){ const d=u.downed;
    The Grafter latches on and infects the body; it becomes a cocoon and a Husk hatches from it (see 25-hive-life.js).
    Nothing hatches outside the creep. A body brought home also gives biomass and heals the hive a little.
    A soldier standing next to it guards it; a Pyro burns it (also when his flame hits near it). Kill the carrier and he drops it. ---------- */
-function makeBody(e){ const B=SQUAD.body;
-  G.ents.push({ id:NEXT_ID++, kind:'body', type:'body', faction:'none', def:{ name:'Fallen soldier' }, x:e.x, y:e.y, r:8, t:B.time, claim:0, burn:0, carrier:null,
-    sprite:e.def.sprite, face:e.face||1, supply:e.def.supply||1, name:e.vet?e.vet.name:null }); }
+/* fauna: a grazer the Swarm killed leaves a carcass that goes the same way (dragged home, an egg, a Grafter), but becomes a Bloater */
+function makeBody(e,fauna){ const B=SQUAD.body;
+  G.ents.push({ id:NEXT_ID++, kind:'body', type:'body', faction:'none', def:{ name:fauna?'Grazer carcass':'Fallen soldier' }, x:e.x, y:e.y, r:8, t:B.time, claim:0, burn:0, carrier:null,
+    sprite:e.def.sprite, face:e.face||1, supply:e.def.supply||1, name:e.vet?e.vet.name:null, fauna:fauna||undefined }); }
 function burnBody(b){ if(b.dead) return; dropBody(b); b.dead=true; addDecal(b.x,b.y,10,'rgba(20,16,12,.7)');
   for(let i=0;i<10;i++) G.fx.push({k:'ember',x:b.x+rand(-8,8),y:b.y+rand(-4,4),vx:rand(-30,30),vy:rand(-70,-20),t:rand(.5,1),max:1,col:pick(['#ff8a2a','#ffd23f','#8a8f9c'])});
   G.fx.push({k:'text',x:b.x,y:b.y-14,t:1,max:1,txt:'CREMATED',col:'#ffb347'}); }
@@ -329,15 +330,18 @@ function updateBodies(dt){ const B=SQUAD.body;
         if(b.claim>=1){ b.dead=true; g.dead=true; g.hp=0;
           for(const e of G.ents) if(e.claim===b){ e.claim=null; e.claimMode=null; e.order=null; }
           const c=makeBuilding('cocoon','swarm',Math.floor(b.x/TILE),Math.floor(b.y/TILE),true); c.x=b.x; c.y=b.y; c.r=9;
-          c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; if(g.avatar) setAvatar(c); if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.stats.cocoons++;
-          if(isVisible(c)&&!G.saidInfect&&G.side==='corps'){ G.saidInfect=true; say('Dr. Maas','That thing from the egg has infected the body. Whatever hatches from that cocoon will not be one of the usual ones. Burn it!','alert'); }
+          if(b.fauna){ c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch; c.hatchType='bloater'; }   /* a grazer becomes a Bloater */
+          else { c.hatchT=c.hatchMax=BUILDINGS.cocoon.hatch*B.huskHatch; c.hatchType='husk'; c.husk=true; } if(g.avatar) setAvatar(c); if(isVisible(c)){ SFX.play('crack',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.35,max:0.35,r:18,col:'#c38bff'}); } G.stats.cocoons++;
+          if(b.fauna&&isVisible(c)&&!G.saidBloat&&G.side==='corps'){ G.saidBloat=true; say('Dr. Maas','They are turning a grazer. What comes out of that cocoon will be swollen with acid. Kill it at range.','alert'); }
+          else if(!b.fauna&&isVisible(c)&&!G.saidInfect&&G.side==='corps'){ G.saidInfect=true; say('Dr. Maas','That thing from the egg has infected the body. Whatever hatches from that cocoon will not be one of the usual ones. Burn it!','alert'); }
           continue; } }
       else { if(g) g.latched=false; b.claim=Math.max(0,b.claim-dt/B.infect); }
       if(!G.ents.some(e=>!e.dead&&((e.def&&e.def.grafter&&e.graft===b)||(e.type==='egg'&&e.target===b)))) callGrafter(b);
       continue; }
     b.claim=0;
-    /* lying on the creep of a nest already (a soldier fell right next to the hive): the nest takes it at once */
-    if(!b.carrier&&!b.avatarBody){ const h=nearestOf(b,isNest); if(h&&(creepAt(b.x,b.y)>CREEP.at||dist(b,h)<((h.creepR||2)+1.5)*TILE)&&dist(b,h)<((h.creepR||2)+1.5)*TILE){ bodyHome(b,h,null); continue; } }   /* on or right at the edge of its creep */
+    /* lying right at the foot of a hive already (a soldier fell next to it), or on the creep of a wall tunnel: the nest takes it at once.
+       Anywhere else on the creep it is carried on, up to the hive itself. */
+    if(!b.carrier&&!b.avatarBody){ const h=nearestOf(b,isNest); if(h&&(h.type==='hive'?gapTo(b,h)<TILE*1.2:(creepAt(b.x,b.y)>CREEP.at||dist(b,h)<((h.creepR||2)+1.5)*TILE)&&dist(b,h)<((h.creepR||2)+1.5)*TILE)){ bodyHome(b,h,null); continue; } }
     /* now and then the body calls the nearest free Swarm units: one to carry it home, a few to guard it */
     b.seekT=(b.seekT||0)-dt; if(b.seekT>0) continue; b.seekT=1;
     const mine=G.ents.filter(e=>!e.dead&&e.claim===b), R=B.seek*TILE*(G.side==='swarm'?1.8:1);
@@ -357,10 +361,11 @@ function claimThink(u,dt){ const b=u.claim; if(!b) return false;
     if(b.home&&b.claim<=0&&!b.guarded&&Math.random()<dt*0.05){ u.claim=null; u.claimMode=null; return false; }   /* safe at home: drift back to other work */
     if(!u.order||u.order.type!=='guard'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>1.5*TILE){ u.order={type:'guard',x:b.x,y:b.y,wait:rand(1,3)}; if(d>2*TILE) setPath(u,b.x,b.y); }
     return true; }
-  /* haul: carry it to the creep of the nearest hive */
+  /* haul: carry it home, right up to the hive, and lay it at its foot */
   if(b.carrier===u){ const h=nearestOf(u,isNest);   /* the nearest hive, or a shaft with creep */
     if(!h){ dropBody(b); return true; }
-    if(gapTo(u,h)<TILE*0.9||(creepAt(u.x,u.y)>0.3&&dist(u,h)<((h.creepR||2)+0.5)*TILE)||(h.type!=='hive'&&dist(u,h)<((h.creepR||2)+1.5)*TILE)){ bodyHome(b,h,u); return false; }   /* a tunnel takes it anywhere on or at the edge of its creep */
+    const at=u.order&&u.order.type==='move'&&Math.hypot(u.x-u.order.x,u.y-u.order.y)<TILE*0.6;   /* reached the spot by the hive */
+    if(gapTo(u,h)<TILE*0.9||(h.type==='hive'&&at&&gapTo(u,h)<TILE*1.6)||(h.type!=='hive'&&dist(u,h)<((h.creepR||2)+1.5)*TILE)){ bodyHome(b,h,u); return false; }   /* a tunnel takes it anywhere on or at the edge of its creep */
     if(!u.order||u.order.type!=='move'){ const s=h.type==='hive'?spawnSpotToward(h,u):creepSpot(h,u); u.order={type:'move',x:s.x,y:s.y}; setPath(u,s.x,s.y);
       if(!canReach(u,s)){ tunnelTo(u,s); if(isVisible(u)) SFX.play('land',u.x,u.y); } }   /* the way is shut: it digs down with the body */
     return true; }
@@ -378,7 +383,7 @@ function drawBody(b,now){ const sp=SPR[b.sprite]; if(!sp) return; const s=2, w=s
   const tw=c>0?Math.sin(now/(40+Math.random()*30))*0.12*c+(Math.random()<0.08*c?rand(-0.3,0.3):0):0;
   /* a dark pool under the body, so it stands out against the ground */
   const fade=Math.min(1,b.t/4); ctx.save(); ctx.globalAlpha=0.7*fade; ctx.fillStyle='#4e0b0b'; ctx.beginPath(); ctx.ellipse(Math.round(b.x),Math.round(b.y+1),w*0.42,h*0.16,0,0,Math.PI*2); ctx.fill(); ctx.restore();
-  ctx.save(); ctx.translate(Math.round(b.x+(c>0?rand(-1,1)*c*2:0)),Math.round(b.y-2)); ctx.rotate((b.face>0?-Math.PI/2:Math.PI/2)+tw); ctx.globalAlpha=Math.min(1,0.9*fade+0.05+0.4*c);
+  ctx.save(); ctx.translate(Math.round(b.x+(c>0?rand(-1,1)*c*2:0)),Math.round(b.y-2)); ctx.rotate((b.fauna?Math.PI:b.face>0?-Math.PI/2:Math.PI/2)+tw);   /* a soldier on his side, a grazer on its back */ ctx.globalAlpha=Math.min(1,0.9*fade+0.05+0.4*c);
   /* their own uniform colours, a little duller (greener while it is being infected) */
   ctx.filter=c>0?`saturate(${0.6*(1-c)}) brightness(${0.8+0.15*c}) hue-rotate(${Math.round(60*c)}deg)`:'saturate(.65) brightness(.92) contrast(1.1)'; ctx.drawImage(b.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.filter='none';
   if(c>0){ ctx.restore(); ctx.save(); ctx.strokeStyle=`rgba(166,255,74,${0.35+0.4*c})`; ctx.lineWidth=1;

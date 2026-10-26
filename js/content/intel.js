@@ -23,12 +23,12 @@ const INTEL_NOTES = {
   charge:   'Mission object: armed by an Engineer, then it has to survive its fuse.',
   generator:'Mission object: an Engineer repairs it to full to bring it online. It goes down when badly damaged.',
   crawler:  'Fast and fragile, often in numbers. Cheap to lose, so the Swarm throws them first.',
-  bloater:  'Lunar fauna the Swarm killed on its creep, remade. Slow and tough, and when it dies it bursts in a cloud of acid that burns your soldiers (and the Swarm). Kill it at range.',
-  grafter:  'The parasite of the Swarm. It only hatches from a hive egg when a body has been dragged onto the creep. It runs to the body, latches on and infects it in a few seconds: then the body becomes a cocoon. It cannot fight. One shot kills it.',
-  egg:      'Every hive keeps a few eggs waiting on its creep, and spits a fresh one next to a body if none is free. Burn the eggs and the hive cannot turn your dead.',
+  bloater:  'Lunar fauna the Swarm killed, dragged home to a hive and remade. Slow and tough, and when it dies it bursts in a cloud of acid that burns your soldiers (and the Swarm). Kill it at range.',
+  grafter:  'The parasite of the Swarm. It only hatches from a hive egg when a body (a soldier, or a grazer) lies in the creep of its hive. It runs to the body, latches on and infects it in a few seconds: then the body becomes a cocoon. It cannot fight. One shot kills it.',
+  egg:      'A hive keeps no eggs waiting: it lays one right at its own foot the moment a body lies in its creep, and the Grafter inside goes for the body. Shoot the egg before it opens.',
   drone:    'Melee warrior. Dangerous in packs; a Gunner or a Pyro breaks them up. Drones guard the bodies of the fallen and drag them home to the creep around a hive.',
   spitter:  'Acid artillery at range 4.6: it outreaches Pyros and Medics. Its acid leaves a burning pool for a few seconds.',
-  husk:     'A fallen soldier, remade. Dragged onto the creep, infected by a Grafter from a hive egg, the cocoon beats like a heart until it cracks, and a Twitcher crawls out (40% of these numbers). It molts into a Shambler (70%), then into the Husk. Each molt takes 1.6 seconds and it takes 50% more damage meanwhile: that is your moment. While it is turning it stays on the creep of its hive and defends it. The full Husk leaves the creep and hunts your squad, and screams over every kill: the soldiers close to it flinch.',
+  husk:     'A fallen soldier, remade. Dragged onto the creep, infected by a Grafter from a hive egg, the cocoon beats like a heart until it cracks, and a Twitcher crawls out (40% of these numbers). It molts straight into the Husk. The molt takes 1.6 seconds and it takes 50% more damage meanwhile: that is your moment. While it is turning it stays on the creep of its hive and defends it. The full Husk leaves the creep and hunts your squad, and screams over every kill: the soldiers close to it flinch.',
   matriarch:'A Husk that brought down four soldiers grows once more, into a Matriarch: bigger, armoured, and with a purple glow. It leaves the fight, walks to a quiet place far from your troops and takes root for 18 seconds; if you do not kill it, a young hive grows there. At most two per mission, and never more hives than the map can feed.',
   brute:    'Armoured siege beast that goes for walls and structures. Focus fire and keep your distance.',
   broodmother:'Boss. Rooted most of the time, but charges into your lines, lays eggs and sprays acid. Regenerates when left alone.',
@@ -36,5 +36,5 @@ const INTEL_NOTES = {
   cocoon:   'A fallen soldier being turned. A Husk hatches from it in a few seconds unless you burn it.',
   membrane: 'Organic wall that seals tunnels. Has to be burned or shot through.',
   hunter:   'Cloaked. Visible only when it fires, is hit or comes close. Retreats when wounded and hunts your strongest soldier.',
-  grazer:   'Harmless lunar fauna. The Swarm infects it if it gets the chance.'
+  grazer:   'Harmless lunar fauna. The Swarm kills it and drags the carcass home to a hive, where it becomes a Bloater.'
 };

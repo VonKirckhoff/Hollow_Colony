@@ -20,7 +20,6 @@
     <div class="spacer"></div>
     <div class="res mission-tag" id="r-mission"><b id="r-mtitle"></b><span class="lbl" id="r-mode"></span></div>
     <span id="clock">00:00</span>
-    <span class="rd-badge" id="rd-badge" hidden title="Real death: whoever falls is gone, even if you lose">☠ Real death</span>
     <button class="tb-btn" id="btn-follow" type="button" data-tip="Camera follow|The camera moves along with your squad after an order. Key C.">Follow on</button>
     <button class="tb-btn hide-sm" id="btn-tracker" type="button" data-tip="Motion tracker|Shows moving Swarm near your selected squad and beeps faster as they close in. Key K.">Tracker on</button>
     <button class="tb-btn hide-sm" id="btn-voices" type="button" data-tip="Voices|Soldiers speak their lines out loud, using your browser's speech voices. Key O.">Voices on</button>
@@ -82,9 +81,6 @@
     <p class="lede swarm-only">Play the same story from the other side. You are the Brood: you choose what hatches, where it gathers and where it strikes, and the swarm does the rest. The Lunar Corps is played by the computer.</p>
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
-    <div class="defeat-row" id="defeat-row"><span class="lbl">Campaign</span><div class="seg" role="radiogroup" aria-label="Campaign">
-      <button type="button" role="radio" data-rd="0">Normal: retry on defeat</button><button type="button" role="radio" data-rd="1">☠ Real death</button></div>
-      <p class="rd-note" id="rd-note"></p></div>
     <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button><button class="btn" type="button" data-go="trophies" id="btn-troph">Trophies</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
    </div>
    <div class="camp-r"><div class="lbl">Missions</div><div class="missions" id="mission-list"></div></div>
@@ -217,7 +213,7 @@
       <div class="note"><b>Cenotaph</b>The fallen are cut into stone. In zombie mode you can raise them once.</div>
       <div class="note"><b>Training</b>Both campaigns start with a training (00) that walks you through every button. Press N to skip a step.</div>
       <div class="note"><b>Playing the Swarm</b>Pick The Swarm on the campaign screen. Q W E R hatch, right-click sets the gathering point (or moves the swarm units you selected), A + click attacks, H brings the fallen home, T picks a tactic, B + click burrows up a small brood.</div>
-      <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty, and Real death too. Two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</div>
+      <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty. Flawless: win a mission without losing a soldier, one per difficulty. Two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</div>
     </div>
     <div class="fresh" id="fresh-box">
       <div><div class="lbl">Start fresh</div>
@@ -277,7 +273,7 @@
    <div class="troph-l">
     <div class="eyebrow">LUNAR CORPS · HALL OF HONOUR</div>
     <h2 class="h">Trophy wall</h2>
-    <p class="lede">One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. A win on Hard also counts for Normal and Easy. Real death counts only missions won with real death on. Below them hang two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</p>
+    <p class="lede">One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. A win on Hard also counts for Normal and Easy. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Below them hang two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</p>
     <div class="troph-hero" id="troph-hero"></div>
     <div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="veterans">Veterans</button></div>
    </div>

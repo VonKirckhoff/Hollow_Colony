@@ -32,7 +32,7 @@ SWARM_MISSIONS.push(
           centerOn(h.x+4*TILE,h.y+TILE); } },
       { when:g=>g.time>1, do:g=>g.brood_say('One of them comes home with us. Watch the egg. When it opens, you are what crawls out.') },
       { when:g=>g.vars.body&&g.vars.body.home&&!g.vars.hatched, do:g=>{ g.vars.hatched=true; const b=g.vars.body, h=b.home;
-          const e=eggsOf(h).sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y))[0]||layHiveEgg(h,b.x+TILE,b.y);
+          const e=eggsOf(h).sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y))[0]||hiveEgg(h,b)||layHiveEgg(h,b.x+TILE,b.y);
           e.dead=true; addDecal(e.x,e.y,8,'rgba(90,40,110,.6)'); SFX.play('crack',e.x,e.y);
           const u=makeUnit('grafter','swarm',e.x,e.y); u.role='grafter'; u.life=99999; setAvatar(u); centerOn(u.x,u.y);
           g.brood_say('You are awake. Right-click the body to crawl to it. Latch on.'); } },

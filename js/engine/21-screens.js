@@ -26,29 +26,18 @@ function isUnlocked(i){ const L=campList(); return i===0 || isDone(L[i-1].id); }
 function buildCampaign(){
   const sw=ui.campSide==='swarm', L=campList(); $('#s-campaign').classList.toggle('swarm',sw);
   document.querySelectorAll('[data-side]').forEach(b=>{ const on=b.dataset.side===(sw?'swarm':'corps'); b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
-  const rdc=!sw&&ui.realDeath; $('#s-campaign').classList.toggle('rdtrack',rdc);
-  $('#camp-eyebrow').textContent=sw?'CAMPAIGN · THE SWARM':rdc?'CAMPAIGN · LUNAR CORPS · ☠ REAL DEATH':'CAMPAIGN · LUNAR CORPS'; $('#camp-title').textContent=sw?'The Long Hunger':'Operation Hollow Light';
-  buildHero(); buildDefeatRow();
+  $('#camp-eyebrow').textContent=sw?'CAMPAIGN · THE SWARM':'CAMPAIGN · LUNAR CORPS'; $('#camp-title').textContent=sw?'The Long Hunger':'Operation Hollow Light';
+  buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
-  const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete${sw?' · more to come':rdc?' · Real death campaign':''}`;
+  const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete${sw?' · more to come':''}`;
   const tr=TRAINING[sw?'swarm':'corps'], trRes=tr&&ui.progress.results[tr.id];
   $('#mission-list').innerHTML=(tr?`<button class="mission training" type="button" data-mission="-1"><span class="num">00</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`:'')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=isUnlocked(i);
-    return `<button class="mission" type="button" data-mission="${i}" ${un?'':`aria-disabled="true" title="${rdc?'Real death: the missions in order, from mission 1':'Finish the previous mission first (Shift-click to play anyway)'}"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
+    return `<button class="mission" type="button" data-mission="${i}" ${un?'':`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
-/* On defeat: retry with the same soldiers (default) or real death */
-function buildDefeatRow(){ const rd=!!ui.realDeath, nRd=Object.keys(ui.rdProgress.results).length, nN=MISSIONS.filter(m=>ui.progress.results[m.id]).length;
-  document.querySelectorAll('[data-rd]').forEach(b=>{ const on=(b.dataset.rd==='1')===rd; b.classList.toggle('on',on); b.setAttribute('aria-checked',on); });
-  $('#defeat-row').classList.toggle('real',rd);
-  $('#rd-note').innerHTML=rd?`<b>☠ Real death</b> is a campaign of its own: it starts at mission 1 with fresh soldiers, and has its own Veterans and Cenotaph. Whoever falls is gone the moment he falls, also when you lose the mission; survivors keep the experience they earned. Iron mode: saving quits the mission and Continue works once; quitting or restarting counts as a lost mission. The missions go in order. Your normal campaign (${nN} of ${MISSIONS.length}) is kept: switch back any time.`
-    :`Lose a mission and the roster is restored: the same soldiers, with the experience they had, are ready for another try. ☠ Real death is a campaign of its own${nRd?` (${nRd} of ${MISSIONS.length} done)`:''}: from mission 1 with fresh soldiers. This campaign is kept.`; }
-$('#defeat-row').addEventListener('click',e=>{ const b=e.target.closest('[data-rd]'); if(!b) return; const rd=b.dataset.rd==='1'; if(rd===!!ui.realDeath) return; setTrack(rd); heroEdit=false; heroType=null; heroSex=null; buildCampaign();
-  toast(rd?'Real death campaign: from mission 1, with fresh soldiers. The fallen are gone, win or lose. Your normal campaign is kept.':'Back to your normal campaign: a lost mission does not cost you anyone.',true); });
 /* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
 let heroEdit=false, heroType=null, heroSex=null;
-/* your soldier in the other campaign (normal or Real death): the enlist form starts with his name, sex and type */
-function otherHero(){ try{ const r=store.get(rosterKey(!ui.roster.rd),{}); return (r.active||[]).find(v=>v.hero)||null; }catch(e){ return null; } }
 function buildHero(){
-  const el=$('#hero-card'), h=heroOf(), o=h?null:otherHero();
+  const el=$('#hero-card'), h=heroOf(), o=null;
   if(h && !heroEdit){ el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><img alt="" src="${iconUrl(h.type)}" style="width:28px;height:28px;image-rendering:pixelated"><span class="hname">★ ${RANKS[h.rank].abbr} ${h.name}</span><span class="rdim">${h.sex==='f'?'♀ Woman':'♂ Man'} · ${UNITS[h.type].name} · ${h.missions||0} mission${h.missions===1?'':'s'} · ${h.kills||0} kills</span><span style="flex:1"></span><button class="btn" type="button" id="hero-edit">Edit</button></div>`; return; }
   heroType=heroType||(h?h.type:o&&HERO_TYPES.includes(o.type)?o.type:'trooper'); heroSex=heroSex||(h&&h.sex)||(o&&o.sex)||'m'; const locked=h&&(h.missions||0)>0, P=f=>pron({sex:heroSex},f);
   el.innerHTML=`<div class="lbl">${h?'Edit your soldier':'Enlist your own soldier'}</div>
@@ -67,7 +56,7 @@ $('#hero-card').addEventListener('click',e=>{
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return;
-  if(b.getAttribute('aria-disabled')==='true'){ if(ui.realDeath&&ui.campSide!=='swarm'){ toast('Real death: the missions go in order, from mission 1.',true); return; }   /* no skipping ahead in iron mode */
+  if(b.getAttribute('aria-disabled')==='true'){
     if(!e.shiftKey){ toast('Finish the previous mission first. Shift-click to play it anyway.',true); return; } }
   openBriefing(+b.dataset.mission); });
 function rankCards(){ return RANKS.map(k=>`<div><b>${k.mark||'·'} ${k.name}</b><span>${k.xp} XP${k.heroOnly?' · your own soldier only':''}</span><span>${k.hp>1?`+${Math.round((k.hp-1)*100)}% HP, +${Math.round((k.dmg-1)*100)}% damage, +${Math.round((k.rate-1)*100)}% rate`:'base'}</span>${k.perk&&!k.aura?'<span>+ an ability of his type</span>':''}${k.aura?`<span>+ leads: soldiers within ${AURA.radius} tiles fire ${Math.round((AURA.rate-1)*100)}% faster, take ${Math.round(AURA.armor*100)}% less damage</span>`:''}</div>`).join(''); }
@@ -82,7 +71,7 @@ function buildVeterans(){
 let vetArm=null;
 $('#btn-reset-vets').addEventListener('click',()=>{ const b=$('#btn-reset-vets');
   if(!vetArm){ b.classList.add('armed'); b.textContent='Click again to erase all veterans'; vetArm=setTimeout(()=>{ vetArm=null; b.classList.remove('armed'); b.textContent='Reset veterans'; },4000); return; }
-  clearTimeout(vetArm); vetArm=null; ui.roster=emptyRoster(); saveRoster(); ensureHero(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased.',true); });
+  clearTimeout(vetArm); vetArm=null; ui.roster=emptyRoster(); saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased.',true); });
 /* The Cenotaph: every fallen veteran's name in stone. In zombie mode (Halloween) the fallen can be raised again. */
 function buildCenotaph(){
   const R=ui.roster, z=ui.zombie;
@@ -102,7 +91,8 @@ $('#s-cenotaph').addEventListener('click',e=>{
 /* Trophy wall: a plaque per role and difficulty column. Earned plaques carry every soldier who earned them; your own soldier's progress shows on his row. */
 const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
 function buildTrophies(){
-  checkGrand(); let T=trophies(), hero=heroOf(), gs=grandStatus(), earned=Object.values(T).filter(l=>l&&l.length).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0), total=HERO_TYPES.length*TROPHY_COLS.length+4, rs=relicStatus(); earned+=(rs.item.at?1:0)+(rs.egg.at?1:0);
+  checkGrand(); let T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus(), total=HERO_TYPES.length*TROPHY_COLS.length+FLAWLESS_COLS.length+4;
+  let earned=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0)+FLAWLESS_COLS.filter(c=>T['flawless:'+c.key]).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0)+(rs.item.at?1:0)+(rs.egg.at?1:0);
   $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${hero.tp&&hero.tp.void?'<span class="tvoid">Not on a trophy run: this soldier did not start at mission 1.</span>':TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
   const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}${c.sub?`<i>${c.sub}</i>`:''}</span>`).join('')}</div>`;
@@ -111,8 +101,12 @@ function buildTrophies(){
       const tip=`${UNITS[t].name} · ${c.label}`;
       if(list.length) return `<div class="plaque won ${c.key}" title="${tip}">${CUP_SVG}<b>${list[0].name}</b><i>${new Date(list[0].at).toLocaleDateString()}${list.length>1?` · +${list.length-1} more`:''}</i></div>`;
       return `<div class="plaque ${mine&&p?'run':''}" title="${tip}">${CUP_SVG}${mine?`<i>${p} / ${MISSIONS.length}</i><span class="tbar"><span style="width:${Math.round(p/MISSIONS.length*100)}%"></span></span>`:'<i>not yet</i>'}</div>`; }).join('')}</div>`).join('')+
+    /* Flawless: a campaign mission won without losing a soldier, one per difficulty (Hard counts for Normal and Easy too) */
+    `<div class="trow"><span class="trole flawless" title="Win a campaign mission without losing a single soldier">Flawless</span>${FLAWLESS_COLS.map(c=>{ const w=T['flawless:'+c.key], n=flawlessCount(c.key), tip=`Flawless · ${c.label}|Win a Lunar Corps campaign mission on ${c.label} (or harder) without losing a single soldier. ${n} of ${MISSIONS.length} missions done flawless.`;
+      return w?`<div class="plaque won ${c.key}" title="${tip}">${CUP_SVG}<b>${w.mission||'Flawless'}</b><i>${new Date(w.at).toLocaleDateString()} · ${n}/${MISSIONS.length} flawless</i></div>`
+        :`<div class="plaque" title="${tip}">${CUP_SVG}<i>not yet</i></div>`; }).join('')}</div>`+
     `<div class="trow grand"><span class="trole">Grand</span>${[
-      ['corps','Hollow Light','Every trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need],
+      ['corps','Hollow Light','Every role and Flawless trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need],
       ['swarm','The Long Hunger','Every Swarm mission on every difficulty',`Easy ${gs.swarm.easy} · Normal ${gs.swarm.normal} · Hard ${gs.swarm.hard} / ${gs.swarm.need}`,gs.swarm.need?(gs.swarm.easy+gs.swarm.normal+gs.swarm.hard)/(3*gs.swarm.need):0]
     ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`+relicRow();
 }
@@ -190,12 +184,12 @@ $('#intel-back').addEventListener('click',()=>goMenu(ui.intelFrom||'menu'));
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }
-  clearTimeout(resetArm); resetArm=null; const rd=!!ui.realDeath;   /* resets the campaign you are looking at: the normal one or the Real death one */
-  if(rd){ ui.rdProgress={results:{}}; store.set('hc-progress-rd',ui.rdProgress); } else { ui.progress={results:{}}; store.set('hc-progress',ui.progress); }
-  ui.roster=emptyRoster(); saveRoster(); ensureHero();
-  const sv=typeof savedInfo==='function'?savedInfo():null; if(sv&&!!sv.rd===rd){ try{ localStorage.removeItem('hc-save'); }catch(e){} }   /* the saved mission of this campaign goes too */
+  clearTimeout(resetArm); resetArm=null;
+  ui.progress={results:{}}; store.set('hc-progress',ui.progress);
+  ui.roster=emptyRoster(); saveRoster();
+  try{ localStorage.removeItem('hc-save'); }catch(e){}   /* the saved mission goes too */
   if(typeof refreshContinue==='function') refreshContinue();
-  b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast(rd?'Real death campaign erased: from mission 1 again.':'Campaign progress and the saved game erased.',true); });
+  b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress and the saved game erased.',true); });
 let briefIdx=0;
 function briefMission(i){ return i<0?TRAINING[ui.campSide==='swarm'?'swarm':'corps']:campList()[i]; }
 function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swarm';
@@ -204,7 +198,7 @@ function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swar
   const res=resultOf(m.id); $('#b-eyebrow').textContent+= res?` · COMPLETED ON ${DIFFICULTY[res.diff].label.toUpperCase()}`:'';
   const nv=sw?0:ui.roster.active.length; $('#b-text').innerHTML+= nv?`<p class="rdim">${nv} veteran${nv>1?'s':''} on the roster will join this mission: ${ui.roster.active.slice(0,6).map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(', ')}${nv>6?'…':''}.</p>`:'';
   if(sw) $('#b-text').innerHTML+=`<p class="rdim">Difficulty makes the Lunar Corps tougher: Easy ${Math.round(SWARM_DIFF.easy.hp*100)}%, Hard ${Math.round(SWARM_DIFF.hard.hp*100)}% health, and more reinforcements on Hard.</p>`;
-  else if(ui.realDeath) $('#b-text').innerHTML+='<p class="rd-brief">☠ Real death is on: whoever falls in this mission is gone, even if you lose it. Saving quits the mission (Continue works once); quitting or restarting counts as a lost mission.</p>';
+  else if(!m.training){ const r=resultOf(m.id); if(r&&r.flawless) $('#b-text').innerHTML+=`<p class="rdim">Done flawless (no soldier lost) on ${DIFFICULTY[r.flawless].label}.</p>`; }
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
   show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true}); }
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
@@ -238,8 +232,7 @@ function skirmishMission(mapId){
 }
 let lastMission=null;
 function startMission(m){
-  if(typeof dropRdSave==='function') dropRdSave(m);
-  lastMission=m; newGame(m,ui.diff); G.realDeath=!!ui.realDeath && m.id!=='skirmish' && m.side!=='swarm'; $('#rd-badge').hidden=!G.realDeath; ui.mode='game'; ui.placing=null; ui.amove=false; cv.classList.remove('amove');
+  lastMission=m; newGame(m,ui.diff); ui.mode='game'; ui.placing=null; ui.amove=false; cv.classList.remove('amove');
   show(null); const bt=$('#boot'); if(bt) bt.hidden=true; $('#hud').hidden=false; $('#tooltip').hidden=true; resize(); sizeMinimap();
   const cp=ptWorld(m.start.camera||'P'); centerOn(cp.x,cp.y);
   G.selDirty=true; G.objDirty=true; $('#btn-speed').textContent='1×'; setupSideHud(); ui.burrow=false; ui.rallyPick=false; missionTag();
@@ -257,39 +250,33 @@ $('#btn-fresh').addEventListener('click',()=>{ const b=$('#btn-fresh');
   clearTimeout(freshArm); const maps=$('#fresh-maps').checked, keepT=$('#fresh-troph').checked;
   try{ const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('hc-')&&(maps||k!=='hc-custom-maps')&&(!keepT||k!=='hc-trophies')) keys.push(k); } keys.forEach(k=>localStorage.removeItem(k)); }catch(e){}
   location.reload(); });
-/* Real death: the pause menu says what saving and leaving cost; Restart and Quit ask a second click, then count as a lost mission */
-let leaveArm=null;
-function pauseLabels(){ const rd=rdLive(); clearTimeout(leaveArm); leaveArm=null;
-  $('#p-save').innerHTML=rd?'Save and quit <small>☠ Real death: Continue picks it up once</small>':'Save game <small>One slot: replaces the last save</small>';
-  $('#p-restart').innerHTML='Restart mission'+(rd?' <small>☠ Counts as a lost mission</small>':''); $('#p-quit').innerHTML='Quit to menu'+(rd?' <small>☠ Counts as a lost mission</small>':'');
-  $('#p-restart').classList.remove('armed'); $('#p-quit').classList.remove('armed'); }
-function leaveMission(b,go){ if(!rdLive()){ go(); return; }
-  if(leaveArm!==b.id){ pauseLabels(); leaveArm=b.id; b.classList.add('armed'); b.innerHTML='Click again to give up <small>☠ A lost mission: the fallen stay fallen</small>'; return; }
-  leaveArm=null; abandonMission(); go(); }
-$('#p-restart').addEventListener('click',e=>leaveMission(e.currentTarget,()=>startMission(lastMission)));
-$('#p-quit').addEventListener('click',e=>leaveMission(e.currentTarget,()=>goMenu('menu')));
+function pauseLabels(){}
+$('#p-restart').addEventListener('click',()=>startMission(lastMission));
+$('#p-quit').addEventListener('click',()=>goMenu('menu'));
 function showEnd(){
   const o=G.over, m=G.mission; ui.mode='end';
   $('#e-eyebrow').textContent=o.win?'MISSION COMPLETE':'MISSION FAILED';
   const t=$('#e-title'); t.textContent=o.win?'Victory':'Defeat'; t.className='h '+(o.win?'win':'lose');
   $('#e-text').textContent=o.text;
-  if(o.win && m.id!=='skirmish'){ const r=resultOf(m.id,G.realDeath), pb=G.prevBest, up=pb&&DIFF_RANK[G.diffKey]>DIFF_RANK[pb.diff];
+  if(o.win && m.id!=='skirmish'){ const r=resultOf(m.id), pb=G.prevBest, up=pb&&DIFF_RANK[G.diffKey]>DIFF_RANK[pb.diff];
     $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; }
   const ev=$('#e-vets'); const rr=G.rosterResult, promoted=(rr&&rr.promoted)||[], hero=heroOf();
   const fallenAll=(rr&&(rr.fallenAll||rr.fallen))||[];
-  if((o.win||G.realDeath) && m.id!=='skirmish' && m.side!=='swarm' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length))||G.realDeath||(o.win&&heroOf()))){ ev.hidden=false;
+  if(o.win && m.id!=='skirmish' && m.side!=='swarm' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length))||(o.win&&heroOf()))){ ev.hidden=false;
     const star=n=>hero&&hero.name===n?'<span class="vstar">★</span> ':'';
     // one row per rank, highest first; names alphabetical within a rank
     const byRank=list=>{ const m2=new Map(); for(const v of list){ if(!m2.has(v.rank)) m2.set(v.rank,[]); m2.get(v.rank).push(v.name); }
       return [...m2.entries()].sort((a,b)=>b[0]-a[0]).map(([r,ns])=>`<div class="vrow"><span class="vrank">${RANKS[r].mark||'·'} ${RANKS[r].name}</span><span>${ns.sort((a,b)=>a.localeCompare(b)).map(n=>star(n)+n).join(', ')}</span></div>`).join(''); };
     const fallen=fallenAll.slice().sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
     const tw=(rr&&rr.trophies)||[], run=o.win&&hero&&hero.tp?`<div class="vsec"><span class="lbl">Trophy run</span><div>★ ${hero.name} · ${UNITS[hero.type].name}: ${hero.tp.void?'not on a trophy run (did not start at mission 1).':TROPHY_COLS.map(c=>`${c.label} ${trophyProgress(hero,c.key)}/${MISSIONS.length}`).join(' · ')}</div></div>`:'';
-    ev.innerHTML=(tw.length?`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${tw.map(w=>`<div>${w.name}: ${UNITS[w.type].name} · ${TROPHY_COLS.find(c=>c.key===w.col).label}. It hangs on the Trophy wall.</div>`).join('')}</div>`:'')+run+(G.realDeath?`<div class="vsec rd"><span class="lbl">☠ Real death</span><div>${o.win?'The fallen are gone for good.':'The mission is lost, and so are the fallen. Survivors keep their experience.'}</div></div>`:'')+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
+    ev.innerHTML=(tw.length?`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${tw.map(w=>`<div>${w.name}: ${UNITS[w.type].name} · ${TROPHY_COLS.find(c=>c.key===w.col).label}. It hangs on the Trophy wall.</div>`).join('')}</div>`:'')+run+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
       (rr&&rr.joined.length?`<div class="vsec"><span class="lbl">New on the roster</span>${byRank(rr.joined)}</div>`:'')+
       (fallen.length?`<div class="vsec fallen"><span class="lbl">Fallen</span>${fallen.map(v=>`<div class="vrow"><span class="vrank">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'<span class="vstar">★</span> ':''}${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}</i></span></div>`).join('')}</div>`:''); }
   else if(!o.win && m.id!=='skirmish' && m.side!=='swarm' && G.fallenVets && Object.keys(G.fallenVets).length){ ev.hidden=false;   /* retry: show who fell, but nobody is lost */
     ev.innerHTML=`<div class="vsec"><span class="lbl">Retry</span><div>The roster is restored for another try. These soldiers fell, but they are not lost: ${Object.values(G.fallenVets).map(f=>`${RANKS[f.rank||0].abbr} ${f.name}`).sort().join(', ')}.</div></div>`; }
   else ev.hidden=true;
+  if(G.flawless){ const html=`<div class="vsec troph"><span class="lbl">🏆 Flawless</span>${(G.flawlessWon||[]).length?G.flawlessWon.map(k=>`<div>Trophy earned: Flawless · ${DIFFICULTY[k].label}. It hangs on the Trophy wall.</div>`).join(''):''}<div>Not a single soldier lost on ${DIFFICULTY[G.diffKey].label}.</div></div>`;
+    if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.grandWon&&G.grandWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Grand trophy</span>${G.grandWon.map(k=>`<div>${k==='corps'?'Hollow Light: every trophy of the Lunar Corps.':'The Long Hunger: every Swarm mission on every difficulty.'} It hangs on the Trophy wall.</div>`).join('')}</div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.relicsGot&&G.relicsGot.length){ const html=`<div class="vsec troph"><span class="lbl">✦ Relic found</span>${G.relicsGot.map(id=>{ const r=relicDef(id); return r?`<div>${r.name}. Read about it in Intel, tab Relics.</div>`:''; }).join('')}</div>`;   /* kept even if the mission was lost */
@@ -315,4 +302,4 @@ $('#e-report').addEventListener('click',()=>{ $('#s-end').classList.remove('watc
 function missionTag(){ const m=G.mission, sw=m.side==='swarm', L=sw?SWARM_MISSIONS:MISSIONS, i=L.indexOf(m);
   const mode=m.training?(sw?'Swarm training':'Corps training'):m.id==='skirmish'?'Skirmish':i>=0?`${sw?'Swarm':'Corps'} ${i+1}`:'Mission';
   const diff=(sw?SWARM_DIFF:DIFFICULTY)[G.diffKey], d=diff&&diff.label?diff.label:G.diffKey;
-  $('#r-mode').textContent=`${mode} · ${d}`; $('#r-mtitle').textContent=m.title; $('#r-mission').dataset.tip=`${m.title}|${mode.replace(/^(Corps|Swarm) (\d)/,'$1 campaign, mission $2')}, ${d}${G.realDeath?', real death':''}.`; }
+  $('#r-mode').textContent=`${mode} · ${d}`; $('#r-mtitle').textContent=m.title; $('#r-mission').dataset.tip=`${m.title}|${mode.replace(/^(Corps|Swarm) (\d)/,'$1 campaign, mission $2')}, ${d}.`; }

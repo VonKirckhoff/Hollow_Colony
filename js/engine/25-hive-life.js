@@ -8,8 +8,8 @@
           (at least `clear` tiles from your troops and buildings, `spacing` tiles from other hives, at most `reach` tiles away)
           and takes root for `root` seconds. Then it becomes a young hive with `hiveHp` of a normal hive's health.
           A mission can cap the new hives with swarm.husks (default `max`; 0 = Husks never root). */
-const CREEP = { start:3, max:11, grow:150, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
-const HUSK  = { root:18, clear:13, spacing:16, reach:34, max:2, hiveHp:0.55, guardMax:2, hide:11 };   /* hide: tiles a withdrawing Shambler keeps from your troops */
+const CREEP = { start:2, max:8, grow:150, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
+const HUSK  = { root:18, clear:13, spacing:16, reach:34, max:2, hiveHp:0.55, guardMax:2, hide:11, skipShambler:true };   /* hide: tiles a withdrawing Shambler keeps from your troops · skipShambler: a Husk of the Swarm molts from Twitcher straight into a Husk (the creature you steer in The Graft still goes through all three) */
 
 /* ---- creep ---- */
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
@@ -64,6 +64,8 @@ const HUSK_STAGES = [
   { name:'Husk',     sprite:'husk',  hp:1,    speed:1,   dmg:1 }
 ];
 const MOLT = { time:1.6, vuln:1.5 };
+/* the stage a molt leads to: the Swarm's own Husks skip the Shambler (HUSK.skipShambler); the creature you steer does not */
+function nextStage(u){ const last=HUSK_STAGES.length-1, n=Math.min(last,u.stage+1); return (HUSK.skipShambler&&!u.avatar&&HUSK_STAGES[n].name==='Shambler')?Math.min(last,n+1):n; }
 function huskStage(u,i){ const st=HUSK_STAGES[i], f=u.maxHp?u.hp/u.maxHp:1, base=toughHp(u.type)*G.diff.hp;
   u.stage=i; u.sprite=st.sprite; u.stageName=i<HUSK_STAGES.length-1?st.name:null; u.speedMul=st.speed; u.dmgMul=(G.diff.dmg||1)*st.dmg;
   u.maxHp=base*st.hp; u.hp=Math.min(u.maxHp,Math.max(u.maxHp*f,u.maxHp*0.5)); u.stageT=st.time||0; }
@@ -76,7 +78,7 @@ function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=0;
 function huskGrow(u,dt){
   if(u.molt>0){ u.molt-=dt; u.order={type:'hold'}; u.path=null; u.target=null; u.cd=Math.max(u.cd,0.3);
     if(Math.random()<dt*14) G.fx.push({k:'ember',x:u.x+rand(-8,8),y:u.y-rand(2,20),vx:rand(-40,40),vy:rand(-70,-20),t:0.6,max:0.6,col:pick(['#a6ff4a','#c38bff','#d23a3a'])});
-    if(u.molt<=0){ huskStage(u,u.stage+1); u.order=null; const vis=isVisible(u);
+    if(u.molt<=0){ huskStage(u,nextStage(u)); u.order=null; const vis=isVisible(u);
       G.fx.push({k:'boom',x:u.x,y:u.y-6,t:0.45,max:0.45,r:26,col:'#c38bff'}); addDecal(u.x,u.y,12,'rgba(90,40,110,.55)');
       for(let i=0;i<14;i++) G.fx.push({k:'spark',x:u.x,y:u.y-10,vx:rand(-90,90),vy:rand(-120,0),t:0.5,max:0.5,col:pick(['#7a5a8e','#a6ff4a','#5d6f83'])});   /* shed armour and skin */
       const final=u.stage===HUSK_STAGES.length-1;
@@ -89,7 +91,7 @@ function huskGrow(u,dt){
   return false; }
 /* drawn on top of the Husk while it molts: it shakes, its skin glows and the next form pushes through */
 function drawMolt(u,x,y,w,h,now){
-  const p=1-u.molt/MOLT.time, nx=SPR[HUSK_STAGES[Math.min(u.stage+1,HUSK_STAGES.length-1)].sprite], s=u.def.scale||2, nw=nx.w*s, nh=nx.h*s;
+  const p=1-u.molt/MOLT.time, nx=SPR[HUSK_STAGES[nextStage(u)].sprite], s=u.def.scale||2, nw=nx.w*s, nh=nx.h*s;
   ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.25+0.35*Math.abs(Math.sin(now/60));
   ctx.drawImage(u.face>0?SPR[u.sprite].flash:SPR[u.sprite].flashFlip,x,y,w,h); ctx.globalCompositeOperation='source-over';
   ctx.globalAlpha=p*0.85; ctx.drawImage(u.face>0?nx.img:nx.flip,Math.round(u.x-nw/2+rand(-2,2)),Math.round(u.y-nh+4),nw,nh); ctx.globalAlpha=1;
@@ -277,35 +279,39 @@ function drawRooting(u,now){
   ctx.fillStyle='#000'; ctx.fillRect(x-15,y-1,30,5); ctx.fillStyle='#c38bff'; ctx.fillRect(x-14,y,Math.round(28*p),3);
   ctx.font='9px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText('ROOTING',x+1,y-3); ctx.fillStyle='#c38bff'; ctx.fillText('ROOTING',x,y-4); }
 
-/* ---- the hatchery: eggs on the creep and the Grafters that hatch from them ----
-   EGG: max = eggs a hive keeps waiting (per hive or mission: eggs:<n>) · every = seconds to grow a new one
-        open = seconds an egg takes to open · spitEvery = how often a hive can spit a fresh egg at a body when none is free
-        life = seconds a Grafter without a body lives */
-const EGG = { max:3, every:18, open:1.4, spitEvery:6, life:25 };
+/* ---- the hatchery: the eggs a hive lays and the Grafters that hatch from them ----
+   A hive keeps no eggs waiting: only when a body lies in its creep does it lay an egg, right next to itself (on the side of the body).
+   The egg opens, the Grafter runs to the body and turns it.
+   EGG: max = eggs a hive can have at once (per hive or mission: eggs:<n>, eggs:0 = none) · open = seconds an egg takes to open
+        spitEvery = seconds between two eggs of one hive (one body after another) · life = seconds a Grafter without a body lives */
+const EGG = { max:3, open:1.4, spitEvery:3, life:25 };
 function eggsOf(h){ return G.ents.filter(e=>!e.dead&&e.type==='egg'&&e.hive===h.id); }
 function layHiveEgg(h,x,y,target){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(!walkableT(tx,ty)) return null;
   const e=makeBuilding('egg','swarm',tx,ty,true); e.x=x; e.y=y; e.r=7; e.hive=h.id; if(target){ e.target=target; e.openT=EGG.open; } return e; }
 function updateHatchery(dt){
-  for(const h of nests()){ const max=hiveOpt(h,'eggs',EGG.max); if(!max) continue;
-    const r0=h.type==='hive'?2.2:1.4, cr=hiveOpt(h,'creep',CREEP.max);   /* a shaft's creep is small: eggs lie closer */
-    if(!h.eggInit){ h.eggInit=true; h.eggT=EGG.every; for(let i=0;i<max;i++) placeEgg(h,r0,Math.max(r0+0.6,Math.min(3.2,cr-0.6))); continue; }   /* a few eggs already waiting */
-    h.eggT-=dt; if(h.eggT<=0){ h.eggT=EGG.every; if(eggsOf(h).length<max&&(h.creepR||0)>=Math.min(2.5,cr)) placeEgg(h,r0,Math.min(5,Math.max(r0+0.4,h.creepR-0.4))); } }
   for(const e of G.ents){ if(e.dead||e.type!=='egg') continue;
     if(!G.ents.some(h=>!h.dead&&h.id===e.hive)){ e.hp-=5*dt; if(e.hp<=0){ kill(e,null); continue; } }   /* its hive is dead: it withers */
     if(e.target&&(e.target.dead||!e.target.home)){ e.target=null; e.openT=null; }
     if(e.openT!=null){ e.openT-=dt; if(e.openT<=0) openEgg(e); } } }
-function placeEgg(h,r0,r1){ for(let k=0;k<24;k++){ const a=Math.random()*Math.PI*2, r=rand(r0,r1)*TILE, x=h.x+Math.cos(a)*r, y=h.y+Math.sin(a)*r;
-    if(!walkableT(Math.floor(x/TILE),Math.floor(y/TILE))) continue; if(G.ents.some(e=>!e.dead&&e.type==='egg'&&Math.hypot(e.x-x,e.y-y)<1.3*TILE)) continue;
-    return layHiveEgg(h,x,y); } return null; }
+/* the tile right next to the hive where its next egg goes: on the side of `toward` (the body), not on top of another egg */
+function eggSpot(h,toward){ const s=h.size, c=[];
+  for(let y=h.ty-1;y<=h.ty+s;y++) for(let x=h.tx-1;x<=h.tx+s;x++){ if(x>=h.tx&&x<h.tx+s&&y>=h.ty&&y<h.ty+s) continue; if(!walkableT(x,y)||G.block[y*G.map.w+x]) continue;
+    const px=(x+.5)*TILE, py=(y+.5)*TILE; if(G.ents.some(e=>!e.dead&&e.type==='egg'&&Math.hypot(e.x-px,e.y-py)<0.8*TILE)) continue; c.push({x:px,y:py}); }
+  if(!c.length) return null; if(!toward) return pick(c);
+  return c.reduce((a,b)=>Math.hypot(a.x-toward.x,a.y-toward.y)<=Math.hypot(b.x-toward.x,b.y-toward.y)?a:b); }
+/* a hive lays an egg next to itself (toward: the body it is for) */
+function hiveEgg(h,toward,target){ const s=eggSpot(h,toward); if(!s) return null; return layHiveEgg(h,s.x,s.y,target); }
 function openEgg(e){ e.dead=true; const u=makeUnit('grafter','swarm',e.x,e.y); u.graft=e.target; u.life=EGG.life; u.role='grafter';
   addDecal(e.x,e.y,8,'rgba(90,40,110,.6)'); for(let i=0;i<10;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-60,60),vy:rand(-90,-10),t:0.5,max:0.5,col:pick(['#c38bff','#a6ff4a','#7a5a8e'])});
   if(isVisible(e)){ SFX.play('crack',e.x,e.y); if(G.side==='corps'&&!G.saidEgg){ G.saidEgg=true; say('Dr. Maas','One of those eggs just opened. Something small is running for the body. Shoot it!','alert'); } } }
-/* a body has come home: send the nearest waiting egg's Grafter, or spit a fresh egg next to it */
+/* a body lies in the creep of its hive: the hive lays an egg right next to itself, and its Grafter goes for the body
+   (an egg that is already there and free, from an older save, is used first) */
 function callGrafter(b){ const h=b.home; if(!h||h.dead||b.avatarBody) return;   /* the body meant for your own Grafter waits for you */
   const free=eggsOf(h).filter(e=>!e.target); if(free.length){ const e=free.reduce((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)<=Math.hypot(c.x-b.x,c.y-b.y)?a:c); e.target=b; e.openT=EGG.open; return; }
+  const max=hiveOpt(h,'eggs',EGG.max); if(!max||eggsOf(h).length>=max) return;
   if(G.time<(h.spitAt||0)) return; h.spitAt=G.time+EGG.spitEvery;
-  const f=freeTilesNear(Math.floor(b.x/TILE)+(Math.random()<0.5?1:-1),Math.floor(b.y/TILE),1)[0]; if(!f) return; const tx=(f.x+.5)*TILE, ty=(f.y+.5)*TILE;
-  G.shots.push({k:'egglob',sx:h.x,sy:h.y-24,tx,ty,t:0,dur:Math.hypot(tx-h.x,ty-h.y)/200+0.35,faction:'none',splash:0,dmg:0,hive:h.id,body:b});
+  const s=eggSpot(h,b); if(!s) return;
+  G.shots.push({k:'egglob',sx:h.x,sy:h.y-18,tx:s.x,ty:s.y,t:0,dur:0.45,faction:'none',splash:0,dmg:0,hive:h.id,body:b});   /* a short heave: the egg drops out of the hive at its foot */
   if(isVisible(h)) SFX.play('spit',h.x,h.y); }
 function eggLanded(s){ const h=G.ents.find(e=>!e.dead&&e.id===s.hive)||{id:s.hive}; const e=layHiveEgg(h,s.tx,s.ty,s.body&&!s.body.dead?s.body:null);
   if(e){ SFX.play('splat',e.x,e.y); addDecal(e.x,e.y,9,'rgba(90,40,110,.5)'); } }

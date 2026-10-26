@@ -77,7 +77,7 @@ TRAINING.corps = {
         setup:g=>{ const c=makeBuilding('cocoon','swarm',16,33,true); c.x=(16.5)*TILE; c.y=(33.5)*TILE; c.r=9; c.hatchT=c.hatchMax=240; c.hatchType='crawler'; g.vars.coc=c; g.reveal({x:16,y:33},3,10); }, done:g=>!g.vars.coc||g.vars.coc.dead },
       { say:'Now the top bar. Every button there, one at a time. [Space] jumps the camera to the last alert, any time.', obj:'The top bar', hl:['#topbar'], done:g=>g.time>g.vars.tutStart+1 },
       ...topbarSteps('corps'),
-      { say:'Last one: a training hive in the east. Purple creep grows around it and heals the Swarm. It keeps eggs on that creep: when the Swarm drags a body home, an egg opens and a Grafter turns the body. Shoot the eggs, burn the hive.', obj:'Destroy the training hive', mark:'b', markLabel:'Hive',
+      { say:'Last one: a training hive in the east. Purple creep grows around it and heals the Swarm. When the Swarm drags a body home, the hive lays an egg at its foot, and a Grafter from it turns the body. Shoot the egg, burn the hive.', obj:'Destroy the training hive', mark:'b', markLabel:'Hive',
         setup:g=>{ g.reveal('b',5,12); g.ping('b'); }, done:g=>g.hives()===0, after:g=>g.win('Boot camp complete. You are ready for Kappa Station.') }
     ])
   ]

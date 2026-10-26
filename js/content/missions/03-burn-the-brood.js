@@ -27,11 +27,13 @@ MISSIONS.push(
       units:[ ['engineer','P',2], ['trooper','P',6], ['gunner','P',2], ['pyro','P',2], ['medic','P',2] ],
       buildings:[ ['hq','P'] ], hiveHp:4,
       /* per hive: c is the big nest with spitters among its guards; e is tougher and angrier */
-      hives:[ 'a', 'b', { at:'c', guardMax:8, guards:['drone','drone','spitter'], aggro:10 }, 'd', { at:'e', hp:2.4, rage:1.4 } ],
+      hives:[ 'a', 'b', { at:'c', guardMax:8, guards:['drone','drone','spitter'], aggro:10 }, 
+          'd', { at:'e', hp:6, rage:1.4 } ],
       shafts:[ {x:2,y:21,wall:'w'}, {x:36,y:3,wall:'n'}, {x:69,y:18,wall:'e'} ] },   // old mine shafts in the west, north and east ridges: with the hives gone, the Swarm comes up out of these
     limits:{ sentry:5 },
     landingZone:{ tx:40, ty:41, max:14, delay:25 },   // pad east of the Command Post: order replacements, never more than the 14 you start with
-    swarm:{ biomass:80, rate:0.5, guardMax:6, guardEvery:12, aggro:8, aggroBrood:55, waves:{ first:140, every:85, budget:100, growth:42 } },
+    swarm:{ biomass:80, rate:0.5, guardMax:6, guardEvery:12, aggro:8, aggroBrood:55, 
+      waves:{ first:140, every:85, budget:100, growth:42 } },
     objectives:[
       { id:'hives', text:'Destroy all hives (0/5)' },
       { id:'hq',    text:'The Command Post must survive' }
@@ -43,9 +45,10 @@ MISSIONS.push(
       { when:g=>g.hives()<=2, do:g=>{ g.say('Cmdr. Varga','The brood knows it is dying. Massive wave forming. Brace!'); g.wave(240); } },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen.'); } },
       { when:g=>g.hives()===0, do:g=>{ g.complete('hives'); g.vars.final=true;
-          g.say('Cmdr. Varga','The hives are down, but the ground is shaking. They are coming up the old mine shafts, west, north and east, and all of it is heading for the Command Post. Hold for two minutes!');
+          g.say('Cmdr. Varga','The hives are down, but the ground is shaking. They are coming up the old mine shafts, west, north and east, and all of it is heading for the Command Post. Hold for three minutes!');
           for(const sh of shafts()){ const at={x:Math.floor(sh.x/TILE),y:Math.floor(sh.y/TILE)}; g.reveal(at,3,8); g.ping(at); }
-          g.addObjective('final','Hold the Command Post for three minutes'); g.setTimer(180,'Hold'); g.vars.surgeT=g.time; } },
+          g.addObjective('final','Hold the Command Post for three minutes'); 
+          g.setTimer(180,'Hold'); g.vars.surgeT=g.time; } },
       { repeat:true, when:g=>g.vars.final && g.timerLeft()>0 && g.time>=g.vars.surgeT, do:g=>{ g.vars.surgeT=g.time+BROOD_SURGE.every*G.diff.interval; broodShaftSurge(g); } },   // the last surge climbs out of the mine shafts
       { when:g=>g.vars.final && g.timerLeft()===0, do:g=>{ g.complete('final'); g.complete('hq'); g.win('Tycho Maw is silent. The brood is broken.'); } }
     ]

@@ -8,7 +8,7 @@ function stepMove(u,dt){
   const last=u.pi===u.path.length-1;
   if(d<(last?3:8)){ u.pi++; u.stuckN=0; return u.pi>=u.path.length; }
   const tile=tileAt(G.map,Math.floor(u.x/TILE),Math.floor(u.y/TILE));
-  const pace=(u.order&&u.order.pace)||speedOf(u); const sp=Math.min(speedOf(u),pace)*(tile==='~'?0.8:1)*dt, k=Math.min(1,sp/d);
+  const pk=u.pack?packPace(u):0, pace=Math.min((u.order&&u.order.pace)||speedOf(u),pk||Infinity); const sp=Math.min(speedOf(u),pace)*(tile==='~'?0.8:1)*dt, k=Math.min(1,sp/d);
   if(u.ghostT>0) u.ghostT-=dt;
   moveBy(u,dx*k,dy*k); if(Math.abs(dx)>2) u.face=dx>0?1:-1; u.moving=true;
   // Stuck detection: a walking unit must get closer to its next waypoint. If it has not gained ground for
