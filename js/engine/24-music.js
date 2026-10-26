@@ -15,13 +15,14 @@
      Mare Tranquillitatis    atmospheric space black metal in B minor: a tide of tremolo melody over a quiet shore
      Cold Light of Distant Suns  fast space black metal in E minor: tremolo-picked riffs, an eclipse, and an aurora at the end
      Perihelion              cosmic black metal: an arpeggiator orbit, a slow swing past the sun and the burn of the close pass
+     The Firmament Hums      raw atmospheric black metal: one buzzing fuzz riff repeated until it hypnotises, an organ under it, a voice far away
    The briefing and the Cenotaph have their own pieces (in zombie mode with an out-of-tune music box).
    The music player (button "Tracks", bottom right of the menu screens) lets you listen to each one and pick the menu music. */
 const MUSIC=(()=>{
   let BEAT=60/72, S16=BEAT/4, BAR=BEAT*4, TR=0;
   const D2=73.42, N=s=>D2*Math.pow(2,(s+TR)/12);   // semitones above D2 (D=0, Eb=1, F=3, G=5, A=7, Bb=8, C=10, D3=12), shifted by the track's key
   function setTempo(trk){ BEAT=60/trk.bpm; S16=BEAT/4; BAR=BEAT*4; TR=trk.tr||0; }
-  let ac=null, noiseBuf=null, irBuf=null, shapeHeavy=null, shapeLead=null, crushCurve=null;
+  let ac=null, noiseBuf=null, irBuf=null, shapeHeavy=null, shapeLead=null, shapeFuzz=null, crushCurve=null;
   let on=store.get('hc-music',true), 
     vol=store.get('hc-music-vol',0.3), 
     menuTrack=store.get('hc-music-track','hollow'), 
@@ -42,6 +43,7 @@ const MUSIC=(()=>{
     const len=Math.floor(ac.sampleRate*4.8); irBuf=ac.createBuffer(2,len,ac.sampleRate);          // a big dark hall
     for(let c=0;c<2;c++){ const d=irBuf.getChannelData(c); let lp=0; for(let i=0;i<len;i++){ const k=i/len; lp=lp*0.82+(Math.random()*2-1)*0.18; d[i]=lp*Math.pow(1-k,3.4)*(i<ac.sampleRate*0.012?0.3:1); } }
     shapeHeavy=curve(70); shapeLead=curve(28);
+    shapeFuzz=new Float32Array(4096); for(let i=0;i<4096;i++){ const x=i/4095*2-1; shapeFuzz[i]=Math.tanh((x+0.06)*40)-Math.tanh(0.06*40); }   // a cheap fuzz pedal: hard, a little lopsided (the buzz)
     crushCurve=new Float32Array(1024); for(let i=0;i<1024;i++){ const x=i/1023*2-1; crushCurve[i]=Math.round(x*24)/24; } }
   function curve(k){ const n=4096, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=(1+k)*x/(1+k*Math.abs(x)); } return c; }
   function g(v){ const n=ac.createGain(); n.gain.value=v; return n; }
@@ -67,6 +69,12 @@ const MUSIC=(()=>{
     // dotted-eighth delay for arpeggios, stars and the music box
     s.dly=g(1); const d=ac.createDelay(3), fb=g(0.42), dlp=filt('lowpass',2400); d.delayTime.value=BEAT*0.75;
     s.dly.connect(d); d.connect(dlp).connect(fb).connect(d); dlp.connect(pan(-0.5)).connect(s.mix); dlp.connect(g(0.4)).connect(s.revIn);
+    // fuzz guitar (tracks with fuzz:true): a buzzing, muffled wall, as if the amp were in the next room
+    if(trk.fuzz){ s.fuzz=g(1); const fpre=g(20), fsh=ac.createWaveShaper(); fsh.curve=shapeFuzz; fsh.oversample='2x';
+      const fhp=filt('highpass',110), buzz=filt('peaking',1400,1.1), scoop=filt('peaking',500,1); buzz.gain.value=6; scoop.gain.value=-5; const flp=filt('lowpass',2300,0.6), fpost=g(0.075);
+      s.fuzz.connect(fpre).connect(fsh).connect(fhp).connect(scoop).connect(buzz).connect(flp).connect(fpost);
+      const fl=ac.createDelay(0.05), fr=ac.createDelay(0.05); fl.delayTime.value=0.008; fr.delayTime.value=0.021;
+      fpost.connect(fl).connect(pan(-0.6)).connect(s.mix); fpost.connect(fr).connect(pan(0.6)).connect(s.mix); fpost.connect(g(0.45)).connect(s.revIn); }
     return s; }
 
   /* ---------- instruments ---------- */
@@ -159,6 +167,29 @@ const MUSIC=(()=>{
   function tom(t,v=1,note=-5){ const e=g(0); e.connect(S.mix); e.connect(g(0.6)).connect(S.revIn); const end=env(e,t,0.003,0.4*v,0.02,0.5);
     const o=osc('sine',N(note)*2,t,end,e); o.frequency.exponentialRampToValueAtTime(N(note),t+0.25); }
 
+  /* ---- The Firmament Hums ---- */
+  /* fuzz chord, picked fast (16ths) so the strokes blur into one buzzing wall */
+  function fuzzChord(t,root,dur,v=1){ for(let k=0;k*S16<dur-0.01;k++){ const tt=t+k*S16, e=g(0); e.connect(S.fuzz);
+      const end=env(e,tt,0.004,0.09*v*(k%2?0.85:1),S16*0.55,0.06); for(const iv of [0,7,12]) osc('sawtooth',N(root+iv),tt,end,e,k%2?-6:6); } }
+  /* one strummed fuzz chord left to ring and slowly die */
+  function fuzzRing(t,root,dur,v=1){ const e=g(0); e.connect(S.fuzz); const end=env(e,t,0.006,0.1*v,0.2,Math.max(0.3,dur-0.2));
+    for(const iv of [0,7,12]) { osc('sawtooth',N(root+iv),t,end,e,-5); osc('square',N(root+iv),t,end,e,5); } }
+  /* feedback: a high tone creeping out of the amp */
+  function feedback(t,note,dur,v=1){ const e=g(0); e.connect(S.fuzz); e.gain.setValueAtTime(0.0001,t); e.gain.exponentialRampToValueAtTime(0.03*v,t+dur*0.8); e.gain.linearRampToValueAtTime(0.0001,t+dur);
+    osc('sine',N(note),t,t+dur,e); }
+  /* a cheap organ/string synth: two detuned saws and a square an octave down, slow attack, a little vibrato */
+  function keys(t,note,dur,v=1){ const lp=filt('lowpass',1500,0.9), e=g(0); lp.connect(e); e.connect(pan(0.15)).connect(S.mix); e.connect(g(1.1)).connect(S.revIn);
+    const end=env(e,t,0.25,0.06*v,Math.max(0.05,dur-0.45),0.7);
+    const a=osc('sawtooth',N(note),t,end,lp,-10), b=osc('sawtooth',N(note),t,end,lp,10); osc('square',N(note-12),t,end,lp);
+    const lfo=ac.createOscillator(), lg=g(7); lfo.frequency.value=4.6; lfo.connect(lg); lg.connect(a.detune); lg.connect(b.detune); lfo.start(t+0.3); lfo.stop(end); }
+  /* a rasping voice far away in the hall: breath through vowel formants, shaking */
+  function rasp(t,dur,v=1){ const sum=g(1), e=g(0), shake=ac.createOscillator(), sg=g(0.4); sum.connect(e); e.connect(g(0.25)).connect(S.mix); e.connect(g(1.6)).connect(S.revIn);
+    for(const [f,q,a] of [[650+Math.random()*250,5,1],[1250+Math.random()*300,6,0.7],[2600,4,0.4]]){ const bp=filt('bandpass',f,q), ga=g(a); bp.connect(ga).connect(sum); noise(t,dur,bp); }
+    e.gain.setValueAtTime(0.0001,t); e.gain.exponentialRampToValueAtTime(0.14*v,t+0.12); e.gain.setValueAtTime(0.14*v,t+dur*0.7); e.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    shake.frequency.value=7+Math.random()*4; shake.connect(sg).connect(sum.gain); shake.start(t); shake.stop(t+dur+0.05); }
+  function hum(t,dur,v=1){ const e=g(0), lp=filt('lowpass',400); lp.connect(e).connect(S.mix); e.gain.setValueAtTime(0.0001,t); e.gain.exponentialRampToValueAtTime(0.03*v,t+1.5); e.gain.setValueAtTime(0.03*v,t+dur-1.5); e.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    osc('sawtooth',50,t,t+dur,lp); osc('sine',100,t,t+dur,lp); }
+
   /* ---------- the score ---------- */
   function at(t,s16){ return t+s16*S16; }
   const tri=(r,minor)=>[r,r+(minor?3:4),r+7];
@@ -205,6 +236,10 @@ const MUSIC=(()=>{
   const PERI=[[0,1],[-4,0],[3,0],[-2,0],[0,1],[-4,0],[1,0],[-2,0]];
   const PERI_ARP=[12,19,24,27,31,27,24,19,15,19,24,31,36,31,24,19];
   const PERI_MEL=[[31,32],[32,31],[34,31],[29,27],[31,34],[36,32],[37,36],[34,31]];
+  // The Firmament Hums (E minor: 0 = E). One chord per beat; the riff turns round and round.
+  const FIRM_A=[[0,0,0,3],[0,0,-2,-2],[-4,-4,-4,-2],[-5,-5,-2,-2]];            // Em . . G | Em . D . | C . . D | B . D .
+  const FIRM_B=[[-4,-4,-2,-2],[-5,-5,0,0],[-4,-4,-2,-2],[3,3,5,5]];            // C D | B Em | C D | G A: the riff lifts its head
+  const FIRM_KEYS=[[31,29],[27,26],[24,26],[26,29]], FIRM_KEYS2=[[34,31],[31,29],[27,29],[31,26]], FIRM_KEYS_B=[[24],[23],[24],[27,29]];
 
   const SECTIONS={
     /* --- Hollow Light (+ Drowned, Iron Psalm) --- */
@@ -331,6 +366,24 @@ const MUSIC=(()=>{
       tremolo(at(t,0),mel[0]+12,BAR/2,0.6); tremolo(at(t,8),mel[1]+12,BAR/2,0.6); leadLong(at(t,0),mel[0]+12,BAR,0.7);
       if(i%2===0) choir(t,tri(r+24,m),BAR*2-0.2,0.9); blast(t,1); if(i%2===0) crash(t,1.1); if(i===6) swellUp(at(t,0),BAR-0.05,0.8);
       if(i%4===0) shimmer(t,tri(r+36,m),BAR*4-0.2,1); },
+    /* --- The Firmament Hums: raw atmospheric black metal --- */
+    hollowHum(t,i){ if(i===0){ hum(t,BAR*4+1); hiss(t,BAR*4+0.1,1.5); fuzzRing(t,0,BAR*2+0.8,0.8); }
+      if(i===2){ fuzzRing(t,-4,BAR*2,0.7); feedback(t,24,BAR*2-0.1,1); } if(i===3) for(let k=8;k<16;k+=2) tom(at(t,k),0.25+0.05*k,-2); },
+    firm(t,i,o={}){ const riff=(o.b?FIRM_B:FIRM_A)[i%4]; hiss(t,BAR+0.05,1.2);
+      riff.forEach((r,k)=>{ fuzzChord(at(t,k*4),r,BEAT,0.95); bass(at(t,k*4),r,4,0.85); });
+      if(i>=(o.drumsIn||0)){ kick(at(t,0),0.85); kick(at(t,8),0.75); if(i%2) kick(at(t,10),0.55); snare(at(t,4),0.75); snare(at(t,12),0.75);
+        for(let k=0;k<16;k+=2) hat(at(t,k),k%4?0.3:0.45); if(i%4===0) crash(t,0.7);
+        if(i%16===15) for(let k=12;k<16;k++) tom(at(t,k),0.35+0.08*(k-12),[5,3,0,-2][k-12]); }
+      if(o.keys){ const mel=o.b?FIRM_KEYS_B[i%4]:(o.high&&i%8>=4?FIRM_KEYS2:FIRM_KEYS)[i%4]; const len=BAR/mel.length;
+        mel.forEach((nt,k)=>keys(at(t,k*16/mel.length),nt+(o.high?12:0),len,o.keys)); }
+      if(o.voice && i%4===o.voice-1) rasp(at(t,Math.random()<0.5?0:2),BAR*(0.6+Math.random()*0.5),0.9); },
+    firmIn(t,i){ SECTIONS.firm(t,i,{drumsIn:4}); },
+    firmKeys(t,i){ SECTIONS.firm(t,i,{keys:0.8,voice:3}); },
+    firmRise(t,i){ SECTIONS.firm(t,i,{b:true,keys:0.9,voice:2}); },
+    firmHigh(t,i){ SECTIONS.firm(t,i,{keys:1,high:true}); if(i%4===0) pad(t,[12,15,19],BAR*4-0.2,0.7,0.8); },
+    firmFade(t,i){ const r=FIRM_A[i%4][0]; hiss(t,BAR+0.05,1.4);
+      if(i<4){ fuzzRing(t,r,BAR,0.75-0.12*i); bass(t,r,16,0.6-0.1*i); } FIRM_KEYS[i%4].forEach((nt,k)=>keys(at(t,k*8),nt,BAR/2,0.9-0.08*i));
+      if(i===0) hum(t,BAR*8); if(i===4) feedback(t,24,BAR*3,0.7); },
     /* --- screen moods --- */
     brief(t,i){ if(i===0) drone(t,BAR*8+2); heartbeat(at(t,0)); heartbeat(at(t,8),0.8);
       if(i%4===0) choir(t,[12,15],BAR*4-0.3,0.5); if(Math.random()<0.6) radio(at(t,Math.floor(Math.random()*12)),0.4+Math.random()*1.2,1.2);
@@ -380,6 +433,9 @@ const MUSIC=(()=>{
     { id:'perihelion', title:'Perihelion', style:'Cosmic black metal', bpm:70, tr:-2, rev:1.4,
       desc:'An arpeggiator in orbit around a black metal riff, a slow swing past the sun, and the burn of the closest pass.',
       plan:c=>[['approach',8],['orbitBlack',8],['swing',8],['burn',8],['orbitBlack',8]] },
+    { id:'firmament', title:'The Firmament Hums', style:'Raw atmospheric black metal', bpm:96, tr:2, lofi:true, fuzz:true, rev:1.25, gain:1.5,
+      desc:'One buzzing fuzz riff, round and round until it hypnotises. An old organ rises under it, a voice rasps somewhere far away in the dark.',
+      plan:c=>[['hollowHum',c?2:4],['firmIn',16],['firmKeys',16],['firmRise',8],['firmKeys',8],['firmHigh',16],['firmRise',8],['firmFade',8]] },
     { id:'brief',   title:'Briefing', style:'Screen · mission briefing', bpm:72, screen:true,
       desc:'A heartbeat, static on the radio and a sparse arpeggio. Plays while you read the briefing.', plan:c=>[['brief',8]] },
     { id:'requiem', title:'Cenotaph', style:'Screen · Cenotaph', bpm:72, screen:true,
@@ -438,7 +494,8 @@ const MUSIC=(()=>{
   const SECTION_NAME={ ruins:'Ruins', doom:'Doom', doomLead:'Doom', black:'Black', machine:'Machine', forge:'Forge', void:'Void', nebula:'Nebula', drift:'Drift',
     forest:'Forest', swell:'Swell', storm:'Storm', room:'Room', ache:'Ache', orbit:'Orbit', toll:'Toll', procession:'Procession', brief:'Briefing', requiem:'Requiem',
     fallIntro:'Starfall', blackStar:'Black stars', blackStorm:'Storm', shore:'Shore', tide:'Tide', tideHigh:'High tide', apogee:'Apogee',
-    pulse:'Pulse', distant:'Distant suns', eclipse:'Eclipse', aurora:'Aurora', approach:'Approach', orbitBlack:'Orbit', swing:'Swing-by', burn:'Burn' };
+    pulse:'Pulse', distant:'Distant suns', eclipse:'Eclipse', aurora:'Aurora', approach:'Approach', orbitBlack:'Orbit', swing:'Swing-by', burn:'Burn',
+    hollowHum:'Hum', firmIn:'Riff', firmKeys:'Organ', firmRise:'Rise', firmHigh:'Firmament', firmFade:'Fade' };
   function newPass(at0,skip){ const parts=S.queue.map(([n,b])=>({n,b})); let pre=0; for(let k=0;k<skip;k++) pre+=parts[k].b;
     S.pass={ id:(S.pass?S.pass.id+1:1), parts, bars:parts.reduce((a,p)=>a+p.b,0), bar:BAR, start:at0-pre*BAR, plan:parts.map(p=>[p.n,p.b]), cycle:S.cycle }; }
   function passLen(trk){ setTempo(trk); const L=[]; for(let k=0;k<12;k++) L.push(trk.plan(0).reduce((a,p)=>a+p[1],0)*BAR); if(S) setTempo(S.track); return [Math.min(...L),Math.max(...L)]; }

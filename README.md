@@ -389,9 +389,10 @@ Ook op het **eindscherm** speelt muziek: na een overwinning je menumuziek, na ee
 | Mare Tranquillitatis | atmosferische space black metal | 66 | B mineur. Een stille kust van cleane gitaar en sterrenlicht, dan een vloed van tremolomelodie die stijgt tot het apogeum en terugvalt |
 | Cold Light of Distant Suns | space black metal | 84 | E mineur. Een pulserende arpeggiator, dan tremolo-gepickte riffs op volle snelheid, een eclips in half tempo en op het einde een aurora in majeur |
 | Perihelion | kosmische black metal | 70 | C mineur. Een arpeggiator in een baan rond een black metal-riff, een trage zwaai langs de zon en de brand van de dichtste nadering |
+| The Firmament Hums | rauwe atmosferische black metal | 96 | E mineur, lo-fi. Eén zoemende fuzzriff die blijft rondgaan tot hij hypnotiseert; een oud orgel komt eronder, een stem raspt ver weg in de galm, en alles sterft uit in brom en feedback |
 | Briefing / Cenotaph | schermstukken | 72 | Hartslag en radioruis bij de briefing; doodsklok en koor op de Cenotaph, in zombie mode met een valse speeldoos |
 
-Elk stuk is een lijst secties (`TRACKS` in `js/engine/24-music.js`) met eigen tempo (`bpm`), toonhoogte (`tr`, in halve tonen), galm (`rev`) en volume (`gain`); `lofi:true` zet er een cassettefilter op. Een eigen stuk toevoegen: schrijf secties in `SECTIONS` en zet ze in een `plan`.
+Elk stuk is een lijst secties (`TRACKS` in `js/engine/24-music.js`) met eigen tempo (`bpm`), toonhoogte (`tr`, in halve tonen), galm (`rev`) en volume (`gain`); `lofi:true` zet er een cassettefilter op, `fuzz:true` geeft het stuk een eigen fuzzgitaar (`fuzzChord`, `fuzzRing`, `feedback`). Een eigen stuk toevoegen: schrijf secties in `SECTIONS` en zet ze in een `plan`.
 
 Alle geluiden worden in de browser opgewekt met de Web Audio API; er zijn geen audiobestanden nodig. Het gaat om wapens, de Medic die geneest, het radarpiepje bij vijandelijk contact, bevelen, alarmen, golven, bouwen en herstellen, cocons, kratten, berichten en een melodietje bij winst of verlies. Geluiden ver buiten beeld klinken zachter. Het geluid start na je eerste klik (een browserregel). Met de knop **Sound** zet je alles uit.
 
