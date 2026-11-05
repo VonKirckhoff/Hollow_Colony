@@ -53,7 +53,7 @@ const trackerLabel=()=>{ const b=$('#btn-tracker'); if(b) b.textContent=ui.track
 /* ---- acid blood: a Swarm creature that dies spatters acid on soldiers next to it and leaves a burning pool ---- */
 function splashAcid(e){
   const A=SQUAD.acid, big=e.def.boss?3:e.type==='brute'?1.6:1;
-  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='corps') continue; if(Math.hypot(u.x-e.x,u.y-e.y)<A.splash*TILE*big){ damage(u,A.splashDmg*big,{faction:'swarm',dead:true,acid:true}); G.fx.push({k:'text',x:u.x,y:u.y-30,t:0.7,max:0.7,txt:'ACID',col:'#a6ff4a'}); } }
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='corps') continue; if(Math.hypot(u.x-e.x,u.y-e.y)<A.splash*TILE*big){ damage(u,A.splashDmg*big,{faction:'swarm',dead:true,acid:true}); u.acidT=ANIM.acid; G.fx.push({k:'text',x:u.x,y:u.y-30,t:0.7,max:0.7,txt:'ACID',col:'#a6ff4a'}); } }
   G.pools.push({x:e.x,y:e.y+3,r:A.poolR*big,t:A.pool*big,max:A.pool*big,seed:Math.random()*10});
   if(G.pools.length>40) G.pools.shift();
 }
@@ -277,7 +277,7 @@ function downedThink(u,dt){ const d=u.downed; u.flash=Math.max(0,u.flash-dt); u.
   d.t-=dt; if(d.t<=0){ u.downed=null; kill(u,null); } }
 function patchUp(m,t,dt){ const D=SQUAD.downed, d=t.downed; d.tended=0.2; d.patch+=dt/D.patch*(hasPerk(m)?1.5:1);
   m.beam=t; SFX.play('heal',m.x,m.y); if(Math.abs(t.x-m.x)>2) m.face=t.x>m.x?1:-1;
-  if(d.patch>=1){ t.downed=null; t.hp=Math.max(t.hp,t.maxHp*D.reviveHp); t.home={x:t.x,y:t.y}; backInFormation(t);   /* his old order is gone: he takes up a place in his formation as it is now */ G.fx.push({k:'text',x:t.x,y:t.y-24,t:1.4,max:1.4,txt:'BACK UP',col:'#7dffbf'});
+  if(d.patch>=1){ t.downed=null; t.hp=Math.max(t.hp,t.maxHp*D.reviveHp); t.home={x:t.x,y:t.y}; backInFormation(t);   /* his old order is gone: he takes up a place in his formation as it is now */ G.fx.push({k:'text',x:t.x,y:t.y-24,t:1.4,max:1.4,txt:'BACK UP',col:'#7dffbf'}); G.fx.push({k:'shock',x:t.x,y:t.y-6,t:0.35,max:0.35,seed:Math.random()*99});   /* the shock that brings him back */
     SFX.play('complete',t.x,t.y); G.barkNext=0; bark(t,'revived'); gainXP(m,2); G.selDirty=true; } }
 function drawDowned(u,sp,w,h,now){ const d=u.downed;
   drawShadow(u.x,u.y+2,u.r*1.3,u.r*0.45);
@@ -288,7 +288,8 @@ function drawDowned(u,sp,w,h,now){ const d=u.downed;
   ctx.strokeStyle='#ff5a4f'; ctx.beginPath(); ctx.arc(x,y,9,-Math.PI/2,-Math.PI/2+Math.PI*2*(d.t/d.max)); ctx.stroke();   /* time left to bleed out */
   if(d.patch>0){ ctx.strokeStyle='#7dffbf'; ctx.beginPath(); ctx.arc(x,y,13,-Math.PI/2,-Math.PI/2+Math.PI*2*d.patch); ctx.stroke(); }   /* Medic progress */
   ctx.fillStyle=blink||d.tended>0?'#ff5a4f':'#7a1d18'; ctx.fillRect(x-1,y-5,3,11); ctx.fillRect(x-5,y-1,11,3);
-  if(u.vet&&u.vet.hero){ ctx.fillStyle='#ffd23f'; ctx.fillRect(x-1,y-20,3,5); ctx.fillRect(x-2,y-19,5,3); } }
+  if(u.vet&&u.vet.hero){ ctx.fillStyle='#ffd23f'; ctx.fillRect(x-1,y-20,3,5); ctx.fillRect(x-2,y-19,5,3); }
+  drawECG(u,x,y-30,now); }   /* the heart line: flat, beating once a Medic has him */
 
 /* ---------- the fallen: a body stays on the ground for a while. The Swarm does not finish off the wounded: a body is worth more to it whole.
    Swarm units guard a body and drag it home to the creep around the nearest hive (if the way is shut, the carrier digs through the rock).

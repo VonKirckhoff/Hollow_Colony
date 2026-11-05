@@ -35,12 +35,13 @@ function fire(u,t){
     G.fx.push({k:'tracer',x1:mx,y1:my,x2:hx,y2:hy,t:0.06,max:0.06});
     G.fx.push({k:'flash',x:mx,y:my,t:0.05,max:0.05});
     if(Math.random()<0.35) G.fx.push({k:'spark',x:hx,y:hy,vx:rand(-40,40),vy:rand(-60,0),t:0.25,max:0.25,col:'#ffe2a8'});
-    damage(t,d.damage*dm,u); if(u.type==='gunner') suppress(t);
+    damage(t,d.damage*dm,u); if(u.type==='gunner'){ suppress(t); ejectCasing(u); } if(u.type==='sentry') sentryFired(u);
   } else if(d.attack==='flame'){
     for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200)*(1+(u.rangeBonus||0)/(d.range||1)*0.8); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
     for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)&&e!==t) continue; if(dist(e,t)<=R+e.r*0.5){ damage(e,d.damage*dm*((d.bonus&&d.bonus[e.type])||1),u); } }
     if(u.faction==='corps') for(const b of G.ents){ if(!b.dead&&b.kind==='body'&&dist(b,t)<=R+TILE*0.5) burnBody(b); }
+    if(u.faction==='corps') groundFire(t.x+rand(-6,6),t.y+rand(-4,4),u);   /* the ground keeps burning where the flame lands (FIRE) */
   } else if(d.attack==='plasma'){
     u.revealT=Math.max(u.revealT||0,1.5); const dd=dist(u,t); G.shots.push({k:'plasma',sx:mx,sy:my,tx:t.x,ty:t.y-6,t:0,dur:dd/460+0.05,src:u,dmg:d.damage*dm,splash:0.4*TILE,faction:u.faction});
   } else if(d.attack==='acid'){
@@ -101,6 +102,7 @@ function kill(e,src){
     if(src&&src.type==='husk'&&!src.dead&&e.faction==='corps'&&e.kind==='unit') huskScream(src);   /* a Husk screams over its kill */   /* the creature you steer grows by feeding */
     if(G.side==='swarm' && e.faction==='corps' && !e.def.escort){ G.stats.kills++; G.swarm.biomass+=SWARM_PLAY.kill; }   /* playing the Swarm: every soldier who dies (also one who bleeds out) feeds the brood */
     if(e.faction==='swarm' && e.def.bio!==false) splashAcid(e);
+    if(e.faction==='swarm' && !e.def.boss) meltFx(e);   /* it curls up and melts into its own acid */
     if(e.def.burst) bloaterBurst(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;

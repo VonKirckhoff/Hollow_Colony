@@ -184,6 +184,23 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - **Reset campaign** wist ook het rooster en de bewaarde missie van die campagne. In skirmish wordt niets bewaard.
 - Instelbaar bovenaan in de code: `RANKS`, `VET_XP`, `ROSTER_MAX` en de namenlijst `SURNAMES`.
 
+### Animaties (enkel om naar te kijken)
+Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Effects*):
+- **Maanstof en voetsporen:** soldaten laten voetsporen achter (niet op plating of schimmel) die na 7 s vervagen, en bij elke stap een wolkje stof dat traag blijft hangen.
+- **Hulzen:** Gunners en Sentry Guns werpen hulzen uit die op de grond stuiteren en 5 s blijven liggen (hoogstens 40).
+- **Sentry Gun:** de loop draait mee met zijn doelwit, slaat terug bij elk schot en rookt.
+- **Swarm sterft:** een Swarm-eenheid kruipt ineen en smelt in haar zuurplas, met belletjes en wat rook.
+- **Brute:** bij elke stap een stofwolk, een ring van zijn stamp, en het beeld trilt licht (`bruteShake`, 0 = uit).
+- **Zuur op pantser:** een soldaat die zuur krijgt (Spitter of zuurplons), sist nog 2 s: groene druppels en rook.
+- **Medic:** boven een neergevallen soldaat loopt een hartlijn, plat tot een Medic bij hem is; als hij opstaat, een elektrische schok.
+- **Promotie:** een gouden glinstering loopt over het nieuwe rangteken.
+- **Bouwen:** een gebouw in aanbouw staat in de steigers en rijst uit de grond, met lasvonken zolang de Engineer werkt.
+- **Schade aan gebouwen:** onder 75% barsten, onder 50% vonken en rook, onder 25% vuur.
+- **Schimmel:** licht loopt van het nest naar buiten door de schimmel, en waar ze groeit, tasten ranken vooruit.
+- **Eieren:** de vier blaadjes van het deksel gaan open, er druipt slijm en het binnenste gloeit.
+- **Meteorieten:** ongeveer om de 35 s komt er ergens in beeld een kleine meteoriet neer: een streep, een flits, een kratertje (onschadelijk; `meteorEvery`, 0 = nooit).
+- **Dropship:** voor hij landt, vliegt hij eerst hoog over (zijn schaduw veegt over de grond, je hoort de motoren); bij de landing een stofring.
+
 ### Bovenbalk
 Midden in de bovenbalk staan de **titel van de missie** en de **mode**: welke campagne en het missienummer (*Corps 4*, *Swarm 2*, *Corps training*, *Skirmish*) en de moeilijkheid. Hover voor de volledige uitleg.
 
@@ -268,7 +285,9 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - **Niet bouwen, wel laten invliegen** (`noBuild:['sentry']`): in *The Hollow Colony* kan de Engineer geen Sentry Gun bouwen. Hij heeft er één bij zich. Gaat die verloren (vernietigd, of samen met de Engineer die hem droeg), dan vliegt het dropship een nieuwe naar het **landingsplatform waar je squad begon** (60/80/100 s op Easy/Normal/Hard). Hij staat daar ingeklapt als een kist met een oranje ring. Een Engineer met lege handen die erop loopt, neemt hem mee; daarna D om op te stellen. Er is er altijd hooguit één (in het veld, op een rug, op het platform of onderweg).
 
 ### The Swarm
+- **Pyro: brandende grond.** Waar de vlam van een Pyro neerkomt, blijft de grond 6 seconden branden. Swarm die erdoor loopt, krijgt 9 schade per seconde en vat vuur: nog 3 seconden 6 schade per seconde, ook buiten het vuur (je ziet de vlammen op hem). Je eigen troepen hebben er geen last van. Een nieuwe vlam vlak bij een brandende plek voedt die plek (ze brandt langer en wordt iets groter), hoogstens 40 plekken tegelijk. Gevallenen in het vuur verbranden. Zo kan je een doorgang of de weg naar een lichaam afsluiten. Instelbaar in `FIRE` (js/engine/25b-animations.js, dev panel tab *Effects*).
 - **Hoe een hive eruitziet:** een **wortelknol**, een vlezige knol op een web van wortels die de schimmel in lopen. Hij klopt als een hart (een dubbele slag, zes keer per 5 seconden), groen sap stroomt langs de wortels naar buiten en de spruit bovenop wiegt. Elke hive loopt een beetje verschoven, zodat ze niet in de maat kloppen. Code: `hiveDraw` en `hiveFrame` in js/engine/01-sprites-art.js (60 beeldjes, 12 per seconde, één keer gemaakt).
+- **Gewonde hive:** onder 66% levenspunten verdort een derde van de wortels (grijs, geen sap meer) en klopt het hart trager; onder 33% twee derde, de knol wordt donkerder en krijgt barsten.
 - **De laatste krijs:** een verbrande hive ontploft niet zomaar. Eerst schudt hij steeds harder, zijn hart gaat tekeer, hij krijst (drie groene ringen) en zijn laatste broed vlucht weg (enkel een beeld, geen echte eenheden). Na 1,8 s zakt hij in elkaar: hij wordt plat en donker, er vliegt aarde in het rond, en rookpluimen stijgen op tot het einde (3,4 s). Instelbaar in `HIVE_DEATH` (js/engine/25-hive-life.js, ook in het dev panel, tab Swarm): `scream`, `fall`, `time`, `rings`, `brood`, `smoke`.
 - Hives maken bewakers aan zolang er biomassa is. In sommige missies komen er ook **aanvalsgolven** die steeds groter worden.
 - **Spitters** verschijnen na 2 minuten, **Brutes** na 5 minuten (instelbaar met `unlock`).
@@ -495,6 +514,7 @@ Druk tijdens een missie op **F9** (of de toets links van 1: `²` op AZERTY, `` `
 - **Live:** wat er nu gebeurt (tijd, moeilijkheid, hives, golf en wanneer de volgende komt, hoeveel Swarm rondloopt tegenover het maximum, troepen, de grootte van de volgende golf). Je kan salvage, biomassa, fakkels en de tijd tot de volgende golf meteen aanpassen. Knoppen: *Wave now*, *Reveal map* (aan/uit: blijft de hele missie aan), *Heal everyone*, **Max XP** (elke soldaat op de kaart en in reserve die er nog niet zit, krijgt de hoogste XP: 60, Captain, voor je eigen soldaat, 40, Lieutenant, voor de anderen; wie al meer heeft, houdt dat), **XP to 0** (iedereen terug naar 0 XP, Private), *Kill all roaming Swarm*, *Win mission*, *Lose mission*. Dit geldt enkel voor het lopende spel (maar win je de missie, dan gaan de soldaten met die XP naar het rooster).
 - **Mission:** de instellingen van deze missie (start-salvage, fakkels, Landing Zone, sentry-limiet, en alles van de Swarm: biomassa, ritme, bewakers, aggro, golven, `maxAlive`, `growWaves`, `max`, wanneer Spitters en Brutes mogen komen). Leeg = de standaardwaarde van het spel. Bewaarde waarden gelden enkel voor die missie.
 - **Difficulty:** `DIFFICULTY` (Easy, Normal, Hard voor de Lunar Corps-campagne) en `SWARM_DIFF` (voor de Swarm-campagne).
+- **Effects:** `FIRE` (de brandende grond van de Pyro) en `ANIM` (de animaties).
 - **Swarm:** `WAVES`, `HIVE_DEFENCE`, `TACTICS`, `CREEP`, `HUSK`, `EGG`, `MOLT`, `SWARM_PLAY`, `AVATAR`.
 - **Squad:** `SQUAD`, `FORMATION`, `AURA`, `RISEN`, `VET_XP`.
 - **Units:** kies een eenheid of gebouw en pas levenspunten, snelheid, bereik, schade, kosten … aan. Levenspunten veranderen ook voor wie al op de kaart staat; de rest geldt voor nieuwe eenheden.
@@ -554,6 +574,7 @@ js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
                                 HUD, bevelen, invoer, schermen, hoofdlus, muziek
                                 (19b-formations.js: tactische formaties en marcheren als één geheel)
                                 (25-hive-life.js: schimmel rond hives, eieren, Husks)
+                                (25b-animations.js: brandende grond van de Pyro en de extra animaties)
                                 (26-swarm-command.js: spelen als de Swarm, de Lunar Corps als computer)
                                 (27-training.js: één wezen besturen van ei tot hive)
 map-editor/                     de kaarteditor (leest de kaarten uit js/content/maps/)

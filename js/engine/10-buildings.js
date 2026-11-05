@@ -26,7 +26,7 @@ function updateBuilding(b,dt){
     if(b.flight.t<5 && !b.flight.heard){ b.flight.heard=true; SFX.play('engine',b.x,b.y); }
     if(b.flight.t<1.6 && Math.random()<dt*30) dustPuff(b.x,b.y,1);
     if(b.flight.t<=0){ const cargo=b.flight.cargo, rally=b.flight.rally||b.rally, otype=b.flight.rally?'amove':'move', pickup=b.flight.pickup, ang=b.flight.ang; b.flight=null; if(rally!==b.rally) b.rallyN=0;
-      b.ship={ phase:pickup?'parked':'ground', t:2.6, ang }; dustPuff(b.x,b.y,22); SFX.play('land',b.x,b.y);
+      b.ship={ phase:pickup?'parked':'ground', t:2.6, ang }; dustPuff(b.x,b.y,22); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.8,max:0.8}); SFX.play('land',b.x,b.y);
       for(const type of cargo){ if(!UNITS[type]){ dropSupply(b,type); continue; }   /* a folded-up structure (a Sentry Gun): set down on the pad for an Engineer */ const u=spawnNearBuilding(type,'corps',b,rally); if(!u) continue; fromReserve(u); G.stats.trained++;
         if(rally){ const n=(b.rallyN=(b.rallyN||0)+1), a=n*2.4, r=n===1?0:12+4*Math.sqrt(n), rx=rally.x+Math.cos(a)*r, ry=rally.y+Math.sin(a)*r; u.order={type:otype,x:walkableP(rx,ry)?rx:rally.x,y:walkableP(rx,ry)?ry:rally.y}; setPath(u,u.order.x,u.order.y); } else u.home={x:u.x,y:u.y}; }
       const men=cargo.filter(t=>UNITS[t]).length; if(men){ SFX.play('complete'); say('Dropship Kestrel',`${men} reinforcement${men>1?'s':''} on the ground.`,'sys'); } G.selDirty=true; } }

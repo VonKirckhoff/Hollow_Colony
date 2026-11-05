@@ -11,7 +11,7 @@ const INTEL_TABS = [
 const INTEL_NOTES = {
   trooper:  'The backbone of every squad. Range 5 outreaches every Swarm unit, the Spitter (4.6) just barely.',
   gunner:   'Huge damage per second and his fire pins the Swarm down (suppression slows them). Slow, so keep him behind the Troopers.',
-  pyro:     'Short range, but the flame hits everything around his target. The answer to cocoons, hives and packed waves, and he burns the bodies of the fallen before the Swarm can claim them.',
+  pyro:     'Short range, but the flame hits everything around his target. The answer to cocoons, hives and packed waves, and he burns the bodies of the fallen before the Swarm can claim them. Where his flame lands, the ground keeps burning for a few seconds: lay it across a path and the Swarm runs through fire.',
   medic:    'Patches up the downed first (4 seconds of work), then heals the worst wounded. Only uses his sidearm when nobody nearby needs him. Cannot heal the risen.',
   engineer: 'Builds, repairs and arms charges. Repairs nearby structures on his own, also in the defensive stance, and shoots back while he works.',
   scientist:'An escort: she follows your nearest soldier and must survive the mission.',
