@@ -16,7 +16,7 @@ function spawners(){ return G.ents.filter(e=>!e.dead&&(e.type==='hive'||(e.type=
 function spawnerCount(){ const s=new Set(); for(const e of spawners()) s.add(e.type==='hive'?e.id:'h'+e.heirOf); return s.size; }   /* a hive and its heirs count as one */
 function assignHeirs(){ const hs=hives(); for(const s of shafts()){ const h=hs.length?hs.reduce((a,b)=>dist(a,s)<=dist(b,s)?a:b):null; if(h) s.heirOf=h.id; } }
 function heirTakeover(){ for(const s of shafts()){ if(s.heir||s.heirOf==null) continue; const h=G.ents.find(e=>e.id===s.heirOf); if(h&&!h.dead) continue;
-    const group=shafts().filter(o=>o.heirOf===s.heirOf); for(const o of group){ o.heir=true; o.share=1/group.length; o.cfg={...((h&&h.cfg)||{}), creep:0, eggs:0}; o.spawnT=rand(3,6);
+    const group=shafts().filter(o=>o.heirOf===s.heirOf); for(const o of group){ o.heir=true; o.share=1/group.length; o.cfg={...((h&&h.cfg)||{}), creep:(o.cfg&&o.cfg.creep)||0, eggs:(o.cfg&&o.cfg.eggs)||0};   /* a shaft with creep of its own keeps it: still a nest for the dead */ o.spawnT=rand(3,6);
       G.pings.push({x:o.x,y:o.y,t:0,col:'#a6ff4a'}); if(isVisible(o)||G.seen[Math.floor(o.y/TILE)*G.map.w+Math.floor(o.x/TILE)]) SFX.play('hatch',o.x,o.y); }
     if(G.side==='corps') say('Sgt. Kessler',G.saidHeir?'Another one. That shaft has taken over from the hive we burnt.':'The hive is ash, but listen: they are coming up the old mine shaft behind it now. Same numbers as before.','alert'); G.saidHeir=true; } }
 /* nests: everything with creep the Swarm brings its dead home to and where Husks heal: hives, and shafts with creep of their own (shaft entry creep:<tiles>) */

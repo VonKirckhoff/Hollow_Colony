@@ -137,12 +137,16 @@ function hpZone(e){ if(e.downed) return -1; const f=e.hp/e.maxHp; return f<=HP_Z
 const hpColor=f=>f<=HP_ZONES.red?'#ff5a4f':f<=HP_ZONES.orange?'#ff9a3c':'#5fe3b0';
 function medicThink(u,dt){
   const d=u.def; u.healT=(u.healT||0)-dt;
-  const ok=t=>t&&!t.dead&&t.hp<t.maxHp&&t!==u&&dist(u,t)<d.sight*TILE;
+  /* the leash: a Medic left to himself (no order, or holding) only goes so far from his place to heal someone,
+     so he does not trail after a soldier you send off on his own (SQUAD.medic). With an order of yours he goes where you send him. */
+  const free=!u.order||u.order.type==='hold', anchor=free?(formationSpot(u)||u.home):null, M=SQUAD.medic;
+  const leashed=e=>!anchor||Math.hypot(e.x-anchor.x,e.y-anchor.y)<=((e.downed?M.downedLeash:M.leash)+d.healRange)*TILE;
+  const ok=t=>t&&!t.dead&&t.hp<t.maxHp&&t!==u&&dist(u,t)<d.sight*TILE&&leashed(t);
   // Triage: red patients first. Once a patient is out of the red and someone else is still in the red,
   // move on to them; then orange, then top up the rest.
   if(u.healT<=0){ u.healT=0.3;
     const R=(u.order&&u.order.type==='move'?d.healRange:d.sight)*TILE;
-    const cands=G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===u.faction&&e.def.bio&&!(e.vet&&e.vet.risen)&&e!==u&&e.hp<e.maxHp&&dist(u,e)<R);   /* the risen cannot be healed */
+    const cands=G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===u.faction&&e.def.bio&&!(e.vet&&e.vet.risen)&&e!==u&&e.hp<e.maxHp&&dist(u,e)<R&&leashed(e));   /* the risen cannot be healed */
     if(cands.length){ const worst=Math.min(...cands.map(hpZone)); const cur=ok(u.healTarget)?u.healTarget:null;
       if(!cur || hpZone(cur)>worst){ u.healTarget=cands.filter(e=>hpZone(e)===worst).reduce((a,b)=>dist(u,a)<=dist(u,b)?a:b); if(u.healTarget!==cur&&Math.random()<0.4) bark(u,'heal'); } }
     else if(!ok(u.healTarget)) u.healTarget=null; }

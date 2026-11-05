@@ -14,8 +14,9 @@
    A wedge, line, zigzag or your own formation turns gently with the path; a circle and a square keep their orientation.
    In a narrow passage, whoever's place falls in the rock follows the guide in a file.
    A new formation or spacing given on the march is taken up on the way: the guide does not stop.
-   At the end every soldier gets his final place around the destination (against a wall the shape shifts to fit). */
-const FORMATION = { maxRadius:4.5, spacing:24, minGap:14, march:0.9, catchUp:2, wait:1.5, slowest:0.4, turn:1.8, file:0.9 };
+   At the end every soldier gets his final place around the destination: the squad takes the spot you clicked, and a soldier
+   whose place falls in the rock steps aside to the nearest free spot (the shape only shifts away when most of it does not fit). */
+const FORMATION = { maxRadius:4.5, spacing:24, minGap:14, march:0.9, catchUp:2, wait:1.5, slowest:0.4, turn:1.8, file:0.9, stay:0.5 };   /* stay: share of the places that must fit around the clicked spot; below that the whole shape shifts to where it fits */
 /* Tactical formations (Z circle, X wedge, V square, I line, W zigzag). Support units (medics, engineers, escorts)
    take the protected centre (behind the line in a line or zigzag); fighters form the outline, with Pyros and Gunners at the tip of the wedge.
    A line or zigzag faces the nearest enemy in sight when you form it. Hold the right mouse button and drag to choose
@@ -107,20 +108,26 @@ function assignPlaces(units,F,dir){
   const cost=units.map(u=>{ const cl=F.clsOf(u), rk=F.rankOf(u); return F.places.map((o,j)=>{ const dx=(u.x-ux)-(W[j].x-mx), dy=(u.y-uy)-(W[j].y-my);
     return dx*dx+dy*dy + (o.cls===cl?0:1e12) - 1e8*rk*o.row; }); });   /* role first, then rank by row, then distance */
   const a=assignCheapest(cost); return units.map((u,i)=>[u,F.places[a[i]]]); }
-/* where the places fall around (wx,wy) facing dir. Against a wall or a rock the whole shape shifts (up to 3 tiles) to where most of it fits;
-   in a room too small for it, the shape squeezes together (down to half its size) before anyone is sent elsewhere;
-   a place that still falls in the rock moves to the nearest free spot the centre can see. Returns {x,y,spots:[{u,x,y}]}. */
+/* where the places fall around (wx,wy) facing dir. The squad takes the spot you clicked: if the whole shape does not fit there,
+   it first squeezes together a little (down to half its size), and whoever's place still falls in the rock steps aside to the
+   nearest free spot the centre can see (a few soldiers out of line, but the spot is taken). Only when less than FORMATION.stay
+   of the places fit around the clicked spot does the whole shape shift (up to 3 tiles) to where more of it fits. Returns {x,y,spots:[{u,x,y}]}. */
 const SQUEEZE=[1,0.85,0.7,0.55];
 function placeSpots(pairs,wx,wy,dir){
   const c=Math.cos(dir), s=Math.sin(dir), all=pairs.map(p=>p[1]);
   const fits=(ox,oy,k)=>{ if(!walkableP(ox,oy)) return -1; let n=0; for(const o of all){ const x=ox+(o.x*c-o.y*s)*k, y=oy+(o.x*s+o.y*c)*k; if(walkableP(x,y)&&lineClear(ox,oy,x,y)) n++; } return n; };
   let best=-2, bx=wx, by=wy, bk=1;
+  if(walkableP(wx,wy)){ for(const k of SQUEEZE){ const n=fits(wx,wy,k); if(n>best){ best=n; bk=k; } if(best>=all.length) break; }   /* the clicked spot first */
+    if(best>=Math.ceil(all.length*FORMATION.stay)) return spotsAround(pairs,wx,wy,c,s,bk); }
   for(const k of SQUEEZE){ let kb=fits(wx,wy,k), kx=wx, ky=wy;
     if(kb<all.length){ for(let r=1;r<=3&&kb<all.length;r++) for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
         const ox=wx+dx*TILE*0.75, oy=wy+dy*TILE*0.75; if(!lineClear(wx,wy,ox,oy)) continue;   /* never shift to the other side of a wall */
         const n=fits(ox,oy,k); if(n>kb){ kb=n; kx=ox; ky=oy; } } }
     if(kb>best){ best=kb; bx=kx; by=ky; bk=k; } if(best>=all.length) break; }
   if(!walkableP(bx,by)){ const t=nearestWalkable(Math.floor(bx/TILE),Math.floor(by/TILE)); if(t){ bx=(t.x+.5)*TILE; by=(t.y+.5)*TILE; } }
+  return spotsAround(pairs,bx,by,c,s,bk); }
+/* every place around the centre (bx,by) at size bk; a place in the rock goes to the nearest free tile (seen from the centre) that nobody has yet */
+function spotsAround(pairs,bx,by,c,s,bk){
   const pts=pairs.map(([u,o])=>{ const x=bx+(o.x*c-o.y*s)*bk, y=by+(o.x*s+o.y*c)*bk; return {u,x,y,ok:walkableP(x,y)&&lineClear(bx,by,x,y)}; });
   const taken=new Set(pts.filter(p=>p.ok).map(p=>Math.floor(p.x/TILE)+','+Math.floor(p.y/TILE)));
   for(const p of pts){ if(p.ok) continue; const tx=Math.floor(p.x/TILE), ty=Math.floor(p.y/TILE); p.x=bx; p.y=by;

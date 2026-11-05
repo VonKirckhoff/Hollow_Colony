@@ -14,8 +14,9 @@ MISSIONS.push(
     start:{ salvage:400, camera:'P',
       units:[ ['engineer','P',2], ['trooper','P',6], ['gunner','P',2], ['pyro','P',1], ['medic','P',2] ],
       buildings:[ ['hq','P'], ['sentry',{x:40,y:53}], ['sentry',{x:49,y:58}] ], hives:['a','b','c','d'], hiveHp:2,
-      /* a mine shaft by every hive: when a hive is burnt, its shaft takes over (swarm.shaftHeirs), so the waves never stop */
-      shafts:[ {x:2,y:39,wall:'w'}, {x:86,y:38,wall:'e'}, {x:27,y:20}, {x:63,y:21} ],
+      /* a mine shaft by every hive: when a hive is burnt, its shaft takes over (swarm.shaftHeirs), so the waves never stop.
+         Every shaft has creep and an egg of its own: with all hives gone, the Swarm still drags the dead there and turns them into Husks */
+      shafts:[ {x:2,y:39,wall:'w',creep:3,eggs:1}, {x:86,y:38,wall:'e',creep:3,eggs:1}, {x:27,y:20,creep:3,eggs:1}, {x:63,y:21,creep:3,eggs:1} ],
       uplinks:[ ['1','West ridge'], ['2','East ridge'], ['3','Centre mesa'] ],
       swarmUnits:[ ['drone','1',5], ['crawler','1',3], ['spitter','1',1], ['drone','2',5], ['spitter','2',2], ['crawler','2',2], ['drone','3',6], ['spitter','3',2], ['brute','3',1] ] },
     swarm:{ biomass:70, rate:0.45, guardMax:5, guardEvery:13, shaftHeirs:true, waves:{ first:300, every:120, budget:55, growth:10 } },

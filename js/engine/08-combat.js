@@ -64,6 +64,8 @@ function damage(t,amt,src){
   if(t.molt>0) amt*=MOLT.vuln;   /* a Husk shedding its skin is soft */
   if(t.avatar&&t.rootT!=null) amt*=0.5;   /* your creature rooting: the roots hold it together */
   if(src&&src.kind==='unit'&&src.faction==='swarm'&&src.type!=='husk'&&!src.avatar&&!src.def.boss&&G.side!=='swarm'&&t.kind==='unit'&&t.faction==='corps'&&!t.downed&&t.hp-amt<1) amt=escortSpare(src,t,amt);   /* the last blow is for a Husk close by */
+  if(t.downed&&!(src&&src.def&&src.def.boss)){ const D=SQUAD.downed, d=t.downed; t.flash=0.07;   /* down: splash, acid and pools no longer finish him off on the spot; they shorten his time, never below minLeft */
+    if(d.t>D.minLeft) d.t=Math.max(D.minLeft,d.t-amt/t.maxHp*D.hitTime); return; }
   const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
