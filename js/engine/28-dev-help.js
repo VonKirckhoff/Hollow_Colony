@@ -38,6 +38,7 @@ const DEV_HELP = {
   'ANIM|emerge':'Seconds the ground bulges and cracks before a burrowing wave breaks out (only once every hive is gone). 0 = at once.',
   'ANIM|hurtEdge':'Damage to your side within about a second that makes the screen edge glow red on the side of the attack. 0 = never.',
   'ANIM|lamps':'Helmet lamps in the dark (Blackout): light beams where your soldiers look, and you see further inside them.',
+  'ANIM|lampGlow':'How bright the helmet lamp beams are (0 = no light, only the further sight; 1 = full). Overlapping beams do not add up.',
   'ANIM|lampRange':'Tiles a helmet lamp lets you see further in the dark (on top of the short sight there).',
   'ANIM|muzzleLight':'Every shot lights the ground around the muzzle for a moment (brighter in the dark).',
   'ANIM|orderMark':'A ripple with four chevrons where you send your squad (red for an attack-move).',

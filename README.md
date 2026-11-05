@@ -204,7 +204,7 @@ Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Eff
 - **De grond bolt op:** een golf die zich opgraaft (als alle hives weg zijn), blijft eerst 1 seconde onder een opbollende, scheurende plek (`emerge`). Pas dan breken ze uit, met aarde in het rond. Zolang ze onder de grond zitten, kan niemand ze raken en doen ze niets.
 - **Rode rand:** krijgt jouw kant in korte tijd zware schade (ongeveer 60 in een seconde, `hurtEdge`), dan kleurt de rand van het scherm rood aan de kant waar de aanval vandaan komt, ook als je camera elders staat.
 - **Soldaat valt neer:** hij valt om en zijn helm stuitert weg (ook als hij sneuvelt).
-- **Helmlampen** (alleen in het donker, Blackout): elke soldaat heeft een lichtkegel waar hij kijkt (waar hij loopt, of naar zijn doelwit). Wat in de kegel ligt, zie je tot 5 tegels verder dan je korte zicht in het donker (`lamps`, `lampRange`).
+- **Helmlampen** (alleen in het donker, Blackout): elke soldaat heeft een lichtkegel waar hij kijkt (waar hij loopt, of naar zijn doelwit). Wat in de kegel ligt, zie je tot 5 tegels verder dan je korte zicht in het donker Het licht is zacht (`lampGlow`, 0,1) en kegels die overlappen, tellen niet op: een hele squad geeft niet meer licht dan één soldaat (`lamps`, `lampRange`, `lampGlow`).
 - **Mondingsvuur:** elk schot licht de grond rond de loop even op, in het donker veel sterker (`muzzleLight`).
 - **Bevelmarkering:** waar je je squad naartoe stuurt, verschijnt een rimpel met vier pijltjes, rood bij een aanvalsbevel (`orderMark`).
 - **Radar en antennes:** de radarschotel van de Command Post draait; een Relay Tower zendt ringen uit.

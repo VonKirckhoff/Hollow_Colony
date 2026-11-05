@@ -13,10 +13,10 @@ const FIRE = { burn:3, dps:6, radius:0.75, ignite:3, igniteDps:6, max:40, merge:
    burning after it leaves the fire · igniteDps: damage per second while it burns · max: patches at once · merge: a new flame within this many tiles
    of a patch feeds that patch (it burns longer and grows up to `grow` times its radius) */
 const ANIM = { prints:80, printLife:7, casings:40, casingLife:5, melt:1.8, glint:1.4, meteorEvery:35, bruteShake:0.05, acid:2.2, flyover:true,
-  spitCharge:0.5, emerge:1, hurtEdge:60, lamps:true, lampRange:5, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, glints:true, lowGravity:45 };
+  spitCharge:0.5, emerge:1, hurtEdge:60, lamps:true, lampRange:5, lampGlow:0.1, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, glints:true, lowGravity:45 };
 /* spitCharge: seconds a Spitter's throat swells before the acid leaves (you can step aside; 0 = at once) · emerge: seconds the ground bulges
    before a burrowing wave breaks out (0 = at once) · hurtEdge: damage within about a second that makes the screen edge glow red on the side of
-   the attack (0 = never) · lamps: helmet lamps in the dark (they also let you see lampRange tiles further in their beam) · muzzleLight: every shot
+   the attack (0 = never) · lamps: helmet lamps in the dark (they also let you see lampRange tiles further in their beam) · lampGlow: how bright the beams are · muzzleLight: every shot
    lights the ground for a moment · orderMark: a ripple where you send your squad · unfold: seconds a Sentry Gun takes to unfold once set up ·
    devilEvery: about every this many seconds a dust devil crosses the screen (0 = never) · glints: crystals and ice sparkle ·
    lowGravity: how fast debris of an explosion falls back (pixels/s², the game's normal is 180): on the moon it hangs in the air */
@@ -195,11 +195,16 @@ function headingTick(u){ if(u.target&&!u.target.dead) u.head=Math.atan2(u.target
   else if(u.lx!=null&&Math.hypot(u.x-u.lx,u.y-u.ly)>0.4) u.head=Math.atan2(u.y-u.ly,u.x-u.lx);
   else if(u.head==null) u.head=u.face>0?0:Math.PI; u.lx=u.x; u.ly=u.y; }
 const lampOn=u=>ANIM.lamps&&G.mission.dark&&u.kind==='unit'&&u.faction==='corps'&&u.def.bio&&!u.downed&&!u.dead;
-function drawLamps(){ if(!ANIM.lamps||!G.mission.dark) return; ctx.globalCompositeOperation='lighter';
-  for(const u of G.ents){ if(!lampOn(u)||!animOnScreen(u.x,u.y,200)||(u.faction!==G.side&&!isVisible(u))) continue; const a=u.head??0, L=(ANIM.lampRange+2)*TILE, x=u.x, y=u.y-10;
-    const g=ctx.createRadialGradient(x,y,4,x,y,L); g.addColorStop(0,'rgba(255,230,160,.22)'); g.addColorStop(1,'rgba(255,230,160,0)'); ctx.fillStyle=g;
-    ctx.beginPath(); ctx.moveTo(x,y); ctx.arc(x,y,L,a-0.38,a+0.38); ctx.closePath(); ctx.fill(); }
-  ctx.globalCompositeOperation='source-over'; }
+/* The beams are drawn together on one layer where overlapping beams do not add up (the brightest wins), so a whole squad
+   is no brighter than one soldier; that layer is laid over the map at ANIM.lampGlow strength. */
+let lampCan=null, lampCtx=null;
+function drawLamps(){ if(!ANIM.lamps||!G.mission.dark||!(ANIM.lampGlow>0)) return; const W=Math.ceil(ui.vw), H=Math.ceil(ui.vh), cx=G.cam.x, cy=G.cam.y;
+  if(!lampCan){ lampCan=document.createElement('canvas'); lampCtx=lampCan.getContext('2d'); } if(lampCan.width!==W||lampCan.height!==H){ lampCan.width=W; lampCan.height=H; }
+  const c=lampCtx; c.globalCompositeOperation='source-over'; c.clearRect(0,0,W,H); c.globalCompositeOperation='lighten'; let any=false;
+  for(const u of G.ents){ if(!lampOn(u)||!animOnScreen(u.x,u.y,200)||(u.faction!==G.side&&!isVisible(u))) continue; any=true; const a=u.head??0, L=(ANIM.lampRange+2)*TILE, x=u.x-cx, y=u.y-10-cy;
+    const g=c.createRadialGradient(x,y,4,x,y,L); g.addColorStop(0,'rgb(255,230,160)'); g.addColorStop(1,'rgb(0,0,0)'); c.fillStyle=g;
+    c.beginPath(); c.moveTo(x,y); c.arc(x,y,L,a-0.38,a+0.38); c.closePath(); c.fill(); }
+  if(!any) return; ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=ANIM.lampGlow; ctx.drawImage(lampCan,cx,cy,W,H); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
 /* what a lamp beam lights up you can see (in the dark, beyond the short normal sight) */
 function lampReveal(){ if(!ANIM.lamps||!G.mission.dark||G.side!=='corps') return; const m=G.map, W=m.w;
   for(const u of G.ents){ if(!lampOn(u)) continue; const a0=u.head??0;
