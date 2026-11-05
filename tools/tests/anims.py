@@ -24,7 +24,7 @@ with sync_playwright() as p:
       for(let i=0;i<20;i++) __hc.update(1/30); window._ds=ds; window._py=p;
       return [n, ds.map(d=>Math.round(d.hp)), ds.map(d=>+(d.burnT||0).toFixed(1)), Math.round(p.hp)===Math.round(p.maxHp)]; }""")
     check('fire patches + burning', r[0]>=1 and all(x<400 for x in r[1]) and any(x>0 for x in r[2]), r)
-    r=J(pg,"""()=>{ const s=makeUnit('trooper','corps',P0.x+10,P0.y); const hp=s.hp; for(let i=0;i<30;i++) __hc.update(1/30); return [hp,Math.round(s.hp)]; }""")
+    r=J(pg,"""()=>{ for(const d of _ds) d.dead=true; __hc.G.fires.forEach(f=>f.t=Math.max(f.t,2)); const s=makeUnit('trooper','corps',__hc.G.fires[0].x,__hc.G.fires[0].y); const hp=s.hp; for(let i=0;i<30;i++) __hc.update(1/30); return [hp,Math.round(s.hp)]; }""")
     check('own troops not hurt by fire', r[0]==r[1], r)
     shot('fire',J(pg,"()=>P0.x"),J(pg,"()=>P0.y"))
     r=J(pg,"""()=>{ for(let i=0;i<30*16;i++) __hc.update(1/30); return [(__hc.G.fires||[]).length, _ds.filter(d=>!d.dead).length, (__hc.G.fires||[]).map(f=>[Math.round(f.t),f.src&&f.src.type, f.src&&f.src.target&&f.src.target.type])]; }""")

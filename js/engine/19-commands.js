@@ -63,7 +63,7 @@ function smartCommand(wx,wy){ if(G.side==='swarm'){ swarmRight(wx,wy); return; }
   if(t && t.faction==='corps' && t.kind==='building' && (t.hp<t.maxHp||!t.built)){ const eng=units.filter(u=>u.def.builder);
     if(eng.length){ for(const u of eng){ u.order={type:'repair',target:t}; u.path=null; u.goal=null; } const rest=units.filter(u=>!u.def.builder); if(rest.length) moveGroup(rest,wx,wy,'move'); return; } }
   leaveFormation(units); moveGroup(units,wx,wy,'move'); SFX.play('ack'); startFollow();
-  G.pings.push({x:wx,y:wy,t:2.5,col:'#5fe3b0'});
+  if(ANIM.orderMark) orderMark(wx,wy,false); else G.pings.push({x:wx,y:wy,t:2.5,col:'#5fe3b0'});
 }
 function packSentry(s){ const eng=myUnits().filter(u=>u.def.builder&&!u.carry); if(!eng.length) return;
   eng.sort((a,b)=>dist(a,s)-dist(b,s)); const u=eng[0]; u.order={type:'pack',target:s}; u.target=null; u.path=null; u.goal=null; SFX.play('ack'); G.pings.push({x:s.x,y:s.y,t:2.2,col:'#ffb347'}); }

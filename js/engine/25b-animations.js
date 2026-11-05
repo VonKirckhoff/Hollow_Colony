@@ -12,7 +12,14 @@ const FIRE = { burn:3, dps:6, radius:0.75, ignite:3, igniteDps:6, max:40, merge:
 /* burn: seconds a patch burns · dps: damage per second to the Swarm standing in it · radius: tiles · ignite: seconds a Swarm unit keeps
    burning after it leaves the fire · igniteDps: damage per second while it burns · max: patches at once · merge: a new flame within this many tiles
    of a patch feeds that patch (it burns longer and grows up to `grow` times its radius) */
-const ANIM = { prints:80, printLife:7, casings:40, casingLife:5, melt:1.8, glint:1.4, meteorEvery:35, bruteShake:0.05, acid:2.2, flyover:true };
+const ANIM = { prints:80, printLife:7, casings:40, casingLife:5, melt:1.8, glint:1.4, meteorEvery:35, bruteShake:0.05, acid:2.2, flyover:true,
+  spitCharge:0.5, emerge:1, hurtEdge:60, lamps:true, lampRange:5, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, glints:true, lowGravity:45 };
+/* spitCharge: seconds a Spitter's throat swells before the acid leaves (you can step aside; 0 = at once) · emerge: seconds the ground bulges
+   before a burrowing wave breaks out (0 = at once) · hurtEdge: damage within about a second that makes the screen edge glow red on the side of
+   the attack (0 = never) · lamps: helmet lamps in the dark (they also let you see lampRange tiles further in their beam) · muzzleLight: every shot
+   lights the ground for a moment · orderMark: a ripple where you send your squad · unfold: seconds a Sentry Gun takes to unfold once set up ·
+   devilEvery: about every this many seconds a dust devil crosses the screen (0 = never) · glints: crystals and ice sparkle ·
+   lowGravity: how fast debris of an explosion falls back (pixels/s², the game's normal is 180): on the moon it hangs in the air */
 
 /* ---- shared helpers ---- */
 function animOnScreen(x,y,pad=60){ return G&&x>G.cam.x-pad&&x<G.cam.x+ui.vw+pad&&y>G.cam.y-pad&&y<G.cam.y+ui.vh+pad; }
@@ -86,8 +93,8 @@ function meteorTick(dt){ if(!(ANIM.meteorEvery>0)) return; G.meteorT=(G.meteorT?
     if(tx<0||ty<0||tx>=G.map.w||ty>=G.map.h||!walkableT(tx,ty)||!animSeen(x,y)) continue;
     G.fx.push({k:'meteor',x,y,t:1.6,max:1.6,dx:rand(-1,1)<0?-1:1}); return; } }
 function meteorFx(f){ const tt=f.max-f.t; if(tt>=0.55&&!f.hit){ f.hit=true; addDecal(f.x,f.y,7,'rgba(16,16,20,.6)'); SFX.play('crack',f.x,f.y);
-    for(let i=0;i<10;i++) G.fx.push({k:'spark',x:f.x,y:f.y-2,vx:rand(-70,70),vy:rand(-90,-20),t:0.5,max:0.5,col:pick(['#d3c3a6','#ffe2a8','#ffffff'])});
-    G.fx.push({k:'dust',x:f.x,y:f.y-2,vx:0,vy:-6,t:1.6,max:1.6,r0:3,r1:12,col:'#8a8a90'}); } }
+    for(let i=0;i<4;i++) G.fx.push({k:'spark',x:f.x,y:f.y-2,vx:rand(-70,70),vy:rand(-90,-20),t:0.5,max:0.5,col:pick(['#ffe2a8','#ffffff'])});
+    debrisBurst(f.x,f.y,10,['#d3c3a6','#8a7a6a','#5a4632'],80); } }
 function drawMeteor(f){ const tt=f.max-f.t; if(tt<0.55){ const k=tt/0.55, sx=f.x-f.dx*160*(1-k), sy=f.y-220*(1-k);
     for(let i=0;i<8;i++){ const b=Math.max(0,k-i*0.035); ctx.globalAlpha=1-i*0.12; ctx.fillStyle=i<2?'#ffffff':'#7ff6ff'; ctx.fillRect(Math.round(f.x-f.dx*160*(1-b)),Math.round(f.y-220*(1-b)),2,2); }
     ctx.globalAlpha=1; ctx.fillStyle='#fff'; ctx.fillRect(Math.round(sx)-1,Math.round(sy)-1,3,3); }
@@ -129,7 +136,9 @@ function drawDamage(b,now){ if(!damageable(b)) return; const f=b.hp/b.maxHp; if(
       ctx.fillStyle=ph<0.35?'#ffe08a':ph<0.7?'#ff8a2a':'#b9521c'; ctx.fillRect(Math.round(x),Math.round(y),s,s); } }
 function damageSmoke(b,dt){ if(!damageable(b)) return; const f=b.hp/b.maxHp; if(f>=0.5||!animOnScreen(b.x,b.y)) return;
   if(Math.random()<dt*(f<0.25?6:3)) G.fx.push({k:'dust',x:b.x+rand(-b.r,b.r)*0.5,y:b.y-b.r*0.4,vx:rand(-6,6),vy:rand(-30,-18),t:rand(1.6,2.6),max:2.6,r0:rand(3,5),r1:rand(10,18),col:pick(['#77726c','#5e5a55','#8a857e'])}); }
-function drawSentryBarrel(b,x,y,w,h){ const a=b.angle??-Math.PI/2, rc=(b.recoil>0?3:0), cx=b.x, cy=b.y-1, L=13-rc;
+function drawSentryBarrel(b,x,y,w,h){ const u=b.unfoldT>0?1-b.unfoldT/ANIM.unfold:1, a=b.angle??-Math.PI/2, rc=(b.recoil>0?3:0), cx=b.x, cy=b.y-1-Math.round(3*u)+3, L=Math.max(2,(13-rc)*u);
+  if(u<1){ const l=Math.round(u*6); ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(b.x)-8-l,Math.round(b.y)+8,3,3); ctx.fillRect(Math.round(b.x)+5+l,Math.round(b.y)+8,3,3); ctx.fillStyle='#5d6f83'; ctx.fillRect(Math.round(b.x)-6-l,Math.round(b.y)+8,l+1,1); ctx.fillRect(Math.round(b.x)+5,Math.round(b.y)+8,l+1,1); }
+  else { ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(b.x)-14,Math.round(b.y)+8,3,3); ctx.fillRect(Math.round(b.x)+11,Math.round(b.y)+8,3,3); }   /* the feet, folded out */
   ctx.strokeStyle='#0a0b10'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*L,cy+Math.sin(a)*L); ctx.stroke();
   ctx.strokeStyle='#a3b4c6'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*(L-1),cy+Math.sin(a)*(L-1)); ctx.stroke();
   ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(cx)-4,Math.round(cy)-4,8,8); ctx.fillStyle='#5d6f83'; ctx.fillRect(Math.round(cx)-3,Math.round(cy)-3,6,6); }
@@ -152,11 +161,91 @@ function drawFlyover(now){ if(!ANIM.flyover) return; for(const b of G.ents){ if(
     ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.globalAlpha=0.16*Math.sin(k*Math.PI); ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(0,0,w*0.5,hh*0.36,0,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.globalAlpha=1;
     if(!b.flight.passHeard&&t<9.6){ b.flight.passHeard=true; SFX.play('engine',x,y); } } }
 
+/* ---- combat signals ---- */
+/* green ichor on every hit to the Swarm, sprayed away from the shooter */
+function hitSplat(t,src){ if(!animOnScreen(t.x,t.y)||!isVisible(t)) return; const a=src&&src.x!=null?Math.atan2(t.y-src.y,t.x-src.x):rand(0,Math.PI*2);
+  for(let i=0;i<4;i++){ const b=a+rand(-0.7,0.7), v=rand(40,90); G.fx.push({k:'spark',x:t.x,y:t.y-6,vx:Math.cos(b)*v,vy:Math.sin(b)*v-40,t:0.35,max:0.35,col:i%2?'#a6ff4a':'#4fae22'}); } }
+/* a Spitter swelling up before it spits */
+function drawSpitCharge(u,now){ const k=1-u.chargeT/ANIM.spitCharge, x=u.x+u.face*8, y=u.y-9, r=2+k*4, on=k>0.6&&Math.floor(now/80)%2;
+  ctx.fillStyle=`rgba(166,255,74,${0.25*k})`; ctx.beginPath(); ctx.arc(x,y,r*2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=on?'#a6ff4a':'#4fae22'; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+/* the ground bulges where a burrowing wave is about to break out */
+function emergeStart(u){ if(!(ANIM.emerge>0)) return; u.emergeT=ANIM.emerge; u.hidden=true; u.invuln=true; }
+function emergeTick(u,dt){ u.emergeT-=dt; if(u.emergeT>0) return; u.emergeT=0; u.hidden=false; u.invuln=false;
+  if(animOnScreen(u.x,u.y)) debrisBurst(u.x,u.y,6,['#8a7a6a','#5a4632','#b3a58f'],70); }
+function drawBulge(f){ if(!animSeen(f.x,f.y)) return; const k=1-f.t/f.max, R=f.r*(0.4+0.6*k);
+  ctx.fillStyle=`rgba(58,60,67,${0.5+0.4*k})`; ctx.beginPath(); ctx.ellipse(f.x,f.y,R,R*0.5,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(10,11,16,.9)'; ctx.lineWidth=1; ctx.beginPath(); for(let i=0;i<5;i++){ const a=animRnd(f.seed+i)*Math.PI*2; ctx.moveTo(f.x,f.y); ctx.lineTo(f.x+Math.cos(a)*R*k,f.y+Math.sin(a)*R*0.5*k); } ctx.stroke();
+  if(Math.floor(k*14)%2){ ctx.fillStyle='#8a7a6a'; for(let i=0;i<3;i++) ctx.fillRect(Math.round(f.x+(animRnd(f.seed+i+Math.floor(k*14))-0.5)*R*2),Math.round(f.y-2),2,2); } }
+/* heavy damage to your side: the screen edge glows red on the side the attack comes from */
+function hurtNote(t,amt,src){ if(!(ANIM.hurtEdge>0)) return; G.hurtAcc=(G.hurtAcc||0)+amt; const p=src&&src.x!=null&&!src.dead?src:t; G.hurtAt={x:p.x,y:p.y}; }
+function drawHurtEdge(){ const v=G.hurtAcc||0; if(!(ANIM.hurtEdge>0)||v<ANIM.hurtEdge*0.5||!G.hurtAt) return; const k=Math.min(1,(v-ANIM.hurtEdge*0.5)/ANIM.hurtEdge);
+  const top=40, bot=ui.vh-(ui.hudH||0), cx=ui.vw/2, cy=(top+bot)/2, a=Math.atan2(G.hurtAt.y-G.cam.y-cy,G.hurtAt.x-G.cam.x-cx), W=80, pulse=0.75+0.25*Math.sin(performance.now()/120);
+  const side=Math.abs(Math.cos(a))*(bot-top)>Math.abs(Math.sin(a))*ui.vw?(Math.cos(a)>0?'r':'l'):(Math.sin(a)>0?'b':'t');
+  const [x0,y0,x1,y1,rx,ry,rw,rh]=side==='r'?[ui.vw,0,ui.vw-W,0,ui.vw-W,top,W,bot-top]:side==='l'?[0,0,W,0,0,top,W,bot-top]:side==='b'?[0,bot,0,bot-W,0,bot-W,ui.vw,W]:[0,top,0,top+W,0,top,ui.vw,W];
+  const g=ctx.createLinearGradient(x0,y0,x1,y1); g.addColorStop(0,`rgba(226,70,58,${0.55*k*pulse})`); g.addColorStop(1,'rgba(226,70,58,0)'); ctx.fillStyle=g; ctx.fillRect(rx,ry,rw,rh); }
+
+/* ---- soldiers ---- */
+/* falling: a soldier who goes down or dies topples over, his helmet bounces off */
+function soldierFalls(u){ if(!animOnScreen(u.x,u.y)) return; u.fallT=0.4;
+  G.fx.push({k:'helmet',x:u.x,y:u.y-16,vx:(u.face||1)*rand(18,34),vy:rand(-70,-40),gy:u.y+3,t:2.2,max:2.2,spin:0}); }
+function drawHelmet(f){ ctx.globalAlpha=Math.min(1,f.t/0.6); ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(f.x)-3,Math.round(f.y)-2,6,5); ctx.fillStyle='#a3b4c6'; ctx.fillRect(Math.round(f.x)-2,Math.round(f.y)-1,4,3); ctx.globalAlpha=1; }
+/* the way a soldier looks: where he walks, or at what he shoots */
+function headingTick(u){ if(u.target&&!u.target.dead) u.head=Math.atan2(u.target.y-u.y,u.target.x-u.x);
+  else if(u.lx!=null&&Math.hypot(u.x-u.lx,u.y-u.ly)>0.4) u.head=Math.atan2(u.y-u.ly,u.x-u.lx);
+  else if(u.head==null) u.head=u.face>0?0:Math.PI; u.lx=u.x; u.ly=u.y; }
+const lampOn=u=>ANIM.lamps&&G.mission.dark&&u.kind==='unit'&&u.faction==='corps'&&u.def.bio&&!u.downed&&!u.dead;
+function drawLamps(){ if(!ANIM.lamps||!G.mission.dark) return; ctx.globalCompositeOperation='lighter';
+  for(const u of G.ents){ if(!lampOn(u)||!animOnScreen(u.x,u.y,200)||(u.faction!==G.side&&!isVisible(u))) continue; const a=u.head??0, L=(ANIM.lampRange+2)*TILE, x=u.x, y=u.y-10;
+    const g=ctx.createRadialGradient(x,y,4,x,y,L); g.addColorStop(0,'rgba(255,230,160,.22)'); g.addColorStop(1,'rgba(255,230,160,0)'); ctx.fillStyle=g;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.arc(x,y,L,a-0.38,a+0.38); ctx.closePath(); ctx.fill(); }
+  ctx.globalCompositeOperation='source-over'; }
+/* what a lamp beam lights up you can see (in the dark, beyond the short normal sight) */
+function lampReveal(){ if(!ANIM.lamps||!G.mission.dark||G.side!=='corps') return; const m=G.map, W=m.w;
+  for(const u of G.ents){ if(!lampOn(u)) continue; const a0=u.head??0;
+    for(let r=-2;r<=2;r++){ const a=a0+r*0.16; for(let d=1;d<=ANIM.lampRange+2;d++){ const tx=Math.floor((u.x+Math.cos(a)*d*TILE)/TILE), ty=Math.floor((u.y+Math.sin(a)*d*TILE)/TILE);
+        if(tx<0||ty<0||tx>=W||ty>=m.h) break; const k=ty*W+tx; G.vis[k]=1; G.seen[k]=1; if(!m.walk[k]) break; } } } }
+/* a shot lights the ground around the muzzle for a moment (much brighter in the dark) */
+function muzzleLight(x,y){ if(ANIM.muzzleLight&&animOnScreen(x,y)) G.fx.push({k:'mlight',x,y,t:0.07,max:0.07}); }
+function drawMuzzleLight(f){ const dk=!!G.mission.dark, R=dk?46:26, g=ctx.createRadialGradient(f.x,f.y,2,f.x,f.y,R); g.addColorStop(0,`rgba(255,190,90,${dk?0.45:0.18})`); g.addColorStop(1,'rgba(255,190,90,0)');
+  ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(f.x-R,f.y-R,R*2,R*2); ctx.globalCompositeOperation='source-over'; }
+/* where you send your squad: a ripple and four chevrons closing in (red for an attack-move) */
+function orderMark(x,y,attack){ if(ANIM.orderMark) G.fx.push({k:'order',x,y,t:0.7,max:0.7,col:attack?'255,90,79':'95,227,176'}); }
+function drawOrderMark(f){ const k=1-f.t/f.max; ctx.strokeStyle=`rgba(${f.col},${1-k})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(f.x,f.y,6+k*22,3+k*11,0,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle=`rgba(${f.col},${1-k*0.6})`; const d=18-k*12; for(let i=0;i<4;i++){ const a=i*Math.PI/2; ctx.fillRect(Math.round(f.x+Math.cos(a)*d)-2,Math.round(f.y+Math.sin(a)*d*0.5)-1,4,3); } }
+
+/* ---- structures ---- */
+function drawRadar(b,now){ if(!b.built) return;
+  if(b.type==='hq'){ const a=now/1000*1.6, cx=b.x-2, cy=b.y-4, ex=cx+Math.cos(a)*17, ey=cy+Math.sin(a)*11;   /* the radar dish sweeps round */
+    ctx.strokeStyle='#2c323e'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ex,ey); ctx.stroke();
+    ctx.fillStyle='#5fe3b0'; ctx.fillRect(Math.round(ex)-1,Math.round(ey)-1,3,3); ctx.fillStyle='#0a0b10'; ctx.fillRect(Math.round(cx)-2,Math.round(cy)-2,5,5); }
+  else if(b.type==='relay'){ for(let w=0;w<2;w++){ const s=(now/1000*0.7+w*0.5+b.id*0.13)%1; ctx.strokeStyle=`rgba(255,179,71,${(1-s)*0.8})`; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(b.x,b.y-18,4+s*26,2+s*13,0,0,Math.PI*2); ctx.stroke(); } } }
+function sentryUnfolds(b){ if(b.type==='sentry'&&ANIM.unfold>0) b.unfoldT=ANIM.unfold; }
+
+/* ---- surroundings ---- */
+function devilTick(dt){ if(!(ANIM.devilEvery>0)) return; G.devilT=(G.devilT??rand(10,ANIM.devilEvery))-dt; if(G.devilT>0) return; G.devilT=ANIM.devilEvery*rand(0.6,1.4);
+  for(let i=0;i<20;i++){ const x=G.cam.x+rand(40,ui.vw*0.6), y=G.cam.y+rand(80,ui.vh-(ui.hudH||0)-40), k=Math.floor(y/TILE)*G.map.w+Math.floor(x/TILE), c=G.map.tiles[k];
+    if((c!=='.'&&c!==',')||!animSeen(x,y)||(G.creep&&G.creep[k]>0.1)) continue; G.fx.push({k:'devil',x,y,vx:rand(18,30),vy:0,t:7,max:7,seed:Math.random()*99,rest:true}); return; } }
+function drawDevil(f){ const tt=f.max-f.t, fade=Math.min(1,tt,f.t), x0=f.x+tt*f.vx, y0=f.y-Math.sin(tt*0.9+f.seed)*10;
+  for(let i=0;i<28;i++){ const h=i/28, a=tt*9+i*0.9, r=3+h*14; ctx.fillStyle=`rgba(${i%3?'138,127,112':'179,165,143'},${(0.7-h*0.45)*fade})`; ctx.fillRect(Math.round(x0+Math.cos(a)*r+Math.sin(tt*3)*h*6),Math.round(y0-h*44+Math.sin(a)*r*0.3),2,2); } }
+function drawGlints(now,vx0,vy0,vx1,vy1){ if(!ANIM.glints) return; const m=G.map, W=m.w, x0=Math.max(0,Math.floor(vx0/TILE)), y0=Math.max(0,Math.floor(vy0/TILE)), x1=Math.min(W-1,Math.ceil(vx1/TILE)), y1=Math.min(m.h-1,Math.ceil(vy1/TILE));
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const k=y*W+x, c=m.tiles[k]; if((c!=='*'&&c!=='~')||!G.vis[k]) continue; const n=creepNoise(x,y), s=(now/1000*0.5+n*7)%1; if(s>0.1) continue;
+    const g=1-Math.abs(s-0.05)/0.05, px=x*TILE+4+n*(TILE-8), py=y*TILE+4+creepNoise(y,x)*(TILE-8); ctx.fillStyle=`rgba(240,250,255,${g})`; ctx.fillRect(Math.round(px)-1,Math.round(py),3,1); ctx.fillRect(Math.round(px),Math.round(py)-1,1,3);
+    if(g>0.6){ ctx.fillRect(Math.round(px)-3,Math.round(py),1,1); ctx.fillRect(Math.round(px)+3,Math.round(py),1,1); } } }
+/* debris in low gravity: it rises, hangs, and comes down slowly; then lies a while */
+function debrisBurst(x,y,n,cols,sp=110){ if(!animOnScreen(x,y)) return; for(let i=0;i<n;i++){ const a=-rand(0.15,Math.PI-0.15);
+    G.fx.push({k:'debris',x:x+rand(-6,6),y:y-2,vx:Math.cos(a)*rand(0.3,1)*sp,vy:Math.sin(a)*rand(0.5,1)*sp,gy:y+rand(-6,10),t:rand(2.6,4),max:4,col:pick(cols),rest:false}); }
+  G.fx.push({k:'dust',x,y:y-4,vx:0,vy:-4,t:3.4,max:3.4,r0:6,r1:26,col:'#8a8a90'}); }
+function debrisTick(f,dt){ if(f.rest) return; f.x+=f.vx*dt; f.y+=f.vy*dt; f.vy+=ANIM.lowGravity*dt; f.vx*=0.995; if(f.y>=f.gy&&f.vy>0){ f.y=f.gy; f.rest=true; } }
+function drawDebris(f){ ctx.globalAlpha=Math.min(1,f.t/0.8); ctx.fillStyle=f.col; ctx.fillRect(Math.round(f.x),Math.round(f.y),2,2); ctx.globalAlpha=1; }
+
 /* ---- per frame ---- */
 function updateAnims(dt){
   for(const p of G.prints||[]) p.t-=dt; if(G.prints&&G.prints.length&&G.prints[0].t<=0) G.prints=G.prints.filter(p=>p.t>0);
   for(const u of G.ents){ if(u.dead) continue;
-    if(u.kind==='unit'){ if(u.moving&&!u.downed) stepAnims(u); if(u.acidT>0) u.acidT-=dt; if(u.glintT>0) u.glintT-=dt; }
-    else if(u.kind==='building'){ if(u.recoil>0) u.recoil-=dt; if(u.weldT>0) u.weldT-=dt; damageSmoke(u,dt); } }
-  for(const f of G.fx){ if(f.k==='casing') casingTick(f,dt); else if(f.k==='meteor') meteorFx(f); }
-  meteorTick(dt); updateFires(dt); }
+    if(u.kind==='unit'){ if(u.moving&&!u.downed) stepAnims(u); if(u.acidT>0) u.acidT-=dt; if(u.glintT>0) u.glintT-=dt; if(u.chargeT>0) u.chargeT-=dt; if(u.fallT>0) u.fallT-=dt;
+      if(u.emergeT>0) emergeTick(u,dt); if(u.faction==='corps') headingTick(u); }
+    else if(u.kind==='building'){ if(u.recoil>0) u.recoil-=dt; if(u.weldT>0) u.weldT-=dt; if(u.unfoldT>0) u.unfoldT-=dt; damageSmoke(u,dt); } }
+  for(const f of G.fx){ if(f.k==='casing'||f.k==='helmet') casingTick(f,dt); else if(f.k==='meteor') meteorFx(f); else if(f.k==='debris') debrisTick(f,dt); }
+  if(G.hurtAcc) G.hurtAcc*=Math.exp(-dt*1.6);
+  meteorTick(dt); devilTick(dt); updateFires(dt); }

@@ -33,10 +33,10 @@ function fire(u,t){
   if(d.attack==='bullet'){
     const hx=t.x+rand(-5,5), hy=t.y-6+rand(-5,5);
     G.fx.push({k:'tracer',x1:mx,y1:my,x2:hx,y2:hy,t:0.06,max:0.06});
-    G.fx.push({k:'flash',x:mx,y:my,t:0.05,max:0.05});
+    G.fx.push({k:'flash',x:mx,y:my,t:0.05,max:0.05}); if(u.faction==='corps') muzzleLight(mx,my);
     if(Math.random()<0.35) G.fx.push({k:'spark',x:hx,y:hy,vx:rand(-40,40),vy:rand(-60,0),t:0.25,max:0.25,col:'#ffe2a8'});
     damage(t,d.damage*dm,u); if(u.type==='gunner'){ suppress(t); ejectCasing(u); } if(u.type==='sentry') sentryFired(u);
-  } else if(d.attack==='flame'){
+  } else if(d.attack==='flame'){ if(Math.random()<0.4) muzzleLight(mx,my);
     for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200)*(1+(u.rangeBonus||0)/(d.range||1)*0.8); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
     for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)&&e!==t) continue; if(dist(e,t)<=R+e.r*0.5){ damage(e,d.damage*dm*((d.bonus&&d.bonus[e.type])||1),u); } }
@@ -45,7 +45,8 @@ function fire(u,t){
   } else if(d.attack==='plasma'){
     u.revealT=Math.max(u.revealT||0,1.5); const dd=dist(u,t); G.shots.push({k:'plasma',sx:mx,sy:my,tx:t.x,ty:t.y-6,t:0,dur:dd/460+0.05,src:u,dmg:d.damage*dm,splash:0.4*TILE,faction:u.faction});
   } else if(d.attack==='acid'){
-    const dd=dist(u,t); G.shots.push({k:'acid',sx:mx,sy:my,tx:t.x+rand(-6,6),ty:t.y+rand(-6,6),t:0,dur:dd/230+0.15,src:u,dmg:d.damage*dm,splash:(d.splash||0.6)*TILE,faction:u.faction});
+    const dd=dist(u,t), ch=ANIM.spitCharge||0; u.chargeT=ch;   /* its throat swells first: the acid leaves ch seconds later (you can step aside) */
+    G.shots.push({k:'acid',sx:mx,sy:my,tx:t.x+rand(-6,6),ty:t.y+rand(-6,6),t:-ch,dur:dd/230+0.15,src:u,dmg:d.damage*dm,splash:(d.splash||0.6)*TILE,faction:u.faction});
   } else {
     damage(t,d.damage*dm,u); u.lunge=0.12;
     G.fx.push({k:'slash',x:t.x,y:t.y-8,t:0.16,max:0.16,face:u.face});
@@ -66,6 +67,8 @@ function damage(t,amt,src){
   if(src&&src.kind==='unit'&&src.faction==='swarm'&&src.type!=='husk'&&!src.avatar&&!src.def.boss&&G.side!=='swarm'&&t.kind==='unit'&&t.faction==='corps'&&!t.downed&&t.hp-amt<1) amt=escortSpare(src,t,amt);   /* the last blow is for a Husk close by */
   if(t.downed&&!(src&&src.def&&src.def.boss)){ const D=SQUAD.downed, d=t.downed; t.flash=0.07;   /* down: splash, acid and pools no longer finish him off on the spot; they shorten his time, never below minLeft */
     if(d.t>D.minLeft) d.t=Math.max(D.minLeft,d.t-amt/t.maxHp*D.hitTime); return; }
+  if(t.kind==='unit'&&t.faction==='swarm'&&t.def.bio!==false&&!(t.splatT>G.time)){ t.splatT=G.time+0.12; hitSplat(t,src); }   /* green ichor */
+  if(t.faction===G.side&&!t.def.ground) hurtNote(t,amt,src);   /* heavy damage: the screen edge glows red */
   const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
@@ -99,7 +102,7 @@ function kill(e,src){
     if(e.faction==='corps'||isVisible(e)) SFX.play(e.faction==='swarm'?'squelch':'death',e.x,e.y);
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
     if(e.faction===G.side){ G.stats.lost++; G.stats.soldiers=(G.stats.soldiers||0)+1; }
-    if(e.faction==='corps') obituary(e);
+    if(e.faction==='corps') obituary(e); if(e.faction==='corps'&&e.def.bio&&e.fallT==null) soldierFalls(e);
     if(src&&src.avatar) avatarFed(src,e);
     if(src&&src.type==='husk'&&!src.dead&&e.faction==='corps'&&e.kind==='unit') huskScream(src);   /* a Husk screams over its kill */   /* the creature you steer grows by feeding */
     if(G.side==='swarm' && e.faction==='corps' && !e.def.escort){ G.stats.kills++; G.swarm.biomass+=SWARM_PLAY.kill; }   /* playing the Swarm: every soldier who dies (also one who bleeds out) feeds the brood */

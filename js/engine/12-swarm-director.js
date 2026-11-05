@@ -85,7 +85,8 @@ function launchWave(budget,aim){
     const spot=burrowSpot(aim); if(!spot) return [];
     const types=[], wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types; while(left>=15 && guard++<80){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass; types.push(type); }
     const tiles=freeTilesNear(spot.x,spot.y,types.length);
-    types.forEach((type,i)=>{ const s=tiles[i]; if(!s) return; const u=makeUnit(type,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u);
+    if(ANIM.emerge>0&&types.length) G.fx.push({k:'bulge',x:(spot.x+.5)*TILE,y:(spot.y+.5)*TILE,r:TILE*(1+Math.sqrt(types.length)*0.5),t:ANIM.emerge,max:ANIM.emerge,seed:Math.random()*99});   /* the ground bulges first */
+    types.forEach((type,i)=>{ const s=tiles[i]; if(!s) return; const u=makeUnit(type,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u); emergeStart(u);
       for(let j=0;j<6;j++) G.fx.push({k:'ember',x:u.x+rand(-10,10),y:u.y+rand(-4,6),vx:rand(-50,50),vy:rand(-80,-20),t:0.7,max:0.7,col:'#8a7a6a'}); });
     addDecal((spot.x+.5)*TILE,(spot.y+.5)*TILE,22,'rgba(30,26,22,.6)');
     if(out.length && !G.burrowWarned){ G.burrowWarned=true; say('Dr. Maas','With the hives gone they are burrowing up through the ground. Watch every direction!'); }

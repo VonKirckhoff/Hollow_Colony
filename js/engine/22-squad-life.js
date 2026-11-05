@@ -270,7 +270,7 @@ function drawRisenGlow(u,now){
 function canGoDown(t,src){ return t.kind==='unit' && t.faction==='corps' && t.def.bio && !t.downed && !(t.vet&&t.vet.risen) && !(src&&src.def&&src.def.boss); }
 function goDown(t,src){ const D=SQUAD.downed;
   t.downed={ t:D.time, max:D.time, patch:0 }; t.hp=t.maxHp*D.hp; t.order=null; t.target=null; t.path=null; t.goal=null; t.moving=false; t.snap=null;
-  addDecal(t.x,t.y,t.r*0.9,'rgba(120,24,24,.5)'); SFX.play('death',t.x,t.y); G.barkNext=0; bark(t,'downed');
+  addDecal(t.x,t.y,t.r*0.9,'rgba(120,24,24,.5)'); SFX.play('death',t.x,t.y); soldierFalls(t); G.barkNext=0; bark(t,'downed');
   if(G.time-(G.downSaid||-99)>6){ G.downSaid=G.time; const n=t.vet?`${RANKS[t.vet.rank].abbr} ${t.vet.name}`:t.def.name; const med=G.ents.some(e=>!e.dead&&!e.downed&&e.faction==='corps'&&e.def.heal);
     say(t.vet&&t.vet.sex==='f'?'Soldier down':'Man down',`${n} is down! ${med?`Get a Medic to ${pron(t.vet,'him')} within ${D.time} seconds.`:`No Medic in the field. ${pron(t.vet,'He')} has ${D.time} seconds.`}`,'alert'); }
   G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; }
@@ -283,7 +283,7 @@ function patchUp(m,t,dt){ const D=SQUAD.downed, d=t.downed; d.tended=0.2; d.patc
     SFX.play('complete',t.x,t.y); G.barkNext=0; bark(t,'revived'); gainXP(m,2); G.selDirty=true; } }
 function drawDowned(u,sp,w,h,now){ const d=u.downed;
   drawShadow(u.x,u.y+2,u.r*1.3,u.r*0.45);
-  ctx.save(); ctx.translate(Math.round(u.x),Math.round(u.y-4)); ctx.rotate(u.face>0?-Math.PI/2:Math.PI/2); ctx.globalAlpha=0.92;
+  ctx.save(); ctx.translate(Math.round(u.x),Math.round(u.y-4)); ctx.rotate((u.face>0?-Math.PI/2:Math.PI/2)*(u.fallT>0?1-u.fallT/0.4:1));   /* he topples over */ ctx.globalAlpha=0.92;
   const img=u.vet&&u.vet.risen&&sp.risen?(u.face>0?sp.risen.img:sp.risen.flip):(u.face>0?sp.img:sp.flip); ctx.drawImage(img,-w/2,-h/2,w,h); ctx.restore(); ctx.globalAlpha=1;
   const y=Math.round(u.y-24), x=Math.round(u.x), blink=Math.floor(now/350)%2;
   ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.stroke();

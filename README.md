@@ -199,6 +199,19 @@ Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Eff
 - **Schimmel:** licht loopt van het nest naar buiten door de schimmel, en waar ze groeit, tasten ranken vooruit.
 - **Eieren:** de vier blaadjes van het deksel gaan open, er druipt slijm en het binnenste gloeit.
 - **Meteorieten:** ongeveer om de 35 s komt er ergens in beeld een kleine meteoriet neer: een streep, een flits, een kratertje (onschadelijk; `meteorEvery`, 0 = nooit).
+- **Spitter laadt op:** voor hij spuwt, zwelt zijn keel een halve seconde groen op (`spitCharge`). Het zuur vertrekt pas daarna: je hebt even tijd om opzij te stappen. Sterft hij intussen, dan komt er geen zuur. (Dit verandert het spel een beetje: vroeger vertrok het zuur meteen. 0 = zoals vroeger.)
+- **Swarm geraakt:** bij elke treffer spat groen bloed weg van de schutter.
+- **De grond bolt op:** een golf die zich opgraaft (als alle hives weg zijn), blijft eerst 1 seconde onder een opbollende, scheurende plek (`emerge`). Pas dan breken ze uit, met aarde in het rond. Zolang ze onder de grond zitten, kan niemand ze raken en doen ze niets.
+- **Rode rand:** krijgt jouw kant in korte tijd zware schade (ongeveer 60 in een seconde, `hurtEdge`), dan kleurt de rand van het scherm rood aan de kant waar de aanval vandaan komt, ook als je camera elders staat.
+- **Soldaat valt neer:** hij valt om en zijn helm stuitert weg (ook als hij sneuvelt).
+- **Helmlampen** (alleen in het donker, Blackout): elke soldaat heeft een lichtkegel waar hij kijkt (waar hij loopt, of naar zijn doelwit). Wat in de kegel ligt, zie je tot 5 tegels verder dan je korte zicht in het donker (`lamps`, `lampRange`).
+- **Mondingsvuur:** elk schot licht de grond rond de loop even op, in het donker veel sterker (`muzzleLight`).
+- **Bevelmarkering:** waar je je squad naartoe stuurt, verschijnt een rimpel met vier pijltjes, rood bij een aanvalsbevel (`orderMark`).
+- **Radar en antennes:** de radarschotel van de Command Post draait; een Relay Tower zendt ringen uit.
+- **Sentry klapt open:** een Sentry Gun die net gebouwd of neergezet is, klapt in 1,2 s zijn pootjes uit en schuift zijn loop naar buiten (`unfold`).
+- **Stofduiveltje:** ongeveer om de 45 s draait er een kleine wervelwind over het regoliet in beeld (`devilEvery`).
+- **Glinsteringen:** kristallen (`*`) en ijs (`~`) die je ziet, glinsteren af en toe (`glints`).
+- **Lage zwaartekracht:** het puin van granaten, seismische ladingen en meteorieten vliegt hoog, blijft lang hangen en valt traag terug (`lowGravity`, de gewone val is 180), met een stofwolk die lang blijft.
 - **Dropship:** voor hij landt, vliegt hij eerst hoog over (zijn schaduw veegt over de grond, je hoort de motoren); bij de landing een stofring.
 
 ### Bovenbalk

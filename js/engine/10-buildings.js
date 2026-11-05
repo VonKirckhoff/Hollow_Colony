@@ -69,7 +69,7 @@ function updateCharge(b,dt){
   const d=b.def; b.blown=true; b.dead=true; setBlock(b,0);
   for(const e of G.ents){ if(e.dead||e.faction==='corps'||e.kind==='crate'||e.invuln||(e.def&&e.def.scenery)) continue; if(Math.hypot(e.x-b.x,e.y-b.y)<d.blast*TILE) damage(e,d.blastDamage,{faction:'corps',dead:true}); }
   for(let i=0;i<60;i++) G.fx.push({k:'ember',x:b.x+rand(-20,20),y:b.y+rand(-20,20),vx:rand(-220,220),vy:rand(-260,40),t:rand(.6,1.4),max:1.4,col:pick(['#ff8a2a','#ffd23f','#ffffff','#8a8f9c'])});
-  G.fx.push({k:'boom',x:b.x,y:b.y,t:0.9,max:0.9,r:d.blast*TILE}); addDecal(b.x,b.y,d.blast*TILE*0.7,'rgba(10,10,12,.7)'); SFX.play('boom',b.x,b.y); G.shake=Math.max(G.shake||0,0.8);
+  G.fx.push({k:'boom',x:b.x,y:b.y,t:0.9,max:0.9,r:d.blast*TILE}); addDecal(b.x,b.y,d.blast*TILE*0.7,'rgba(10,10,12,.7)'); SFX.play('boom',b.x,b.y); G.shake=Math.max(G.shake||0,0.8); debrisBurst(b.x,b.y,30,['#8a7a6a','#5a4632','#b3a58f','#3a3c43'],170);   /* rock hangs in the air a long time */
   if(G.charges&&G.charges[b.tag]) G.charges[b.tag].state='blown';
 }
 /* A destroyed charge leaves its site behind, so an Engineer can arm a new one. */

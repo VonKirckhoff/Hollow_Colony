@@ -3,6 +3,7 @@
 function updateUnit(u,dt){
   const d=u.def;
   if(u.downed){ downedThink(u,dt); return; }
+  if(u.emergeT>0) return;   /* still under the bulging ground (a burrowing wave) */
   if(d.grafter){ grafterThink(u,dt); return; }   /* a Grafter only goes for its body */   /* down: immobile, bleeding out, waiting for a Medic */
   u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
   if(u.vet&&u.vet.risen&&u.hp<u.maxHp&&G.time-(u.hitAt??-99)>RISEN.calm) u.hp=Math.min(u.maxHp,u.hp+RISEN.regen*dt);   /* the risen knit themselves back together, once nothing has hit them for a while */ u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
@@ -207,6 +208,6 @@ function builderThink(u,dt){
     const sp=hasPerk(u)?PERKS.engineer.speed:1;   /* Lieutenant Engineer: twice as fast */ b.weldT=0.25;   /* welding sparks on the scaffolding */
     if(b.deploy){ b.progress+=dt*sp/bd.deployTime; b.hp=b.carryHp*(0.3+0.7*Math.min(1,b.progress)); }
     else { b.progress+=dt*sp/bd.buildTime; b.hp=Math.min(b.maxHp,b.hp+b.maxHp*0.9*dt*sp/bd.buildTime); }
-    if(b.progress>=1){ b.built=true; b.progress=1; if(!b.deploy){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; SFX.play('complete'); say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }
+    if(b.progress>=1){ b.built=true; b.progress=1; sentryUnfolds(b); if(!b.deploy){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; SFX.play('complete'); say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }
   } else { const rr=Math.min(b.maxHp-b.hp,d.repair*dt*(hasPerk(u)?PERKS.engineer.speed:1)); b.hp+=rr; if(u.vet){ u.vet.repaired=(u.vet.repaired||0)+rr; u.vet.rb=(u.vet.rb||0)+rr; if(u.vet.rb>=VET_XP.repairPerXp){ u.vet.rb-=VET_XP.repairPerXp; gainXP(u,1); } } }
 }
