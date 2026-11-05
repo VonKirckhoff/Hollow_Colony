@@ -38,14 +38,7 @@ const ART = {
   barricade(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(0,3,16,13); x.fillStyle='#7d8392'; x.fillRect(1,4,14,11); x.fillStyle='#9aa0ad'; x.fillRect(1,4,14,2);
     for(let i=0;i<4;i++){ x.fillStyle=i%2?P.k:P.y; x.fillRect(1+i*4,9,4,3); } return c; },
-  hive(){ const [c,x]=pxCtx(48,48); const P=PALETTE;
-    oval(x,24,30,22,16,'rgba(36,24,44,.9)');
-    disc(x,24,27,17,P.k); disc(x,24,27,16,P.c); disc(x,22,24,13,P.C); disc(x,20,21,8,P.p);
-    disc(x,33,17,7,P.k); disc(x,33,17,6,P.C); disc(x,32,16,3,P.p);
-    disc(x,13,33,6,P.k); disc(x,13,33,5,P.C);
-    x.fillStyle=P.b; x.fillRect(10,14,2,10); x.fillRect(36,26,2,9); x.fillRect(26,8,2,7); x.fillRect(18,36,9,2);
-    disc(x,24,30,3,P.k); disc(x,24,30,2,P.e); disc(x,33,18,2,P.E); disc(x,14,34,2,P.E);
-    return c; },
+  hive(){ return hiveDraw(pxCtx(48,48),0.4); },   /* the still picture (Intel, editor); in the game the hive is animated (hiveFrame) */
   /* a soldier's body wrapped in Swarm tissue: a long pod, the helmet still showing at one end */
   huskcocoon(){ const [c,x]=pxCtx(20,16); const P=PALETTE;
     oval(x,10,10,9,5,P.k); oval(x,10,10,8,4,P.C); oval(x,9,9,6,3,P.p); oval(x,15,9,3,3,P.k); oval(x,15,9,2,2,P.A); x.fillStyle=P.a; x.fillRect(15,8,2,1);
@@ -148,6 +141,22 @@ const ART = {
   crate(){ const [c,x]=pxCtx(12,10); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(0,0,12,10); x.fillStyle=P.G; x.fillRect(1,1,10,8); x.fillStyle=P.v; x.fillRect(1,4,10,2); x.fillStyle=P.A; x.fillRect(5,1,2,8); return c; }
 };
+/* The hive: a root bulb. A fleshy bulb on a web of roots that run out into the creep; it beats like a heart
+   (a double beat), green sap runs out along the roots, and a sprout on top sways. One loop lasts HIVE_LOOP seconds;
+   hiveFrame(t) gives the picture at time t from HIVE_FRAMES pictures made once. */
+const HIVE_LOOP=5, HIVE_FPS=12;
+function hiveDraw([c,x],t){ const P=PALETTE, px=(a,b,col)=>{ x.fillStyle=col; x.fillRect(Math.round(a),Math.round(b),1,1); }, w=2*Math.PI/HIVE_LOOP;
+  const roots=[[4,38],[10,44],[44,40],[40,45],[24,46],[2,28],[46,30]];
+  roots.forEach(([a,b],i)=>{ for(let s=0;s<=1;s+=0.03){ const X=24+(a-24)*s+Math.sin(s*6+i)*1.5, Y=34+(b-34)*s; px(X,Y+1,P.k); px(X,Y,P.C); }
+    const q=(t*3/HIVE_LOOP+i*0.23)%1; px(24+(a-24)*q+Math.sin(q*6+i)*1.5,34+(b-34)*q,P.e); });   /* sap running out along the root */
+  const hb=(t*6/HIVE_LOOP)%1, beat=hb<0.08?1:hb<0.16?0.3:hb<0.24?0.8:0, s=1+0.08*beat;   /* six double beats per loop */
+  oval(x,24,26,Math.round(12*s),Math.round(13*s),P.k); oval(x,24,26,Math.round(11*s),Math.round(12*s),P.C); oval(x,21,22,Math.round(6*s),Math.round(7*s),P.p);
+  for(let i=-1;i<=1;i++) for(let y=16;y<36;y++) px(24+i*6*Math.sin((y-13)/23*Math.PI)*s,y,P.c);   /* the folds of the bulb */
+  const sw=Math.sin(t*w); for(let s2=0;s2<1;s2+=0.05) px(24+Math.sin(s2*4+sw)*2*s2,13-s2*8,P.C);   /* the sprout */
+  disc(x,Math.round(24+Math.sin(4+sw)*2),5,1,P.e); disc(x,24,27,2,beat>0.5?P.e:P.E);
+  return c; }
+const HIVE_FRAMES=[]; for(let i=0;i<HIVE_LOOP*HIVE_FPS;i++) HIVE_FRAMES.push(hiveDraw(pxCtx(48,48),i/HIVE_FPS));
+function hiveFrame(t){ const n=HIVE_FRAMES.length; return HIVE_FRAMES[((Math.floor(t*HIVE_FPS)%n)+n)%n]; }
 const ARTC={}; const ARTURL={};
 for(const k in ART){ ARTC[k]=ART[k](); ARTURL[k]=ARTC[k].toDataURL(); }
 function iconUrl(type){ return UNITS[type] ? SPR[UNITS[type].sprite].url : (ARTURL[BUILDINGS[type]?.art]||''); }

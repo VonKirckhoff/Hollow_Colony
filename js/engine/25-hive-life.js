@@ -327,3 +327,42 @@ function grafterThink(u,dt){ u.flash=Math.max(0,u.flash-dt); u.anim+=dt; u.movin
 function drawEgg(b,art,now){ const opening=b.openT!=null, p=opening?1-b.openT/EGG.open:0, s=1+Math.sin(now/500+b.id)*0.04+(opening?0.12*p:0), jx=opening?rand(-1.5,1.5):0;
   const w=art.width*2*s, h=art.height*2*s; ctx.drawImage(art,Math.round(b.x-w/2+jx),Math.round(b.y-h+6),Math.round(w),Math.round(h));
   if(opening){ ctx.strokeStyle='#a6ff4a'; ctx.lineWidth=2; for(let i=0;i<4;i++){ const a=-Math.PI/2+(i-1.5)*0.5; ctx.beginPath(); ctx.moveTo(b.x,b.y-h+10); ctx.lineTo(b.x+Math.cos(a)*7*p,b.y-h+10+Math.sin(a)*7*p); ctx.stroke(); } } }
+
+/* ---------- a hive's death: the last scream ----------
+   A burnt hive does not just blow up. For HIVE_DEATH.scream seconds it shakes harder and harder, its heart races,
+   it shrieks (green rings) and the last of its brood scuttles away from it (only a picture: they are not units).
+   Then it caves in (HIVE_DEATH.fall seconds): it flattens and darkens, dirt flies, and smoke plumes keep rising until
+   the end. A picture in G.fx (k:'hivedeath'), drawn by drawHiveDeath; the hive itself is already gone. */
+const HIVE_DEATH = { scream:1.8, fall:0.6, time:3.4, rings:3, brood:7, smoke:12 };
+function hiveDeath(h){ const D=HIVE_DEATH;
+  G.fx.push({k:'hivedeath',x:h.x,y:h.y,t:D.time,max:D.time,seed:h.id*7.3,ph:h.id*0.37});
+  SFX.play('huskroar',h.x,h.y); SFX.play('hatch',h.x,h.y); }
+function hiveDeathTick(f){ const tt=f.max-f.t;   /* the sound of the cave-in, once */
+  if(!f.fell&&tt>=HIVE_DEATH.scream){ f.fell=true; SFX.play('squelch',f.x,f.y); SFX.play('boom',f.x,f.y);
+    for(let i=0;i<14;i++) G.fx.push({k:'ember',x:f.x+rand(-30,30),y:f.y+rand(-10,14),vx:rand(-70,70),vy:rand(-110,-30),t:rand(.5,1),max:1,col:pick(['#5a4632','#d3c3a6','#24182c','#4fae22'])}); } }
+const hdRnd=s=>{ s=Math.sin(s*127.1)*43758.5453; return s-Math.floor(s); };
+let hdCan=null, hdCtx=null;
+function drawHiveDeath(f){ const D=HIVE_DEATH, tt=f.max-f.t, P=PALETTE, S=2;
+  if(!G.seen[Math.floor(f.y/TILE)*G.map.w+Math.floor(f.x/TILE)]) return;
+  const px=(x,y,col,n=1)=>{ ctx.fillStyle=col; ctx.fillRect(Math.round(x),Math.round(y),S*n,S*n); };
+  /* the hive itself: shaking while it screams, then flattening and darkening */
+  const fall=Math.min(1,Math.max(0,(tt-D.scream)/D.fall));
+  if(fall<1||tt<D.scream+D.fall+0.2){
+    if(!hdCan){ hdCan=document.createElement('canvas'); hdCan.width=hdCan.height=48; hdCtx=hdCan.getContext('2d'); }
+    hdCtx.globalCompositeOperation='source-over'; hdCtx.clearRect(0,0,48,48); hdCtx.drawImage(hiveFrame(f.ph+tt*(tt<D.scream?3:0.5)),0,0);   /* the heart races */
+    const dark=Math.min(0.75,tt/D.scream*0.25+fall*0.55); if(dark>0){ hdCtx.globalCompositeOperation='source-atop'; hdCtx.fillStyle=`rgba(10,11,16,${dark})`; hdCtx.fillRect(0,0,48,48); }
+    const sh=tt<D.scream?Math.min(5,tt*2.8):0, k=Math.floor(tt*30), jx=(hdRnd(f.seed+k)-0.5)*sh, jy=(hdRnd(f.seed+k+50)-0.5)*sh*0.5;
+    const sx=(1+0.2*fall)*(tt<D.scream?1+0.04*Math.sin(tt*30):1), sy=(1-0.8*fall)*(tt<D.scream?1+0.06*Math.sin(tt*30):1), W=48*S;
+    ctx.save(); ctx.translate(Math.round(f.x+jx),Math.round(f.y-W/2-4+38*S+jy)); ctx.scale(sx,sy); ctx.drawImage(hdCan,-W/2,-38*S,W,W); ctx.restore(); }   /* it caves in onto the foot of the bulb (row 38) */
+  else { ctx.fillStyle='rgba(10,11,16,.7)'; ctx.beginPath(); ctx.ellipse(f.x,f.y+20,30,8,0,0,Math.PI*2); ctx.fill(); }
+  /* the shriek: green rings */
+  for(let w=0;w<D.rings;w++){ const t=tt-w*0.5; if(t<0||t>0.8||tt>D.scream) continue; const r=16+t*130, a=1-t/0.8;
+    ctx.strokeStyle=`rgba(166,255,74,${a})`; ctx.lineWidth=2; ctx.setLineDash([6,6]); ctx.lineDashOffset=w*4; ctx.beginPath(); ctx.ellipse(f.x,f.y-6,r,r*0.7,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
+  /* the last brood flees */
+  for(let n=0;n<D.brood;n++){ const t=tt-0.3-n*0.18; if(t<0||t>2.6) continue; const a=hdRnd(f.seed+n+20)*Math.PI*2, d=24+t*95,
+      X=f.x+Math.cos(a)*d, Y=f.y+16+Math.sin(a)*d*0.6, leg=Math.floor(tt*12+n)%2;
+    ctx.globalAlpha=Math.min(1,(2.6-t)*2); px(X-2,Y-2,P.k,2); px(X-4,Y+leg*2,P.k); px(X+2,Y+(1-leg)*2,P.k); px(X,Y-4,P.p); ctx.globalAlpha=1; }
+  /* smoke plumes rise from the start to the end */
+  for(let n=0;n<D.smoke;n++){ const t=tt-0.3-n*0.22; if(t<0||t>2.2) continue; const X=f.x+(hdRnd(f.seed+n)-0.5)*56+Math.sin(t*3+n)*5, Y=f.y+6-t*46, r=4+t*9;
+    ctx.fillStyle=`rgba(140,140,150,${Math.max(0,0.55-t*0.25)})`; ctx.beginPath(); ctx.arc(X,Y,r,0,Math.PI*2); ctx.fill(); }
+}

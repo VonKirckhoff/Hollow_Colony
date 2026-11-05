@@ -139,8 +139,8 @@ function drawBuilding(b,now){
   const art=ARTC[b.def.art], s=2, w=art.width*s, h=art.height*s;
   let x=b.kind==='building'&&b.def.noBlock ? Math.round(b.x-w/2) : b.tx*TILE + Math.round((b.size*TILE-w)/2);
   let y=b.def.noBlock ? Math.round(b.y-h/2-4) : b.ty*TILE + Math.round((b.size*TILE-h)/2);
-  if(!b.def.noBlock) drawShadow(b.x+4,b.y+b.size*TILE*0.32,b.size*TILE*0.5,b.size*TILE*0.22);
-  if(b.type==='hive'){ const p=1+Math.sin(now/420+b.id)*0.025; const ww=Math.round(w*p), hh=Math.round(h*p); ctx.drawImage(art,Math.round(b.x-ww/2),Math.round(b.y-hh/2-4),ww,hh); }
+  if(!b.def.noBlock&&b.type!=='hive') drawShadow(b.x+4,b.y+b.size*TILE*0.32,b.size*TILE*0.5,b.size*TILE*0.22);
+  if(b.type==='hive'){ ctx.drawImage(hiveFrame(now/1000+b.id*0.37),Math.round(b.x-w/2),Math.round(b.y-h/2-4),w,h); }   /* the root bulb beats on its own (hiveFrame) */
   else if(b.type==='egg'){ drawEgg(b,art,now); }
   else if(b.type==='cocoon'){ let p=1+Math.sin(now/120)*0.06*(1-b.hatchT/(b.hatchMax||BUILDINGS.cocoon.hatch)+0.3), jx=0;
     if(b.husk){ drawHuskCocoon(b,now); const q=1-b.hatchT/b.hatchMax; p=1+0.05+0.14*(b.beat||0)+0.12*q; if(b.hatchT<1.5) jx=rand(-2,2); }
@@ -164,6 +164,7 @@ function drawFx(){
       case 'slash': ctx.strokeStyle=`rgba(255,255,255,${a})`; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(f.x-8*f.face,f.y-6); ctx.lineTo(f.x+8*f.face,f.y+6); ctx.stroke(); break;
       case 'boom': { const r=f.r*(1-a*0.6); ctx.globalAlpha=a*0.55; ctx.fillStyle=f.col||'#ffa03c'; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; break; }
       case 'dust': { const r=f.r0+(1-a)*f.r1; ctx.globalAlpha=a*0.5; ctx.fillStyle=f.col; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; break; }
+      case 'hivedeath': drawHiveDeath(f); break;
       case 'text': ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(f.txt,f.x+1,f.y-(1-a)*18+1); ctx.fillStyle=f.col; ctx.fillText(f.txt,f.x,f.y-(1-a)*18); break;
     } }
 }

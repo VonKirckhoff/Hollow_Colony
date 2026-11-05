@@ -12,7 +12,7 @@ function update(dt){
         for(let i=0;i<14;i++) G.fx.push({k:'ember',x:s.tx,y:s.ty,vx:rand(-140,140),vy:rand(-160,10),t:rand(.3,.7),max:.7,col:pick(['#ff8a2a','#ffd23f','#ffffff'])}); continue; }
       const pl=s.k==='plasma'; if(!pl){ SFX.play('splat',s.tx,s.ty); addDecal(s.tx,s.ty,10,'rgba(120,220,40,.4)'); } for(let i=0;i<6;i++) G.fx.push({k:'spark',x:s.tx,y:s.ty,vx:rand(-60,60),vy:rand(-80,0),t:0.35,max:0.35,col:pl?'#7ff6ff':'#a6ff4a'}); } }
   G.shots=G.shots.filter(s=>!s.done);
-  for(const f of G.fx){ f.t-=dt; if(f.vx!==undefined){ f.x+=f.vx*dt; f.y+=f.vy*dt; if(f.k==='dust'){ f.vx*=0.93; f.vy*=0.93; } else if(f.k!=='flame'){ f.vy+=180*dt; } else { f.vx*=0.94; f.vy*=0.94; } } }
+  for(const f of G.fx){ f.t-=dt; if(f.k==='hivedeath') hiveDeathTick(f); if(f.vx!==undefined){ f.x+=f.vx*dt; f.y+=f.vy*dt; if(f.k==='dust'){ f.vx*=0.93; f.vy*=0.93; } else if(f.k!=='flame'){ f.vy+=180*dt; } else { f.vx*=0.94; f.vy*=0.94; } } }
   G.fx=G.fx.filter(f=>f.t>0);
   for(const p of G.pings) p.t+=dt; G.pings=G.pings.filter(p=>p.t<3);
   // crates

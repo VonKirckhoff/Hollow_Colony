@@ -79,10 +79,11 @@ function kill(e,src){
   if(e.dead) return; e.dead=true; e.hp=0;
   if(e.kind==='building'){
     if(!e.def.noBlock) setBlock(e,0);
-    if(e.type!=='cocoon') SFX.play('boom',e.x,e.y); else SFX.play('squelch',e.x,e.y);
     const big=e.size*TILE;
-    for(let i=0;i<(e.size*10);i++) G.fx.push({k:'ember',x:e.x+rand(-big/3,big/3),y:e.y+rand(-big/3,big/3),vx:rand(-60,60),vy:rand(-90,-10),t:rand(.4,1),max:1,col:e.faction==='swarm'?'#a6ff4a':pick(['#ff8a2a','#ffd23f','#ffffff'])});
-    G.fx.push({k:'boom',x:e.x,y:e.y,t:0.5,max:0.5,r:big*0.8});
+    if(e.type==='hive') hiveDeath(e);   /* the last scream: it shakes and shrieks, its brood flees, then it caves in under smoke */
+    else { if(e.type!=='cocoon') SFX.play('boom',e.x,e.y); else SFX.play('squelch',e.x,e.y);
+      for(let i=0;i<(e.size*10);i++) G.fx.push({k:'ember',x:e.x+rand(-big/3,big/3),y:e.y+rand(-big/3,big/3),vx:rand(-60,60),vy:rand(-90,-10),t:rand(.4,1),max:1,col:e.faction==='swarm'?'#a6ff4a':pick(['#ff8a2a','#ffd23f','#ffffff'])});
+      G.fx.push({k:'boom',x:e.x,y:e.y,t:0.5,max:0.5,r:big*0.8}); }
     addDecal(e.x,e.y,big*0.55,e.faction==='swarm'?'rgba(48,90,20,.55)':'rgba(10,10,12,.6)');
     if(e.type==='charge' && e.tag) chargeLost(e);
     if(e.type==='hive') G.stats.hives++;
