@@ -1,7 +1,8 @@
 'use strict';
 /* Mission 6: Dead Signal
    Sabotage with a small squad and no base: arm three seismic charges next to three nests and keep each charge alive
-   until it blows. Each blast buries its nest. Then everyone to the launch pad in the east for pickup. */
+   until it blows. Each blast buries its nest. Then everyone to the launch pad in the east for pickup.
+   Four old mine shafts in the canyon walls: once every hive is gone (buried or burnt), the waves come up out of these. */
 const DS_SITES = [ { tag:'s1', at:{x:32,y:3},  nest:'b', name:'North nest' },
                    { tag:'s2', at:{x:47,y:12}, nest:'c', name:'Central nest' },
                    { tag:'s3', at:{x:62,y:29}, nest:'d', name:'South-east nest' } ];
@@ -19,6 +20,7 @@ MISSIONS.push(
     start:{ salvage:150, camera:'P',
       units:[ ['engineer','P',1,{carry:'sentry'}], ['engineer','P',1], ['trooper','P',5], ['gunner','P',2], ['pyro','P',1], ['medic','P',1] ],
       buildings:[], hives:['a','b','c','d','e'], hiveHp:2.5,
+      shafts:[ {x:31,y:2,wall:'n'}, {x:50,y:2,wall:'n'}, {x:74,y:2,wall:'n'}, {x:56,y:40,wall:'s'} ],   // old mine shafts in the canyon walls: with every hive gone, the waves come up out of these
       swarmUnits:[ ['drone','b',6], ['spitter','b',2], ['drone','c',5], ['crawler','c',4], ['spitter','c',1], ['drone','d',5], ['spitter','d',2], ['brute','d',1] ] },
     swarm:{ biomass:40, rate:0.38, guardMax:5, guardEvery:15, waves:{ first:150, every:80, budget:65, growth:22 }, unlock:{ spitter:120, brute:480 } },
     objectives:[
@@ -38,9 +40,7 @@ MISSIONS.push(
       ...DS_SITES.map(s=>({ when:g=>g.charge(s.tag)==='blown', do:g=>{
           g.bury(s.nest,1.6,'cave-'+s.tag); g.unmark(s.tag); g.vars.blown++;
           g.setText('charges',`Arm and protect three seismic charges (${g.vars.blown}/3)`);
-          if(g.vars.blown<3){ const next=DS_SITES.find(o=>g.charge(o.tag)!=='blown');
-            g.say('Dr. Maas',`Echo recorded. The ${s.name.toLowerCase()} is buried. Kestrel is bringing two rifles to you.`);
-            g.airdrop([['trooper',2]],25,next.at); }
+          if(g.vars.blown<3) g.say('Dr. Maas',`Echo recorded. The ${s.name.toLowerCase()} is buried. ${g.vars.blown===2?'One':'Two'} to go.`);
           else g.vars.done=true; } })),
 
       // an Engineer is always needed: replace them when both are lost

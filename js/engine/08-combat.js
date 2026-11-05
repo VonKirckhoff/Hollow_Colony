@@ -87,14 +87,14 @@ function kill(e,src){
     if(e.type==='charge' && e.tag) chargeLost(e);
     if(e.type==='hive') G.stats.hives++;
     if(e.type==='hive' && src && src.faction==='corps') gainXP(src,VET_XP.hive);
-    if(e.faction===G.side) G.stats.lost++;
+    if(e.faction===G.side){ G.stats.lost++; G.stats.assets=(G.stats.assets||0)+1; }   /* a building of yours: towers, sentries, barricades, charges */
     if(e.type==='cocoon' && src && src.faction==='corps') G.fx.push({k:'text',x:e.x,y:e.y-14,t:1,max:1,txt:'PURGED',col:'#a6ff4a'});
   } else {
     const col = e.faction==='swarm' ? 'rgba(90,190,30,.6)' : e.faction==='wild' ? 'rgba(150,120,80,.55)' : 'rgba(120,24,24,.6)';
     addDecal(e.x,e.y,e.r*1.1,col);
     if(e.faction==='corps'||isVisible(e)) SFX.play(e.faction==='swarm'?'squelch':'death',e.x,e.y);
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
-    if(e.faction===G.side) G.stats.lost++;
+    if(e.faction===G.side){ G.stats.lost++; G.stats.soldiers=(G.stats.soldiers||0)+1; }
     if(e.faction==='corps') obituary(e);
     if(src&&src.avatar) avatarFed(src,e);
     if(src&&src.type==='husk'&&!src.dead&&e.faction==='corps'&&e.kind==='unit') huskScream(src);   /* a Husk screams over its kill */   /* the creature you steer grows by feeding */

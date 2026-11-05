@@ -107,8 +107,17 @@ function devLive(){ const S=G.swarm, hs=hives().length, nx=S.nextWave-G.time;
     <label class="dv-row"><span>Flares</span><input type="number" step="1" data-live-set="flares" value="${G.flares}"></label>
     <label class="dv-row"><span>Next wave in (s)</span><input type="number" step="5" data-live-set="nextWave" value="${isFinite(nx)?Math.max(0,Math.ceil(nx)):''}"></label>
     <div class="dv-tools"><button type="button" data-dv="wave">Wave now</button><button type="button" data-dv="reveal" class="${G.devReveal?'on':''}">${G.devReveal?'Reveal map: on':'Reveal map: off'}</button><button type="button" data-dv="heal">Heal everyone</button>
+      <button type="button" data-dv="maxxp" title="Every soldier below it goes to the top: 60 XP (Captain) for your own soldier, 40 XP (Lieutenant) for the rest. Who has more keeps it.">Max XP</button><button type="button" data-dv="zeroxp" title="Every soldier back to 0 XP (Private).">XP to 0</button>
       <button type="button" data-dv="clear">Kill all roaming Swarm</button><button type="button" data-dv="win">Win mission</button><button type="button" data-dv="lose">Lose mission</button></div>
     <div class="dv-note">These change only this game. The other tabs hold the settings you can save.</div>`; }
+/* XP tools: every soldier of the Lunar Corps on the map (and in reserve) to the top, or back to nothing.
+   Max: your own soldier 60 XP (Captain), the others 40 XP (Lieutenant); who already has more keeps it. Quiet: no radio line for each one. */
+function devSetXP(max){ let n=0; const hi=v=>v.hero?RANKS[RANKS.length-1].xp:RANKS.filter(k=>!k.heroOnly).at(-1).xp;
+  const fix=v=>{ const xp=max?Math.max(v.xp||0,hi(v)):0; if(xp===(v.xp||0)&&v.rank===rankFor(xp,v.hero)) return false; v.xp=xp; v.rank=rankFor(xp,v.hero); return true; };
+  for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='corps'&&u.vet){ const r0=u.vet.rank; if(!fix(u.vet)) continue; n++; applyRank(u);
+    if(max&&u.vet.rank>r0) (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:u.vet.rank }; else if(!max&&G.promoted) delete G.promoted[u.vet.id]; }
+  for(const v of G.reserve||[]) if(fix(v)) n++;
+  G.selDirty=true; toast(n?`${n} soldier${n>1?'s':''} ${max?'maxed out':'back to 0 XP'}.`:(max?'Everyone is already at the top.':'Everyone is already at 0 XP.'),true); }
 function devTick(){ const el=$('#dev'); if(!el||el.hidden) return; if(!G||ui.mode==='menu'){ devToggle(false); return; }   /* out of the mission: the panel goes away */
   if(dev.tab==='live'&&!el.contains(document.activeElement)) devRender(); else devStatus(); }
 setInterval(devTick,500);
@@ -139,6 +148,7 @@ function devClick(e){ const b=e.target.closest('button,.dv-title'); if(!b) retur
   else if(a==='wave'){ if(G.mission.swarm&&G.mission.swarm.waves){ S.waveN++; launchWave(waveBudget()); } else launchWave(80); }
   else if(a==='reveal'){ G.devReveal=!G.devReveal; computeFog(); }   /* stays on for the rest of the mission */
   else if(a==='heal'){ for(const u of G.ents) if(!u.dead&&u.faction===G.side&&u.maxHp&&!u.downed) u.hp=u.maxHp; }
+  else if(a==='maxxp'||a==='zeroxp'){ if(G.side==='corps') devSetXP(a==='maxxp'); else toast('XP is for the Lunar Corps only.',true); }
   else if(a==='clear'){ for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='swarm'&&u.role!=='guard'&&!u.def.boss&&G.side!=='swarm') u.dead=true; }
   else if(a==='win'){ api.win('Won from the dev panel.'); }
   else if(a==='lose'){ api.lose('Lost from the dev panel.'); }
