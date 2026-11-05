@@ -45,27 +45,43 @@ const SURNAMES = [
 
 /* Voice lines: shown in a speech bubble over a soldier. {name} is filled in where it makes sense. */
 const VOICE = {
-  select:  ['Ready.','Sir?','Go ahead.','Standing by.','Waiting on you.','Talk to me.'],
-  move:    ['Moving out.','On my way.','Copy that.','Moving.','Roger.','You got it.'],
-  attack:  ['Weapons free!','Engaging!','Let\'s go!','Light them up!','Going hot!','Geronimo!'],
-  contact: ['Contact!','Movement, front!','Here they come!','Eyes up!','Hostiles!'],
-  down:    ['Man down!','We lost {name}!','{name} is down!','No! {name}!','Medic! ...too late.'],
-  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!','Just a fleshwound!','That will make a nice scar...'],
-  downed:  ['I\'m down!','Medic! I can\'t move!','Don\'t leave me here!','I\'m hit bad!'],
+  select:  ['Ready.','Sir?','Go ahead.','Standing by.',
+    'Waiting on you.','Talk to me.','Listening.','Yes?','Standing by, Commander.',
+    'Receiving.'],
+  move:    ['Moving out.','On my way.','Copy that.','Moving.',
+    'Roger.','You got it.','Copy, moving.'],
+  attack:  ['Weapons free!','Engaging!','Let\'s go!','Light them up!','Going hot!',
+    'Opening fire!','Engage!','Eat vacuum!'],
+  contact: ['Contact!','Movement, front!','Here they come!','Eyes up!','Hostiles!',
+    'Eyes up, they\'re close!','Something\'s out there!'],
+  down:    ['Man down!','We lost {name}!','{name} is down!','No! {name}!',
+    'Medic! ...too late.','No pulse... {name}\'s done.',],
+  hurt:    ['I\'m hit!','Need a medic!','Taking fire!','Argh!','Just a fleshwound!',
+    'That will make a nice scar...','That one got through...'],
+  downed:  ['I\'m down!','Medic! I can\'t move!','Don\'t leave me here!',
+    'I\'m hit bad!','Critical...','Critical. Extract or bury me.'],
   revived: ['Back in it.','Thanks, doc.','On my feet.','Still breathing.'],
-  heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.'],
-  build:   ['On it.','Building.','Give me a minute.','Setting it up.'],
+  heal:    ['Hold still.','I got you.','Patching you up.','Stay with me.',
+    'Another scar for the collection.','Hold still. This will hurt.',
+    'Patching the holes.'],
+  build:   ['On it.','Building.','Give me a minute.','Setting it up.','Deploying.'],
   flare:   ['Flare out!','Lighting it up!','Light incoming!'],
   grenade: ['Frag out!','Grenade!','Fire in the hole!'],
-  waver:   ['The Captain is down!','Who is in charge now?!','We lost the Captain!']
+  waver:   ['The Captain is down!','Who is in charge now?!','We lost the Captain!',
+    'Who has the lead now?!','We lost the only one with a plan!']
 };
 /* what the risen say instead */
 const VOICE_RISEN = {
-  select:  ['...still here.','I... remember.','Command... me.','...cold.'],
-  move:    ['...coming.','Walking...','Always... walking.','...yes.'],
-  attack:  ['...feed.','They will... fall.','Join... us.','...hungry.','Break... a leg.'],
-  contact: ['...fresh meat.','I smell... them.','...they come.'],
-  hurt:    ['...does not... hurt.','...again?'],
-  heal:    ['...hold still.'],
-  build:   ['...building.','Hands... remember.']
+  select:  ['...still here.','I... remember.','Command... me.','...cold.',
+    '...still... cold.','I remember... the light.','...empty.'],
+  move:    ['...coming.','Walking...','Always... walking.','...yes.',
+    '...drifting.','The ground remembers.'],
+  attack:  ['...feed.','They will... fall.','Join... us.','...hungry.',
+    'Break... a leg.','Join... the dark.'],
+  contact: ['...fresh meat.','I smell... them.','...they come.','...blood.',
+    '...brains.'],
+  hurt:    ['...does not... hurt.','...again?','The cold... remains.',
+    'You cannot kill what is already gone.'],
+  heal:    ['...hold still.','...this looks delicious.'],
+  build:   ['...building.','Hands... remember.','...raising.']
 };
