@@ -8,7 +8,7 @@
            a Medic's heart line and shock, acid sizzling on armour, a glint on a new rank, eggs opening like a flower,
            pulses running through the creep, meteorites, and the dropship passing over before it lands.
    Every number is in the dev panel (tab Effects). */
-const FIRE = { burn:6, dps:9, radius:0.75, ignite:3, igniteDps:6, max:40, merge:0.6, grow:1.15 };
+const FIRE = { burn:3, dps:6, radius:0.75, ignite:3, igniteDps:6, max:40, merge:0.6, grow:1.15 };
 /* burn: seconds a patch burns · dps: damage per second to the Swarm standing in it · radius: tiles · ignite: seconds a Swarm unit keeps
    burning after it leaves the fire · igniteDps: damage per second while it burns · max: patches at once · merge: a new flame within this many tiles
    of a patch feeds that patch (it burns longer and grows up to `grow` times its radius) */
