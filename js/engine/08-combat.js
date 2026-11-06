@@ -59,6 +59,9 @@ function damage(t,amt,src){
   if(t.def.ground) return;
   if(t.invuln){ if(Math.random()<0.05) G.fx.push({k:'text',x:t.x,y:t.y-12,t:0.8,max:0.8,txt:'SEALED',col:'#ff9a3c'}); return; }
   if(t.bossState) t.bossState.calm=0;
+  if(t.def.boss&&t.bossState&&t.bossState.phase>=3&&src&&src.faction==='corps'){   /* her brood throws itself in the way: a share of the hit lands on a shield */
+    const sh=G.ents.filter(e=>!e.dead&&e.shieldOf===t&&Math.hypot(e.x-t.x,e.y-t.y)<t.r+3*TILE);
+    if(sh.length){ const s=pick(sh), part=amt*t.def.shieldShare; damage(s,part,src); amt-=part; } }
   t.calm=0; t.hitAt=G.time;
   const armor=t.armor!=null?t.armor:t.def.armor; if(armor) amt*=1-armor;   /* t.armor: per mission (mission.tough) */
   amt=coverDamage(t,amt,src);

@@ -58,7 +58,7 @@ function render(now){
   // shots & fx
   for(const s of G.shots){ if(s.t<0) continue; const t=s.t/s.dur; if(s.k==='plasma'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t; ctx.fillStyle='#1a8fa0'; ctx.fillRect(Math.round(x)-4,Math.round(y)-4,8,8); ctx.fillStyle='#d8feff'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,4,4); continue; }
     if(s.k==='grenade'){ drawGrenade(s,t); continue; }   /* it spins; its shadow shows where it lands */
-    if(s.k==='egglob'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*70; ctx.drawImage(ARTC.egg,Math.round(x)-6,Math.round(y)-7,12,14); continue; }
+    if(s.k==='egglob'||s.k==='broodlob'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*70; ctx.drawImage(ARTC.egg,Math.round(x)-6,Math.round(y)-7,12,14); continue; }
     const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*40; ctx.fillStyle='#4fae22'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#a6ff4a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,3,3); }
   drawFx(); drawLamps(); drawFlares(now); if(G.side==='swarm') drawSwarmOrders(now);
   // light from running generators

@@ -353,14 +353,19 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - Instellen per missie: `landingZone:{ tx, ty, max, delay }` (positie linksboven, limiet, vliegtijd) en `noTraining:true`. De lading per vlucht staat in `BUILDINGS.lz.cargo`.
 
 ### De Brood Mother (missie 7)
-- Ze is reusachtig, staat meestal stil en spuwt zuur. Elke paar seconden **chargeert** ze in je linies ("CHARGE!"): trek je mensen dan terug.
+- Ze is reusachtig, staat stil als je dichtbij bent en spuwt zuur. Elke paar seconden **chargeert** ze in je linies ("CHARGE!"): trek je mensen dan terug.
 - Ze legt eieren die uitkomen als Crawlers of Drones. Brand ze met Pyros voor ze uitkomen.
 - Bij 75%, 50% en 25% roept ze haar broed op en wordt ze telkens sneller.
 - Wie ze doodt, eet ze op: die eenheid wordt géén cocon.
 - Zodra je haar 8 seconden niet raakt, **geneest** ze.
+- **Afstand houden helpt niet:** staat niemand binnen haar bereik, dan kruipt ze je traag achterna (`stalkSpeed`), en houd je haar 5 s op afstand (`kiteTime`), dan slingert ze 3 eieren midden in je troepen (`lobEggs`, "SPAWN!"). Van dichtbij staat ze stil (`rootSpeed`).
+- **Terug naar haar hol:** telkens ze 30% van haar levenspunten verliest (`lairEvery`, hoogstens 2 keer: `lairTimes`), sleept ze zich snel terug naar haar hol ("RETREATS", `fleeSpeed`). Daar geneest ze 110 per seconde (`lairRegen`), tot 12% van haar levenspunten (`lairHeal`) of 25 s (`lairTime`), en legt ze dubbel zo snel eieren rond zich. Komt iemand dichter dan 4 tegels (`lairGuard`), dan breekt ze het af en valt ze meteen aan ("FURY!"). Je moet haar dus het hol in volgen.
+- **Ingraven:** in elke fase (vanaf haar eerste roep) graaft ze zich één keer in ("BURROWS!"). 2 s lang is ze onder de grond en niet te raken, terwijl de grond opbolt onder je grootste groep; dan breekt ze daar uit ("BREAKS OUT!"): 40 schade aan iedereen dichtbij, en ze chargeert bijna meteen (`burrowTime`, `burrowDamage`). Spreid je troepen.
+- **Zuurregen** (vanaf fase 2): om de 9 s spuwt ze 6 klodders zuur in een boog tussen haar en jou ("ACID RAIN"). Waar ze neerkomen, blijft een plas 12 s branden (`rainEvery`, `rainGlobs`, `rainPool`). Zo sluit ze de weg naar zich af.
+- **Schild van broed** (fase 3): 4 Drones komen haar beschermen en blijven bij haar. Zolang er een naast haar staat, vangt die de helft van elk schot op haar op (`shieldBrood`, `shieldShare`). Schiet eerst de schilden neer.
 - Bovenaan het scherm staat een levensbalk met de huidige fase.
 - Je soldaten pakken eerst de kleinere vijanden rond haar aan en schieten daarna op haar.
-- Instelbaar bij `UNITS.broodmother`: `hp`, `damage`, `regen`, `eggEvery`, `eggs`, `spitEvery`, `spit`, `spitDamage`, `chargeEvery`, `chargeTime`, `chargeSpeed`, `rootSpeed`.
+- Instelbaar bij `UNITS.broodmother`: `hp`, `damage`, `regen`, `eggEvery`, `eggs`, `spitEvery`, `spit`, `spitDamage`, `chargeEvery`, `chargeTime`, `chargeSpeed`, `rootSpeed`, `stalkSpeed`, `kiteTime`, `lobEggs`, `lairEvery`, `lairTimes`, `lairHeal`, `lairRegen`, `lairTime`, `lairGuard`, `fleeSpeed`, `burrowTime`, `burrowDamage`, `shieldBrood`, `shieldShare`, `rainEvery`, `rainGlobs`, `rainPool`.
 
 ### Dr. Maas als doelwit (missie 4)
 De Swarm wil Dr. Maas boven alles (`SWARM_VIP` in js/engine/08-combat.js): in een gevecht kiest een Swarm-wezen haar boven een soldaat die tot 3 tegels dichter staat, jagers binnen 22 tegels gaan recht op haar af, en elke golf na de redding wordt op haar gericht. Je kan haar mee selecteren en verplaatsen; zonder bevel volgt ze de dichtste soldaat.

@@ -7,7 +7,7 @@ MISSIONS.push(
     briefing:[
       'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs.',
       'Three egg chambers feed a sealed lair in the north-east. Living membrane closes the only tunnel into the lair, and it will not die while its chambers live.',
-      'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Brood Mother.'
+      'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Brood Mother. Do not let her get away to heal.'
     ],
     limits:{ sentry:6 },
     landingZone:{ tx:16, ty:44, max:15, delay:25 },
@@ -43,6 +43,12 @@ MISSIONS.push(
           g.vars.grey=g.spawn('hunter','8',1,{prey:'swarm',truce:'corps'})[0]; g.vars.grey.escape=g.where('8');
           g.say('Sgt. Kessler','The Grey! It walked right past us. It is going for the Mother!');
           g.say('Dr. Maas','It is not helping us. It wants the biggest trophy on this moon. Use it.'); } },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.lairs>=1, do:g=>g.say('Dr. Maas','She is dragging herself back into her lair to heal! Go in after her and she breaks it off, but she will be waiting for you, with her eggs.') },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.farT>3, do:g=>g.say('Sgt. Kessler','She is coming after us, slow but steady. Keep moving, she throws her eggs at whoever stays out of reach!') },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.lairs>=2, do:g=>g.say('Cmdr. Varga','Back into the hole again. Do not give her the time: in there, now!') },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.burrows>=1, do:g=>g.say('Sgt. Kessler','She went under! The ground is moving, there, under us! Spread out!') },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.rainT>0 && g.vars.mother.bossState.phase>=2, do:g=>g.say('Dr. Maas','Acid rain! Those pools will burn for a long time. Do not stand in them, go round.') },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=3, do:g=>g.say('Dr. Maas','Her brood is throwing itself in front of her! Kill the ones at her side first, or half your fire is wasted.') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=3, do:g=>g.say('Cmdr. Varga','She is almost finished. Everything you have, now!') },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen. The brood will keep breeding.'); } },
       { when:g=>g.vars.mother && g.vars.mother.dead, do:g=>{ g.complete('mother'); g.complete('hq');

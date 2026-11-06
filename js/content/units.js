@@ -67,7 +67,9 @@ const UNITS = {
   broodmother: { name:'Brood Mother', faction:'swarm', sprite:'broodmother', role:'Queen of the Swarm', scale:4,
     hp:14000, speed:18, radius:44, sight:9, range:1.4, damage:36, cooldown:1.7, attack:'melee', armor:0.25,
     boss:true, regen:20, eggEvery:15, chargeEvery:10, chargeTime:3, chargeSpeed:2.8, rootSpeed:0.25, spitEvery:7, eggs:2, spit:4, spitDamage:8,
-    desc:'Mostly rooted, but every few seconds she charges into your lines. Deadly up close. Lays eggs, sprays acid, calls her brood when wounded and regenerates when left alone. What she kills, she eats.' },
+    lairEvery:0.3, lairTimes:2, lairHeal:0.12, lairRegen:110, lairTime:25, lairGuard:4, fleeSpeed:2.4, stalkSpeed:0.8, kiteTime:5, lobEggs:3,
+    burrowTime:2, burrowDamage:40, shieldBrood:4, shieldShare:0.5, rainEvery:9, rainGlobs:6, rainPool:12,
+    desc:'Rooted when you are close, but every few seconds she charges into your lines. Deadly up close. Keep your distance and she creeps after you and flings eggs into your ranks. Lays eggs, sprays acid, calls her brood when wounded, and twice she drags herself back into her lair to heal. Once in every stage of the fight she burrows and breaks out under your biggest group. Later she spits acid rain that leaves burning pools, and at the end her brood shields her with their bodies. What she kills, she eats.' },
 
   grazer: { name:'Grazer', faction:'wild', sprite:'grazer', role:'Lunar fauna',
     hp:40, speed:28, radius:9, sight:4, range:0, bio:true, passive:true,
