@@ -4,6 +4,8 @@ function updateUnit(u,dt){
   const d=u.def;
   if(u.downed){ downedThink(u,dt); return; }
   if(u.emergeT>0) return;   /* still under the bulging ground (a burrowing wave) */
+  if(u.stunT>0){ u.stunT-=dt; return; }   /* knocked down: he lies dazed a moment */
+  if(u.dazeT>0) u.dazeT-=dt;
   if(d.grafter){ grafterThink(u,dt); return; }   /* a Grafter only goes for its body */   /* down: immobile, bleeding out, waiting for a Medic */
   u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
   if(u.vet&&u.vet.risen&&u.hp<u.maxHp&&G.time-(u.hitAt??-99)>RISEN.calm) u.hp=Math.min(u.maxHp,u.hp+RISEN.regen*dt);   /* the risen knit themselves back together, once nothing has hit them for a while */ u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
@@ -93,35 +95,53 @@ function bossThink(u,dt){
      fast, and heals there (lairRegen per second, up to lairHeal of her health, at most lairTime seconds) while she lays
      eggs round her. Whoever follows her in (closer than lairGuard tiles) breaks it off: she turns on them at once. */
   /* burrowed: hidden and out of reach under the ground while it bulges where she will break out */
-  if(S.burrow){ S.burrow.t-=dt; u.speedMul=0; u.target=null; u.path=null; if(S.burrow.t>0) return;
-    const B=S.burrow; S.burrow=null; u.x=B.x; u.y=B.y; u.hidden=false; u.invuln=false; u.order=null; u.path=null;
-    for(const e of G.ents) if(!e.dead&&e.faction==='corps'&&e.kind!=='crate'&&!e.def.ground&&Math.hypot(e.x-u.x,e.y-u.y)<u.r+1.5*TILE) damage(e,d.burrowDamage,u);
+  if(S.burrow){ const B=S.burrow; B.t-=dt; u.speedMul=0; u.target=null; u.path=null;
+    if(B.t>0.8){ const us=foes.filter(e=>e.kind==='unit'); const c=bossCluster(us); if(c){ const f=freeTilesNear(Math.floor(c.x/TILE),Math.floor(c.y/TILE),1)[0]; if(f){ B.x+=((f.x+.5)*TILE-B.x)*Math.min(1,dt*1.5); B.y+=((f.y+.5)*TILE-B.y)*Math.min(1,dt*1.5); } }   /* the bulge follows your group until the last moment */
+      const fx=G.fx.find(x=>x===B.fx); if(fx){ fx.x=B.x; fx.y=B.y; } }
+    if(B.t>0) return;
+    S.burrow=null; S.calmAfter=d.burrowCalm; u.x=B.x; u.y=B.y; u.hidden=false; u.invuln=false; u.order=null; u.path=null;
+    for(const e of G.ents) if(!e.dead&&e.faction==='corps'&&e.kind!=='crate'&&!e.def.ground&&Math.hypot(e.x-u.x,e.y-u.y)<u.r+d.burrowRadius*TILE){ damage(e,d.burrowDamage,u);
+      if(!e.dead&&!e.downed&&e.kind==='unit') bossKnock(e,u,d.burrowDaze); }   /* who survives is thrown back and lies dazed a moment */
     debrisBurst(u.x,u.y,26,['#8a7a6a','#5a4632','#b3a58f','#3a3c43'],160); SFX.play('boom',u.x,u.y); SFX.play('horn'); G.shake=Math.max(G.shake||0,0.7); addDecal(u.x,u.y,u.r,'rgba(16,16,20,.6)');
     G.fx.push({k:'text',x:u.x,y:u.y-80,t:1.2,max:1.2,txt:'BREAKS OUT!',col:'#ff5a4f'}); S.chargeT=Math.min(S.chargeT??0,1); return; }
   S.lost=S.lost??0; const lostNow=1-u.hp/u.maxHp;
-  if(!S.retreat && (S.lairs||0)<d.lairTimes && lostNow>=(S.lairs||0)*d.lairEvery+d.lairEvery && Math.hypot(u.x-S.home.x,u.y-S.home.y)>2*TILE){
-    S.lairs=(S.lairs||0)+1; S.retreat='go'; u.target=null; u.order={type:'move',x:S.home.x,y:S.home.y}; setPath(u,S.home.x,S.home.y); S.charge=0;
-    SFX.play('squelch',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1.4,max:1.4,txt:'RETREATS',col:'#c38bff'}); }
-  if(S.retreat==='go'){ u.speedMul=d.fleeSpeed; u.target=null; if(!u.order||Math.hypot(u.x-S.home.x,u.y-S.home.y)<1.5*TILE){ S.retreat='heal'; S.healT=d.lairTime; S.healTo=Math.min(u.maxHp,u.hp+d.lairHeal*u.maxHp); u.order={type:'hold'}; S.eggT=Math.min(S.eggT,1); } return; }
+  if(S.calmAfter>0) S.calmAfter-=dt;   /* right after breaking out she fights first: no retreat */
+  if(!S.retreat && !(S.calmAfter>0) && (S.lairs||0)<d.lairTimes && lostNow>=(S.lairs||0)*d.lairEvery+d.lairEvery && Math.hypot(u.x-S.home.x,u.y-S.home.y)>2*TILE){
+    S.lairs=(S.lairs||0)+1; S.retreat='go'; u.target=null; u.order={type:'move',x:S.home.x,y:S.home.y}; setPath(u,S.home.x,S.home.y); S.charge=0; u.suppressT=0;
+    SFX.play('squelch',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1.4,max:1.4,txt:'RETREATS',col:'#c38bff'});
+    if(foes.length&&d.coverBrood){ let cx=0, cy=0; for(const e of foes){ cx+=e.x; cy+=e.y; } cx/=foes.length; cy/=foes.length;   /* her brood breaks out of the ground between her and you to cover her */
+      const mx=(u.x+cx)/2, my=(u.y+cy)/2; freeTilesNear(Math.floor(mx/TILE),Math.floor(my/TILE),d.coverBrood+2).slice(2).forEach(t=>{ const m=makeUnit('drone','swarm',(t.x+.5)*TILE,(t.y+.5)*TILE); m.role='hunt'; emergeStart(m); });
+      G.fx.push({k:'bulge',x:mx,y:my,r:TILE*1.6,t:ANIM.emerge||1,max:ANIM.emerge||1,seed:Math.random()*99}); } }
+  if(S.retreat==='go'){ u.speedMul=d.fleeSpeed; u.suppressT=0; u.target=null; if(!u.order||Math.hypot(u.x-S.home.x,u.y-S.home.y)<1.5*TILE){ S.retreat='heal'; S.healT=d.lairTime; S.healTo=Math.min(u.maxHp,u.hp+d.lairHeal*u.maxHp); u.order={type:'hold'}; S.eggT=Math.min(S.eggT,1); } return; }
   if(S.retreat==='heal'){ const near=foes.some(e=>dist(e,u)<d.lairGuard*TILE+u.r); S.healT-=dt; u.speedMul=d.rootSpeed;
     if(near||S.healT<=0||u.hp>=S.healTo){ S.retreat=null; u.order=null; u.guardAt={x:S.home.x,y:S.home.y}; if(near){ S.chargeT=0; G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'FURY!',col:'#ff5a4f'}); } }
     else { u.hp=Math.min(S.healTo,u.hp+d.lairRegen*dt); if(Math.random()<dt*4) G.fx.push({k:'text',x:u.x+rand(-24,24),y:u.y-60,t:0.8,max:0.8,txt:'+',col:'#a6ff4a'});
       S.eggT-=dt*2; if(S.eggT<=0){ S.eggT=d.eggEvery*0.5; for(let i=0;i<d.eggs+1;i++){ const a=rand(0,Math.PI*2), r=rand(1.5,3.5)*TILE; layEgg(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,pick(['crawler','drone'])); } SFX.play('hatch',u.x,u.y); }
       return; } }
+  /* an ambush in her lair: whoever comes into it makes the eggs round her hatch at once */
+  if(foes.some(e=>Math.hypot(e.x-S.home.x,e.y-S.home.y)<(d.lairGuard+3)*TILE)) for(const c of G.ents) if(!c.dead&&c.type==='cocoon'&&c.hatchT>0.3&&Math.hypot(c.x-S.home.x,c.y-S.home.y)<6*TILE) c.hatchT=0.3;
   if(!foes.length){ u.speedMul=1; return; }
   /* once in every stage of the fight (from the first call of her brood) she burrows and breaks out under your biggest group */
   if(S.phase>=1&&(S.burrows||0)<S.phase&&(S.phaseT=(S.phaseT||0)+dt)>4){ const us=foes.filter(e=>e.kind==='unit');
-    if(us.length){ let best=us[0], bn=-1; for(const e of us){ const n=us.filter(o=>Math.hypot(o.x-e.x,o.y-e.y)<2*TILE).length; if(n>bn){ bn=n; best=e; } }
+    if(us.length){ const best=bossCluster(us);
       const f=freeTilesNear(Math.floor(best.x/TILE),Math.floor(best.y/TILE),1)[0]||{x:Math.floor(best.x/TILE),y:Math.floor(best.y/TILE)};
-      S.burrows=(S.burrows||0)+1; S.burrow={t:d.burrowTime,x:(f.x+.5)*TILE,y:(f.y+.5)*TILE}; u.hidden=true; u.invuln=true; u.target=null; u.order={type:'hold'}; S.charge=0;
-      G.fx.push({k:'bulge',x:S.burrow.x,y:S.burrow.y,r:u.r*1.4,t:d.burrowTime,max:d.burrowTime,seed:Math.random()*99}); debrisBurst(u.x,u.y,16,['#8a7a6a','#5a4632'],90); SFX.play('squelch',u.x,u.y);
+      S.burrows=(S.burrows||0)+1; S.phaseT=-8;   /* at least 12 s before the next burrow, also if she reached two stages at once */ S.burrow={t:d.burrowTime,x:(f.x+.5)*TILE,y:(f.y+.5)*TILE}; u.hidden=true; u.invuln=true; u.target=null; u.order={type:'hold'}; S.charge=0;
+      S.burrow.fx={k:'bulge',x:S.burrow.x,y:S.burrow.y,r:u.r*1.4,t:d.burrowTime,max:d.burrowTime,seed:Math.random()*99}; G.fx.push(S.burrow.fx); debrisBurst(u.x,u.y,16,['#8a7a6a','#5a4632'],90); SFX.play('squelch',u.x,u.y);
       G.fx.push({k:'text',x:u.x,y:u.y-70,t:1.2,max:1.2,txt:'BURROWS!',col:'#c38bff'}); return; } }
   /* her shields stay close to her */
   for(const e of G.ents) if(!e.dead&&e.shieldOf===u&&Math.hypot(e.x-u.x,e.y-u.y)>2.5*TILE+u.r&&(!e.order||e.order.type!=='move')){ e.target=null; e.order={type:'move',x:u.x+rand(-TILE,TILE),y:u.y+rand(-TILE,TILE)}; setPath(e,e.order.x,e.order.y); }
   /* acid rain (from her second call): a curtain of acid between her and you that leaves pools burning a long time */
-  if(S.phase>=2){ S.rainT=(S.rainT??3)-dt; if(S.rainT<=0){ S.rainT=d.rainEvery; let cx=0, cy=0; for(const e of foes){ cx+=e.x; cy+=e.y; } const a0=Math.atan2(cy/foes.length-u.y,cx/foes.length-u.x);
-      for(let i=0;i<d.rainGlobs;i++){ const a=a0+(i/(d.rainGlobs-1)-0.5)*1.6, r=u.r+rand(3,4.5)*TILE, tx=u.x+Math.cos(a)*r, ty=u.y+Math.sin(a)*r, sx=u.x, sy=u.y-50;
-        G.shots.push({k:'acid',sx,sy,tx,ty,t:-i*0.1,dur:Math.hypot(tx-sx,ty-sy)/240+0.3,src:u,dmg:d.spitDamage,splash:0.8*TILE,faction:u.faction,pool:d.rainPool}); }
+  /* acid rain (from her second call). Walking rain: three arcs one after another, near her, further, and the last
+     right on your squad. Stand still longer than rainStill seconds and the rain lands on top of your group at once. */
+  if(S.phase>=2){ let cx=0, cy=0; for(const e of foes){ cx+=e.x; cy+=e.y; } cx/=foes.length; cy/=foes.length;
+    if(!S.stillAt||Math.hypot(cx-S.stillAt.x,cy-S.stillAt.y)>TILE){ S.stillAt={x:cx,y:cy}; S.stillT=0; } else S.stillT+=dt;
+    const glob=(tx,ty,delay)=>{ const sx=u.x, sy=u.y-50; G.shots.push({k:'acid',sx,sy,tx,ty,t:-delay,dur:Math.hypot(tx-sx,ty-sy)/240+0.3,src:u,dmg:d.spitDamage,splash:0.8*TILE,faction:u.faction,pool:d.rainPool}); };
+    S.rainT=(S.rainT??3)-dt;
+    if(S.stillT>d.rainStill){ S.stillT=0; S.rainT=d.rainEvery; for(let i=0;i<d.rainGlobs;i++){ const a=i/d.rainGlobs*Math.PI*2, r=i?rand(0.8,2)*TILE:0; glob(cx+Math.cos(a)*r,cy+Math.sin(a)*r,i*0.08); }
+      SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'ACID RAIN',col:'#a6ff4a'}); }
+    else if(S.rainT<=0){ S.rainT=d.rainEvery; const a0=Math.atan2(cy-u.y,cx-u.x), far=Math.max(u.r+4*TILE,Math.hypot(cx-u.x,cy-u.y));
+      for(let w=0;w<3;w++){ const R=w===0?u.r+4*TILE:w===1?(u.r+4*TILE+far)/2:far, spread=1.6*(u.r+4*TILE)/Math.max(R,1);
+        for(let i=0;i<d.rainGlobs;i++){ const a=a0+(i/(d.rainGlobs-1)-0.5)*spread, r=R+rand(-0.5,0.5)*TILE; glob(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,w*0.7+i*0.08); } }
       SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'ACID RAIN',col:'#a6ff4a'}); } }
   /* kept at a distance: she creeps after you instead of standing still, and flings eggs into your ranks */
   const near=foes.reduce((m,e)=>Math.min(m,dist(e,u)),Infinity), reach=(d.range+1.5)*TILE+u.r;
@@ -145,6 +165,8 @@ function bossThink(u,dt){
     const types=S.phase>=3?['brute','drone','drone']:S.phase>=2?['spitter','drone','crawler']:['crawler','crawler','drone'];
     freeTilesNear(tile.x,tile.y,n+6).slice(6).forEach(s=>{ const m=makeUnit(pick(types),'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); m.role='hunt'; });
     S.phaseT=0;   /* a new stage: she will burrow once in it */
+    for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&dist(e,u)<d.screechR*TILE+u.r) e.dazeT=d.screechTime;   /* her screech: your soldiers shoot slower for a moment */
+    G.fx.push({k:'screech',x:u.x,y:u.y-30,t:0.9,max:0.9,R:d.screechR*TILE});
     if(S.phase>=3) freeTilesNear(tile.x,tile.y,d.shieldBrood+10).slice(10).forEach(s=>{ const m=makeUnit('drone','swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); m.role='shield'; m.shieldOf=u; }); }   /* her shields: they stay with her and take a share of the hits */
 }
 function escortThink(u,dt){
@@ -273,3 +295,9 @@ function repairSpot(u,b,o,reach,dt){ o.spotT=(o.spotT||0)-dt; if(o.spot&&o.spotT
     if(sc<bs){ bs=sc; best={x,y}; } }
   if(best&&(!o.spot||Math.hypot(best.x-o.spot.x,best.y-o.spot.y)>4)) o.spotWalk=0;
   o.spot=best; return best; }
+
+/* the spot of your biggest group (for the Brood Mother's burrowing) */
+function bossCluster(us){ let best=null, bn=-1; for(const e of us){ const n=us.filter(o=>Math.hypot(o.x-e.x,o.y-e.y)<2*TILE).length; if(n>bn){ bn=n; best=e; } } return best; }
+/* thrown back by the Brood Mother breaking out: up to 1.5 tiles away from her (not into rock), then dazed on the ground */
+function bossKnock(e,u,t){ const a=Math.atan2(e.y-u.y,e.x-u.x); for(let s=1.5;s>0;s-=0.25){ const x=e.x+Math.cos(a)*s*TILE, y=e.y+Math.sin(a)*s*TILE; if(walkableP(x,y)){ e.x=x; e.y=y; break; } }
+  e.stunT=t; e.path=null; e.target=null; soldierFalls(e); }

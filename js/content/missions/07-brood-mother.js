@@ -48,6 +48,14 @@ MISSIONS.push(
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.lairs>=2, do:g=>g.say('Cmdr. Varga','Back into the hole again. Do not give her the time: in there, now!') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.burrows>=1, do:g=>g.say('Sgt. Kessler','She went under! The ground is moving, there, under us! Spread out!') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.rainT>0 && g.vars.mother.bossState.phase>=2, do:g=>g.say('Dr. Maas','Acid rain! Those pools will burn for a long time. Do not stand in them, go round.') },
+      /* while she heals, the membrane of her lair grows half back: burn or shoot your way in (it does not grow over anyone standing in it) */
+      { repeat:true, when:g=>{ const S=g.vars.mother&&!g.vars.mother.dead&&g.vars.mother.bossState; return !!S&&S.retreat==='heal'&&g.vars.regrown!==S.lairs; }, do:g=>{
+          g.vars.regrown=g.vars.mother.bossState.lairs; const p=g.where('8'); if(!p) return; const cx=Math.floor(p.x/TILE), cy=Math.floor(p.y/TILE); let n=0;
+          for(let y=cy-2;y<=cy+2;y++) for(let x=cx-2;x<=cx+2;x++){ if((x-cx)**2+(y-cy)**2>4.5||!walkableT(x,y)||(x+y)%2) continue;
+            if(G.ents.some(e=>!e.dead&&(e.kind==='unit'||e.kind==='building')&&Math.hypot(e.x-(x+.5)*TILE,e.y-(y+.5)*TILE)<TILE*0.9)) continue;
+            const m=makeBuilding('membrane','swarm',x,y,true); m.tag='regrow'; m.hp=m.maxHp=300; n++; }
+          if(n) g.say('Dr. Maas','The membrane is growing back over the tunnel! Burn through it before she has healed.'); } },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=1, do:g=>g.say('Sgt. Kessler','That screech goes right through the suits. Our aim is shot for a second or two!') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=3, do:g=>g.say('Dr. Maas','Her brood is throwing itself in front of her! Kill the ones at her side first, or half your fire is wasted.') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=3, do:g=>g.say('Cmdr. Varga','She is almost finished. Everything you have, now!') },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen. The brood will keep breeding.'); } },

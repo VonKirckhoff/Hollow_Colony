@@ -24,7 +24,7 @@ function findTarget(u,rangeTiles,unitsOnly){
   return best;
 }
 function fire(u,t){
-  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1); const dm=u.dmgMul||1;
+  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Brood Mother's screech */ const dm=u.dmgMul||1;
   if(u.type==='trooper'&&hasPerk(u)&&t.kind==='unit') throwGrenade(u,t);
   if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,'contact'); G.lastFight=G.time; }
   const ang=Math.atan2(t.y-u.y,t.x-u.x); u.angle=ang;
@@ -59,6 +59,7 @@ function damage(t,amt,src){
   if(t.def.ground) return;
   if(t.invuln){ if(Math.random()<0.05) G.fx.push({k:'text',x:t.x,y:t.y-12,t:0.8,max:0.8,txt:'SEALED',col:'#ff9a3c'}); return; }
   if(t.bossState) t.bossState.calm=0;
+  if(t.bossState&&t.bossState.retreat==='go') amt*=1-t.def.fleeArmor;   /* on her way back to her lair she takes less */
   if(t.def.boss&&t.bossState&&t.bossState.phase>=3&&src&&src.faction==='corps'){   /* her brood throws itself in the way: a share of the hit lands on a shield */
     const sh=G.ents.filter(e=>!e.dead&&e.shieldOf===t&&Math.hypot(e.x-t.x,e.y-t.y)<t.r+3*TILE);
     if(sh.length){ const s=pick(sh), part=amt*t.def.shieldShare; damage(s,part,src); amt-=part; } }
@@ -115,6 +116,7 @@ function kill(e,src){
     if(e.def.burst) bloaterBurst(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
+    if(e.faction==='corps' && e.def.bio && src && src.def && src.def.boss && src.def.feedHeal && !src.dead){ src.hp=Math.min(src.maxHp,src.hp+src.def.feedHeal*src.maxHp); G.fx.push({k:'text',x:src.x,y:src.y-80,t:1.2,max:1.2,txt:'FEEDS',col:'#a6ff4a'}); }   /* what she kills, she eats: it heals her */
     if(e.faction==='corps' && e.def.bio && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
     else if(e.faction==='wild' && e.def.bio && src && src.faction==='swarm' && !src.avatar && !(src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e,true);   /* fauna: the Swarm drags the carcass home, a Grafter turns it into a Bloater */
     else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y) && creepAt(e.x,e.y)>0.3){   /* nothing hatches off the creep */

@@ -113,6 +113,7 @@ function drawStars(cam){ ctx.fillStyle='#2a2d3a'; for(let i=0;i<70;i++){ const x
 function drawUnit(u){
   const sp=SPR[u.sprite||u.def.sprite], s=u.def.scale||2, w=sp.w*s, h=sp.h*s;
   if(u.downed){ drawDowned(u,sp,w,h,performance.now()); return; }
+  if(u.stunT>0){ drawStunned(u,sp,w,h,performance.now()); return; }
   const bob = u.moving ? (Math.floor(u.anim*8)%2) : 0;
   const lunge = u.lunge>0 ? u.face*4 : 0;
   drawShadow(u.x,u.y+3,u.r*0.95,u.r*0.42);
@@ -170,7 +171,7 @@ function drawFx(){
       case 'dust': { const r=f.r0+(1-a)*f.r1; ctx.globalAlpha=a*0.5; ctx.fillStyle=f.col; ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; break; }
       case 'hivedeath': drawHiveDeath(f); break;
       case 'casing': drawCasing(f); break; case 'melt': drawMelt(f); break; case 'meteor': drawMeteor(f); break;
-      case 'helmet': drawHelmet(f); break; case 'topple': drawTopple(f); break; case 'shaftspit': drawShaftSpit(f); break; case 'bulge': drawBulge(f); break; case 'mlight': drawMuzzleLight(f); break; case 'order': drawOrderMark(f); break; case 'devil': drawDevil(f); break; case 'debris': drawDebris(f); break;
+      case 'helmet': drawHelmet(f); break; case 'screech': drawScreech(f); break; case 'topple': drawTopple(f); break; case 'shaftspit': drawShaftSpit(f); break; case 'bulge': drawBulge(f); break; case 'mlight': drawMuzzleLight(f); break; case 'order': drawOrderMark(f); break; case 'devil': drawDevil(f); break; case 'debris': drawDebris(f); break;
       case 'shock': drawShock(f); break; case 'stomp': drawStomp(f); break; case 'landring': drawLandRing(f); break;
       case 'text': ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(f.txt,f.x+1,f.y-(1-a)*18+1); ctx.fillStyle=f.col; ctx.fillText(f.txt,f.x,f.y-(1-a)*18); break;
     } }

@@ -311,6 +311,13 @@ function drawShaftSpit(f){ if(!animSeen(f.x,f.y)) return; const k=1-f.t/f.max;
   for(let i=0;i<8;i++){ const s=(k*2.4+animRnd(f.seed+i))%1; ctx.fillStyle=`rgba(138,122,106,${0.6-s*0.6})`; ctx.beginPath(); ctx.arc(f.x-10+animRnd(f.seed+i*3)*20,f.y+2+s*16,1+s*4,0,Math.PI*2); ctx.fill(); }
   if(k>0.5){ ctx.fillStyle='#0a0b10'; for(const [dx,dy] of [[-7,2],[-6,4],[6,2],[5,4],[-2,1],[2,1]]) ctx.fillRect(Math.round(f.x+dx*(1+k*0.3)),Math.round(f.y+dy),2,2); } }
 
+/* knocked down by the Brood Mother: he lies on the ground, stars circling over him */
+function drawStunned(u,sp,w,h,now){ drawShadow(u.x,u.y+2,u.r*1.3,u.r*0.45);
+  ctx.save(); ctx.translate(Math.round(u.x),Math.round(u.y-4)); ctx.rotate((u.face>0?-1:1)*Math.PI/2*(u.fallT>0?1-u.fallT/0.4:1)); ctx.drawImage(u.face>0?sp.img:sp.flip,-w/2,-h/2,w,h); ctx.restore();
+  for(let i=0;i<3;i++){ const a=now/220+i*2.1; ctx.fillStyle='#ffd23f'; ctx.fillRect(Math.round(u.x+Math.cos(a)*9),Math.round(u.y-22+Math.sin(a)*3),2,2); } }
+/* the Brood Mother's screech: rings running out over the soldiers it dazes */
+function drawScreech(f){ const k=1-f.t/f.max; for(let w=0;w<3;w++){ const q=k-w*0.15; if(q<0||q>1) continue; ctx.strokeStyle=`rgba(195,139,255,${(1-q)*0.8})`; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(f.x,f.y,q*f.R,q*f.R*0.7,0,0,Math.PI*2); ctx.stroke(); } }
+
 /* ---- per frame ---- */
 function updateAnims(dt){
   for(const p of G.prints||[]) p.t-=dt; if(G.prints&&G.prints.length&&G.prints[0].t<=0) G.prints=G.prints.filter(p=>p.t>0);

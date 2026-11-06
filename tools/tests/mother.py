@@ -17,10 +17,12 @@ with sync_playwright() as p:
       for(let i=0;i<30*14;i++){ __hc.update(1/30); lobs=Math.max(lobs,G.shots.filter(s=>s.k==='broodlob').length+(G.ents.filter(e=>e.type==='cocoon'&&!e.dead).length>0?1:0)); for(const u of us) u.hp=u.maxHp; }
       return [M.awake, Math.round(Math.hypot(M.x-x0,M.y-y0)/TILE*10)/10, lobs]; }""")
     check('she creeps and flings eggs', r[0] and r[1]>=1 and r[2]>=1, r)
-    r=J(pg,"""()=>{ const G=__hc.G, M=_M, S=M.bossState; M.x=S.home.x+6*TILE; M.y=S.home.y; M.path=null; M.hp=M.maxHp*0.65; for(let i=0;i<10;i++) __hc.update(1/30);
-      const went=S.retreat; let home=false; for(let i=0;i<30*25;i++){ __hc.update(1/30); for(const u of _us){ u.hp=u.maxHp; } if(S.retreat==='heal'){ home=true; break; } }
+    r=J(pg,"""()=>{ const G=__hc.G, M=_M, S=M.bossState; M.x=S.home.x+6*TILE; M.y=S.home.y; M.path=null; const nb=makeUnit('gunner','corps',M.x+M.r+3*TILE,M.y); nb.hp=nb.maxHp=99999; nb.order={type:'hold'}; M.hp=M.maxHp*0.65; for(let i=0;i<10;i++) __hc.update(1/30);
+      const went=S.retreat, cover=G.ents.filter(e=>!e.dead&&e.type==='drone'&&e.emergeT>0).length, t0=G.time; window._cover=cover; let home=false, tHome=null; for(let i=0;i<30*25;i++){ __hc.update(1/30); for(const u of _us){ u.hp=u.maxHp; } if(S.retreat==='heal'){ home=true; tHome=G.time-t0; break; } } window._tHome=tHome;
       const h0=M.hp; for(let i=0;i<30*3;i++) __hc.update(1/30); return [went, home, Math.round((M.hp-h0)/M.maxHp*1000)/10, S.lairs]; }""")
     check('retreats to heal', r[0]=='go' and r[1] and r[2]>0 and r[3]==1, r)
+    r=J(pg,"""()=>{ const G=__hc.G; return [G.ents.filter(e=>!e.dead&&e.type==='membrane'&&e.tag==='regrow').length]; }""")
+    check('membrane grows back while she heals', r[0]>=1, r)
     r=J(pg,"""()=>{ const G=__hc.G, M=_M, S=M.bossState; const t=makeUnit('trooper','corps',M.x+3*TILE,M.y); t.hp=t.maxHp=99999; for(let i=0;i<10;i++) __hc.update(1/30); return [S.retreat, S.chargeT<=1]; }""")
     check('following her in breaks it off', r[0] is None, r)
     # burrowing, acid rain, shields
@@ -35,5 +37,13 @@ with sync_playwright() as p:
       for(const s of sh){ s.hp=s.maxHp=5000; s.x=M.x+M.r+10; s.y=M.y; } const h0=M.hp, s0=sh.reduce((a,s)=>a+s.hp,0); const g=makeUnit('trooper','corps',M.x-200,M.y); damage(M,100,g);
       return [sh.length, Math.round(h0-M.hp), Math.round(s0-sh.reduce((a,s)=>a+s.hp,0))]; }""")
     check('shields take half', r[0]>=1 and r[1]<100 and r[2]>0, r)
+    print('cover brood', J(pg,"()=>_cover"), 'seconds home from 6 tiles', J(pg,"()=>_tHome"))
+    check('cover brood and fast retreat', J(pg,"()=>_cover>=1 && _tHome<5"), '')
+    # screech, feeding, ambush
+    r=J(pg,"""()=>{ const G=__hc.G, M=_M, S=M.bossState; const t=makeUnit('trooper','corps',M.x+M.r+2*TILE,M.y); S.phase=0; M.hp=M.maxHp*0.74; for(let i=0;i<40;i++) __hc.update(1/30);
+      const dz=t.dazeT>0; const h0=M.hp; const v=makeUnit('trooper','corps',M.x+M.r,M.y); kill(v,M); const fed=M.hp>h0;
+      const c=makeBuilding('cocoon','swarm',Math.floor(S.home.x/TILE)+2,Math.floor(S.home.y/TILE),true); c.hatchT=10; c.hatchType='crawler'; const w=makeUnit('trooper','corps',S.home.x+2*TILE,S.home.y+TILE); for(let i=0;i<10;i++) __hc.update(1/30);
+      return [dz, fed, c.dead||c.hatchT<=0.3]; }""")
+    check('screech dazes, she feeds, lair ambush', r==[True,True,True], r)
     b.close()
 print(errs); print('ALL OK' if ok and not errs else 'FAIL')
