@@ -5,13 +5,17 @@ function visibleTo(faction,e){ if(faction!==(G?G.side:'corps')) return true; ret
 function isVisible(e){ if(e.faction===G.side) return true; if(e.def&&e.def.cloak&&!(e.revealT>0)) return false; const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE), i=ty*G.map.w+tx; return (e.kind==='building'&&e.type!=='cocoon') ? G.seen[i]>0 : G.vis[i]>0; }
 /* the Swarm leaves a generator alone once it is off: there is nothing left in it to break (it cannot be destroyed) */
 function deadGen(u,t){ return u.faction==='swarm' && t.def && t.def.generator && !t.powered; }
-/* A Swarm membrane is a wall: nobody shoots, spits or flames through it, either way. The membrane itself can still be hit.
-   (The tiles a membrane stands on are gathered once per frame.) */
+/* Line of fire: a rock wall (#, high rock ^, crystal *, cliff %) and a Swarm membrane stop gunfire, acid, flame, either way.
+   Low rock does not: you shoot over a crater rim ( ) ). Lobbed things (grenades, the Brood Mother's eggs and acid rain) fly over.
+   The thing you aim at itself never blocks (you can shoot the membrane). Membrane tiles are gathered once per frame. */
+const FIRE_BLOCK = { '#':1, '^':1, '*':1, '%':1 };
 function membraneTiles(){ if(G._membT===G.time&&G._memb) return G._memb; const S=new Set(); for(const e of G.ents) if(!e.dead&&e.type==='membrane') S.add(e.ty*G.map.w+e.tx); G._memb=S; G._membT=G.time; return S; }
-function wallBetween(u,t){ const S=membraneTiles(); if(!S.size||t.type==='membrane') return false; const W=G.map.w, dx=t.x-u.x, dy=t.y-u.y, L=Math.hypot(dx,dy), n=Math.ceil(L/8);
-  const k0=Math.floor(u.y/TILE)*W+Math.floor(u.x/TILE), k1=Math.floor(t.y/TILE)*W+Math.floor(t.x/TILE);
-  for(let i=1;i<n;i++){ const x=u.x+dx*i/n, y=u.y+dy*i/n, k=Math.floor(y/TILE)*W+Math.floor(x/TILE); if(k!==k0&&k!==k1&&S.has(k)) return true; } return false; }
-function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !wallBetween(u,t) && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
+function fireBlocked(u,t){ const m=G.map, W=m.w, S=membraneTiles(), dx=t.x-u.x, dy=t.y-u.y, L=Math.hypot(dx,dy), n=Math.ceil(L/6); if(n<2) return false;
+  const k0=Math.floor(u.y/TILE)*W+Math.floor(u.x/TILE), k1=Math.floor(t.y/TILE)*W+Math.floor(t.x/TILE), own=t.kind==='building'&&t.size?t:null;
+  for(let i=1;i<n;i++){ const x=u.x+dx*i/n, y=u.y+dy*i/n, tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), k=ty*W+tx; if(k===k0||k===k1) continue;
+    if(own&&tx>=own.tx&&tx<own.tx+own.size&&ty>=own.ty&&ty<own.ty+own.size) continue;   /* the structure you aim at */
+    if(FIRE_BLOCK[m.tiles[k]]||(S.has(k)&&t.type!=='membrane')) return true; } return false; }
+function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 /* the Swarm wants the escort (Dr. Maas) above all: in a fight it picks her over a soldier up to pull tiles closer, and hunters within hunt tiles of her go for her */
@@ -24,7 +28,7 @@ function findTarget(u,rangeTiles,unitsOnly){
     if(deadGen(u,e)) continue;
     if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
-    const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue; if(wallBetween(u,e)) continue;   /* not through a membrane */
+    const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue; if(fireBlocked(u,e)) continue;   /* not through rock or a membrane */
     let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0) + (e.def.escort&&u.faction==='swarm' ? -SWARM_VIP.pull*TILE : 0);   /* the Swarm goes for an escort (Dr. Maas) first */
     if(score<bs){ bs=score; best=e; } }
   return best;

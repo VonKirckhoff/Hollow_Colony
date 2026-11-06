@@ -60,6 +60,8 @@ function engage(u,dt,hold){
   const t=u.target, d=u.def;
   const reach=(d.range+(u.rangeBonus||0))*TILE + u.r*0.5 + (t.kind==='building'&&t.size&&!t.def.noBlock?u.r+4:0), dd=gapTo(u,t);
   if(Math.abs(t.x-u.x)>2) u.face=t.x>=u.x?1:-1;
+  if(dd<=reach&&fireBlocked(u,t)){   /* rock or a membrane in the way: go round for a clear shot (an order of yours), otherwise look for another target */
+    if(hold||!(u.order&&u.order.type==='attack')){ u.target=null; return; } goTo(u,t.x,t.y,dt,0.5); return; }
   if(dd<=reach){ u.path=null; u.goal=null; if(u.cd<=0) fire(u,t); }
   else if(hold){ u.target=null; }
   else goTo(u,t.x,t.y,dt,0.5);

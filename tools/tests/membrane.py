@@ -13,7 +13,7 @@ with sync_playwright() as p:
       for(const m of ms){ for(const [dx,dy] of [[1,0],[0,1]]){ const a={x:m.tx-dx*2,y:m.ty-dy*2}, c={x:m.tx+dx*2,y:m.ty+dy*2};
           if(!walkableT(a.x,a.y)||!walkableT(c.x,c.y)||G.block[a.y*G.map.w+a.x]||G.block[c.y*G.map.w+c.x]) continue;
           const t=makeUnit('trooper','corps',(a.x+.5)*TILE,(a.y+.5)*TILE), d=makeUnit('spitter','swarm',(c.x+.5)*TILE,(c.y+.5)*TILE); m.invuln=false;
-          const f1=findTarget(t,6), f2=findTarget(d,6,true), v=validTarget(t,d,true), vm=validTarget(t,m,true);
+          const f1=findTarget(t,6), f2=findTarget(d,6,true), v=!fireBlocked(t,d), vm=!fireBlocked(t,m);
           d.x+=dx*0; for(const x of ms) x.dead=true; G._membT=-1; const f3=findTarget(t,6); for(const x of ms) x.dead=false; G._membT=-1;
           return [f1&&f1.type, f2&&f2.type, v, vm, f3&&f3.type]; } }
       return 'no spot'; }""")

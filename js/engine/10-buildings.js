@@ -39,7 +39,7 @@ function updateBuilding(b,dt){
   }
   if(d.attack){
     b.cd-=dt; b.acq-=dt;
-    if(b.acq<=0){ b.acq=0.25; if(!validTarget(b,b.target) || dist(b,b.target)-b.target.r>d.range*TILE) b.target=findTarget(b,d.range); }
+    if(b.acq<=0){ b.acq=0.25; if(!validTarget(b,b.target) || dist(b,b.target)-b.target.r>d.range*TILE || fireBlocked(b,b.target)) b.target=findTarget(b,d.range); }   /* not through rock */
     if(b.target && validTarget(b,b.target)){ b.angle=Math.atan2(b.target.y-b.y,b.target.x-b.x); if(b.cd<=0 && dist(b,b.target)-b.target.r<=d.range*TILE) fire(b,b.target); }
   }
 }

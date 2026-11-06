@@ -184,6 +184,13 @@ Bovenaan zie je **Salvage**, **Supply**, **Troops** (aantal eigen eenheden op he
 - **Reset campaign** wist ook het rooster en de bewaarde missie van die campagne. In skirmish wordt niets bewaard.
 - Instelbaar bovenaan in de code: `RANKS`, `VET_XP`, `ROSTER_MAX` en de namenlijst `SURNAMES`.
 
+### Vuurlijn: rots houdt schoten tegen
+- Een **rotswand** (`#`, hoge rots `^`, kristal `*`, klif `%`) en een **membraan** van de Swarm houden geweervuur, zuur van Spitters en vlammen tegen, in beide richtingen. Over **lage rots** schiet je wel: een kraterrand (`)`).
+- Wat je beschiet, houdt het schot zelf niet tegen: je kan een membraan of een gebouw nog altijd beschieten.
+- Granaten en wat de Brood Mother in een boog gooit (eieren, zuurregen), vliegen erover.
+- Een soldaat of Sentry Gun kiest geen doelwit achter de rots; staat zijn doelwit erachter, dan zoekt hij een ander. Geef je zelf een aanvalsbevel op iets achter de rots, dan loopt hij eromheen tot hij vrij kan schieten.
+- Zien gaat nog wel door de rots: je ziet de vijand achter een dunne wand, maar je kan er niet op schieten. Code: `fireBlocked` en `FIRE_BLOCK` in js/engine/08-combat.js.
+
 ### Animaties (enkel om naar te kijken)
 Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Effects*):
 - **Maanstof en voetsporen:** soldaten laten voetsporen achter (niet op plating of schimmel) die na 7 s vervagen, en bij elke stap een wolkje stof dat traag blijft hangen.
@@ -359,7 +366,6 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 - Wie ze doodt, eet ze op: die eenheid wordt géén cocon.
 - Zodra je haar 8 seconden niet raakt, **geneest** ze.
 - **Afstand houden helpt niet:** staat niemand binnen haar bereik, dan kruipt ze je traag achterna (`stalkSpeed`), en houd je haar 5 s op afstand (`kiteTime`), dan slingert ze 3 eieren midden in je troepen (`lobEggs`, "SPAWN!"). Van dichtbij staat ze stil (`rootSpeed`).
-- **Membraan is een muur:** niemand schiet, spuwt of vlamt door een membraan, in geen van beide richtingen. Het membraan zelf kan je wel beschieten. (Granaten en het zuur en de eieren die de Brood Mother in een boog gooit, gaan er wel overheen.)
 - **Terug naar haar hol:** telkens ze 30% van haar levenspunten verliest (`lairEvery`, hoogstens 2 keer: `lairTimes`), sleept ze zich snel terug naar haar hol ("RETREATS", 4× haar snelheid, `fleeSpeed`), en krijgt ze onderweg maar de helft van de schade (`fleeArmor`). Op het moment dat ze vlucht, breken 4 Drones uit de grond tussen haar en jou om haar aftocht te dekken (`coverBrood`). Tijdens het helen groeit het membraan van haar hol half terug (300 levenspunten per stuk): brand of schiet je naar binnen. Kom je in haar hol, dan komen haar eieren daar meteen uit: een hinderlaag. Daar geneest ze 110 per seconde (`lairRegen`), tot 12% van haar levenspunten (`lairHeal`) of 25 s (`lairTime`), en legt ze dubbel zo snel eieren rond zich. Komt iemand dichter dan 4 tegels (`lairGuard`), dan breekt ze het af en valt ze meteen aan ("FURY!"). Je moet haar dus het hol in volgen.
 - **Ingraven:** in elke fase (vanaf haar eerste roep) graaft ze zich één keer in ("BURROWS!"), met minstens 12 s ertussen. 4 s lang is ze onder de grond en niet te raken, terwijl de grond opbolt onder je grootste groep en die tot het laatste moment volgt; dan breekt ze daar uit ("BREAKS OUT!"): 70 schade aan iedereen binnen 2,5 tegels, wie overleeft wordt weggeslingerd en ligt 1,5 s versuft neer, en ze chargeert bijna meteen. Na het uitbreken vecht ze minstens 10 s voor ze zich nog terugtrekt (`burrowTime`, `burrowDamage`, `burrowRadius`, `burrowDaze`, `burrowCalm`). Spreid je troepen.
 - **Zuurregen** (vanaf fase 2): om de 9 s een **wandelende regen** ("ACID RAIN"): drie bogen van 6 klodders na elkaar, eerst vlak bij haar, dan halfweg, en de laatste op je squad. Staat je squad langer dan 6 s stil (minder dan een tegel verplaatst), dan landt de regen meteen recht op je groep. Waar een klodder neerkomt, blijft een plas 12 s branden (`rainEvery`, `rainGlobs`, `rainPool`, `rainStill`).
