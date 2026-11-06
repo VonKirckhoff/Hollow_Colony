@@ -274,11 +274,27 @@ function clawed(b,u){ if(b.kind!=='building'||b.faction!=='corps'||!b.built||b.d
 function drawScratches(b){ if(!b.scratch||!b.scratch.length) return; if(b.hp>=b.maxHp){ b.scratch=null; return; }
   ctx.strokeStyle='rgba(20,22,28,.9)'; ctx.lineWidth=1; ctx.beginPath();
   for(const c of b.scratch) for(let i=0;i<3;i++){ const x=b.x+c.x+i*2, y=b.y+c.y; ctx.moveTo(x,y); ctx.lineTo(x+c.s*c.l*0.6,y+c.l); } ctx.stroke(); }
-/* a Relay Tower that is destroyed topples over and breaks */
-function toppleFx(b){ if(!animOnScreen(b.x,b.y,120)) return; G.fx.push({k:'topple',x:b.x,y:b.y+b.size*TILE/2-2,t:1.5,max:1.5,art:b.def.art||b.type,dir:Math.random()<0.5?1:-1,w:b.size*TILE}); }
-function toppleTick(f){ if(!f.down&&f.t<f.max-1.1){ f.down=true; const L=f.w*0.9; debrisBurst(f.x+f.dir*L*0.7,f.y-4,14,['#8a8a90','#a3b4c6','#5d6f83'],90); SFX.play('boom',f.x,f.y); } }
-function drawTopple(f){ const art=ARTC[f.art]; if(!art) return; const tt=f.max-f.t, k=Math.min(1,Math.max(0,(tt-0.15)/0.95)), a=f.dir*k*k*Math.PI/2*0.92, w=f.w, h=f.w;
-  ctx.globalAlpha=tt>1.1?Math.max(0,1-(tt-1.1)/0.4):1; ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(a); ctx.drawImage(art,-w/2,-h,w,h); ctx.restore(); ctx.globalAlpha=1; }
+/* a Relay Tower that is destroyed collapses: its mast slides down into the box with sparks, the dish crashes on top,
+   the box is left blackened and smoking for a moment, then it is gone (no wreck in the way). Only the mast moves, the box stays. */
+let relayParts=null;
+function relayPieces(){ if(relayParts) return relayParts; const P=PALETTE;
+  const [bc,bx]=pxCtx(32,32); bx.fillStyle=P.k; bx.fillRect(2,14,28,16); bx.fillStyle='#3a4150'; bx.fillRect(3,15,26,14); bx.fillStyle=P.y; bx.fillRect(3,27,4,2); bx.fillRect(25,27,4,2);
+    bx.fillStyle=P.A; bx.fillRect(8,24,3,4); bx.fillRect(21,24,3,4); bx.fillStyle=P.k; bx.fillRect(13,14,6,4);   /* the box, with the hole the mast stood in */
+  const [mc,mx]=pxCtx(32,32); mx.fillStyle=P.k; mx.fillRect(14,6,4,20); mx.fillStyle=P.a; mx.fillRect(15,6,2,20); oval(mx,16,7,9,5,P.k); oval(mx,16,7,8,4,P.a); oval(mx,15,6,5,2,'#d7e1ec'); mx.fillStyle=P.k; mx.fillRect(15,4,2,4);
+  const [dc,dx]=pxCtx(32,12); oval(dx,16,6,9,5,P.k); oval(dx,16,6,8,4,P.a); oval(dx,15,5,5,2,'#d7e1ec');
+  return relayParts={base:bc,mast:mc,dish:dc}; }
+const relayFall={ sink:[0.2,1.2], gone:[1.9,2.5] };
+function toppleFx(b){ if(b.type!=='relay'||!animOnScreen(b.x,b.y,120)) return; G.fx.push({k:'topple',x:b.x,y:b.y,t:relayFall.gone[1],max:relayFall.gone[1],w:b.size*TILE}); }
+function toppleTick(f){ const tt=f.max-f.t; if(!f.down&&tt>=relayFall.sink[1]){ f.down=true; debrisBurst(f.x,f.y-f.w*0.15,14,['#8a8a90','#a3b4c6','#5d6f83'],80); SFX.play('boom',f.x,f.y); }
+  if(tt<relayFall.gone[0]&&Math.random()<0.25&&animOnScreen(f.x,f.y)) G.fx.push({k:'dust',x:f.x+rand(-8,8),y:f.y-f.w*0.1,vx:rand(-5,5),vy:rand(-26,-14),t:1.8,max:1.8,r0:2,r1:9,col:'#77726c'}); }
+function drawTopple(f){ const R=relayPieces(), tt=f.max-f.t, S=f.w/32, x0=f.x-f.w/2, y0=f.y-f.w/2, [s0,s1]=relayFall.sink, [g0,g1]=relayFall.gone;
+  const k=Math.min(1,Math.max(0,(tt-s0)/(s1-s0))), sink=k*k*14*S, fade=tt>g0?Math.max(0,1-(tt-g0)/(g1-g0)):1;
+  ctx.globalAlpha=fade; ctx.drawImage(R.base,x0,y0,f.w,f.w);
+  ctx.fillStyle=`rgba(10,11,16,${Math.min(0.6,tt*1.2)})`; ctx.fillRect(x0+3*S,y0+15*S,26*S,14*S);   /* blackened */
+  if(tt<s1){ ctx.save(); ctx.beginPath(); ctx.rect(x0-4,y0-f.w,f.w+8,f.w+16*S); ctx.clip(); ctx.drawImage(R.mast,x0,y0+sink,f.w,f.w); ctx.restore();   /* slides down into the box */
+    if(k>0) for(let i=0;i<4;i++){ const ph=(tt*3+i*0.25)%1; ctx.fillStyle=ph<0.5?'#ffe2a8':'#ff8a2a'; ctx.fillRect(Math.round(f.x+(animRnd(i+Math.floor(tt*12))-0.5)*12*S/2),Math.round(y0+16*S+ph*10),2,2); } }
+  else ctx.drawImage(R.dish,x0+2*S,y0+11*S,f.w,f.w*12/32*0.75);   /* the crushed dish on top */
+  ctx.globalAlpha=1; }
 /* a generator: electric arcs while it runs; its lights flicker and die when it goes down */
 function drawGenerator(b,now){ if(!b.built) return;
   if(b.powered&&Math.floor(now/140+b.id)%4===0){ ctx.strokeStyle='rgba(95,227,176,.9)'; ctx.lineWidth=1; ctx.beginPath(); let x=b.x-12, y=b.y-2+((now/140|0)%3)*3; ctx.moveTo(x,y);

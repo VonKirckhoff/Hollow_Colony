@@ -216,7 +216,7 @@ Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Eff
 - **Granaat:** draait in de lucht, en zijn schaduw op de grond toont waar hij neerkomt.
 - **Verdwaalde kogels:** bij een kwart van de schoten vliegt er een kogel voorbij die stof opwaait of splinters uit de rots slaat. Enkel beeld: elk schot raakt nog altijd (`strays`).
 - **Klauwen op metaal:** de Swarm laat krassen achter op een gebouw dat hij aanvalt, met vonken. De krassen verdwijnen als het gebouw volledig hersteld is.
-- **Toren valt om:** een vernietigde Relay Tower kantelt, valt om en breekt, met puin.
+- **Toren zakt in elkaar:** van een vernietigde Relay Tower schuift de mast met vonken in de kast, de schotel kraakt erbovenop, met puin en rook. De zwartgeblakerde kast blijft nog even staan en verdwijnt dan.
 - **Generator:** zolang hij draait, springen er elektrische boogjes over; valt hij uit, dan flakkert zijn licht en dooft het.
 - **Sleepspoor:** de Swarm die een gevallene wegsleept, laat twee groeven in het stof achter, met wat bloed. Het spoor blijft 25 s (`dragLife`).
 - **Schimmel sterft af:** de schimmel rond een verbrande hive wordt grijs terwijl hij wegkwijnt, en er stijgen grijze sporen op.
