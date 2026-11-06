@@ -7,7 +7,7 @@
    the game's own tables (UNITS, BUILDINGS, DIFFICULTY …) are written by name. Functions, canvases and passing effects are left out.
    Training missions cannot be saved (their steps live in code that keeps its own place). */
 const SAVE_KEY='hc-save', SAVE_VERSION=1;
-const SAVE_SKIP_G=new Set(['prints','map','mission','api','triggers','tutSteps','tutHL','fx','shots','ents']);
+const SAVE_SKIP_G=new Set(['prints','drags','map','mission','api','triggers','tutSteps','tutHL','fx','shots','ents']);
 const SAVE_SKIP_ENT=new Set(['path']);
 function saveStatics(){ const m=new Map();
   for(const [k,v] of Object.entries(UNITS)) m.set(v,'U:'+k); for(const [k,v] of Object.entries(BUILDINGS)) m.set(v,'B:'+k);

@@ -22,7 +22,7 @@ with sync_playwright() as p:
     # no Swarm, no squad: the nearest side, no walk round
     r=J(pg,"()=>{ for(const e of __hc.G.ents) if(e.kind==='unit'||e.type==='hive') e.dead=true; "+setup.replace("const G=__hc.G","const G=__hc.G")+"""
       const e=makeUnit('engineer','corps',s.x+4*TILE,s.y); e.quiet=true; e.order={type:'repair',target:s}; let walked=0, lx=e.x, ly=e.y;
-      for(let i=0;i<30*5;i++){ __hc.update(1/30); walked+=Math.hypot(e.x-lx,e.y-ly); lx=e.x; ly=e.y; }
+      for(let i=0;i<30*5;i++){ __hc.update(1/30); for(const x of G.ents) if(x.faction==='swarm'&&x.kind==='unit') x.dead=true; walked+=Math.hypot(e.x-lx,e.y-ly); lx=e.x; ly=e.y; }
       return [Math.round((e.x-s.x)/TILE*10)/10, Math.round(walked/TILE*10)/10, Math.round((e.y-s.y)/TILE*10)/10, s.size, e.order&&e.order.spot&&[(e.order.spot.x-s.x)/TILE,(e.order.spot.y-s.y)/TILE], !!e.order]; }""")
     check('nearest side without Swarm', r[0]>0 and r[1]<4, r)
     check('meteor sound', J(pg,"()=>{ try{ SFX.play('meteor',0,0); return true; }catch(e){ return String(e); } }")==True, '')

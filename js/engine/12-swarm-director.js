@@ -77,8 +77,9 @@ function launchWave(budget,aim){
     const sh=aim?pool.sort((a,b)=>dist(a,aim)-dist(b,aim))[0]:pick(pool), room=swarmCap()-roamCount(), wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types;
     const tiles=freeTilesNear(Math.floor(sh.x/TILE),Math.floor(sh.y/TILE),24);
     while(left>=15 && guard++<80 && out.length<Math.min(room,tiles.length)){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
-      const s=tiles[out.length], u=makeUnit(type,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u);
+      const s=tiles[out.length], u=makeUnit(type,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u); emergeStart(u);   /* they wait in the shaft while it spits dust */
       for(let j=0;j<5;j++) G.fx.push({k:'ember',x:sh.x+rand(-14,14),y:sh.y+rand(-6,8),vx:rand(-40,40),vy:rand(-90,-30),t:0.8,max:0.8,col:pick(['#8a7a6a','#a6ff4a'])}); }
+    if(out.length&&ANIM.emerge>0) G.fx.push({k:'shaftspit',x:sh.x,y:sh.y,t:ANIM.emerge,max:ANIM.emerge,seed:Math.random()*99});
     if(out.length){ if(isVisible(sh)||G.seen[Math.floor(sh.y/TILE)*G.map.w+Math.floor(sh.x/TILE)]) G.pings.push({x:sh.x,y:sh.y,t:0,col:'#a6ff4a'}); SFX.play('hatch',sh.x,sh.y);
       if(!G.shaftWarned){ G.shaftWarned=true; say('Dr. Maas','The hives are gone, but listen: they are climbing up the old mine shafts. The tunnels under this town go deep.','alert'); } }
   } else if(!hs.length){

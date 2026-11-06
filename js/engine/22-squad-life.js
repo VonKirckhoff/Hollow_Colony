@@ -190,7 +190,7 @@ function dustPuff(x,y,n){ for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2), sp=ra
   G.fx.push({k:'dust',x:x+Math.cos(a)*rand(8,40),y:y+Math.sin(a)*rand(6,26),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.6,t:rand(1.2,2.6),max:2.6,r0:rand(10,16),r1:rand(22,40),col:pick(['#b3a58f','#a4967f','#c2b49c'])}); } }
 function updateShip(b,dt){
   const s=b.ship; if(!s) return;
-  if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); } }
+  if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9}); } }
   else if(s.phase==='takeoff'){ s.t-=dt; if(s.t>2.2&&Math.random()<dt*30) dustPuff(b.x,b.y,1); if(s.t<=0) b.ship=null; }
 }
 function drawShip(gx,gy,alt,heading,scale,lights,ramp,now){
@@ -319,7 +319,7 @@ function bodyHome(b,h,u){ const B=SQUAD.body; dropBody(b); b.home=h; b.t=B.time;
 function updateBodies(dt){ const B=SQUAD.body;
   for(const b of G.ents){ if(b.dead||b.kind!=='body') continue;
     if(b.carrier&&(b.carrier.dead||b.carrier.haul!==b)) dropBody(b);
-    if(b.carrier){ b.x=b.carrier.x; b.y=b.carrier.y+3; b.face=b.carrier.face; b.hidden=!!b.carrier.hidden; }
+    if(b.carrier){ b.x=b.carrier.x; b.y=b.carrier.y+3; b.face=b.carrier.face; b.hidden=!!b.carrier.hidden; if(!b.hidden) dragTrail(b); }
     /* a body no longer rots away: it stays until the Swarm takes it home or a Pyro burns it */
     if(b.home&&b.home.dead) b.home=null;   /* its hive is gone: it is just a body again */
     b.guarded=G.ents.some(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&Math.hypot(e.x-b.x,e.y-b.y)<B.guard*TILE);

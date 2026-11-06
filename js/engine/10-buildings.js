@@ -50,7 +50,7 @@ function updateGenerator(b,dt){
   const d=b.def;
   if(b.powered===undefined){ b.powered=false; b.hp=b.maxHp*d.startHp; }
   if(!b.powered && b.hp>=b.maxHp-0.5){ b.powered=true; SFX.play('complete',b.x,b.y); say('Colony grid',`${b.label||'Generator'} online.`,'sys'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ffd23f'}); G.selDirty=true; }
-  else if(b.powered && b.hp<b.maxHp*d.failAt){ b.powered=false; SFX.play('alarm',b.x,b.y); say('Alert',`${b.label||'Generator'} is down! Repair it.`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); G.selDirty=true; }
+  else if(b.powered && b.hp<b.maxHp*d.failAt){ b.powered=false; b.flickT=1.4;   /* its lights flicker out */ SFX.play('alarm',b.x,b.y); say('Alert',`${b.label||'Generator'} is down! Repair it.`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); G.selDirty=true; }
   b.status = b.powered ? {txt:'ONLINE',col:'#ffd23f'} : {txt:`OFFLINE ${Math.floor(b.hp/b.maxHp*100)}%`,col:'#ff9a3c'};
 }
 /* Seismic charges: an Engineer standing still on a site arms a charge; the charge must survive its fuse. */

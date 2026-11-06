@@ -212,6 +212,16 @@ Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Eff
 - **Stofduiveltje:** ongeveer om de 45 s draait er een kleine wervelwind over het regoliet in beeld (`devilEvery`).
 - **Glinsteringen:** kristallen (`*`) en ijs (`~`) die je ziet, glinsteren af en toe (`glints`).
 - **Lage zwaartekracht:** het puin van granaten, seismische ladingen en meteorieten vliegt hoog, blijft lang hangen en valt traag terug (`lowGravity`, de gewone val is 180), met een stofwolk die lang blijft.
+- **Wachten:** een soldaat die niets te doen heeft, kijkt af en toe om of bekijkt zijn geweer (een glinstering); Swarm die stilstaat, snuffelt (`idle`).
+- **Granaat:** draait in de lucht, en zijn schaduw op de grond toont waar hij neerkomt.
+- **Verdwaalde kogels:** bij een kwart van de schoten vliegt er een kogel voorbij die stof opwaait of splinters uit de rots slaat. Enkel beeld: elk schot raakt nog altijd (`strays`).
+- **Klauwen op metaal:** de Swarm laat krassen achter op een gebouw dat hij aanvalt, met vonken. De krassen verdwijnen als het gebouw volledig hersteld is.
+- **Toren valt om:** een vernietigde Relay Tower kantelt, valt om en breekt, met puin.
+- **Generator:** zolang hij draait, springen er elektrische boogjes over; valt hij uit, dan flakkert zijn licht en dooft het.
+- **Sleepspoor:** de Swarm die een gevallene wegsleept, laat twee groeven in het stof achter, met wat bloed. Het spoor blijft 25 s (`dragLife`).
+- **Schimmel sterft af:** de schimmel rond een verbrande hive wordt grijs terwijl hij wegkwijnt, en er stijgen grijze sporen op.
+- **Schacht spuwt een golf:** voor een golf uit een mijnschacht klimt, spuwt de schacht 1 s stof en zie je klauwen aan de rand (`emerge`). Zolang ze in de schacht zitten, kan niemand ze raken.
+- **Dropship vertrekt:** bij het opstijgen een stofring.
 - **Dropship:** voor hij landt, vliegt hij eerst hoog over (zijn schaduw veegt over de grond, je hoort de motoren); bij de landing een stofring.
 
 ### Bovenbalk

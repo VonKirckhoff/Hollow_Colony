@@ -34,6 +34,7 @@ function fire(u,t){
     const hx=t.x+rand(-5,5), hy=t.y-6+rand(-5,5);
     G.fx.push({k:'tracer',x1:mx,y1:my,x2:hx,y2:hy,t:0.06,max:0.06});
     G.fx.push({k:'flash',x:mx,y:my,t:0.05,max:0.05}); if(u.faction==='corps') muzzleLight(mx,my);
+    strayRound(mx,my,t);   /* now and then a round goes past: dust or rock chips */
     if(Math.random()<0.35) G.fx.push({k:'spark',x:hx,y:hy,vx:rand(-40,40),vy:rand(-60,0),t:0.25,max:0.25,col:'#ffe2a8'});
     damage(t,d.damage*dm,u); if(u.type==='gunner'){ suppress(t); ejectCasing(u); } if(u.type==='sentry') sentryFired(u);
   } else if(d.attack==='flame'){ if(Math.random()<0.4) muzzleLight(mx,my);
@@ -48,7 +49,7 @@ function fire(u,t){
     const dd=dist(u,t), ch=ANIM.spitCharge||0; u.chargeT=ch;   /* its throat swells first: the acid leaves ch seconds later (you can step aside) */
     G.shots.push({k:'acid',sx:mx,sy:my,tx:t.x+rand(-6,6),ty:t.y+rand(-6,6),t:-ch,dur:dd/230+0.15,src:u,dmg:d.damage*dm,splash:(d.splash||0.6)*TILE,faction:u.faction});
   } else {
-    damage(t,d.damage*dm,u); u.lunge=0.12;
+    damage(t,d.damage*dm,u); u.lunge=0.12; if(u.faction==='swarm') clawed(t,u);   /* claws on metal */
     G.fx.push({k:'slash',x:t.x,y:t.y-8,t:0.16,max:0.16,face:u.face});
   }
 }
@@ -83,7 +84,7 @@ function damage(t,amt,src){
 }
 function kill(e,src){
   if(e.dead) return; e.dead=true; e.hp=0;
-  if(e.kind==='building'){
+  if(e.kind==='building'){ if(e.type==='relay'&&e.built) toppleFx(e);   /* it topples over */
     if(!e.def.noBlock) setBlock(e,0);
     const big=e.size*TILE;
     if(e.type==='hive') hiveDeath(e);   /* the last scream: it shakes and shrieks, its brood flees, then it caves in under smoke */

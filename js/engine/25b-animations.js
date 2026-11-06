@@ -13,7 +13,7 @@ const FIRE = { burn:3, dps:6, radius:0.75, ignite:3, igniteDps:6, max:40, merge:
    burning after it leaves the fire · igniteDps: damage per second while it burns · max: patches at once · merge: a new flame within this many tiles
    of a patch feeds that patch (it burns longer and grows up to `grow` times its radius) */
 const ANIM = { prints:80, printLife:7, casings:40, casingLife:5, melt:1.8, glint:1.4, meteorEvery:35, bruteShake:0.05, acid:2.2, flyover:true,
-  spitCharge:0.5, emerge:1, hurtEdge:60, lamps:true, lampRange:5, lampGlow:0.1, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, glints:true, lowGravity:45 };
+  spitCharge:0.5, emerge:1, idle:true, strays:0.25, dragLife:25, hurtEdge:60, lamps:true, lampRange:5, lampGlow:0.1, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, glints:true, lowGravity:45 };
 /* spitCharge: seconds a Spitter's throat swells before the acid leaves (you can step aside; 0 = at once) · emerge: seconds the ground bulges
    before a burrowing wave breaks out (0 = at once) · hurtEdge: damage within about a second that makes the screen edge glow red on the side of
    the attack (0 = never) · lamps: helmet lamps in the dark (they also let you see lampRange tiles further in their beam) · lampGlow: how bright the beams are · muzzleLight: every shot
@@ -149,7 +149,9 @@ function drawCreepLife(now,vx0,vy0,vx1,vy1){ if(!G.creep||!G.creepAny) return; c
   for(const h of nests()){ if(h.x<vx0-300||h.x>vx1+300||h.y<vy0-300||h.y>vy1+300) continue; const R=(h.creepR||2)*TILE;
     for(let i=0;i<10;i++){ const an=i/10*Math.PI*2+h.id, ph=(now/1000*0.35+animRnd(h.id+i))%1, r=TILE*1.2+ph*R, x=h.x+Math.cos(an)*r, y=h.y+Math.sin(an)*r*0.8, c=creepAt(x,y);
       if(c<0.3||!animSeen(x,y)) continue; ctx.fillStyle=`rgba(166,255,74,${(1-ph)*0.8*c})`; ctx.fillRect(Math.round(x)-1,Math.round(y)-1,3,3); } }
-  const T=G.creepTgt, C=G.creep; if(!T) return; const x0=Math.max(0,Math.floor(vx0/TILE)), y0=Math.max(0,Math.floor(vy0/TILE)), x1=Math.min(W-1,Math.ceil(vx1/TILE)), y1=Math.min(m.h-1,Math.ceil(vy1/TILE));
+  const T=G.creepTgt, C=G.creep; if(!T) return;
+  { const x0=Math.max(0,Math.floor(vx0/TILE)), y0=Math.max(0,Math.floor(vy0/TILE)), x1=Math.min(W-1,Math.ceil(vx1/TILE)), y1=Math.min(m.h-1,Math.ceil(vy1/TILE));   /* dying creep: grey spores drift up */
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const k=y*W+x; if(C[k]>T[k]+0.05&&G.vis[k]&&Math.random()<0.004) G.fx.push({k:'dust',x:(x+Math.random())*TILE,y:(y+Math.random())*TILE,vx:rand(-4,4),vy:rand(-14,-6),t:1.6,max:1.6,r0:1,r1:4,col:'#77726c'}); } } const x0=Math.max(0,Math.floor(vx0/TILE)), y0=Math.max(0,Math.floor(vy0/TILE)), x1=Math.min(W-1,Math.ceil(vx1/TILE)), y1=Math.min(m.h-1,Math.ceil(vy1/TILE));
   ctx.fillStyle='rgba(122,90,142,.85)';
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const k=y*W+x; if(!(T[k]>C[k]+0.02)||C[k]<0.05||!G.seen[k]) continue;   /* a growing edge: tendrils feel their way forward */
     const n=creepNoise(x,y), bx=x*TILE+n*TILE*0.6, by=y*TILE+creepNoise(y,x)*TILE*0.6;
@@ -244,13 +246,63 @@ function debrisBurst(x,y,n,cols,sp=110){ if(!animOnScreen(x,y)) return; for(let 
 function debrisTick(f,dt){ if(f.rest) return; f.x+=f.vx*dt; f.y+=f.vy*dt; f.vy+=ANIM.lowGravity*dt; f.vx*=0.995; if(f.y>=f.gy&&f.vy>0){ f.y=f.gy; f.rest=true; } }
 function drawDebris(f){ ctx.globalAlpha=Math.min(1,f.t/0.8); ctx.fillStyle=f.col; ctx.fillRect(Math.round(f.x),Math.round(f.y),2,2); ctx.globalAlpha=1; }
 
+/* ---- third round ---- */
+/* idle: a soldier who has nothing to do looks round now and then and checks his weapon; the Swarm sniffs the air */
+function idleTick(u,dt){ if(!ANIM.idle) return; const idle=!u.moving&&!(u.target&&!u.target.dead)&&!u.downed&&!u.carry;
+  if(!idle){ u.idleT=0; if(u.lookT>0){ u.lookT=0; } return; }
+  u.idleT=(u.idleT||0)+dt; if(u.lookT>0){ u.lookT-=dt; if(u.lookT<=0) u.face=u.lookFace||u.face; return; }
+  if(u.idleT>(u.nextLook||(u.nextLook=rand(3,7)))){ u.idleT=0; u.nextLook=rand(4,9); if(Math.random()<0.6){ u.lookFace=u.face; u.face=-u.face; u.lookT=rand(0.8,1.6); } else u.gleamT=0.18; } }
+function drawIdle(u,w,h,now){ if(!ANIM.idle) return;
+  if(u.faction==='corps'){ if(u.gleamT>0){ u.gleamT-=1/60; ctx.fillStyle='#ffe2a8'; ctx.fillRect(Math.round(u.x+u.face*8),Math.round(u.y-11),2,1); } return; }
+  if(u.moving||u.target||u.hidden||!isVisible(u)) return; const ph=(now/1000+u.id*0.7)%3.5; if(ph>1.1) return;   /* sniffing: little puffs at the head */
+  for(let i=0;i<2;i++){ const s=(ph*2+i*0.5)%1; ctx.fillStyle=`rgba(159,211,138,${0.6-s*0.6})`; ctx.fillRect(Math.round(u.x+u.face*(w*0.4+s*6)),Math.round(u.y-h*0.45-s*4),2,2); } }
+/* grenade: it spins, and its shadow on the ground shows where it will land */
+function drawGrenade(s,t){ const gx=s.sx+(s.tx-s.sx)*t, gy=s.sy+(s.ty-s.sy)*t, x=gx, y=gy-Math.sin(t*Math.PI)*46, sh=1-Math.sin(t*Math.PI)*0.5;
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(gx,gy+6,5*sh,2*sh,0,0,Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(Math.round(x),Math.round(y)); ctx.rotate(s.t*14); ctx.fillStyle='#0a0b10'; ctx.fillRect(-3,-3,6,6); ctx.fillStyle='#5b6b3a'; ctx.fillRect(-2,-2,4,4); ctx.restore();
+  if(Math.floor(s.t*12)%2){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(x)-1,Math.round(y)-5,2,2); } }
+/* stray rounds: now and then a shot goes past and kicks up dust, or chips the rock (only to look at: every shot still hits) */
+function strayRound(mx,my,t){ if(!(ANIM.strays>0)||Math.random()>ANIM.strays||!animOnScreen(t.x,t.y)) return; const a=Math.atan2(t.y-my,t.x-mx)+rand(-0.25,0.25), d=Math.hypot(t.x-mx,t.y-my)+rand(14,40);
+  const x=mx+Math.cos(a)*d, y=my+Math.sin(a)*d, tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), rock=tx>=0&&ty>=0&&tx<G.map.w&&ty<G.map.h&&!G.map.walk[ty*G.map.w+tx];
+  G.fx.push({k:'tracer',x1:mx,y1:my,x2:x,y2:y,t:0.05,max:0.05});
+  for(let i=0;i<(rock?5:3);i++) G.fx.push({k:'spark',x,y,vx:-Math.cos(a)*rand(20,60)+rand(-25,25),vy:rand(-60,-10),t:0.3,max:0.3,col:rock?pick(['#8a8a90','#ffe2a8','#5a5d66']):pick(['#8a7a6a','#b3a58f'])});
+  G.fx.push({k:'dust',x,y,vx:-Math.cos(a)*8,vy:-6,t:0.9,max:0.9,r0:1,r1:6,col:rock?'#8a8a90':'#8a7f70'}); }
+/* claws on metal: scratches stay on a structure the Swarm tears at (until it is repaired), and sparks fly */
+function clawed(b,u){ if(b.kind!=='building'||b.faction!=='corps'||!b.built||b.def.ground) return; const S=b.size*TILE/2;
+  b.scratch=b.scratch||[]; if(b.scratch.length<7) b.scratch.push({x:rand(-S*0.6,S*0.4),y:rand(-S*0.6,S*0.4),l:rand(5,9),s:Math.random()<0.5?1:-1});
+  if(animOnScreen(b.x,b.y)) for(let i=0;i<3;i++) G.fx.push({k:'spark',x:b.x+(u.x>b.x?S*0.6:-S*0.6),y:b.y+rand(-S*0.4,S*0.3),vx:rand(-50,50),vy:rand(-70,-20),t:0.25,max:0.25,col:pick(['#ffe2a8','#ffffff'])}); }
+function drawScratches(b){ if(!b.scratch||!b.scratch.length) return; if(b.hp>=b.maxHp){ b.scratch=null; return; }
+  ctx.strokeStyle='rgba(20,22,28,.9)'; ctx.lineWidth=1; ctx.beginPath();
+  for(const c of b.scratch) for(let i=0;i<3;i++){ const x=b.x+c.x+i*2, y=b.y+c.y; ctx.moveTo(x,y); ctx.lineTo(x+c.s*c.l*0.6,y+c.l); } ctx.stroke(); }
+/* a Relay Tower that is destroyed topples over and breaks */
+function toppleFx(b){ if(!animOnScreen(b.x,b.y,120)) return; G.fx.push({k:'topple',x:b.x,y:b.y+b.size*TILE/2-2,t:1.5,max:1.5,art:b.def.art||b.type,dir:Math.random()<0.5?1:-1,w:b.size*TILE}); }
+function toppleTick(f){ if(!f.down&&f.t<f.max-1.1){ f.down=true; const L=f.w*0.9; debrisBurst(f.x+f.dir*L*0.7,f.y-4,14,['#8a8a90','#a3b4c6','#5d6f83'],90); SFX.play('boom',f.x,f.y); } }
+function drawTopple(f){ const art=ARTC[f.art]; if(!art) return; const tt=f.max-f.t, k=Math.min(1,Math.max(0,(tt-0.15)/0.95)), a=f.dir*k*k*Math.PI/2*0.92, w=f.w, h=f.w;
+  ctx.globalAlpha=tt>1.1?Math.max(0,1-(tt-1.1)/0.4):1; ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(a); ctx.drawImage(art,-w/2,-h,w,h); ctx.restore(); ctx.globalAlpha=1; }
+/* a generator: electric arcs while it runs; its lights flicker and die when it goes down */
+function drawGenerator(b,now){ if(!b.built) return;
+  if(b.powered&&Math.floor(now/140+b.id)%4===0){ ctx.strokeStyle='rgba(95,227,176,.9)'; ctx.lineWidth=1; ctx.beginPath(); let x=b.x-12, y=b.y-2+((now/140|0)%3)*3; ctx.moveTo(x,y);
+    for(let s=0;s<6;s++){ x+=4; y+=(animRnd(s+Math.floor(now/140)+b.id)-0.5)*7; ctx.lineTo(x,y); } ctx.stroke(); }
+  if(b.flickT>0){ b.flickT-=1/60; if(Math.random()<0.5){ const R=b.def.light*TILE*0.6, g=ctx.createRadialGradient(b.x,b.y,6,b.x,b.y,R); g.addColorStop(0,`rgba(255,214,120,${0.25*Math.random()})`); g.addColorStop(1,'rgba(255,180,80,0)');
+      ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(b.x-R,b.y-R,R*2,R*2); ctx.globalCompositeOperation='source-over'; } } }
+/* the drag trail of a fallen soldier the Swarm hauls away: two grooves in the dust, a little blood, it stays a long while */
+function dragTrail(b){ if(!b.lastDrag) b.lastDrag={x:b.x,y:b.y}; if(Math.hypot(b.x-b.lastDrag.x,b.y-b.lastDrag.y)<5) return;
+  const D=G.drags||(G.drags=[]); D.push({x1:b.lastDrag.x,y1:b.lastDrag.y,x2:b.x,y2:b.y,t:ANIM.dragLife,blood:Math.random()<0.25}); b.lastDrag={x:b.x,y:b.y}; if(D.length>160) D.shift(); }
+function drawDrags(){ for(const d of G.drags||[]){ if(!animOnScreen(d.x1,d.y1)) continue; const a=Math.min(1,d.t/4)*0.5; ctx.strokeStyle=`rgba(14,15,18,${a})`; ctx.lineWidth=1; ctx.beginPath();
+    ctx.moveTo(d.x1,d.y1); ctx.lineTo(d.x2,d.y2); ctx.moveTo(d.x1,d.y1+3); ctx.lineTo(d.x2,d.y2+3); ctx.stroke(); if(d.blood){ ctx.fillStyle=`rgba(120,24,24,${a*1.4})`; ctx.fillRect(Math.round(d.x2),Math.round(d.y2+1),2,2); } } }
+/* a shaft about to spit a wave: dust pours out and claws show at the rim */
+function drawShaftSpit(f){ if(!animSeen(f.x,f.y)) return; const k=1-f.t/f.max;
+  for(let i=0;i<8;i++){ const s=(k*2.4+animRnd(f.seed+i))%1; ctx.fillStyle=`rgba(138,122,106,${0.6-s*0.6})`; ctx.beginPath(); ctx.arc(f.x-10+animRnd(f.seed+i*3)*20,f.y+2+s*16,1+s*4,0,Math.PI*2); ctx.fill(); }
+  if(k>0.5){ ctx.fillStyle='#0a0b10'; for(const [dx,dy] of [[-7,2],[-6,4],[6,2],[5,4],[-2,1],[2,1]]) ctx.fillRect(Math.round(f.x+dx*(1+k*0.3)),Math.round(f.y+dy),2,2); } }
+
 /* ---- per frame ---- */
 function updateAnims(dt){
   for(const p of G.prints||[]) p.t-=dt; if(G.prints&&G.prints.length&&G.prints[0].t<=0) G.prints=G.prints.filter(p=>p.t>0);
   for(const u of G.ents){ if(u.dead) continue;
     if(u.kind==='unit'){ if(u.moving&&!u.downed) stepAnims(u); if(u.acidT>0) u.acidT-=dt; if(u.glintT>0) u.glintT-=dt; if(u.chargeT>0) u.chargeT-=dt; if(u.fallT>0) u.fallT-=dt;
-      if(u.emergeT>0) emergeTick(u,dt); if(u.faction==='corps') headingTick(u); }
+      if(u.emergeT>0) emergeTick(u,dt); if(u.faction==='corps'){ headingTick(u); if(u.def.bio) idleTick(u,dt); } }
     else if(u.kind==='building'){ if(u.recoil>0) u.recoil-=dt; if(u.weldT>0) u.weldT-=dt; if(u.unfoldT>0) u.unfoldT-=dt; damageSmoke(u,dt); } }
-  for(const f of G.fx){ if(f.k==='casing'||f.k==='helmet') casingTick(f,dt); else if(f.k==='meteor') meteorFx(f); else if(f.k==='debris') debrisTick(f,dt); }
+  for(const d of G.drags||[]) d.t-=dt; if(G.drags&&G.drags.length&&G.drags[0].t<=0) G.drags=G.drags.filter(d=>d.t>0);
+  for(const f of G.fx){ if(f.k==='topple') toppleTick(f); if(f.k==='casing'||f.k==='helmet') casingTick(f,dt); else if(f.k==='meteor') meteorFx(f); else if(f.k==='debris') debrisTick(f,dt); }
   if(G.hurtAcc) G.hurtAcc*=Math.exp(-dt*1.6);
   meteorTick(dt); devilTick(dt); updateFires(dt); }

@@ -30,7 +30,8 @@ function updateCreep(dt){
     for(let k=0;k<W*H;k++){ const t=T[k]; let c=C[k];
       if(c<t) c=Math.min(t,c+CREEP.rise*step); else if(c>t) c=Math.max(t,c-CREEP.fade*step);
       C[k]=c; if(c<=0.01||!G.seen[k]) continue; any=true; const o=k*4;
-      px[o]=96; px[o+1]=40+Math.round(26*c); px[o+2]=112; px[o+3]=Math.round(150*Math.min(1,c*1.4)); }
+      if(c>t+0.01){ px[o]=74; px[o+1]=64; px[o+2]=70; } else { px[o]=96; px[o+1]=40+Math.round(26*c); px[o+2]=112; }   /* dying creep turns grey */
+      px[o+3]=Math.round(150*Math.min(1,c*1.4)); }
     c2.putImageData(img,0,0); G.creepAny=any; }
   /* the Swarm heals on it */
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='swarm'||u.def.boss||u.hp>=u.maxHp) continue;
