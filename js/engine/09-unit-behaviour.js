@@ -199,6 +199,8 @@ function builderThink(u,dt){
   const done=b&&(b.kind==='unit'||b.built);
   if(!alive(b) || (done && b.hp>=b.maxHp)){ u.order=null; u.home={x:u.x,y:u.y}; if(o.type==='repair') rejoinFormation(u); return; }   /* repair done: back into his place */
   const reach=(b.size||1)*TILE/2+u.r+18;
+  if(b.kind==='building'){ const p=repairSpot(u,b,o,reach,dt);   /* the side of his squad, away from the Swarm */
+    if(p&&Math.hypot(u.x-p.x,u.y-p.y)>10&&!(o.spotWalk>6&&dist(u,b)<=reach)){ o.spotWalk=(o.spotWalk||0)+dt; goTo(u,p.x,p.y,dt); return; } }
   if(dist(u,b)>reach){ goTo(u,b.x,b.y,dt); return; }
   u.path=null; if(Math.abs(b.x-u.x)>2) u.face=b.x>u.x?1:-1;
   u.anim+=dt*2; SFX.play(done?'wrench':'weld',b.x,b.y);
@@ -211,3 +213,21 @@ function builderThink(u,dt){
     if(b.progress>=1){ b.built=true; b.progress=1; sentryUnfolds(b); if(!b.deploy){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; SFX.play('complete'); say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }
   } else { const rr=Math.min(b.maxHp-b.hp,d.repair*dt*(hasPerk(u)?PERKS.engineer.speed:1)); b.hp+=rr; if(u.vet){ u.vet.repaired=(u.vet.repaired||0)+rr; u.vet.rb=(u.vet.rb||0)+rr; if(u.vet.rb>=VET_XP.repairPerXp){ u.vet.rb-=VET_XP.repairPerXp; gainXP(u,1); } } }
 }
+
+/* Where an Engineer stands to build or repair a structure: on a free spot around it, as far as possible on the side of
+   his squad and away from the Swarm, without a long walk round. Every spot within reach of the structure gets a score:
+   the walk to it (REPAIR_SIDE.walk per tile), the side the Swarm is on (REPAIR_SIDE.enemy: the Swarm within
+   REPAIR_SIDE.look tiles) and the side his squad is on (REPAIR_SIDE.squad). Chosen again every second. */
+const REPAIR_SIDE = { walk:0.5, enemy:4, squad:2, look:14 };
+function repairSpot(u,b,o,reach,dt){ o.spotT=(o.spotT||0)-dt; if(o.spot&&o.spotT>0) return o.spot; o.spotT=1;
+  const R=REPAIR_SIDE, L=R.look*TILE, foes=G.ents.filter(e=>!e.dead&&!e.hidden&&e.faction==='swarm'&&(e.kind==='unit'||e.type==='hive')&&Math.hypot(e.x-b.x,e.y-b.y)<L);
+  const mates=(u.formation?formMembers(u.formation):G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-b.x,e.y-b.y)<10*TILE)).filter(e=>e!==u&&!e.dead&&!e.def.builder);
+  const dir=list=>{ if(!list.length) return null; let x=0,y=0; for(const e of list){ x+=e.x; y+=e.y; } x=x/list.length-b.x; y=y/list.length-b.y; const n=Math.hypot(x,y); return n>1?{x:x/n,y:y/n}:null; };
+  const fd=dir(foes), md=dir(mates); let best=null, bs=Infinity; const sz=b.size||1;
+  for(let ty=b.ty-1;ty<=b.ty+sz;ty++) for(let tx=b.tx-1;tx<=b.tx+sz;tx++){ if(tx>=b.tx&&tx<b.tx+sz&&ty>=b.ty&&ty<b.ty+sz) continue; if(!walkableT(tx,ty)) continue;
+    const x=(tx+.5)*TILE, y=(ty+.5)*TILE, dx=x-b.x, dy=y-b.y, n=Math.hypot(dx,dy); if(n>reach-2) continue;
+    let sc=Math.hypot(u.x-x,u.y-y)/TILE*R.walk; if(fd) sc+=(dx*fd.x+dy*fd.y)/n*R.enemy; if(md) sc-=(dx*md.x+dy*md.y)/n*R.squad;
+    if(o.spot&&Math.hypot(x-o.spot.x,y-o.spot.y)<4) sc-=1;   /* he keeps his spot unless another is clearly better: no shuffling about */
+    if(sc<bs){ bs=sc; best={x,y}; } }
+  if(best&&(!o.spot||Math.hypot(best.x-o.spot.x,best.y-o.spot.y)>4)) o.spotWalk=0;
+  o.spot=best; return best; }

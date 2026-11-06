@@ -44,16 +44,18 @@ with sync_playwright() as p:
     # order mark, radar, sentry unfold, debris, devil, glints
     r=J(pg,"""()=>{ const G=__hc.G; orderMark(P0.x+120,P0.y+100,false); orderMark(P0.x+160,P0.y+100,true);
       const s=makeBuilding('sentry','corps',Math.floor((P0.x+60)/TILE),Math.floor((P0.y-80)/TILE),false); s.progress=0.999; const e=makeUnit('engineer','corps',s.x+20,s.y); e.order={type:'repair',target:s};
-      for(let i=0;i<5;i++) __hc.update(1/30); window._sen=s; debrisBurst(P0.x-120,P0.y+40,20,['#8a7a6a','#5a4632']); G.devilT=0; __hc.update(1/30);
-      return [G.fx.filter(f=>f.k==='order').length, s.built, s.unfoldT>0, G.fx.filter(f=>f.k==='debris').length, G.fx.some(f=>f.k==='devil')]; }""")
-    check('order, unfold, debris, devil', r[0]==2 and r[1] and r[2] and r[3]>=20 and r[4], r)
+      for(let i=0;i<150;i++){ __hc.update(1/30); if(s.built) break; } window._dbg=[Math.round(e.x-s.x),Math.round(e.y-s.y),e.order&&e.order.spot&&[e.order.spot.x-s.x,e.order.spot.y-s.y],s.progress]; orderMark(P0.x+120,P0.y+100,false); orderMark(P0.x+160,P0.y+100,true); window._sen=s; debrisBurst(P0.x-120,P0.y+40,20,['#8a7a6a','#5a4632']); G.devilT=0; __hc.update(1/30);
+      return [G.fx.filter(f=>f.k==='order').length, s.built, s.unfoldT>0, _dbg, G.fx.filter(f=>f.k==='debris').length, G.fx.some(f=>f.k==='devil')]; }""")
+    check('order, unfold, debris, devil', r[0]==2 and r[1] and r[2] and r[4]>=20 and r[5], r)
     shot('misc',J(pg,"()=>P0.x"),J(pg,"()=>P0.y+20"),520,320)
     r=J(pg,"()=>{ for(let i=0;i<30*2;i++) __hc.update(1/30); const d=__hc.G.fx.filter(f=>f.k==='debris'); return [d.length, d.filter(f=>f.rest).length]; }")
     check('debris hangs then lands', r[0]>=10, r)
     shot('hq_radar',J(pg,"()=>_hq.x"),J(pg,"()=>_hq.y"),200,160)
     # helmet lamps in Blackout: further sight inside the beam
     r=J(pg,"""()=>{ startMission(MISSIONS.find(m=>m.id==='blackout')); const G=__hc.G; for(let i=0;i<10;i++) __hc.update(1/30);
-      const u=G.ents.find(e=>e.kind==='unit'&&e.faction==='corps'&&e.def.bio); u.head=0; const tx=Math.floor(u.x/TILE), ty=Math.floor(u.y/TILE);
+      const u=G.ents.find(e=>e.kind==='unit'&&e.faction==='corps'&&e.def.bio); u.head=0; ANIM.lamps=false; computeFog(); let tx=0, ty=0;
+      for(let y=3;y<G.map.h-3&&!tx;y++) for(let x=3;x<G.map.w-12&&!tx;x++){ let ok=true; for(let d=-2;d<=9&&ok;d++) if(!walkableT(x+d,y)||G.vis[y*G.map.w+x+d]) ok=false; if(ok){ tx=x; ty=y; } }
+      u.x=(tx+.5)*TILE; u.y=(ty+.5)*TILE; u.order={type:'hold'}; u.path=null; u.target=null;
       ANIM.lamps=false; computeFog(); let off=0; for(let d=1;d<9;d++) if(G.vis[ty*G.map.w+tx+d]) off=d; else break;
       ANIM.lamps=true; computeFog(); let on=0; for(let d=1;d<9;d++) if(G.vis[ty*G.map.w+tx+d]) on=d; else break; window._lu=u;
       return [off,on]; }""")

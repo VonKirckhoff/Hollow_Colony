@@ -32,6 +32,8 @@ const SFX=(()=>{
     /* the turning of a fallen soldier */
     infect:  [0.7, v=>{ for(let i=0;i<3;i++) noise(0.09,420+Math.random()*300,'lowpass',4,0.3*v,i*0.13,140); tone(95,55,0.45,'sawtooth',0.06*v,0.05); }],
     heartbeat:[0.25,v=>{ tone(62,40,0.13,'sine',0.55*v); noise(0.06,180,'lowpass',1,0.25*v); tone(55,36,0.12,'sine',0.4*v,0.17); }],
+    /* a meteorite: a thin whistle falling in pitch, then a dull thud in the dust (no crack: that is an egg) */
+    meteor:  [0.4, v=>{ tone(2600,700,0.5,'sine',0.05*v); noise(0.5,3000,'bandpass',6,0.06*v); noise(0.35,260,'lowpass',1,0.45*v,0.55,60); tone(70,34,0.4,'sine',0.4*v,0.55); }],
     crack:   [0.12,v=>{ for(let i=0;i<4;i++) noise(0.025,2600+Math.random()*2400,'highpass',1.5,0.32*v,i*0.035+Math.random()*0.02); tone(240,90,0.08,'square',0.05*v); }],
     huskborn:[1,   v=>{ for(let i=0;i<6;i++) noise(0.03,3000+Math.random()*3000,'highpass',1,0.35*v,i*0.03);
                          noise(0.7,900,'lowpass',2,0.45*v,0.12,120); tone(85,30,0.8,'sine',0.5*v,0.1);

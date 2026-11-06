@@ -91,8 +91,8 @@ function meteorTick(dt){ if(!(ANIM.meteorEvery>0)) return; G.meteorT=(G.meteorT?
   G.meteorT=ANIM.meteorEvery*rand(0.6,1.4);
   for(let i=0;i<20;i++){ const x=G.cam.x+rand(60,ui.vw-60), y=G.cam.y+rand(80,ui.vh-(ui.hudH||0)-40), tx=Math.floor(x/TILE), ty=Math.floor(y/TILE);
     if(tx<0||ty<0||tx>=G.map.w||ty>=G.map.h||!walkableT(tx,ty)||!animSeen(x,y)) continue;
-    G.fx.push({k:'meteor',x,y,t:1.6,max:1.6,dx:rand(-1,1)<0?-1:1}); return; } }
-function meteorFx(f){ const tt=f.max-f.t; if(tt>=0.55&&!f.hit){ f.hit=true; addDecal(f.x,f.y,7,'rgba(16,16,20,.6)'); SFX.play('crack',f.x,f.y);
+    G.fx.push({k:'meteor',x,y,t:1.6,max:1.6,dx:rand(-1,1)<0?-1:1}); SFX.play('meteor',x,y); return; } }   /* the whistle starts with the streak, the thud lands with it */
+function meteorFx(f){ const tt=f.max-f.t; if(tt>=0.55&&!f.hit){ f.hit=true; addDecal(f.x,f.y,7,'rgba(16,16,20,.6)');
     for(let i=0;i<4;i++) G.fx.push({k:'spark',x:f.x,y:f.y-2,vx:rand(-70,70),vy:rand(-90,-20),t:0.5,max:0.5,col:pick(['#ffe2a8','#ffffff'])});
     debrisBurst(f.x,f.y,10,['#d3c3a6','#8a7a6a','#5a4632'],80); } }
 function drawMeteor(f){ const tt=f.max-f.t; if(tt<0.55){ const k=tt/0.55, sx=f.x-f.dx*160*(1-k), sy=f.y-220*(1-k);

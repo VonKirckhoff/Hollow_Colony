@@ -198,7 +198,7 @@ Alles in js/engine/25b-animations.js, de getallen in `ANIM` (dev panel, tab *Eff
 - **Schade aan gebouwen:** onder 75% barsten, onder 50% vonken en rook, onder 25% vuur.
 - **Schimmel:** licht loopt van het nest naar buiten door de schimmel, en waar ze groeit, tasten ranken vooruit.
 - **Eieren:** de vier blaadjes van het deksel gaan open, er druipt slijm en het binnenste gloeit.
-- **Meteorieten:** ongeveer om de 35 s komt er ergens in beeld een kleine meteoriet neer: een streep, een flits, een kratertje (onschadelijk; `meteorEvery`, 0 = nooit).
+- **Meteorieten:** ongeveer om de 35 s komt er ergens in beeld een kleine meteoriet neer: een streep met een dalend fluitje, een doffe plof, een flits, een kratertje (onschadelijk; `meteorEvery`, 0 = nooit).
 - **Spitter laadt op:** voor hij spuwt, zwelt zijn keel een halve seconde groen op (`spitCharge`). Het zuur vertrekt pas daarna: je hebt even tijd om opzij te stappen. Sterft hij intussen, dan komt er geen zuur. (Dit verandert het spel een beetje: vroeger vertrok het zuur meteen. 0 = zoals vroeger.)
 - **Swarm geraakt:** bij elke treffer spat groen bloed weg van de schutter.
 - **De grond bolt op:** een golf die zich opgraaft (als alle hives weg zijn), blijft eerst 1 seconde onder een opbollende, scheurende plek (`emerge`). Pas dan breken ze uit, met aarde in het rond. Zolang ze onder de grond zitten, kan niemand ze raken en doen ze niets.
@@ -295,6 +295,7 @@ De Medic draagt een **licht pistool** (bereik 3, 2 schade). Genezen gaat altijd 
 
 ### Engineer
 - **Automatische reparatie:** een Engineer zonder bevel herstelt beschadigde gebouwen binnen 7 tegels en maakt bouwplaatsen in de buurt af.
+- **De veilige kant:** een Engineer die iets bouwt of herstelt, kiest een vrije plek rond het gebouw aan de kant van zijn squad en weg van de Swarm (binnen 14 tegels), zonder een lange omweg. Hij houdt zijn plek tenzij een andere duidelijk beter is, en geraakt hij er na 6 s niet, dan werkt hij waar hij staat. Instelbaar in `REPAIR_SIDE` (dev panel, tab Squad): `walk`, `enemy`, `squad`, `look`.
 - **Limiet per missie:** een missie kan bepalen hoeveel Sentry Guns er tegelijk in het veld mogen staan (`limits:{ sentry:3 }`). Gebouwde, in aanbouw en onderweg zijnde sentries tellen mee; een ingeklapte sentry op de rug van een Engineer telt niet. Zo moet je er eerst één inpakken voor je verder kan. De commandoknop toont de stand, bijvoorbeeld `2/3`.
 - **Sentry Gun meedragen:** druk **U** en klik op een Sentry Gun (of rechtsklik op een onbeschadigde). Inklappen duurt 2 s. De Engineer loopt dan op 60% snelheid. Met **D** stel je hem weer op in 3 s; dat kost niets en de schade blijft behouden. Sterft de Engineer onderweg, dan is de Sentry verloren.
 - **Niet bouwen, wel laten invliegen** (`noBuild:['sentry']`): in *The Hollow Colony* kan de Engineer geen Sentry Gun bouwen. Hij heeft er één bij zich. Gaat die verloren (vernietigd, of samen met de Engineer die hem droeg), dan vliegt het dropship een nieuwe naar het **landingsplatform waar je squad begon** (60/80/100 s op Easy/Normal/Hard). Hij staat daar ingeklapt als een kist met een oranje ring. Een Engineer met lege handen die erop loopt, neemt hem mee; daarna D om op te stellen. Er is er altijd hooguit één (in het veld, op een rug, op het platform of onderweg).
