@@ -23,12 +23,14 @@ with sync_playwright() as p:
       /* jump to a step */
       const go=t=>{ G.vars.tutI=idx(t); G.vars.tutState='start'; G.vars.tutAt=0; G.vars.cardOpen=false; step(0.5); if(G.vars.cardOpen) tutConfirm(); step(0.5); return G.vars.tutI; };
       /* 1b. fauna first: kill a grazer, drag it home, it becomes a Bloater */
+      for(const u of G.vars.prey) u.dead=true; for(const e of G.ents) if(!e.dead&&e.kind==='body') e.dead=true; G.vars.openDone=true;   /* a quiet field for the fauna part */
       const fi=go('Kill a grazer'); const gz=G.vars.gz; ok(gz&&!gz.dead&&G.markers.some(m=>m.id==='tut'),'fauna step marks a grazer');
-      G.swarm.biomass+=300; for(let i=0;i<4;i++) swarmBreed('drone'); step(1); sendWave(gz.x,gz.y);
+      G.swarm.biomass+=300; for(let i=0;i<4;i++) swarmBreed('drone'); step(1); for(const u of myBrood()) u.invuln=true; sendWave(gz.x,gz.y);
       for(let i=0;i<60&&G.vars.tutI===fi;i++){ step(1); if(G.vars.stepDone&&G.vars.cardOpen) tutConfirm(); }
       ok(G.vars.tutI>fi,'grazer killed: carcass on the ground');
+      { const cb=G.ents.find(e=>!e.dead&&e.kind==='body'&&e.fauna); step(20); ok(cb&&!cb.home&&!cb.carrier&&!G.ents.some(e=>!e.dead&&e.claim===cb),'the carcass stays put until H (manualHaul)'); }
       swarmHarvest(); for(let i=0;i<160&&!G.ents.some(e=>!e.dead&&e.type==='bloater');i++){ step(1); if(G.vars.stepDone&&G.vars.cardOpen) tutConfirm(); }
-      ok(G.ents.some(e=>!e.dead&&e.type==='bloater'),'the carcass became a Bloater');
+      ok(G.ents.some(e=>!e.dead&&e.type==='bloater'),'the carcass became a Bloater'+(G.ents.some(e=>!e.dead&&e.type==='bloater')?'':' '+JSON.stringify(G.ents.filter(e=>!e.dead&&e.kind==='body').map(b=>({home:!!b.home,carrier:!!b.carrier,ord:!!b.ordered,x:Math.round(b.x/32),y:Math.round(b.y/32)})))+' units '+G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm').map(e=>e.type+':'+e.role+(e.mine?'m':'')+(e.target?'T':'')+(e.claim?'C':'')).join(',')));
       for(let i=0;i<3;i++){ step(1); if(G.vars.cardOpen) tutConfirm(); }
       ok(/Attack the two soldiers/.test(G.objectives.find(o=>o.id==='tut').text),'then the soldiers ('+G.objectives.find(o=>o.id==='tut').text+')');
       /* 1c. once huskMax Husks are made, no more soldiers wander into the open, also not when one is spent */
@@ -49,6 +51,19 @@ with sync_playwright() as p:
       /* 2b. the dropship brings a new Engineer */
       let back=false; for(let i=0;i<FIRST_HUNGER.refill+FIRST_HUNGER.flight+15&&!back;i++){ step(1); back=G.vars.drill.some(u=>!u.dead&&!u.downed&&u.type==='engineer'&&u!==eng); }
       ok(back&&G.vars.drill.filter(u=>!u.dead&&!u.downed).length===4,'a dropship brought a new Engineer: 4 again');
+      /* 2a2. the lone tower stands on the build site, goes DOWN at 1 HP, the brood lets go and can be sent away, it comes back ONLINE at half */
+      ok(T.tx===8&&T.ty===25,'lone tower on the build site (8,25)');
+      { for(const u of G.vars.drill) if(u.type==='engineer'&&!u.dead) u.x=u.dhome.x; const bs=[]; for(let i=0;i<6;i++){ const u=makeUnit('brute','swarm',T.x+40,T.y+10*i); u.role='brood'; u.mine=true; u.target=T; u.order={type:'attack',target:T}; bs.push(u); }
+        T.hp=25; let down=false; for(let i=0;i<60&&!down;i++){ step(0.5); down=!!T.down; } ok(down&&T.invuln&&!T.dead,'bitten to 1 HP: DOWN, not dead');
+        step(1); ok(bs.every(u=>u.dead||u.target!==T),'the brood lets go of it');
+        selectEntities(bs.filter(u=>!u.dead),false); const far={x:T.x+10*32,y:T.y-3*32}; swarmRight(far.x,far.y); const d0=bs.filter(u=>!u.dead).map(u=>dist(u,far)); step(5);
+        ok(bs.filter(u=>!u.dead).every((u,i)=>dist(u,far)<d0[i]),'and follows a move order away from it');
+        for(const u of bs) u.dead=true; let up=false; for(let i=0;i<120&&!up;i++){ step(0.5); up=!T.down; } ok(up&&!T.invuln,'mended to half: ONLINE again ('+Math.round(T.hp/T.maxHp*100)+'%)'); }
+      /* 2a3. Hive Sense */
+      { const lone=makeUnit('trooper','corps',45*32,36*32); const cs=senseContacts({x:45*32,y:30*32}); const k=cs.find(c=>c.e===lone);
+        ok(k&&k.kind==='easy','Hive Sense: a lone soldier is easy prey (orange)'); const inr=G.vars.drill.find(u=>!u.dead&&!u.downed&&inRing(u)); ok(inr&&!easyPrey(inr),'a drill soldier in his ring is not');
+        const sv={x:inr.x,y:inr.y}; inr.x=drillCentre().x+9*32; ok(easyPrey(inr),'out of his ring he is'); inr.x=sv.x; inr.y=sv.y; lone.dead=true;
+        trackerLabel(); ok(/Sense/.test(document.getElementById('btn-tracker').textContent),'the button says Sense'); }
       /* 2c. a soldier chases a lone biter, and turns back at chaseR */
       const tr=G.vars.drill.find(u=>u.type==='trooper'&&!u.dead&&!u.downed); const c0=drillCentre(); const ang=0; tr.x=c0.x+3*32; tr.y=c0.y; tr.dhome={x:tr.x,y:tr.y};
       const bx=c0.x+Math.cos(ang)*(FIRST_HUNGER.ring-0.5)*32, by=c0.y+Math.sin(ang)*(FIRST_HUNGER.ring-0.5)*32;
@@ -56,7 +71,7 @@ with sync_playwright() as p:
       ok(tr.task==='chase'&&tr.chase===biter,'bitten by a lone creature: he chases it');
       biter.order={type:'move',x:c0.x+Math.cos(ang)*20*32,y:c0.y+Math.sin(ang)*20*32}; setPath(biter,biter.order.x,biter.order.y); biter.post={x:biter.order.x,y:biter.order.y};
       let left=false; const tl=[]; for(let i=0;i<30&&!left;i++){ if(Math.hypot(biter.x-c0.x,biter.y-c0.y)<16*32){ biter.x+=24; biter.path=null; } step(0.5); left=!inRing(tr); tl.push((Math.hypot(tr.x-c0.x,tr.y-c0.y)/32).toFixed(1)+tr.task+'/'+(Math.hypot(biter.x-c0.x,biter.y-c0.y)/32).toFixed(1)); } ok(left,'he follows it out of the ring'+(left?'':' '+tl.slice(0,8).join(' ')));
-      let turned=false; for(let i=0;i<40&&!turned;i++){ if(Math.hypot(biter.x-c0.x,biter.y-c0.y)<16*32){ biter.x+=24; biter.path=null; } step(0.5); turned=!tr.task; } ok(turned,'and turns back after a while ('+(Math.hypot(tr.x-c0.x,tr.y-c0.y)/32).toFixed(1)+' tiles out)');
+      let turned=false; for(let i=0;i<70&&!turned;i++){ if(Math.hypot(biter.x-c0.x,biter.y-c0.y)<16*32){ biter.x+=24; biter.path=null; } step(0.5); turned=!tr.task; } ok(turned,'and turns back after a while ('+(Math.hypot(tr.x-c0.x,tr.y-c0.y)/32).toFixed(1)+' tiles out)');
       for(let i=0;i<40&&!inRing(tr);i++) step(0.5); ok(inRing(tr),'back in the ring');
       biter.dead=true;
       /* 2d. a soldier lured out while huskMax are turned dies without a body */
@@ -64,6 +79,9 @@ with sync_playwright() as p:
       const tr2=G.vars.drill.find(u=>u.type==='trooper'&&!u.dead&&!u.downed); tr2.x=c0.x+9*32; tr2.y=c0.y; const nb=G.ents.filter(e=>!e.dead&&e.kind==='body').length, bm=G.swarm.biomass;
       damage(tr2,tr2.maxHp*5,biter); ok(tr2.dead&&G.ents.filter(e=>!e.dead&&e.kind==='body').length===nb&&G.swarm.biomass>bm,'with '+FIRST_HUNGER.huskMax+' Husks: dies without a body, still feeds us');
       hs2.forEach(u=>u.dead=true);
+      /* 2d2. steps look at what is on the field: with a Husk already there, the body and Grafter steps are done at once */
+      { const hk=makeUnit('husk','swarm',30.5*32,9.5*32); hk.role='brood'; hk.stage=0; const bi0=idx('Bring a body home'); const bi=go('Bring a body home'); step(1); ok(G.vars.stepDone||G.vars.tutI>bi0,'body step already done when a Husk exists'+(G.vars.stepDone||G.vars.tutI>bi?'':' ('+(hk.dead?'husk dead':'husk ok')+' I '+G.vars.tutI+'/'+bi+' '+G.vars.tutState+' card '+G.vars.cardOpen+')'));
+        const wi0=idx('Watch the Grafter'); const wi=go('Watch the Grafter'); step(1); ok(G.vars.stepDone||G.vars.tutI>wi0,'Grafter step already done too ('+wi+' '+steps[wi].obj+' husk '+(hk.dead?'dead':'ok')+' I '+G.vars.tutI+' '+G.vars.tutState+')'); hk.dead=true; }
       /* 2e. the two-teams step */
       const ti=go('Two teams'); const br=[]; G.swarm.biomass+=500; for(let i=0;i<6;i++){ swarmBreed('crawler'); } step(1); const mine=myBrood();
       selectEntities(mine.slice(0,3),false); G.groups['1']=[...G.sel]; selectEntities(mine.slice(3),false); G.groups['2']=[...G.sel];

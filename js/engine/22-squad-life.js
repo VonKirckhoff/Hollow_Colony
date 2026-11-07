@@ -29,6 +29,7 @@ function trackerContacts(ref){
 }
 function drawTracker(now){
   if(!ui.tracker||!G||G.over) return;
+  if(G.side==='swarm') return drawHiveSense(now);   /* playing the Swarm: Hive Sense instead (26-swarm-command.js) */
   const S=SQUAD.tracker.size, cx=ui.vw-S-22, cy=ui.vh-ui.hudH-S-22, ref=trackerRef(), cs=trackerContacts(ref), sweep=(now/1000*2.2)%(Math.PI*2);
   ctx.save();
   ctx.fillStyle='rgba(6,14,10,.82)'; ctx.beginPath(); ctx.arc(cx,cy,S,0,Math.PI*2); ctx.fill();
@@ -49,8 +50,8 @@ function drawTracker(now){
   // the beep: faster and higher the closer the nearest contact is
   if(near!=null && !G.paused){ const k=near/R, gap=0.22+1.3*k; if(now/1000>(G.trkBeep||0)){ G.trkBeep=now/1000+gap; SFX.play(k<0.3?'trk3':k<0.6?'trk2':'trk1'); } }
 }
-function toggleTracker(){ uiUsed('tracker'); ui.tracker=!ui.tracker; store.set('hc-tracker',ui.tracker); trackerLabel(); toast(ui.tracker?'Motion tracker on.':'Motion tracker off.',true); }
-const trackerLabel=()=>{ const b=$('#btn-tracker'); if(b) b.textContent=ui.tracker?'Tracker on':'Tracker off'; };
+function toggleTracker(){ uiUsed('tracker'); ui.tracker=!ui.tracker; store.set('hc-tracker',ui.tracker); trackerLabel(); toast(G&&G.side==='swarm'?(ui.tracker?'Hive Sense on.':'Hive Sense off.'):(ui.tracker?'Motion tracker on.':'Motion tracker off.'),true); }
+const trackerLabel=()=>{ const b=$('#btn-tracker'); if(b) b.textContent=(G&&G.side==='swarm'?'Sense ':'Tracker ')+(ui.tracker?'on':'off'); };
 
 /* ---- acid blood: a Swarm creature that dies spatters acid on soldiers next to it and leaves a burning pool ---- */
 function splashAcid(e){
@@ -342,6 +343,7 @@ function updateBodies(dt){ const B=SQUAD.body;
       if(!G.ents.some(e=>!e.dead&&((e.def&&e.def.grafter&&e.graft===b)||(e.type==='egg'&&e.target===b)))) callGrafter(b);
       continue; }
     b.claim=0;
+    if(G.side==='swarm'&&G.swarm.cfg.manualHaul&&!b.ordered) continue;   /* swarm.manualHaul (the training): a body only goes home once you gave the order (H) */
     /* lying right at the foot of a hive already (a soldier fell next to it), or on the creep of a wall tunnel: the nest takes it at once.
        Anywhere else on the creep it is carried on, up to the hive itself. */
     if(!b.carrier&&!b.avatarBody){ const h=nearestOf(b,isNest); if(h&&(h.type==='hive'?gapTo(b,h)<TILE*1.2:(creepAt(b.x,b.y)>CREEP.at||dist(b,h)<((h.creepR||2)+1.5)*TILE)&&dist(b,h)<((h.creepR||2)+1.5)*TILE)){ bodyHome(b,h,null); continue; } }

@@ -59,11 +59,14 @@ function swarmRight(x,y){ let us=selSwarm(); if(!us.length&&avatarAlive()&&G.ava
   if(t){ for(const u of us){ freeFromJobs(u); u.role='wave'; u.post=null; u.target=t; u.order={type:'attack',target:t}; u.path=null; } SFX.play('attack'); G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; startFollow(); return; }
   for(const u of us){ freeFromJobs(u); u.role='brood'; u.mine=true; u.target=null; u.post={x,y}; }
   moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; startFollow(); }   /* the camera follows the squad you steer */
-/* H: the waiting brood (or your selection) goes out to fetch the bodies lying in the field */
-function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood()).filter(u=>!u.haul); const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
+/* H: your selection goes out to fetch the bodies lying in the field; with nothing selected, the waiting brood,
+   and if none is waiting, your brood out in the field (first the ones without a fight, then the ones still fighting) */
+function idleBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.boss&&!e.def.grafter&&(e.role==='brood'||(e.role==='wave'&&e.mine))&&!e.target&&!e.claim&&!e.haul); }
+function fieldBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&e.mine&&!e.avatar&&e.role==='wave'&&!e.claim&&!e.haul); }
+function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood().filter(u=>!u.claim).length?myBrood():idleBrood().length?idleBrood():fieldBrood()).filter(u=>!u.haul);   /* last resort: your brood still fighting out there */ const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
   if(!bodies.length){ toast('No fallen to bring home right now.',true); return; } if(!us.length){ toast('Nobody is free to fetch them.'); return; }
   let n=0; for(const b of bodies){ const pool=us.filter(u=>!u.claim); if(!pool.length) break;
-    const c=pool.reduce((a,u)=>dist(u,b)<dist(a,b)?u:a); freeFromJobs(c); c.claim=b; c.claimMode='haul'; c.target=null; c.order=null; n++;
+    const c=pool.reduce((a,u)=>dist(u,b)<dist(a,b)?u:a); freeFromJobs(c); b.ordered=true; c.claim=b; c.claimMode='haul'; c.target=null; c.order=null; n++;
     const g=us.filter(u=>!u.claim); if(g.length){ const e=g.reduce((a,u)=>dist(u,b)<dist(a,b)?u:a); e.claim=b; e.claimMode='guard'; e.target=null; e.order=null; } }
   G.selDirty=true; say('The Brood',`We go to bring ${n} of the fallen home.`,'swarm'); }
 function setRally(x,y){ const f=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(!f) return; x=(f.x+.5)*TILE; y=(f.y+.5)*TILE;
@@ -113,7 +116,7 @@ function swarmHud(){ $('#r-salvage').textContent=Math.floor(G.swarm.biomass); co
 function setupSideHud(){ const sw=swarmSide(), lbl=(id,t)=>{ const el=$(id); if(el){ const l=el.closest('.res').querySelector('.lbl'); if(l) l.textContent=t; } };
   lbl('#r-salvage',sw?'Biomass':'Salvage'); lbl('#r-supply',sw?'Brood':'Supply'); lbl('#r-troops',sw?'Swarm':'Troops');
   $('#r-troops-wrap').dataset.tip=sw?'The Swarm on the field|Your brood, the hive guards and everything that hatched on its own.':'Troops|';
-  document.body.classList.toggle('as-swarm',sw); }
+  document.body.classList.toggle('as-swarm',sw); if(typeof trackerLabel==='function') trackerLabel(); }
 const SWARM_HINT='You are the Brood. Drag to select swarm units and <kbd>Right-click</kbd> to move them; with nothing selected, right-click calls the brood together. <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> hatch (click a hive to hatch there), <kbd>A</kbd> + click attacks, <kbd>H</kbd> brings the fallen home.';
 /* the Lunar Corps as the computer: a squad answers when one of its buildings or soldiers nearby is hit */
 function corpsMove(us,x,y,mode){ for(const u of us){ u.home=null; u.stance=null; } moveGroup(us,x,y,mode); }
@@ -130,3 +133,46 @@ function corpsRaid(g,n,who,text){ const q=ptWorld('Q')||{x:0,y:0}, h=hives().sor
   const team=g.corps().filter(u=>!u.def.builder&&!u.def.heal).sort((a,b)=>dist(a,h)-dist(b,h)).slice(0,g.n(n)); const med=g.corps().find(u=>u.def.heal); if(med&&team.length>=3) team.push(med);
   if(!team.length) return; g.say(who,text); g.orderCorps(team,{x:Math.floor(h.x/TILE),y:Math.floor(h.y/TILE)},'amove');
   g.brood_say('They are coming for a nest. Call the brood home.'); G.pings.push({x:h.x,y:h.y,t:0,col:'#ff5a4f'}); }
+
+/* ---------- Hive Sense: the Swarm's own tracker (K, or the Sense button) ----------
+   The brood feels the warm bodies of the Lunar Corps around your selection (or around the gathering point, with nothing selected).
+   red = a soldier · orange = easy prey: a soldier alone or in a small knot (at most aloneMax soldiers and guns within alone tiles),
+   or a drill soldier lured out of his ring (training) · yellow = a fallen soldier or carcass in the field, waiting for H.
+   It beats like a heart, faster the closer the nearest soldier is.
+   HIVE_SENSE: range = tiles it reaches · alone / aloneMax = what counts as easy prey · size = radius on screen (px). */
+const HIVE_SENSE = { range:30, alone:6, aloneMax:2, size:64 };
+function senseRef(){ const us=selSwarm(); if(us.length) return { x:us.reduce((s,u)=>s+u.x,0)/us.length, y:us.reduce((s,u)=>s+u.y,0)/us.length };
+  if(G.swarm.rally) return G.swarm.rally; return { x:G.cam.x+ui.vw/2, y:G.cam.y+(ui.vh-ui.hudH)/2 }; }
+/* a soldier who is easy prey: lured out of a drill ring, or alone / in a small knot */
+function easyPrey(e){ if(e.drill&&e.drill.r&&Math.hypot(e.x-e.drill.x,e.y-e.drill.y)>e.drill.r) return true;
+  if(e.drill) return false;   /* inside his ring he cannot fall */
+  const R=HIVE_SENSE.alone*TILE; let n=0;
+  for(const o of G.ents){ if(o.dead||o.faction!=='corps'||(o.kind==='unit'&&o.downed)) continue; if(!(o.kind==='unit'||(o.kind==='building'&&o.def&&o.def.damage))) continue; if(Math.hypot(o.x-e.x,o.y-e.y)<R&&++n>HIVE_SENSE.aloneMax) return false; }
+  return true; }
+function senseContacts(ref){ const R=HIVE_SENSE.range*TILE, out=[];
+  for(const e of G.ents){ if(e.dead) continue; let kind=null;
+    if(e.kind==='unit'&&e.faction==='corps'){ if(e.def.cloak&&!(e.revealT>0)) continue; kind=e.downed?'fallen':easyPrey(e)?'easy':'soldier'; }
+    else if(e.kind==='body'&&!e.home&&!e.carrier) kind='fallen';
+    if(!kind) continue; const d=Math.hypot(e.x-ref.x,e.y-ref.y); if(d<R) out.push({e,d,a:Math.atan2(e.y-ref.y,e.x-ref.x),kind}); }
+  return out; }
+function drawHiveSense(now){ const H=HIVE_SENSE, S=H.size, cx=ui.vw-S-22, cy=ui.vh-ui.hudH-S-22, ref=senseRef(), cs=senseContacts(ref), R=H.range*TILE;
+  const live=cs.filter(c=>c.kind!=='fallen'), near=live.length?Math.min(...live.map(c=>c.d)):null, k=near==null?1:near/R, period=0.45+1.4*k;
+  const beat=((now/1000)%period)/period, pulse=beat<0.12?beat/0.12:Math.max(0,1-(beat-0.12)/0.5);   /* lub: a quick swell, then it eases off */
+  ctx.save();
+  const g=ctx.createRadialGradient(cx,cy,4,cx,cy,S); g.addColorStop(0,`rgba(70,24,90,${0.75+0.15*pulse})`); g.addColorStop(1,'rgba(14,6,20,.9)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,S,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=`rgba(195,139,255,${0.35+0.35*pulse})`; ctx.lineWidth=1.5; for(const r of [S/3,S*2/3]){ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); }
+  ctx.strokeStyle=`rgba(166,255,74,${0.5+0.4*pulse})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy,S,0,Math.PI*2); ctx.stroke();
+  if(beat<0.6){ ctx.strokeStyle=`rgba(166,255,74,${0.5*(1-beat/0.6)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy,S*beat/0.6,0,Math.PI*2); ctx.stroke(); }   /* the beat ripples outwards */
+  const col={ soldier:'255,90,79', easy:'255,170,40', fallen:'255,226,90' };
+  for(const c of cs){ const px=cx+Math.cos(c.a)*c.d/R*S, py=cy+Math.sin(c.a)*c.d/R*S, rgb=col[c.kind], big=c.kind==='easy'?1.5:1;
+    ctx.fillStyle=`rgba(${rgb},${0.25+0.25*pulse})`; ctx.beginPath(); ctx.arc(px,py,(4+3*pulse)*big,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=`rgba(${rgb},.95)`; ctx.beginPath(); ctx.arc(px,py,2*big,0,Math.PI*2); ctx.fill(); }
+  ctx.fillStyle='#a6ff4a'; ctx.beginPath(); ctx.arc(cx,cy,2.5,0,Math.PI*2); ctx.fill();
+  const easy=cs.filter(c=>c.kind==='easy').length, fallen=cs.filter(c=>c.kind==='fallen').length;
+  const txt=near==null?(fallen?`${fallen} FALLEN`:'NOTHING WARM'):easy?`${easy} EASY · ${Math.round(near/TILE*2)} M`:`${Math.round(near/TILE*2)} M`;
+  ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(txt,cx+1,cy+S+15);
+  ctx.fillStyle=easy?'#ffaa28':near!=null&&near<6*TILE?'#ff5a4f':'#c38bff'; ctx.fillText(txt,cx,cy+S+14);
+  ctx.fillStyle='#000'; ctx.fillText('HIVE SENSE',cx+1,cy-S-5); ctx.fillStyle='#a6ff4a'; ctx.fillText('HIVE SENSE',cx,cy-S-6);
+  ctx.restore();
+  if(near!=null&&!G.paused&&now/1000>(G.senseBeat||0)){ G.senseBeat=now/1000+period; SFX.play('heartbeat'); } }

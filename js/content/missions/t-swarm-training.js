@@ -14,8 +14,8 @@
      refill = seconds before a dropship brings a replacement, flight = seconds the dropship takes */
 const FIRST_HUNGER = { preyEvery:12, prey:2, huskMax:4, swarmMax:30, drill:['trooper','trooper','trooper','engineer'], drillHp:2, drillDmg:0.5, drillRise:0.6, drillHeal:0.06,
   ring:6, chaseR:12, chaseFoes:2, chaseTime:15, refill:10, flight:12 };
-const PREY_AT = {x:36,y:24}, DRILL_AT = {x:19,y:20}, GRAZE_AT = {x:16,y:9}, LURE_AT = {x:9,y:24}, PAD_AT = {x:16,y:22}, SIDE_AT = {x:11,y:21};
-   /* DRILL_AT: the outpost (Q) · LURE_AT: the lone Relay Tower outside the ring · PAD_AT: where the dropship lands · SIDE_AT: the way round for the second team */
+const PREY_AT = {x:36,y:24}, DRILL_AT = {x:19,y:20}, GRAZE_AT = {x:16,y:9}, LURE_AT = {x:9,y:26}, PAD_AT = {x:16,y:22}, SIDE_AT = {x:11,y:21};
+   /* DRILL_AT: the outpost (Q) · LURE_AT: the lone Relay Tower outside the ring (on the build site at 8,25) · PAD_AT: where the dropship lands · SIDE_AT: the way round for the second team */
 function preyStanding(g){ return (g.vars.prey||[]).some(u=>!u.dead&&!u.downed); }
 /* soldiers on their way to becoming Husks, or already Husks */
 function turnedCount(){ return G.ents.filter(e=>!e.dead&&((e.kind==='unit'&&e.type==='husk')||(e.type==='cocoon'&&e.husk)||(e.kind==='body'&&!e.fauna))).length; }
@@ -37,6 +37,11 @@ function drillSquad(g){ const F=FIRST_HUNGER, tiles=freeTilesNear(DRILL_AT.x,DRI
 /* the drill squad's brain, every tick: the Engineer goes out to mend the lone tower, a soldier chases a lone biter, the rest hold the ring;
    who leaves the ring is EXPOSED; who falls outside it counts as lured (g.vars.lured); the dropship tops the squad up to its full strength */
 function drillThink(g){ const F=FIRST_HUNGER, dt=g.time-(g.vars.drillT??g.time); g.vars.drillT=g.time; const c=drillCentre(), tower=g.vars.lureTower;
+  /* the lone tower cannot fall: at 1 HP it goes DOWN (nobody can bite it any more, so the brood lets go) until it is mended to half again */
+  if(tower&&!tower.dead){ if(!tower.down&&tower.hp<=1.01){ tower.down=true; tower.invuln=true; G.fx.push({k:'text',x:tower.x,y:tower.y-34,t:1.6,max:1.6,txt:'DOWN',col:'#8a8f9c'});
+      for(let i=0;i<14;i++) G.fx.push({k:'spark',x:tower.x+rand(-10,10),y:tower.y-14,vx:rand(-80,80),vy:rand(-110,-20),t:0.6,max:0.6,col:'#ffd23f'});
+      if(!g.vars.saidDown){ g.vars.saidDown=true; g.brood_say('Their tower is dead. Nothing left to bite: wait for the mender.'); } }
+    else if(tower.down&&tower.hp>=tower.maxHp*0.5){ tower.down=false; tower.invuln=false; G.fx.push({k:'text',x:tower.x,y:tower.y-34,t:1.2,max:1.2,txt:'ONLINE',col:'#5fe3b0'}); } }
   const home=u=>{ u.task=null; u.chase=null; u.target=null; u.order={type:'move',x:u.dhome.x,y:u.dhome.y}; setPath(u,u.dhome.x,u.dhome.y); };
   for(const u of g.vars.drill){
     if(u.dead||u.downed){ if(!u.counted){ u.counted=true; if(u.lastOut||!inRing(u)){ g.vars.lured=(g.vars.lured||0)+1; } } continue; }   /* fell outside the ring: lured */
@@ -79,12 +84,12 @@ TRAINING.swarm = {
   ],
   start:{ camera:{x:31,y:9}, rally:{x:30,y:9},
     units:[ ['trooper',{x:36,y:24},2] ], hives:['a','b','c'] },
-  swarm:{ hatchToBrood:true, biomass:120, rate:1.0, guardMax:1, guardEvery:30, aggro:0, waves:null, cap:24, unlock:{ spitter:0, brute:0 } },
+  swarm:{ hatchToBrood:true, manualHaul:true, biomass:120, rate:1.0, guardMax:1, guardEvery:30, aggro:0, waves:null, cap:24, unlock:{ spitter:0, brute:0 } },
   objectives:[ { id:'tut', text:'Training' } ],
   triggers:[
     { when:g=>g.time>0.05, do:g=>{ g.vars.prey=g.corps().filter(u=>Math.hypot(u.x-(36.5*TILE),u.y-(24.5*TILE))<4*TILE); for(const u of g.corps()){ u.order={type:'hold'}; u.stance='hold'; }
         g.place('sentry','Q',3,-2); const s=G.map.sites.slice().sort((a,b)=>Math.hypot(a.x-19,a.y-20)-Math.hypot(b.x-19,b.y-20))[0]; g.vars.relaySite={x:s.x,y:s.y}; makeBuilding('relay','corps',s.x,s.y,true);
-        const t=g.place('relay',LURE_AT); if(t){ t.lure=true; t.noDestroy=true; g.vars.lureTower=t; }   /* the lone tower outside the ring: it never falls, their Engineer comes to mend it */
+        const t=makeBuilding('relay','corps',8,25,true); t.lure=true; t.noDestroy=true; g.vars.lureTower=t;   /* the lone tower outside the ring, on the build site: it never falls, their Engineer comes to mend it */
         g.vars.pad=g.pad(PAD_AT,'drill'); drillSquad(g); } },
     /* a steady supply of prey: once the soldiers in the open are all down, a new pair wanders in after FIRST_HUNGER.preyEvery seconds,
        so the hunt, the fallen and the tactics can be practised again and again */
@@ -106,16 +111,16 @@ TRAINING.swarm = {
       { keys:['A'], say:'Not everything here is theirs. Grazers, the lunar fauna, wander the basin: soft meat to start on. Press [A] and click next to one (or select brood and [Right-click] it): the brood goes to feed.', obj:'Kill a grazer (A + click)', markLabel:'Grazer',
         setup:g=>{ const gz=grazerTarget(g); g.vars.gz=gz; if(gz){ g.marker('tut',{x:gz.x/TILE-0.5,y:gz.y/TILE-0.5},'Grazer'); g.reveal({x:gz.x/TILE,y:gz.y/TILE},5,12); centerOn(gz.x,gz.y); } },
         done:()=>G.ents.some(e=>!e.dead&&((e.kind==='body'&&e.fauna)||(e.type==='cocoon'&&e.hatchType==='bloater')||e.type==='bloater')) },
-      { keys:['H'], say:'We do not tear a body apart: a whole one is worth more. Press [H]: the brood drags the carcass home to the creep of a hive.', obj:'Drag the carcass home (H)',
-        setup:g=>{ g.vars.fed0=G.stats.fed||0; }, done:g=>(G.stats.fed||0)>g.vars.fed0||G.ents.some(e=>!e.dead&&e.type==='bloater') },
+      { keys:['H'], say:'We do not tear a body apart: a whole one is worth more. It stays where it fell until we fetch it. Press [H]: the brood drags the carcass home to the creep of a hive.', obj:'Drag the carcass home (H)',
+        done:()=>G.ents.some(e=>!e.dead&&((e.kind==='body'&&e.fauna&&e.home)||(e.type==='cocoon'&&e.hatchType==='bloater')||e.type==='bloater')) },
       { say:'On the creep an egg opens. A Grafter crawls out, latches onto the carcass and remakes it. A grazer becomes a Bloater: slow and swollen with acid, and when it dies it bursts and burns everything around it. Watch.', obj:'Watch the grazer become a Bloater',
         done:g=>G.ents.some(e=>!e.dead&&e.type==='bloater')||g.time>g.vars.tutStart+60 },
       { keys:['A'], say:'Now their soldiers. Two soft ones stand in the open. Press [A] and click them: everything waiting (or what you selected) goes to feed.', obj:'Attack the two soldiers (A + click)', mark:PREY_AT, markLabel:'Prey',
         setup:g=>{ if(!preyStanding(g)) newPrey(g,false); g.reveal(PREY_AT,5,10); }, done:g=>g.vars.prey.every(u=>u.dead||u.downed) },
-      { keys:['H'], say:'We do not finish the fallen. They bleed out. Then press [H]: the brood carries them home.', obj:'Bring a body home (H)',
-        setup:g=>{ g.vars.fed0=G.stats.fed||0; }, done:g=>(G.stats.fed||0)>g.vars.fed0 },
+      { keys:['H'], say:'We do not finish the fallen. They bleed out, and the body stays where it fell until we fetch it. Press [H]: the brood carries them home.', obj:'Bring a body home (H)',
+        done:()=>G.ents.some(e=>!e.dead&&((e.kind==='body'&&!e.fauna&&e.home)||(e.type==='cocoon'&&e.husk)||e.type==='husk')) },
       { say:'The Grafter does the same with a soldier, but what grows out of him is something else. Watch.', obj:'Watch the Grafter turn the body',
-        setup:g=>{ g.vars.c0=G.stats.cocoons||0; }, done:g=>G.ents.some(e=>!e.dead&&e.type==='cocoon'&&e.husk)||G.ents.some(e=>!e.dead&&e.type==='husk') },
+        done:()=>G.ents.some(e=>!e.dead&&((e.type==='cocoon'&&e.husk)||e.type==='husk')) },
       { say:`The cocoon beats faster and faster. What crawls out is a Twitcher, weak while it turns; it molts once and becomes a Husk, a warrior. It joins the brood at the gathering point and goes where you send it. Soldiers keep wandering into the open until ${FIRST_HUNGER.huskMax} of them are turned. After that you only get more by luring them out of their outpost, and never more than ${FIRST_HUNGER.huskMax} Husks at once: to make room, spend some in a fight.`, obj:'Watch it grow',
         done:g=>G.ents.some(e=>e.type==='husk'&&!e.dead&&e.stage>=1)||g.time>g.vars.tutStart+45 },
       ...topbarSteps('swarm'),
