@@ -232,6 +232,7 @@ function medicThink(u,dt){
     const lead=squad.length ? squad.reduce((a,b)=>dist(u,a)<dist(u,b)?a:b) : null;
     if(!lead){ u.order=null; u.home={x:u.x,y:u.y}; return; }
     if(dist(u,lead)>2*TILE) goTo(u,lead.x,lead.y,dt,0.6);
+    u.home={x:u.x,y:u.y};   /* with the squad: if this order ends, he stays here instead of walking back to where he last stood */
     return; }
   if(u.order && (u.order.type==='move'||u.order.type==='amove')){ const mo=u.order; if(walkOrder(u,dt)&&u.order===mo){ u.order=null; u.home={x:u.x,y:u.y}; } return; }
   if(t && !inRange) goTo(u,t.x,t.y,dt,0.6);

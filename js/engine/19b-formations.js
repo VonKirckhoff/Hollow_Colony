@@ -16,7 +16,7 @@
    A new formation or spacing given on the march is taken up on the way: the guide does not stop.
    At the end every soldier gets his final place around the destination: the squad takes the spot you clicked, and a soldier
    whose place falls in the rock steps aside to the nearest free spot (the shape only shifts away when most of it does not fit). */
-const FORMATION = { maxRadius:4.5, spacing:24, minGap:14, march:0.9, catchUp:2, wait:1.5, slowest:0.4, turn:1.8, file:0.9, stay:0.5 };   /* stay: share of the places that must fit around the clicked spot; below that the whole shape shifts to where it fits */
+const FORMATION = { maxRadius:4.5, spacing:24, minGap:14, march:0.9, catchUp:2, wait:1.5, slowest:0.4, turn:1.8, file:0.9, stay:0., standoff:0.5, engageAt:2 };   /* standoff: tiles beyond his fighters' usual range where a squad marching up to a target stops and attacks; engageAt: closer than that many tiles past the standoff it attacks at once */   /* stay: share of the places that must fit around the clicked spot; below that the whole shape shifts to where it fits */
 /* Tactical formations (Z circle, X wedge, V square, I line, W zigzag). Support units (medics, engineers, escorts)
    take the protected centre (behind the line in a line or zigzag); fighters form the outline, with Pyros and Gunners at the tip of the wedge.
    A line or zigzag faces the nearest enemy in sight when you form it. Hold the right mouse button and drag to choose
@@ -165,7 +165,7 @@ function pathDirs(S,path){ const first=path.find(p=>Math.hypot(p.x-S.x,p.y-S.y)>
 /* Send a squad in formation to (wx,wy). face: the direction it should face there (right-drag), or null: a shape with a front
    faces the way it walked in, a circle or square keeps its orientation. A short step re-forms in place. */
 function marchTo(units,wx,wy,type,face){
-  const f=units[0].formation; f.seq=(f.seq||0)+1;
+  const f=units[0].formation; f.seq=(f.seq||0)+1; f.engaged=null;
   const F=formPlaces(units,f.shape,formSpacing(f)), turns=TURNS.has(f.shape), was=f.march;
   const S=squadSpot(units,f,F,f.dir), far=Math.hypot(wx-S.x,wy-S.y)>TILE*1.2;
   if(!far){ f.march=null; const dir=face!=null?face:f.dir; return finishPlace(f,units,{x:wx,y:wy},dir,type); }
@@ -205,11 +205,12 @@ function marchSpots(f,us){ const m=f.march, c=Math.cos(m.head), s=Math.sin(m.hea
 /* the members on this march: alive, standing, and still walking under its orders */
 function marchMembers(f){ return G.ents.filter(e=>e.kind==='unit'&&!e.dead&&!e.downed&&e.formation===f&&e.order&&e.order.form===f&&e.order.seq===f.seq); }
 /* every frame: move the guide of every marching formation */
-function marchFormations(dt){ const seen=new Set();
+function marchFormations(dt){ afterEngage(); const seen=new Set();
   for(const e of G.ents){ const f=e.kind==='unit'&&!e.dead&&e.formation; if(!f||!f.march||seen.has(f)) continue; seen.add(f); marchStep(f,dt); } }
 function marchStep(f,dt){ const m=f.march, us=marchMembers(f);
   if(!us.length){ if(!m.done){ f.at={x:m.x,y:m.y}; f.dir=m.head; } f.march=null; return; }   /* everyone got other orders: the formation stands where its guide stopped */
   if(m.done) return;   /* arrived: the members walk to their final places */
+  if(m.attack&&alive(m.attack)&&us.some(u=>u.target===m.attack)){ m.done=true; engageTarget(formMembers(f),m.attack); return; }   /* the target is within reach of the front: the attack starts */
   const spots=marchSpots(f,us);
   let lag=0, fighting=false;
   for(const u of us){ if(u.target&&u.order.type==='amove'){ fighting=true; continue; }   /* on an attack-move the squad stops to fight */
@@ -225,11 +226,13 @@ function marchStep(f,dt){ const m=f.march, us=marchMembers(f);
   if(TURNS.has(f.shape)&&m.i<m.path.length){ const w=m.path[m.i]; if(Math.hypot(w.x-m.x,w.y-m.y)>6){ let d=angTo(m,w)-m.head; d=Math.atan2(Math.sin(d),Math.cos(d));
       const mx=FORMATION.turn*dt*Math.max(m.k,0.5); m.head+=clamp(d,-mx,mx); } }   /* a shape with a front turns gently at a corner */
   const lt=m.trail[m.trail.length-1]; if(Math.hypot(m.x-lt.x,m.y-lt.y)>8){ m.trail.push({x:m.x,y:m.y}); if(m.trail.length>200) m.trail.shift(); }
-  if(m.i>=m.path.length){ m.done=true; settleFormation(f,formMembers(f).filter(u=>u.formSeq===f.seq),m.dest,m.endDir,m.type,true); }
+  if(m.i>=m.path.length){ m.done=true;
+    if(m.attack&&alive(m.attack)){ engageTarget(formMembers(f),m.attack); return; }   /* marched up to the target in formation: now the attack */
+    settleFormation(f,formMembers(f).filter(u=>u.formSeq===f.seq),m.dest,m.endDir,m.type,true); }
 }
 /* A member walking under a formation order (instead of plain stepMove). Returns true when he has arrived. */
 function walkOrder(u,dt){ const o=u.order, f=o.form;
-  if(f&&(u.formation!==f||o.seq!==f.seq)){ u.order=null; u.path=null; return false; }   /* an order from an older line-up: dropped (he goes to his current place) */
+  if(f&&(u.formation!==f||o.seq!==f.seq)){ u.order=null; u.path=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; return false; }   /* an order from an older line-up: dropped (he goes to his current place; where he stands is his spot now, not where he last stood still) */
   const m=f&&f.march;
   if(m&&!m.done){ const p=(m.spots&&m.spots.get(u.id))||{x:m.x,y:m.y}, d=Math.hypot(p.x-u.x,p.y-u.y);
     o.pace=Math.min(speedOf(u),m.speed*m.k+FORMATION.catchUp*d);   /* keep up with the guide, and catch up when behind */
@@ -243,7 +246,7 @@ function walkOrder(u,dt){ const o=u.order, f=o.form;
 function setFormation(shape){
   const us=myUnits(); if(us.length<2){ toast('Select at least two units for a formation.',true); return; }
   const cur=us[0].formation, same=!!cur&&us.every(u=>u.formation===cur), m=same&&marching(cur)?cur.march:null;
-  if(same && cur.shape===shape){ us.forEach(u=>{ u.formation=null; u.slot=null; }); rememberGroupForm(us,null);
+  if(same && cur.shape===shape){ us.forEach(u=>{ u.formation=null; u.slot=null; u.home={x:u.x,y:u.y}; }); rememberGroupForm(us,null);
     if(m) moveGroup(us,m.dest.x,m.dest.y,m.type);   /* released on the march: they walk on to the same spot, without a formation */
     toast('Formation released.',true); G.selDirty=true; return; }
   if(shape==='custom'&&!customForm()){ toast('Nothing saved yet: set your squad up the way you like and press F.',true); return; }
@@ -280,7 +283,7 @@ function groupFormUp(us,f){ us.forEach(u=>u.formation=f); f.march=null; reformSq
    back to their old place afterwards. Two or more moved together keep the shape between them. Called with the whole selection. */
 function leaveFormation(sel){ const byForm=new Map(); for(const u of sel) if(u.formation){ if(!byForm.has(u.formation)) byForm.set(u.formation,[]); byForm.get(u.formation).push(u); }
   for(const [f,us] of byForm){ const members=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.formation===f); if(members.every(m=>us.includes(m))) continue;
-    if(us.length>1){ const nf={...f,march:null,seq:0}; us.forEach(u=>u.formation=nf); } else us.forEach(u=>{ u.formation=null; u.slot=null; u.rejoin=false; }); } }
+    if(us.length>1){ const nf={...f,march:null,seq:0,engaged:null}; us.forEach(u=>u.formation=nf); } else us.forEach(u=>{ u.formation=null; u.slot=null; u.rejoin=false; }); } }
 /* where a soldier belongs in his formation now (it follows the squad when it moves on without him), or null */
 function formationSpot(u){ const f=u.formation; if(!f||!u.slot||u.faction!=='corps') return null;
   if(u.formSeq!=null&&u.formSeq!==f.seq) return null;   /* his place belongs to an older line-up */
@@ -297,7 +300,34 @@ function backInFormation(u){ u.order=null; u.path=null; u.target=null; const f=u
   if(u.formSeq===f.seq&&!marching(f)) return;   /* nothing moved while he was down: his place is still his */
   reformSquad(mates,f,marching(f)?f.march:null); }
 /* an attack you order on one enemy: the squad leaves its spot; after the fight they stay where they are (no walking back) */
-function formationsEngage(units){ for(const u of units){ const f=u.formation; if(f){ f.march=null; f.at=null; } } }
+/* an attack you order on one enemy: the squad leaves its spot to fight; once the target is gone the squad forms up again where it stands */
+function formationsEngage(units,t){ for(const u of units){ const f=u.formation; if(f){ f.march=null; f.at=null; f.engaged=t||null; } } }
+/* the attack itself: fighters go for the target, Medics follow the squad, escorts stay put */
+function engageTarget(units,t){ formationsEngage(units,t); const squad=units.filter(u=>!u.def.heal&&!u.def.escort);
+  for(const u of units){ if(u.def.escort){ u.order=null; continue; } if(u.def.heal){ u.order={type:'support',squad}; u.path=null; continue; }
+    u.order={type:'attack',target:t}; u.target=t; u.path=null; u.goal=null; } }
+/* A whole squad in formation ordered to attack something out of reach marches up to it in its shape (an attack-move: it stops
+   for whatever attacks it on the way) and only attacks once it stands at its fighters' range. Returns false when it attacks at once. */
+function attackInFormation(units,t,type){ const f=sharedForm(units); if(!f||!t||!formMembers(f).every(m=>units.includes(m))) return false;
+  const fighters=units.filter(u=>u.def.damage&&!u.def.heal&&!u.def.escort); if(!fighters.length) return false;
+  const rs=fighters.map(u=>u.def.range+(u.rangeBonus||0)).sort((a,b)=>a-b), reach=(rs[Math.floor(rs.length/2)]+FORMATION.standoff)*TILE;   /* the usual range in this squad */
+  const edge=p=>Math.max(0,Math.hypot(p.x-t.x,p.y-t.y)-(t.kind==='building'&&t.size?t.size*TILE/2:t.r||0));
+  const F=formPlaces(units,f.shape,formSpacing(f)), S=squadSpot(units,f,F,f.dir);
+  if(edge(S)<=reach+FORMATION.engageAt*TILE) return false;   /* close enough already */
+  const path=findPath(S.x,S.y,t.x,t.y); if(!path||!path.length) return false;
+  let stop=null, prev={x:S.x,y:S.y};   /* the first spot on the way from where the target is within reach */
+  for(const p of path){ if(edge(p)<=reach){ const a=edge(prev), b=edge(p), k=a>b?clamp((a-reach)/(a-b),0,1):1; stop={x:prev.x+(p.x-prev.x)*k, y:prev.y+(p.y-prev.y)*k}; break; } prev=p; }
+  if(!stop||!walkableP(stop.x,stop.y)) return false;
+  f.engaged=null; marchTo(units,stop.x,stop.y,type,TURNS.has(f.shape)?angTo(stop,t):null);
+  if(f.march) f.march.attack=t; else { engageTarget(units,t); }
+  return true; }
+/* every frame: a squad whose target is gone forms up again where it stands (whoever is still busy joins in when done) */
+function afterEngage(){ const seen=new Set();
+  for(const e of G.ents){ const f=e.kind==='unit'&&!e.dead&&e.formation; if(!f||!f.engaged||seen.has(f)) continue; seen.add(f);
+    if(alive(f.engaged)&&!f.engaged.hidden) continue;
+    f.engaged=null; const us=formMembers(f); if(us.length<2) continue;
+    for(const u of us){ if(u.order&&(u.order.type==='support'||(u.order.type==='attack'&&!alive(u.order.target)))){ u.order=null; u.target=null; u.path=null; } }
+    reformSquad(us,f,null,false); } }
 /* right mouse held and dragged: the squad goes to where you pressed and faces the way you dragged */
 function canFace(){ const us=myUnits(); return us.length>1&&us[0].formation&&us.every(u=>u.formation===us[0].formation); }
 function moveFacing(wx,wy,dir){ const us=myUnits(); if(!canFace()) { smartCommand(wx,wy); return; }

@@ -27,8 +27,8 @@ function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } c
   const squad=units.filter(u=>!u.def.heal), medics=units.filter(u=>u.def.heal);
   for(const u of units){ u.stance = u.def.damage&&!u.def.heal ? 'attack' : null; u.quiet=false; }   /* an attack order also lifts hold fire */   /* the attack stance stays on for later moves; Medics drop a defensive stance and follow */
   if(!t && squad.length && sharedForm(units)) moveGroup(units,wx,wy,'amove');   /* a squad in formation attack-moves as one body: its Medics walk in their place and heal on the way */
-  else { if(t) formationsEngage(units);
-    if(t){ for(const u of squad){ u.order={type:'attack',target:t}; u.target=t; } } else if(squad.length) moveGroup(squad,wx,wy,'amove');
+  else if(t&&squad.length){ if(!attackInFormation(units,t,'amove')) engageTarget(units,t); }   /* a squad in formation marches up in its shape first, then attacks */
+  else { if(squad.length) moveGroup(squad,wx,wy,'amove');
     for(const u of medics){ if(squad.length){ u.order={type:'support',squad}; u.path=null; } else moveGroup([u],wx,wy,'move'); } }
   SFX.play('attack'); startFollow(); G.pings.push({x:wx,y:wy,t:2.4,col:'#ff5a4f'}); ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; }
 window.addEventListener('pointermove',e=>{

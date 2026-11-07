@@ -168,6 +168,8 @@ const DEV_HELP = {
   'FORMATION|catchUp':'How hard a soldier hurries back to his place on the march: extra speed (px/s) per pixel he is off his place, up to his own top speed.',
   'FORMATION|wait':'On the march: the guide slows down once someone is more than this many tiles off his place.',
   'FORMATION|slowest':'The guide never slows below this share of the march pace for a straggler (a new formation is taken up on the way). An attack-move still stops to fight.',
+  'FORMATION|standoff':'A squad in formation ordered to attack something far off marches up in its shape and stops where the target is within its fighters\' usual range (the median) plus this many tiles; then it attacks.',
+  'FORMATION|engageAt':'Attacking in formation: if the squad stands no more than this many tiles beyond that stopping distance, it attacks at once instead of marching up first.',
   'FORMATION|turn':'How fast a wedge, line, zigzag or your own formation turns at a corner of the path (radians per second).',
   'FORMATION|file':'In a narrow passage, soldiers whose place falls in the rock follow the guide in a file; this is the distance between them (× spacing).',
   'AURA|radius':'Captain: tiles around him where soldiers fight better.',

@@ -15,7 +15,7 @@ function cmdQuiet(){ const us=myUnits(); if(!us.length) return;
 /* H toggles: on = hold here and after every move; pressing it again (all already defensive) switches it off */
 function cmdHold(){ clearModes(); const us=myUnits();
   if(us.length && us.every(u=>u.stance==='hold')){ for(const u of us){ u.stance=null; if(u.order&&u.order.type==='hold') u.order=null; u.home={x:u.x,y:u.y}; } toast('Defensive off.',true); return; }
-  for(const u of us){ u.order={type:'hold'}; u.target=null; u.path=null; u.stance='hold'; } toast('Defensive: holding position.',true); }
+  for(const u of us){ u.order={type:'hold'}; u.target=null; u.path=null; u.stance='hold'; u.home={x:u.x,y:u.y}; } toast('Defensive: holding position.',true); }
 /* A: pick a target or spot (always, also when the squad is already aggressive). Pressing A again while picking cancels the pick.
    The attack stance itself is switched off with S (or replaced by H). */
 function cmdAttack(){ if(ui.amove){ clearModes(); return; } clearModes(); ui.amove=true; cv.classList.add('amove'); G.selDirty=true; }
@@ -57,7 +57,7 @@ function smartCommand(wx,wy){ if(G.side==='swarm'){ swarmRight(wx,wy); return; }
   const units=myUnits(); const blds=G.sel.filter(e=>e.kind==='building'&&e.faction==='corps');
   if(!units.length){ for(const b of blds) if(b.def.trains||b.def.reinforce){ b.rally={x:wx,y:wy}; b.rallyN=0; G.pings.push({x:wx,y:wy,t:2.2,col:'#5fe3b0'}); } return; }
   const t=entityAt(wx,wy,e=>e.kind!=='crate');
-  if(t && t.faction!=='corps' && t.faction!=='none'){ formationsEngage(units); const squad=units.filter(u=>!u.def.heal&&!u.def.escort); for(const u of units){ if(u.def.escort){ u.order=null; continue; } if(u.def.heal){ u.order={type:'support',squad}; u.path=null; continue; } u.order={type:'attack',target:t}; u.target=t; u.path=null; u.goal=null; }
+  if(t && t.faction!=='corps' && t.faction!=='none'){ if(!attackInFormation(units,t,'amove')) engageTarget(units,t);
     SFX.play('attack'); startFollow(); G.pings.push({x:t.x,y:t.y,t:2.4,col:'#ff5a4f'}); return; }
   if(t && t.faction==='corps' && t.kind==='building' && t.def.portable && t.built && t.hp>=t.maxHp && units.some(u=>u.def.builder&&!u.carry)){ packSentry(t); const rest=units.filter(u=>!u.def.builder); if(rest.length) moveGroup(rest,wx,wy,'move'); return; }
   if(t && t.faction==='corps' && t.kind==='building' && (t.hp<t.maxHp||!t.built)){ const eng=units.filter(u=>u.def.builder);
