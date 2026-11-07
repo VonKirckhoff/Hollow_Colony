@@ -5,11 +5,11 @@
    Hover a name to see what it does. Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
    loads; ↺ puts one value back, "Reset all" puts everything back. "Export" lists every change so you can copy it.
    Unit stats count for units that appear after the change; health is also adjusted on the units already on the map. */
-const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, FIRST_HUNGER, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, UNITS, BUILDINGS };
+const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, UNITS, BUILDINGS };
 const DEV_TABS = [
   { id:'live', name:'Live' }, { id:'mission', name:'Mission' },
   { id:'diff', name:'Difficulty', roots:['DIFFICULTY','SWARM_DIFF'] },
-  { id:'swarm', name:'Swarm', roots:['WAVES','PACK','HIVE_DEFENCE','TACTICS','CREEP','HUSK','EGG','MOLT','HIVE_DEATH','SWARM_PLAY','HIVE_SENSE','FIRST_HUNGER','AVATAR','BROOD_SURGE'] },
+  { id:'swarm', name:'Swarm', roots:['WAVES','PACK','HIVE_DEFENCE','TACTICS','CREEP','HUSK','EGG','MOLT','HIVE_DEATH','SWARM_PLAY','HIVE_SENSE','FIRST_HUNGER','BROOD_TACTICS','DEMO','AVATAR','BROOD_SURGE'] },
   { id:'squad', name:'Squad', roots:['SQUAD','FORMATION','REPAIR_SIDE','AURA','RISEN','VET_XP'] },
   { id:'fx', name:'Effects', roots:['FIRE','ANIM','SHOWCASE'] },
   { id:'units', name:'Units' } ];
@@ -41,7 +41,7 @@ function devChanged(key){ const t=devTarget(key); return t&&getP(t.obj,t.path)!=
 function devSaved(){ return store.get('hc-dev-tune',{}); }
 function devApplySaved(onlyMission){ for(const [k,v] of Object.entries(devSaved())){ if(onlyMission&&!k.startsWith('M:'+onlyMission.id+'|')) continue; if(!onlyMission&&k.startsWith('M:')&&!devAllMissions().some(m=>k.startsWith('M:'+m.id+'|'))) continue; try{ const t=devTarget(k); if(t) setP(t.obj,t.path,v); }catch(e){} } }
 devApplySaved();
-{ const sm=startMission; startMission=function(m){ devMissionOrig(m); devApplySaved(m); sm(m); devRender(); }; }
+{ const sm=startMission; startMission=function(m,opts){ devMissionOrig(m); devApplySaved(m); sm(m,opts); devRender(); }; }
 
 /* ---- the panel ---- */
 const dev={ tab:store.get('hc-dev-tab','live'), unit:'trooper', alpha:0, collapsed:false };

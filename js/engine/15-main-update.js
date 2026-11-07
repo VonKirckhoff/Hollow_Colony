@@ -27,4 +27,5 @@ function update(dt){
   G.fogT-=dt; if(G.fogT<=0){ G.fogT=0.15; computeFog(); }
   G.rescueT=(G.rescueT||0)-dt; if(G.rescueT<=0){ G.rescueT=2; rescueTrapped(); }
   G.trigT-=dt; if(G.trigT<=0){ G.trigT=0.25; runTriggers(); }
+  if(G.demo) updateDemo(dt);   /* Watch mode: the training plays itself (27b-demo.js) */
 }

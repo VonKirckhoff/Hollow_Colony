@@ -30,8 +30,8 @@ function buildCampaign(){
   buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
   const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete${sw?' · more to come':''}`;
-  const tr=TRAINING[sw?'swarm':'corps'], trRes=tr&&ui.progress.results[tr.id];
-  $('#mission-list').innerHTML=(tr?`<button class="mission training" type="button" data-mission="-1"><span class="num">00</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`:'')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=isUnlocked(i);
+  const trs=trainingsOf(sw?'swarm':'corps');
+  $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
 /* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
@@ -191,7 +191,9 @@ $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(typeof refreshContinue==='function') refreshContinue();
   b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress and the saved game erased.',true); });
 let briefIdx=0;
-function briefMission(i){ return i<0?TRAINING[ui.campSide==='swarm'?'swarm':'corps']:campList()[i]; }
+/* the trainings of one side, in order (The First Hunger, then Brood Tactics …) */
+function trainingsOf(side){ return Object.values(TRAINING).filter(t=>(t.side||'corps')===side); }
+function briefMission(i){ return i<0?trainingsOf(ui.campSide==='swarm'?'swarm':'corps')[-1-i]:campList()[i]; }
 function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swarm';
   $('#b-eyebrow').textContent=`${sw?'THE SWARM · ':''}${m.training?'TRAINING':'MISSION '+(i+1)} · ${MAPS[m.map].name.toUpperCase()}`; $('#s-brief').classList.toggle('swarm',sw); $('#b-start').textContent=sw?'Wake':'Deploy'; $('#b-title').textContent=m.title;
   $('#b-text').innerHTML=m.briefing.map(p=>`<p>${p}</p>`).join('');
@@ -200,8 +202,10 @@ function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swar
   if(sw) $('#b-text').innerHTML+=`<p class="rdim">Difficulty makes the Lunar Corps tougher: Easy ${Math.round(SWARM_DIFF.easy.hp*100)}%, Hard ${Math.round(SWARM_DIFF.hard.hp*100)}% health, and more reinforcements on Hard.</p>`;
   else if(!m.training){ const r=resultOf(m.id); if(r&&r.flawless) $('#b-text').innerHTML+=`<p class="rdim">Done flawless (no soldier lost) on ${DIFFICULTY[r.flawless].label}.</p>`; }
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
+  $('#b-watch').hidden=!m.demo;
   show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true}); }
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
+$('#b-watch').addEventListener('click',()=>startMission(briefMission(briefIdx),{demo:true}));
 $('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
 function syncDiff(){ document.querySelectorAll('.diff-seg').forEach(seg=>{ seg.innerHTML=Object.entries(DIFFICULTY).map(([k,d])=>`<button type="button" data-diff="${k}" class="${k===ui.diff?'on':''}">${d.label}</button>`).join(''); }); }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-diff]'); if(!b) return; ui.diff=b.dataset.diff; store.set('hc-diff',ui.diff); syncDiff(); });
@@ -231,13 +235,14 @@ function skirmishMission(mapId){
     ] };
 }
 let lastMission=null;
-function startMission(m){
+function startMission(m,opts){
   lastMission=m; newGame(m,ui.diff); ui.mode='game'; ui.placing=null; ui.amove=false; cv.classList.remove('amove');
   show(null); const bt=$('#boot'); if(bt) bt.hidden=true; $('#hud').hidden=false; $('#tooltip').hidden=true; resize(); sizeMinimap();
   const cp=ptWorld(m.start.camera||'P'); centerOn(cp.x,cp.y);
   G.selDirty=true; G.objDirty=true; $('#btn-speed').textContent='1×'; setupSideHud(); ui.burrow=false; ui.rallyPick=false; missionTag();
   if(G.side==='swarm'){ const r=ptWorld(m.start.rally||m.start.camera||'P'); if(r) G.swarm.rally=r; selectEntities([],false); }
   else selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
+  if(typeof demoBanner==='function') demoBanner(false); if(opts&&opts.demo&&typeof demoStart==='function') demoStart();   /* Watch mode */
 }
 function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; const ps=$('#p-save'); if(ps) ps.hidden=!(typeof canSave==='function'&&canSave()); pauseLabels(); show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
@@ -290,7 +295,8 @@ function showEnd(){
   /* a lost mission: the report is see-through and the battle plays on behind it (afterDefeat) */
   const se=$('#s-end'); se.classList.toggle('aftermath',!o.win); se.classList.remove('watching'); $('#e-report').hidden=true; show('end');
   $('#e-watch')?.addEventListener('click',()=>{ se.classList.add('watching'); $('#e-report').hidden=false; $('#e-report').focus({preventScroll:true}); });
-  $('#e-next')?.addEventListener('click',()=>openBriefing(idx+1));
+  const trs=m.training?trainingsOf(m.side||'corps'):[], tk=trs.indexOf(m), nextI=m.training&&tk>=0&&tk<trs.length-1?-2-tk:idx+1;   /* after a training: the next training, then mission 1 */
+  $('#e-next')?.addEventListener('click',()=>openBriefing(nextI));
   $('#e-retry').addEventListener('click',()=>startMission(lastMission));
   $('#e-menu').addEventListener('click',()=>goMenu('menu'));
   ($('#e-next')||$('#e-retry')).focus({preventScroll:true});

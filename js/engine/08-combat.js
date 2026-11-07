@@ -85,7 +85,7 @@ function damage(t,amt,src){
   if(t.faction===G.side&&!t.def.ground) hurtNote(t,amt,src);   /* heavy damage: the screen edge glows red */
   const was=t.hp; t.hp-=amt; if((t.def.noDestroy||t.noDestroy)&&t.hp<1) t.hp=1; t.flash=0.07;
   /* a drill soldier (training): inside his zone he gets up again at once; outside it he falls like anyone (or, with t.drill.noBody(), dies without leaving a body) */
-  if(t.drill&&t.hp<1){ const z=t.drill; if(!z.r||Math.hypot(t.x-z.x,t.y-z.y)<=z.r){ t.hp=t.maxHp*z.rise; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1,max:1,txt:'HOLDS',col:'#ffb347'}); }
+  if(t.drill&&t.hp<1){ const z=t.drill; if(!z.r||Math.hypot(t.x-z.x,t.y-z.y)<=z.r){ t.hp=t.maxHp*z.rise; z.held=(z.held||0)+1; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1,max:1,txt:'HOLDS',col:'#ffb347'}); }
     else if(z.noBody&&z.noBody()){ t.noBody=true; kill(t,src); return; } }
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);

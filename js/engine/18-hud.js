@@ -103,6 +103,6 @@ function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[
 const CMD_ROWS=['Avatar','Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();
   const hl=G.tutHL&&G.tutHL.keys;
-  const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''} ${hl&&hl.includes(String(c.key).toLowerCase())?'tut-hl':''}" data-cmd="${i}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;
+  const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''} ${hl&&hl.includes(String(c.key).toLowerCase())?'tut-hl':''}" data-cmd="${i}" data-key="${c.key||''}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;
   $('#cmdcard').innerHTML=CMD_ROWS.map(r=>{ const items=CMDS.map((c,i)=>[c,i]).filter(([c])=>(c.row||'Orders')===r); if(!items.length) return '';
     return `<div class="cmdrow"><span class="cmdlbl">${r}</span><div class="cmdbtns">${items.map(([c,i])=>btn(c,i)).join('')}</div></div>`; }).join(''); }

@@ -538,3 +538,8 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #topbar .mission-tag .lbl{min-width:0;overflow:hidden;text-overflow:ellipsis;}
 @media (max-width:900px){ #topbar .mission-tag .lbl{display:none;} }
 @media (max-width:640px){ #topbar .mission-tag{display:none;} }
+
+/* Watch mode (27b-demo.js) */
+#demo-banner{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:13;padding:5px 14px;background:rgba(12,14,20,.92);border:1px solid #a6ff4a;color:var(--ink);font-family:var(--f-display);font-size:11px;letter-spacing:.06em;pointer-events:none;}
+#demo-banner b{color:#a6ff4a;margin-right:6px;}
+.demo-press{outline:2px solid #ffffff !important;outline-offset:2px;filter:brightness(1.5);}
