@@ -23,7 +23,7 @@ function trackerRef(){
 function trackerContacts(ref){
   const R=SQUAD.tracker.range*TILE, out=[];
   for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.faction===G.side||e.faction==='wild'||e.faction==='none') continue;   /* playing the Swarm, it senses the warm bodies of the Lunar Corps */
-    if(e.def.cloak&&!(e.revealT>0)) continue;                     // a cloaked Grey does not show
+    if(e.def.cloak&&!(e.revealT>0)) continue;                     // a cloaked unit does not show
     const d=Math.hypot(e.x-ref.x,e.y-ref.y); if(d<R) out.push({e,d,a:Math.atan2(e.y-ref.y,e.x-ref.x)}); }
   return out;
 }

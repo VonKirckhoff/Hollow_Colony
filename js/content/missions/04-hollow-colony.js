@@ -51,15 +51,10 @@ MISSIONS.push(
           g.marker('lz','2','Extraction'); g.vars.nextWave=g.time+30; } },
       { when:g=>g.vars.rescueT && g.timerLeft()<=60, do:g=>g.say('Dropship Kestrel','Kestrel here. One minute out. Keep that pad clear.') },
       { repeat:true, when:g=>g.vars.rescueT && g.time>g.vars.nextWave, do:g=>{ g.wave(80+(g.vars.waveN=(g.vars.waveN||0)+1)*25, g.vars.maas&&!g.vars.maas.dead?g.vars.maas:undefined);   /* every wave comes for Dr. Maas */ g.vars.nextWave=g.time+35; } },
-      { when:g=>g.vars.rescueT && g.time>g.vars.rescueT+14, do:g=>{
-          const m=g.vars.maas.dead?g.where('1'):g.vars.maas; g.vars.grey=g.spawn('hunter',{x:Math.floor(m.x/32)-7,y:Math.floor(m.y/32)+3},1)[0]; g.vars.grey.escape=g.where('6');
-          g.say('Cmdr. Varga','Unknown heat signature right on top of you... and gone. Something is stalking your squad.'); } },
-      { when:g=>g.vars.grey && g.vars.grey.revealT>0, do:g=>g.say('Sgt. Kessler','There! I saw it! Tall, grey, some kind of cloak. Light it up!') },
-      { when:g=>g.vars.grey && g.vars.grey.retreating, do:g=>g.say('Dr. Maas','It is pulling back. It does not run from the Swarm. It runs from losing.') },
       { when:g=>g.vars.maas && g.vars.maas.dead, do:g=>{ g.fail('maas'); g.lose('Dr. Maas is dead. The data core is lost.'); } },
       { when:g=>g.vars.maas && !g.vars.maas.dead && g.near('corps','2',2.5)>0 && g.timerLeft()===0 && Math.hypot(g.vars.maas.x-g.where('2').x,g.vars.maas.y-g.where('2').y)<4*32, do:g=>{
           g.complete('escort'); g.complete('maas'); g.unmark('lz');
-          g.win('Dr. Maas and the data core are aboard. As the dropship lifts off, the pilot reports a tall shape on the ridge, watching. Something on this moon hunts the hunters.'); } }
+          g.win('Dr. Maas and the data core are aboard. As the dropship lifts off, the colony falls silent behind them. Below, something old is still singing.'); } }
     ]
   }
 );

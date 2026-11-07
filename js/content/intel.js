@@ -5,7 +5,7 @@ const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
   { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','seedling','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
-  { id:'other',  name:'Other',       units:['hunter','grazer'] },
+  { id:'other',  name:'Other',       units:['grazer'] },
   { id:'relics', name:'Relics',      relics:true }
 ];
 const INTEL_NOTES = {
@@ -35,6 +35,5 @@ const INTEL_NOTES = {
   hive:     'Notices soldiers who come close: its guards attack and it births a brood. Every hit makes it scream for more. Badly hurt, it calls the other hives. Regrows when left alone. The creep around it heals every Swarm unit standing on it, and it withers once the hive is dead. Bring a squad, not a hero.',
   cocoon:   'A fallen soldier being turned. A Husk hatches from it in a few seconds unless you burn it.',
   membrane: 'Organic wall that seals tunnels. Has to be burned or shot through.',
-  hunter:   'Cloaked. Visible only when it fires, is hit or comes close. Retreats when wounded and hunts your strongest soldier.',
   grazer:   'Harmless lunar fauna. The Swarm kills it and drags the carcass home to a hive, where it becomes a Bloater.'
 };

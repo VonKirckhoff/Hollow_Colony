@@ -39,10 +39,7 @@ MISSIONS.push(
           g.addObjective('mother','Kill the Brood Mother'); g.marker('queen','9','Brood Mother'); } },
       { when:g=>g.vars.mother && g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.say('Sgt. Kessler','Contact! By God, look at the size of her!'); } },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=1, do:g=>g.say('Dr. Maas','She is calling her brood! Burn the eggs before they hatch, and do not let her rest or she will heal.') },
-      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=2, do:g=>{
-          g.vars.grey=g.spawn('hunter','8',1,{prey:'swarm',truce:'corps'})[0]; g.vars.grey.escape=g.where('8');
-          g.say('Sgt. Kessler','The Grey! It walked right past us. It is going for the Mother!');
-          g.say('Dr. Maas','It is not helping us. It wants the biggest trophy on this moon. Use it.'); } },
+      { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=2, do:g=>g.say('Dr. Maas','She is weakening. Keep the pressure on, and keep the Pyro on her eggs.') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.lairs>=1, do:g=>g.say('Dr. Maas','She is dragging herself back into her lair to heal! Go in after her and she breaks it off, but she will be waiting for you, with her eggs.') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.farT>3, do:g=>g.say('Sgt. Kessler','She is coming after us, slow but steady. Keep moving, she throws her eggs at whoever stays out of reach!') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.lairs>=2, do:g=>g.say('Cmdr. Varga','Back into the hole again. Do not give her the time: in there, now!') },
@@ -60,7 +57,7 @@ MISSIONS.push(
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=3, do:g=>g.say('Cmdr. Varga','She is almost finished. Everything you have, now!') },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen. The brood will keep breeding.'); } },
       { when:g=>g.vars.mother && g.vars.mother.dead, do:g=>{ g.complete('mother'); g.complete('hq');
-          g.win('The Brood Mother is dead. In the silence after, a tall shape drags something heavy into the dark. The Grey have their trophy. The moon has a chance.'); } }
+          g.win('The Brood Mother is dead. In the silence after, the egg chambers go dark one by one. The moon has a chance.'); } }
     ]
   }
 );

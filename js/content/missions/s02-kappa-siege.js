@@ -9,7 +9,7 @@ SWARM_MISSIONS.push(
     briefing:[
       'They came back. In the basin around the station they have built a hard nest that hums, and guns that turn by themselves.',
       'More of them are on the way: a long line of machines, a quarter of an hour out. When it arrives, the basin is theirs.',
-      'Three nests ring the basin. Grow the brood, find the weak side and <b>tear down their Command Post</b>. Their towers feed them; their guns hate Crawlers and love a straight line. Use Lure and Flank (T).',
+      'Three nests ring the basin. Grow the brood, find the weak side and <b>tear down their Command Post</b>. Their towers feed them; their guns hate Crawlers and love a straight line. Split the brood into teams and come from two sides.',
       'They will come for our nests. Keep enough brood at home to meet them.'
     ],
     start:{ camera:{x:31,y:9}, rally:{x:30,y:9},
@@ -31,7 +31,7 @@ SWARM_MISSIONS.push(
           const hq=G.ents.find(e=>e.type==='hq'); if(hq){ hq.maxHp*=2; hq.hp=hq.maxHp; } } },   /* a fortified Command Post: twice the armour plating */
       { when:g=>g.time>1, do:g=>g.brood_say('Their hard nest hums at the centre of the basin. Grow the brood: Q, W, E. Right-click to call it together. A to send it.') },
       { when:g=>g.time>3, do:g=>g.say('Cmdr. Varga','Command Post is live. Convoy is fifteen minutes out. Hold until then.') },
-      { when:g=>g.time>40, do:g=>g.brood_say('Their guns turn by themselves and reach far. Lure them, or come at them from two sides (T changes how the brood attacks).') },
+      { when:g=>g.time>40, do:g=>g.brood_say('Their guns turn by themselves and reach far. Lure them, or come at them from two sides: make teams with Ctrl and a number, give each its own gathering point (G).') },
       // the Command Post trains a soldier every so often
       { repeat:true, when:g=>g.time>(g.vars.trainAt||(g.vars.trainAt=55)), do:g=>{ g.vars.trainAt=g.time+55/(G.corpsDiff?G.corpsDiff.reinforce:1);
           if(!g.has('hq')||g.corps().length>=g.n(14)) return; const order=['trooper','trooper','gunner','medic','trooper','pyro']; g.vars.ti=(g.vars.ti||0)+1;

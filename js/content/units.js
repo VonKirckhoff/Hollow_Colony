@@ -59,10 +59,6 @@ const UNITS = {
     desc:'Carries the data core. Follows your nearest soldier unless you give her an order. She must survive.' },
 
 
-  hunter: { name:'Grey Hunter', faction:'grey', sprite:'hunter', role:'Unknown hunter',
-    hp:720, speed:88, radius:10, sight:9, range:4.5, damage:26, cooldown:1.6, attack:'plasma',
-    cloak:true, retreatAt:0.45,
-    desc:'Cloaked. Only visible for a moment after it fires, when it is hit, or when it gets close. Hunts the strongest prey.' },
 
   broodmother: { name:'Brood Mother', faction:'swarm', sprite:'broodmother', role:'Queen of the Swarm', scale:4,
     hp:14000, speed:18, radius:44, sight:9, range:1.4, damage:36, cooldown:1.7, attack:'melee', armor:0.25,

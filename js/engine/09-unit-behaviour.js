@@ -12,7 +12,6 @@ function updateUnit(u,dt){
   if(u.stance==='hold' && !u.order) u.order={type:'hold'};   /* defensive stance: hold wherever the last order left him */
   if(d.passive){ wildThink(u,dt); return; }
   if(d.escort){ escortThink(u,dt); return; }
-  if(d.cloak && greyThink(u,dt)) return;
   if(d.boss) bossThink(u,dt);
   if(u.faction==='swarm') swarmThink(u,dt);
   if(d.heal){ medicThink(u,dt); return; }
@@ -178,20 +177,6 @@ function escortThink(u,dt){
   u.order=null; u.follT=(u.follT||0)-dt;
   if(u.follT<=0){ u.follT=0.5; u.lead=nearestOf(u,e=>e.kind==='unit'&&e.faction===u.faction&&!e.def.escort&&e.def.damage&&dist(e,u)<12*TILE); }
   if(u.lead && !u.lead.dead && dist(u,u.lead)>1.8*TILE) goTo(u,u.lead.x,u.lead.y,dt,0.6);
-}
-/* The Grey hunter: cloaked, picks the strongest prey, and slips away when badly hurt. */
-function greyThink(u,dt){
-  u.revealT=Math.max(0,(u.revealT||0)-dt);
-  if(u.retreating){ u.target=null; u.revealT=0; if(!u.order){ const e=u.escape||u.spawnAt; u.order={type:'move',x:e.x,y:e.y}; setPath(u,e.x,e.y); }
-    if(stepMove(u,dt)){ u.dead=true; if(G.sel.includes(u)){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; } } return true; }
-  if(!u.spawnAt) u.spawnAt={x:u.x,y:u.y};
-  if(u.hp<u.maxHp*u.def.retreatAt){ u.retreating=true; u.order=null; u.path=null; G.fx.push({k:'boom',x:u.x,y:u.y,t:0.4,max:0.4,r:20,col:'#7ff6ff'}); return true; }
-  if(nearestOf(u,e=>e.kind==='unit'&&e.faction==='corps'&&dist(e,u)<2.5*TILE)) u.revealT=Math.max(u.revealT,0.4);
-  u.huntT=(u.huntT||0)-dt;
-  if(u.huntT<=0){ u.huntT=1.5;
-    let best=null, bs=-Infinity; for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.faction!==(u.prey||'corps')) continue; const s=e.maxHp-dist(u,e)/6; if(s>bs){ bs=s; best=e; } }
-    if(best && (!u.order||u.order.type!=='attack'||u.order.target!==best)){ u.order={type:'attack',target:best}; u.target=best; u.path=null; } }
-  return false;
 }
 function wildThink(u,dt){
   u.flash=Math.max(0,u.flash-dt);
