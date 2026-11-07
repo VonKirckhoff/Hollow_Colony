@@ -29,7 +29,7 @@ function newGame(mission, diffKey){
       sel:[], groups:{}, groupForm:{}, objectives:[], triggers:mission.triggers.map(t=>({...t,fired:false})), vars:{}, timer:null,
       stats:{ kills:0, lost:0, soldiers:0, assets:0, crates:0, cocoons:0, built:0, trained:0, hives:0 }, msgs:[], over:null, paused:false,
       cam:{x:0,y:0}, pings:[], pools:[], flareList:[], barks:[], flares:(mission.flares!==undefined?mission.flares:mission.dark?SQUAD.flare.perDarkMission:SQUAD.flare.perMission), markers:[], alert:null, alertT:0, trigT:0, fogT:0, hudT:0, selDirty:true, objDirty:true, msgDirty:true,
-      swarm:{ cfg:mission.swarm, biomass:mission.swarm.biomass||0, nextWave:mission.swarm.waves?mission.swarm.waves.first*(DIFFICULTY[diffKey]||DIFFICULTY.normal).interval:Infinity, waveN:0, rally:null, tactic:'direct', burrowAt:-99 } };
+      swarm:{ cfg:mission.swarm, biomass:mission.swarm.biomass||0, nextWave:mission.swarm.waves?mission.swarm.waves.first*(DIFFICULTY[diffKey]||DIFFICULTY.normal).interval:Infinity, waveN:0, rally:null, burrowAt:-99 } };
   for(let i=0;i<N;i++) G.block[i]=map.walk[i]?0:1;
   initPathBuffers();
   const st=mission.start;

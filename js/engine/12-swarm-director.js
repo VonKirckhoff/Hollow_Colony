@@ -110,8 +110,20 @@ function launchWave(budget,aim){
    A big enough wave picks a plan:
    direct – everyone straight in;
    lure   – the fastest few go first, the rest wait a few seconds and hit you while you chase the bait;
-   flank  – half the wave swings out wide and comes in from the side. */
-const TACTICS = { minSize:6, lureDelay:9, flankOffset:9, weights:{ direct:0.4, lure:0.3, flank:0.3 } };
+   flank  – half the wave swings out wide and comes in from the side. The swing point and the way to it stay out of reach of the
+            Lunar Corps (their range + flankClear tiles); the flankers walk there without stopping to fight, then come in.
+            If no such point is found (flankOffset … flankOffset+flankSearch tiles out, either side), the wave comes in direct. */
+const TACTICS = { minSize:6, lureDelay:9, flankOffset:9, flankSearch:12, flankClear:2, weights:{ direct:0.4, lure:0.3, flank:0.3 } };
+/* a swing point for flankers, from (cx,cy) round to goal, out of reach of the Lunar Corps all the way; null if there is none */
+function flankPoint(cx,cy,goal){ const T=TACTICS, threats=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&e.def&&e.def.damage&&e.def.range&&!e.downed);
+  const safe=(x,y)=>threats.every(e=>Math.hypot(e.x-x,e.y-y)>(e.def.range+(e.rangeBonus||0)+T.flankClear)*TILE);
+  const lineSafe=(x0,y0,x1,y1)=>{ const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)/TILE)); for(let i=0;i<=n;i++){ if(!safe(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n)) return false; } return true; };
+  const base=Math.atan2(goal.y-cy,goal.x-cx), first=Math.random()<0.5?1:-1;
+  for(let off=T.flankOffset;off<=T.flankOffset+T.flankSearch;off+=3) for(const side of [first,-first]){
+    const a=base+side*Math.PI/2, mx=(cx+goal.x)/2+Math.cos(a)*off*TILE, my=(cy+goal.y)/2+Math.sin(a)*off*TILE;
+    const f=nearestWalkable(Math.floor(mx/TILE),Math.floor(my/TILE)); if(!f) continue; const vx=(f.x+.5)*TILE, vy=(f.y+.5)*TILE;
+    if(safe(vx,vy)&&lineSafe(cx,cy,vx,vy)) return {x:vx,y:vy}; }
+  return null; }
 function waveTactic(out,forced){
   const us=out.filter(u=>u.order); if(us.length<(forced?3:TACTICS.minSize)) return 'direct';
   let r=Math.random(), plan='direct'; if(forced) plan=forced; else for(const [k,w] of Object.entries(TACTICS.weights)){ if(r<w){ plan=k; break; } r-=w; }
@@ -121,10 +133,8 @@ function waveTactic(out,forced){
     if(!G.saidLure){ G.saidLure=true; setTimeout(()=>{ if(G&&!G.over) say('Sgt. Kessler','Only a handful? Careful, that is bait. The rest are waiting.'); },4000); }
   } else if(plan==='flank'){
     const goal={x:us[0].order.x,y:us[0].order.y}, cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length;
-    const a=Math.atan2(goal.y-cy,goal.x-cx)+(Math.random()<0.5?1:-1)*Math.PI/2, mx=(cx+goal.x)/2+Math.cos(a)*TACTICS.flankOffset*TILE, my=(cy+goal.y)/2+Math.sin(a)*TACTICS.flankOffset*TILE;
-    const f=nearestWalkable(Math.floor(mx/TILE),Math.floor(my/TILE)); if(!f) return 'direct';
-    const via={x:(f.x+.5)*TILE,y:(f.y+.5)*TILE};
-    us.filter((u,i)=>i%2===1).forEach(u=>{ u.viaGoal={x:u.order.x,y:u.order.y}; u.order={type:'amove',x:via.x+rand(-30,30),y:via.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); });
+    const via=flankPoint(cx,cy,goal); if(!via) return 'direct';   /* no way round out of their reach: straight in */
+    us.filter((u,i)=>i%2===1).forEach(u=>{ u.viaGoal={x:u.order.x,y:u.order.y}; u.order={type:'move',x:via.x+rand(-30,30),y:via.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); });   /* move, not amove: they do not stop to fight on the way round */
     if(!G.saidFlank){ G.saidFlank=true; say('Dr. Maas','They are splitting up. Part of them is going around you!'); }
   }
   return plan;
@@ -214,7 +224,7 @@ function swarmHunt(dt){ if(G.side!=='corps'||G.mission.training) return; const S
     if(!(u.role==='hunt'||u.role==='wave')||(u.order&&u.order.type==='amove')) continue; const t=near(u); u.order={type:'amove',x:t.x,y:t.y}; setPath(u,t.x,t.y); }
   const n=S.huntN=(S.huntN||0)+1, budget=(lost?HUNT.afterBudget:HUNT.budget)*(1+HUNT.grow*Math.min(n,HUNT.growMax))*G.diff.budget;
   const husk=G.ents.filter(e=>huskHunter(e)).sort((a,b)=>dist(a,near(a))-dist(b,near(b)))[0];
-  if(husk){ const t=near(husk); if(!husk.target&&!husk.finish){ husk.order={type:'amove',x:t.x,y:t.y}; setPath(husk,t.x,t.y); }
+  if(husk){ const t=near(husk); if(!husk.target){ husk.order={type:'amove',x:t.x,y:t.y}; setPath(husk,t.x,t.y); }
     if(escortsOf(husk).length<HUNT.partyMax&&nests().length&&roamCount()<swarmCap()) for(const u of launchWave(budget,husk)) joinEscort(u,husk);   /* they gather round the Husk and go in with him */
     if(isVisible(husk)){ G.fx.push({k:'text',x:husk.x,y:husk.y-48,t:1.4,max:1.4,txt:'THE HUNT',col:'#ff5a4f'});
       if(!G.saidHunt){ G.saidHunt=true; say('Dr. Maas','The Husk is calling the brood to it. They are coming for us, and they are leaving the kill to it.','alert'); } } }

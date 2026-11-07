@@ -81,7 +81,7 @@ function topbarSteps(side){ const sw=side==='swarm', used=n=>(G.uiUse&&G.uiUse[n
 const tut = {
   corpsUnits:()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'),
   selCorps:()=>G.sel.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'),
-  built:type=>G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.type===type&&e.built),
+  built:type=>G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.type===type&&e.built&&!e.lure),   /* e.lure: a bait tower (First Hunger), not part of the target */
   camMoved:g=>Math.hypot(G.cam.x-g.vars.cam0.x,G.cam.y-g.vars.cam0.y)>260
 };
 

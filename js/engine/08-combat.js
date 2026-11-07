@@ -79,13 +79,14 @@ function damage(t,amt,src){
   if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */
   if(t.molt>0) amt*=MOLT.vuln;   /* a Husk shedding its skin is soft */
   if(t.avatar&&t.rootT!=null) amt*=0.5;   /* your creature rooting: the roots hold it together */
-  if(src&&src.kind==='unit'&&src.faction==='swarm'&&src.type!=='husk'&&!src.avatar&&!src.def.boss&&G.side!=='swarm'&&t.kind==='unit'&&t.faction==='corps'&&!t.downed&&t.hp-amt<1) amt=escortSpare(src,t,amt);   /* the last blow is for a Husk close by */
   if(t.downed&&!(src&&src.def&&src.def.boss)){ const D=SQUAD.downed, d=t.downed; t.flash=0.07;   /* down: splash, acid and pools no longer finish him off on the spot; they shorten his time, never below minLeft */
     if(d.t>D.minLeft) d.t=Math.max(D.minLeft,d.t-amt/t.maxHp*D.hitTime); return; }
   if(t.kind==='unit'&&t.faction==='swarm'&&t.def.bio!==false&&!(t.splatT>G.time)){ t.splatT=G.time+0.12; hitSplat(t,src); }   /* green ichor */
   if(t.faction===G.side&&!t.def.ground) hurtNote(t,amt,src);   /* heavy damage: the screen edge glows red */
-  const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
-  if(t.drill&&t.hp<1){ t.hp=t.maxHp*t.drill.rise; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1,max:1,txt:'HOLDS',col:'#ffb347'}); }   /* a drill soldier (training) gets up again at once: something to practise tactics on */
+  const was=t.hp; t.hp-=amt; if((t.def.noDestroy||t.noDestroy)&&t.hp<1) t.hp=1; t.flash=0.07;
+  /* a drill soldier (training): inside his zone he gets up again at once; outside it he falls like anyone (or, with t.drill.noBody(), dies without leaving a body) */
+  if(t.drill&&t.hp<1){ const z=t.drill; if(!z.r||Math.hypot(t.x-z.x,t.y-z.y)<=z.r){ t.hp=t.maxHp*z.rise; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1,max:1,txt:'HOLDS',col:'#ffb347'}); }
+    else if(z.noBody&&z.noBody()){ t.noBody=true; kill(t,src); return; } }
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
   if(t.kind==='building') t.hitBy=src;
@@ -128,7 +129,7 @@ function kill(e,src){
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
     if(e.faction==='corps' && e.def.bio && src && src.def && src.def.boss && src.def.feedHeal && !src.dead){ src.hp=Math.min(src.maxHp,src.hp+src.def.feedHeal*src.maxHp); G.fx.push({k:'text',x:src.x,y:src.y-80,t:1.2,max:1.2,txt:'FEEDS',col:'#a6ff4a'}); }   /* what she kills, she eats: it heals her */
-    if(e.faction==='corps' && e.def.bio && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
+    if(e.faction==='corps' && e.def.bio && !e.noBody && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
     else if(e.faction==='wild' && e.def.bio && src && src.faction==='swarm' && !src.avatar && !(src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e,true);   /* fauna: the Swarm drags the carcass home, a Grafter turns it into a Bloater */
     else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y) && creepAt(e.x,e.y)>0.3){   /* nothing hatches off the creep */
       const c=makeBuilding('cocoon','swarm',Math.floor(e.x/TILE),Math.floor(e.y/TILE),true); c.x=e.x; c.y=e.y; c.r=9;

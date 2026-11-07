@@ -13,7 +13,7 @@ function saveStatics(){ const m=new Map();
   for(const [k,v] of Object.entries(UNITS)) m.set(v,'U:'+k); for(const [k,v] of Object.entries(BUILDINGS)) m.set(v,'B:'+k);
   for(const [k,v] of Object.entries(DIFFICULTY)) m.set(v,'D:'+k); for(const [k,v] of Object.entries(SWARM_DIFF)) m.set(v,'SD:'+k);
   return m; }
-function staticOf(tok){ const [a,b]=tok.split(':'); return a==='U'?UNITS[b]:a==='B'?BUILDINGS[b]:a==='D'?DIFFICULTY[b]:a==='SD'?SWARM_DIFF[b]:null; }
+function staticOf(tok){ let [a,b]=tok.split(':'); if(a==='U'&&b==='matriarch') b='husk';   /* the Matriarch is gone (Nov 2026): an old save gets a Husk */ return a==='U'?UNITS[b]:a==='B'?BUILDINGS[b]:a==='D'?DIFFICULTY[b]:a==='SD'?SWARM_DIFF[b]:null; }
 function canSave(){ return !!G&&!G.over&&!G.mission.training; }
 function encodeGame(){
   const statics=saveStatics(), ents=G.ents.filter(e=>!e.dead), entSet=new Set(ents), ids=new Map(); let n=0;
@@ -53,7 +53,7 @@ function decodeGame(save){
     if(v.__map){ const m=new Map(); refs.set(v.__i,m); for(const [k,x] of v.__map) m.set(dec(k),dec(x)); return m; }
     if(v.__a){ const a=[]; refs.set(v.__i,a); for(const x of v.__a) a.push(dec(x)); return a; }
     const o={}; if(v.__i!=null) refs.set(v.__i,o); for(const k of Object.keys(v)) if(!k.startsWith('__')) o[k]=dec(v[k]); return o; };
-  const ents=save.ents.map(r=>{ const o=entById.get(r.id); if(r.__i!=null) refs.set(r.__i,o); for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=dec(r[k]); o.path=null; return o; });
+  const ents=save.ents.map(r=>{ const o=entById.get(r.id); if(r.__i!=null) refs.set(r.__i,o); for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=dec(r[k]); o.path=null; if(o.type==='matriarch'){ o.type='husk'; o.rootT=null; o.site=null; } return o; });
   const g={}; for(const k of Object.keys(save.G)) g[k]=dec(save.G[k]);
   const triggers=save.triggers.map(t=>{ const o={}; for(const k of Object.keys(t)) o[k]=dec(t[k]); return o; });
   return { ents, g, triggers }; }

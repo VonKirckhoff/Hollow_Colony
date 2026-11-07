@@ -76,8 +76,6 @@ function render(now){
     const f=clamp(e.hp/e.maxHp,0,1); ctx.fillStyle=e.faction!==G.side?'#ff5a4f':hpColor(f); ctx.fillRect(x,y,Math.round(w*f),3);
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*e.progress),2); }
     if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); } }
-  // the kills a full-grown Husk (or Matriarch) has on its conscience: a little skull and the count (n/4 = on its way to Matriarch)
-  for(const e of list) if(e.kind==='unit'&&e.def.founder&&!e.avatar&&(e.kills>0||e.def.matriarch||(e.stage===HUSK_STAGES.length-1&&G.side!=='swarm'))) drawKillTally(e);   /* playing the Swarm: only a Husk that has killed shows its tally */
   // status labels of mission objects (generators, charges)
   ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
   for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!==G.side&&!isVisible(e)) continue;
@@ -86,6 +84,7 @@ function render(now){
   for(const p of G.pings){ const r=10+p.t*28; ctx.strokeStyle=p.col; ctx.globalAlpha=Math.max(0,1-p.t/3); ctx.lineWidth=2; ctx.strokeRect(p.x-r,p.y-r,r*2,r*2); ctx.globalAlpha=1; }
   drawFlyover(now); drawShips(now);
   drawPlacement();
+  for(const z of G.rings||[]) drawRing(z,now);   /* zones a mission draws on the ground (G.rings: {x,y,r,col,label}) */
   for(const mk of G.markers){ const bob=Math.sin(now/250)*3, y=mk.y-30+bob;
     const mc=mk.col||'#ffb347'; ctx.strokeStyle=mc; ctx.lineWidth=2; ctx.globalAlpha=0.6+0.4*Math.sin(now/250); ctx.strokeRect(mk.x-TILE*1.5,mk.y-TILE*1.5,TILE*3,TILE*3); ctx.globalAlpha=1;
     ctx.fillStyle='#0a0b10'; ctx.beginPath(); ctx.moveTo(mk.x,y-11); ctx.lineTo(mk.x+11,y); ctx.lineTo(mk.x,y+11); ctx.lineTo(mk.x-11,y); ctx.fill();
@@ -120,7 +119,6 @@ function drawUnit(u){
   const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
   const now=performance.now(), risen=u.vet&&u.vet.risen;
   if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now);
-  if(u.def.matriarch){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(195,139,255,${0.16+0.08*Math.sin(now/240)})`; ctx.beginPath(); ctx.ellipse(u.x,u.y+2,u.r*2.2,u.r,0,0,Math.PI*2); ctx.fill(); ctx.globalCompositeOperation='source-over'; }   /* the Matriarch's purple glow */
   const hov=ui.hover&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)));
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);
@@ -237,9 +235,9 @@ function drawTunnel(b,now){ const a=WALL_ROT[b.wall]||0, art=ARTC.tunnel, w=art.
   const g=ctx.createRadialGradient(0,-2,2,0,-2,18); g.addColorStop(0,`rgba(166,255,74,${0.12+0.08*Math.sin(now/350+b.id)})`); g.addColorStop(1,'rgba(166,255,74,0)');
   ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(-20,-22,40,40); ctx.globalCompositeOperation='source-over'; ctx.restore(); }
 
-function drawKillTally(e){ const n=e.kills||0, txt=(e.def.matriarch||G.side==='swarm')?`${n}`:`${n}/${HUSK_WARRIOR.matriarch}`,   /* /4: kills to a Matriarch, which only grows when you play the Corps */ sp=SPR[e.sprite||e.def.sprite];
-  const y=Math.round(e.y-sp.h*(e.def.scale||2)-17); ctx.font='9px Silkscreen, monospace'; const tw=Math.ceil(ctx.measureText(txt).width), W=tw+12, x=Math.round(e.x-W/2);
-  ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(x-1,y-1,W+2,10);
-  const c=n>0?'#ff5a4f':'#8a8f9c'; ctx.fillStyle=c;   /* pixel skull */
-  ctx.fillRect(x+2,y+1,5,4); ctx.fillRect(x+3,y+5,3,2); ctx.fillStyle='#000'; ctx.fillRect(x+3,y+2,1,2); ctx.fillRect(x+5,y+2,1,2);
-  ctx.fillStyle=c; ctx.textAlign='left'; ctx.fillText(txt,x+9,y+8); ctx.textAlign='center'; }
+
+/* a zone on the ground: a slowly turning dashed circle with a small label */
+function drawRing(z,now){ ctx.save(); ctx.strokeStyle=z.col||'#ffb347'; ctx.globalAlpha=0.45+0.15*Math.sin(now/400); ctx.lineWidth=2; ctx.setLineDash([10,8]); ctx.lineDashOffset=-now/80;
+  ctx.beginPath(); ctx.ellipse(z.x,z.y,z.r,z.r*0.92,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  if(z.label){ ctx.globalAlpha=0.85; ctx.font='9px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(z.label,z.x+1,z.y-z.r*0.92-5); ctx.fillStyle=z.col||'#ffb347'; ctx.fillText(z.label,z.x,z.y-z.r*0.92-6); }
+  ctx.restore(); }

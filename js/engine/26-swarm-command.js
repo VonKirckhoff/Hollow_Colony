@@ -4,8 +4,7 @@
    where it strikes and how. The units fight on their own.
      Brood (Q W E R)  hatch a Crawler, Drone, Spitter or Brute at your nest (the selected hive, else the hive nearest the gathering point)
      Gather (G, or right-click)   the gathering point: new brood waits there
-     Attack (A + click)  everything waiting at the gathering point goes for that spot, with the chosen tactic
-     Tactic (T)        Direct, Lure (a few fast ones first, the rest a little later) or Flank (half swings round the side)
+     Attack (A + click)  everything waiting at the gathering point goes for that spot. To flank or lure, use your own groups (Ctrl+1, Ctrl+2 …)
      Burrow (B + click) a small brood digs up out of the ground, somewhere the Lunar Corps is not standing
    Biomass comes from your hives, from every soldier the brood kills and from bodies carried home.
    The Lunar Corps is the computer: its squads hold their ground, answer when their buildings are hit,
@@ -20,11 +19,6 @@ const SWARM_DIFF = {
   easy:   { hp:0.85, dmg:0.85, reinforce:0.75 },
   normal: { hp:1,    dmg:1,    reinforce:1 },
   hard:   { hp:1.25, dmg:1.15, reinforce:1.35 }
-};
-const TACTIC_INFO = {
-  direct:{ name:'Direct', glyph:'➜', tip:'Everyone goes straight in.' },
-  lure:  { name:'Lure',   glyph:'◎', tip:'The fastest few go first as bait; the rest follow a few seconds later and hit them while they chase.' },
-  flank: { name:'Flank',  glyph:'⤳', tip:'Half the brood swings out wide and comes in from the side.' }
 };
 function swarmSide(){ return !!G && G.side==='swarm'; }
 function myBrood(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.role==='brood'); }
@@ -79,10 +73,9 @@ function sendWave(x,y){ ui.amove=false; cv.classList.remove('amove'); G.selDirty
   for(const u of us){ freeFromJobs(u); u.post=null; }
   const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
   for(const u of us){ u.role='wave'; u.target=t||null; u.order={type:'amove',x:x+rand(-24,24),y:y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); }
-  const plan=waveTactic(us,G.swarm.tactic); G.swarm.sent=(G.swarm.sent||0)+1; G.swarm.lastPlan=plan; if(sel.length) startFollow();   /* sent/lastPlan: for the training's tactic step */
+  if(sel.length) startFollow();   /* no tactics for the player: you flank or lure with your own groups */
   G.pings.push({x,y,t:0,col:'#ff5a4f'}); SFX.play('horn');
-  say('The Brood',`${us.length} go${us.length===1?'es':''} to feed${plan!=='direct'?` (${TACTIC_INFO[plan].name.toLowerCase()})`:''}.`,'swarm'); }
-function cycleTactic(){ const ks=Object.keys(TACTIC_INFO), i=ks.indexOf(G.swarm.tactic); G.swarm.tactic=ks[(i+1)%ks.length]; toast(`Tactic: ${TACTIC_INFO[G.swarm.tactic].name}. ${TACTIC_INFO[G.swarm.tactic].tip}`,true); G.selDirty=true; }
+  say('The Brood',`${us.length} go${us.length===1?'es':''} to feed.`,'swarm'); }
 function burrowReady(){ return G.time-G.swarm.burrowAt>=SWARM_PLAY.burrow.cooldown; }
 function burrowAt(x,y){ const B=SWARM_PLAY.burrow; ui.burrow=false; cv.classList.remove('amove'); G.selDirty=true;
   if(!burrowReady()){ toast(`The ground is still settling: ${Math.ceil(B.cooldown-(G.time-G.swarm.burrowAt))} s.`); return; }
@@ -100,12 +93,11 @@ function swarmButtons(){ const out=avatarButtons(), S=G.swarm, used=broodUsed(),
   for(const t of SWARM_PLAY.brood){ const d=UNITS[t], un=broodUnlocked(t);
     out.push({row:'Brood',key:SWARM_PLAY.keys[t],img:iconUrl(t),cost:d.biomass,off:!un||S.biomass<d.biomass||used>=cap,
       tip:`${d.name}|${d.desc} Costs ${d.biomass} biomass.${un?'':` Not yet: the brood can grow it after ${fmtTime((S.cfg.unlock||{})[t]??d.unlock??0)}.`}`,act:()=>swarmBreed(t)}); }
-  const sel=selSwarm().length, waiting=sel||myBrood().length, T=TACTIC_INFO[S.tactic];
-  out.push({row:'Orders',key:'A',glyph:'⚔',cost:waiting||'',active:ui.amove,off:!waiting,tip:`Attack|Click a spot or an enemy: ${sel?`the ${sel} you selected go`:`all ${waiting} waiting at the gathering point go`} for it (${T.name}).`,act:()=>{ ui.amove=!ui.amove; ui.burrow=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.amove); }});
+  const sel=selSwarm().length, waiting=sel||myBrood().length;
+  out.push({row:'Orders',key:'A',glyph:'⚔',cost:waiting||'',active:ui.amove,off:!waiting,tip:`Attack|Click a spot or an enemy: ${sel?`the ${sel} you selected go`:`all ${waiting} waiting at the gathering point go`} for it.`,act:()=>{ ui.amove=!ui.amove; ui.burrow=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.amove); }});
   out.push({row:'Orders',key:'G',glyph:'⚑',active:ui.rallyPick,tip:'Gather|Click where the brood gathers. Right-click anywhere does the same. New brood hatches at the hive nearest to it, or at the hive you selected.',act:()=>{ ui.rallyPick=!ui.rallyPick; ui.amove=false; ui.burrow=false; cv.classList.toggle('amove',ui.rallyPick); }});
   const nb=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier).length;
   out.push({row:'Orders',key:'H',glyph:'⤓',cost:nb||'',off:!nb,tip:`Harvest|${sel?'The units you selected':'The waiting brood'} go out to carry the ${nb} fallen lying in the field home to a hive. One carries, one guards. On the creep a Grafter from a hive egg turns them.`,act:swarmHarvest});
-  out.push({row:'Orders',key:'T',glyph:T.glyph,tip:`Tactic: ${T.name}|${T.tip} Press T to change.`,act:cycleTactic});
   const B=SWARM_PLAY.burrow, cd=Math.ceil(B.cooldown-(G.time-S.burrowAt));
   out.push({row:'Orders',key:'B',glyph:'⇣',cost:cd>0?`${cd}s`:B.cost,active:ui.burrow,off:cd>0||S.biomass<B.cost,tip:`Burrow|${B.units.length} of the brood dig up out of the ground where you click, at least ${B.clear} tiles from the Lunar Corps. Costs ${B.cost} biomass, then the ground needs ${B.cooldown} seconds.`,act:()=>{ ui.burrow=!ui.burrow; ui.amove=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.burrow); }});
   return out; }
@@ -128,7 +120,7 @@ function corpsMove(us,x,y,mode){ for(const u of us){ u.home=null; u.stance=null;
 function updateCorpsAI(dt){ if(!swarmSide()) return; G.corpsT=(G.corpsT||0)-dt; if(G.corpsT>0) return; G.corpsT=0.5;
   const hit=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.hitAt!=null&&G.time-e.hitAt<3);
   if(!hit.length) return;
-  for(const u of G.ents){ if(u.dead||u.downed||u.kind!=='unit'||u.faction!=='corps'||u.target||u.def.escort||!u.def.damage) continue; if(u.order&&u.order.type!=='hold') continue;
+  for(const u of G.ents){ if(u.dead||u.downed||u.kind!=='unit'||u.faction!=='corps'||u.target||u.def.escort||!u.def.damage||u.drill) continue;   /* a drill squad (training) has its own brain */ if(u.order&&u.order.type!=='hold') continue;
     const h=hit.find(e=>e!==u&&dist(e,u)<14*TILE); if(!h) continue;
     const foe=h.hitBy&&!h.hitBy.dead&&h.hitBy.kind?h.hitBy:nearestOf(h,e=>e.faction==='swarm'&&e.kind==='unit'&&dist(e,h)<8*TILE);
     if(foe){ u.target=foe; if(!u.home) u.home={x:u.x,y:u.y}; } } }
