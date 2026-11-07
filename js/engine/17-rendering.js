@@ -87,9 +87,9 @@ function render(now){
   drawFlyover(now); drawShips(now);
   drawPlacement();
   for(const mk of G.markers){ const bob=Math.sin(now/250)*3, y=mk.y-30+bob;
-    ctx.strokeStyle='#ffb347'; ctx.lineWidth=2; ctx.globalAlpha=0.6+0.4*Math.sin(now/250); ctx.strokeRect(mk.x-TILE*1.5,mk.y-TILE*1.5,TILE*3,TILE*3); ctx.globalAlpha=1;
+    const mc=mk.col||'#ffb347'; ctx.strokeStyle=mc; ctx.lineWidth=2; ctx.globalAlpha=0.6+0.4*Math.sin(now/250); ctx.strokeRect(mk.x-TILE*1.5,mk.y-TILE*1.5,TILE*3,TILE*3); ctx.globalAlpha=1;
     ctx.fillStyle='#0a0b10'; ctx.beginPath(); ctx.moveTo(mk.x,y-11); ctx.lineTo(mk.x+11,y); ctx.lineTo(mk.x,y+11); ctx.lineTo(mk.x-11,y); ctx.fill();
-    ctx.fillStyle='#ffb347'; ctx.beginPath(); ctx.moveTo(mk.x,y-8); ctx.lineTo(mk.x+8,y); ctx.lineTo(mk.x,y+8); ctx.lineTo(mk.x-8,y); ctx.fill();
+    ctx.fillStyle=mc; ctx.beginPath(); ctx.moveTo(mk.x,y-8); ctx.lineTo(mk.x+8,y); ctx.lineTo(mk.x,y+8); ctx.lineTo(mk.x-8,y); ctx.fill();
     ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(mk.label.toUpperCase(),mk.x+1,y-15); ctx.fillStyle='#ffe2a8'; ctx.fillText(mk.label.toUpperCase(),mk.x,y-16); }
   ctx.restore();
   // arrows at the screen edge pointing to off-screen markers
@@ -99,7 +99,7 @@ function render(now){
     const k=Math.min((ui.vw/2-30)/Math.abs(Math.cos(a)||1e-6),((bottom-top)/2-30)/Math.abs(Math.sin(a)||1e-6));
     const ax=cx+Math.cos(a)*k, ay=cy+Math.sin(a)*k;
     ctx.save(); ctx.translate(ax,ay); ctx.rotate(a); ctx.fillStyle='#0a0b10'; ctx.beginPath(); ctx.moveTo(16,0); ctx.lineTo(-10,-12); ctx.lineTo(-10,12); ctx.fill();
-    ctx.fillStyle='#ffb347'; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-7,-9); ctx.lineTo(-7,9); ctx.fill(); ctx.restore();
+    ctx.fillStyle=mk.col||'#ffb347'; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-7,-9); ctx.lineTo(-7,9); ctx.fill(); ctx.restore();
     const lx=clamp(ax-Math.cos(a)*34,50,ui.vw-50), ly=clamp(ay-Math.sin(a)*24,top+14,bottom-6);
     ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(mk.label.toUpperCase(),lx+1,ly+1); ctx.fillStyle='#ffe2a8'; ctx.fillText(mk.label.toUpperCase(),lx,ly); }
   if(ui.rdrag && Math.hypot(ui.rdrag.x1-ui.rdrag.x0,ui.rdrag.y1-ui.rdrag.y0)>18) drawFacingPreview(ui.rdrag);
@@ -205,7 +205,7 @@ function renderMinimap(){
     mctx.fillRect(Math.round(e.x/TILE*s-sz/2),Math.round(e.y/TILE*s-sz/2),Math.ceil(sz),Math.ceil(sz)); }
   mctx.imageSmoothingEnabled=true; mctx.drawImage(fogCanvas||m.mini,0,0,mm.width,mm.height); mctx.imageSmoothingEnabled=false;
   for(const p of G.pings){ const r=3+p.t*6; mctx.strokeStyle=p.col; mctx.globalAlpha=Math.max(0,1-p.t/3); mctx.strokeRect(p.x/TILE*s-r,p.y/TILE*s-r,r*2,r*2); mctx.globalAlpha=1; }
-  for(const mk of G.markers){ const on=Math.floor(performance.now()/400)%2; mctx.fillStyle=on?'#ffb347':'#fff'; mctx.fillRect(Math.round(mk.x/TILE*s)-3,Math.round(mk.y/TILE*s)-3,6,6); }
+  for(const mk of G.markers){ const on=Math.floor(performance.now()/400)%2; mctx.fillStyle=on?(mk.col||'#ffb347'):'#fff'; mctx.fillRect(Math.round(mk.x/TILE*s)-3,Math.round(mk.y/TILE*s)-3,6,6); }
   if(ui.hover){ const on=Math.floor(performance.now()/250)%2; mctx.strokeStyle=on?'#ffd23f':'#fff'; mctx.lineWidth=1;   /* hovered soldier(s) on the minimap too */
     for(const e of G.sel){ if(e.dead||e.kind!=='unit'||!(ui.hover.id===e.id||ui.hover.type===e.type)) continue; mctx.strokeRect(Math.round(e.x/TILE*s)-3.5,Math.round(e.y/TILE*s)-3.5,7,7); } }
   mctx.strokeStyle='#fff'; mctx.lineWidth=1; mctx.strokeRect(Math.round(G.cam.x/TILE*s)+.5,Math.round(G.cam.y/TILE*s)+.5,Math.round(ui.vw/TILE*s),Math.round((ui.vh-ui.hudH)/TILE*s));

@@ -126,13 +126,14 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>{ ui.keys[e.key]=false; });
 /* Camera follow: after a move or attack order the camera glides along with the selected squad.
    Scrolling the map yourself pauses following until your next order. Toggle with C or the Follow button. */
-function startFollow(){ if(ui.follow&&G) G.following=true; }
-function stopFollow(){ if(G) G.following=false; }
+function startFollow(){ endShowcase(); if(ui.follow&&G) G.following=true; }
+function stopFollow(){ if(G){ G.following=false; endShowcase(); } }
 function updateCamera(dt){
   if(!G||!(ui.mode==='game'||ui.mode==='end'&&afterDefeat())) return; let vx=0, vy=0; const sp=760*dt, edge=10;
   if(ui.keys.ArrowLeft) vx-=sp; if(ui.keys.ArrowRight) vx+=sp; if(ui.keys.ArrowUp) vy-=sp; if(ui.keys.ArrowDown) vy+=sp;
   if(ui.mouse.inWin && !ui.overDev && !ui.drag && !ui.pan && !mmDrag && matchMedia('(pointer:fine)').matches){ if(ui.mouse.x<edge) vx-=sp; if(ui.mouse.x>ui.vw-edge) vx+=sp; if(ui.mouse.y<edge) vy-=sp; if(ui.mouse.y>ui.vh-edge) vy+=sp; }
   if(vx||vy){ stopFollow(); G.cam.x+=vx; G.cam.y+=vy; clampCam(); }
+  else if(G.show||(G.showQ&&G.showQ.length&&G.time>=SHOWCASE.delay)){ if(!G.paused) showcaseStep(dt); }
   else if(G.following && !G.paused){
     const us=G.side==='swarm'?(G.avatar&&!G.avatar.dead&&G.avatar.kind==='unit'?[G.avatar]:selSwarm()):myUnits(); if(!us.length){ stopFollow(); return; }
     const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length;
@@ -141,6 +142,24 @@ function updateCamera(dt){
   }
   const w=toWorld(ui.mouse.x,ui.mouse.y); ui.mouse.wx=w.x; ui.mouse.wy=w.y;
 }
+
+/* Showcase: at the start of a mission the camera glides to something worth knowing about (an ancient egg, the crashed Osprey),
+   holds there a moment with the fog lifted around it, then glides back to the squad and follows it again.
+   Any camera move of your own, a new selection or an order ends it at once. The thing keeps a marker (addShowcase) until it is
+   gone or reached. A saved game does not replay it (show/showQ are not saved). */
+const SHOWCASE = { delay:0.8, glide:3, hold:3, reveal:3 };
+function addShowcase(x,y,id,label,col){ G.markers=G.markers.filter(m=>m.id!==id); G.markers.push({id,x,y,label,col}); (G.showQ=G.showQ||[]).push({x,y,col}); }
+function endShowcase(){ if(G&&G.show){ G.show=null; G.showQ=[]; } }
+function showcaseStep(dt){ const S=SHOWCASE;
+  if(!G.show){ const p=G.showQ.shift(); G.show={phase:'go',t:0,p}; G.reveals.push({x:p.x,y:p.y,r:S.reveal,until:G.time+S.hold+2/S.glide+1,show:true}); computeFog(); }
+  const sh=G.show; sh.t+=dt;
+  if(sh.phase==='hold'){ if(sh.t>=S.hold){ if(G.showQ.length){ G.show=null; return; } sh.phase='back'; sh.t=0; } return; }
+  let tx, ty; if(sh.phase==='go'){ tx=sh.p.x; ty=sh.p.y; }
+  else { const us=myUnits(); if(!us.length){ G.show=null; return; } tx=us.reduce((s,u)=>s+u.x,0)/us.length; ty=us.reduce((s,u)=>s+u.y,0)/us.length; }
+  const x0=G.cam.x, y0=G.cam.y, k=Math.min(1,dt*S.glide); G.cam.x+=(tx-ui.vw/2-G.cam.x)*k; G.cam.y+=(ty-(ui.vh-ui.hudH)/2-G.cam.y)*k; clampCam();
+  if(Math.hypot(G.cam.x-x0,G.cam.y-y0)<0.6||sh.t>4){
+    if(sh.phase==='go'){ sh.phase='hold'; sh.t=0; G.pings.push({x:sh.p.x,y:sh.p.y,t:0,col:sh.p.col||'#ffb347'}); }
+    else { G.show=null; G.showQ=[]; if(ui.follow) G.following=true; } } }
 
 $('#tut-ok').addEventListener('click',()=>tutConfirm()); $('#tut-prev').addEventListener('click',()=>tutPage(-1)); $('#tut-next').addEventListener('click',()=>tutPage(1));
 $('#tut-practice').addEventListener('click',()=>tutPractice()); $('#tut-open').addEventListener('click',()=>tutReopen());

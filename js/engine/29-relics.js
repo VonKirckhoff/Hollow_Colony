@@ -10,9 +10,11 @@ function relicFound(id){ return !!relicsFound()[id]; }
 function spawnRelics(m){ if(!m||m.side==='swarm'||m.training) return;
   for(const r of RELICS){ if(r.mission!==m.id||(r.kind!=='egg'&&relicFound(r.id))) continue;   /* found items stay gone; ancient eggs are always back */ const p=r.at; if(!walkableT(p.x,p.y)) continue;
     G.ents.push({ id:NEXT_ID++, kind:'crate', relic:r.id, egg:r.kind==='egg', x:(p.x+.5)*TILE, y:(p.y+.5)*TILE, r:r.kind==='egg'?11:8, faction:'none', value:0,
-      secure:0, hatch:0, wakeAt:r.kind==='egg'?rand(EGG_RELIC.wakeMin,EGG_RELIC.wakeMax)*(G.diff.interval||1):0 }); } }
+      secure:0, hatch:0, wakeAt:r.kind==='egg'?rand(EGG_RELIC.wakeMin,EGG_RELIC.wakeMax)*(G.diff.interval||1):0 });
+    if(r.kind==='egg') addShowcase((p.x+.5)*TILE,(p.y+.5)*TILE,'relic:'+r.id,'Ancient Egg','#ffd23f'); } }   /* the camera shows the egg at the start; its marker stays until the egg is gone */
+function unmarkRelic(c){ G.markers=G.markers.filter(m=>m.id!=='relic:'+c.relic); }
 function relicDef(id){ return RELICS.find(r=>r.id===id); }
-function collectRelic(c,by){ const r=relicDef(c.relic); if(!r) return; c.dead=true;
+function collectRelic(c,by){ const r=relicDef(c.relic); if(!r) return; c.dead=true; unmarkRelic(c);
   const all=relicsFound(), fresh=!all[r.id]; if(fresh){ all[r.id]={ at:Date.now(), mission:r.mission }; store.set('hc-relics',all); }
   if(fresh) (G.relicsGot=G.relicsGot||[]).push(r.id);
   SFX.play('pickup'); SFX.play('ready'); G.fx.push({k:'text',x:c.x,y:c.y-18,t:1.8,max:1.8,txt:r.kind==='egg'?'ANCIENT EGG':'RELIC',col:'#ffd23f'});
@@ -26,7 +28,8 @@ function relicTick(dt){
     eggRelicTick(c,dt); } }
 function eggRelicTick(c,dt){ const R=EGG_RELIC, near=(f,r)=>G.ents.some(u=>u.kind==='unit'&&!u.dead&&!u.downed&&u.faction===f&&!u.def.escort&&!u.def.passive&&dist(u,c)<r*TILE);
   const corpsOn=near('corps',R.reach), corpsAround=near('corps',R.clear), swarmOn=near('swarm',R.reach), swarmAround=near('swarm',R.clear);
-  if(!c.seenSaid&&G.side==='corps'&&G.vis[Math.floor(c.y/TILE)*G.map.w+Math.floor(c.x/TILE)]){ c.seenSaid=true;
+  const shown=G.reveals.some(r=>r.show&&r.until+1>G.time);   /* the start-of-mission camera shot lifts the fog: Dr. Maas waits until the squad itself sees it */
+  if(!c.seenSaid&&!shown&&G.side==='corps'&&G.vis[Math.floor(c.y/TILE)*G.map.w+Math.floor(c.x/TILE)]){ c.seenSaid=true;
     say('Dr. Maas','That egg... it is old. Older than the colony, older than anything here. If the Swarm gets to it, it will wake. Put a soldier on it and keep them off: we are taking it.','alert'); G.pings.push({x:c.x,y:c.y,t:0,col:'#ffd23f'}); }
   if(corpsOn&&!swarmAround){ c.secure=Math.min(1,c.secure+dt/R.secure); c.hatch=Math.max(0,c.hatch-dt/R.hatch); if(c.secure>=1){ collectRelic(c); return; } }
   else if(swarmOn&&!corpsAround){ c.hatch=Math.min(1,c.hatch+dt/R.hatch); c.secure=Math.max(0,c.secure-dt/R.secure);
@@ -42,7 +45,7 @@ function eggRelicTick(c,dt){ const R=EGG_RELIC, near=(f,r)=>G.ents.some(u=>u.kin
 function eggRunThink(u){ const c=G.ents.find(e=>e.id===u.eggRun&&!e.dead); if(!c){ u.role='hunt'; u.eggRun=null; return; }
   if(dist(u,c)>EGG_RELIC.reach*TILE*0.7){ if(!u.target&&(!u.order||u.order.type!=='move')){ u.order={type:'move',x:c.x+rand(-10,10),y:c.y+rand(-10,10)}; setPath(u,u.order.x,u.order.y); } }
   else if(!u.target&&(!u.order||u.order.type!=='hold')){ u.order={type:'hold'}; u.path=null; } }
-function eggWakes(c){ c.dead=true; const tx=Math.floor(c.x/TILE), ty=Math.floor(c.y/TILE), f=nearestWalkable(tx,ty)||{x:tx,y:ty};
+function eggWakes(c){ c.dead=true; unmarkRelic(c); const tx=Math.floor(c.x/TILE), ty=Math.floor(c.y/TILE), f=nearestWalkable(tx,ty)||{x:tx,y:ty};
   const h=makeBuilding('hive','swarm',f.x-1,f.y-1,true); h.maxHp=BUILDINGS.hive.hp*HUSK.hiveHp*(G.diff.hiveHp||1); h.hp=h.maxHp*0.6; h.spawnT=5; h.cfg={ guardMax:HUSK.guardMax, offshoot:true }; h.offshoot=true; h.creepR=1;
   for(const e of G.ents){ if(e.dead||e.kind!=='unit') continue; const x=Math.floor(e.x/TILE), y=Math.floor(e.y/TILE); if(x>=h.tx&&x<h.tx+3&&y>=h.ty&&y<h.ty+3){ const w=nearestWalkable(x,y); if(w){ e.x=(w.x+.5)*TILE; e.y=(w.y+.5)*TILE; e.path=null; } } }
   G.fx.push({k:'boom',x:h.x,y:h.y,t:0.7,max:0.7,r:48,col:'#ffd23f'}); addDecal(h.x,h.y,30,'rgba(70,30,90,.5)'); G.pings.push({x:h.x,y:h.y,t:0,col:'#a6ff4a'}); SFX.play('horn');

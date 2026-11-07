@@ -22,6 +22,8 @@ function makeApi(){
     ping(at){ const p=ptWorld(at); if(p) G.pings.push({x:p.x,y:p.y,t:0,col:'#ffb347'}); },
     marker(id,at,label){ const p=ptWorld(at); if(!p) return; G.markers=G.markers.filter(m=>m.id!==id); G.markers.push({id,x:p.x,y:p.y,label}); },
     unmark(id){ G.markers=G.markers.filter(m=>m.id!==id); },
+    /* showcase: the camera shows this spot at the start of the mission (SHOWCASE in 20-input.js) and it keeps a marker until unmark(id) */
+    showcase(id,at,label,col){ const p=ptWorld(at); if(p) addShowcase(p.x,p.y,id,label,col); },
     give(n){ G.salvage+=n; },
     /* wall: seal tiles with living membrane (kind 'membrane', default) or a station blast door (kind 'door'). Radius 0 = one tile. */
     wall(at,radius,tag,kind='membrane'){ const p=pt(at); if(!p) return; const R2=radius*radius; for(let y=p.y-Math.ceil(radius);y<=p.y+Math.ceil(radius);y++) for(let x=p.x-Math.ceil(radius);x<=p.x+Math.ceil(radius);x++){
