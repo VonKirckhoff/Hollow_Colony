@@ -63,7 +63,8 @@
     <p class="lede">The terraforming colonies on the moon have gone quiet. Something woke beneath the regolith, and it is spreading. Command the Lunar Corps and burn the Swarm back into the dark.</p>
     <div class="menu-list">
       <button class="menu-btn" type="button" id="m-continue" hidden>Continue</button>
-      <button class="menu-btn" type="button" data-go="campaign">Campaign <small>Lunar Corps operations</small></button>
+      <button class="menu-btn" type="button" data-go="campaign">Campaign <small>Lunar Corps and Swarm operations</small></button>
+      <button class="menu-btn" type="button" data-go="trophies">Trophies <small>Every trophy and relic</small></button>
       <button class="menu-btn" type="button" data-go="skirmish">Skirmish <small>Pick a map, destroy every hive</small></button>
       <button class="menu-btn" type="button" data-go="manual">Field manual <small>Controls and factions</small></button>
       <button class="menu-btn" type="button" data-go="intel">Intel <small>Every soldier, structure and enemy</small></button>
@@ -82,7 +83,7 @@
     <p class="lede swarm-only">Play the same story from the other side. You are the Brood: you choose what hatches, where it gathers and where it strikes, and the swarm does the rest. The Lunar Corps is played by the computer.</p>
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
-    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button><button class="btn" type="button" data-go="trophies" id="btn-troph">Trophies</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
+    <div class="reset-row"><div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans" id="btn-vets">Veterans</button><button class="btn" type="button" data-go="cenotaph" id="btn-ceno">Cenotaph</button><button class="btn" type="button" data-go="intel">Intel</button></div><button class="btn danger" type="button" id="btn-reset">Reset campaign</button></div>
    </div>
    <div class="camp-r"><div class="lbl">Missions</div><div class="missions" id="mission-list"></div></div>
   </div>
@@ -268,11 +269,11 @@
 <section class="screen" id="s-trophies" hidden>
   <div class="sheet troph-sheet">
    <div class="troph-l">
-    <div class="eyebrow">LUNAR CORPS · HALL OF HONOUR</div>
+    <div class="eyebrow">HALL OF HONOUR</div>
     <h2 class="h">Trophy wall</h2>
     <p class="lede">One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. A win on Hard also counts for Normal and Easy. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Below them hang two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</p>
     <div class="troph-hero" id="troph-hero"></div>
-    <div class="row"><button class="btn" type="button" data-go="campaign">Back</button><button class="btn" type="button" data-go="veterans">Veterans</button></div>
+    <div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans">Veterans</button></div>
    </div>
    <div class="trophies" id="trophy-wall"></div>
   </div>
