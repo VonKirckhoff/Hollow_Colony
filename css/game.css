@@ -468,7 +468,7 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .camp-side button:not(.on) .cs-p{color:var(--dim);} .camp-side button.on .cs-k{color:var(--ink);}
 .swarm-only{display:none;}
 #s-campaign.swarm .swarm-only{display:block;}
-#s-campaign.swarm .hero-card,#s-campaign.swarm #btn-vets,#s-campaign.swarm #btn-ceno,#s-campaign.swarm #btn-troph{display:none;}
+#s-campaign.swarm .hero-card,#s-campaign.swarm #btn-vets,#s-campaign.swarm #btn-ceno{display:none;}
 #s-campaign.swarm .eyebrow,#s-brief.swarm .eyebrow{color:#a6ff4a;}
 #s-campaign.swarm .h,#s-brief.swarm .h{color:#d8c4ff;text-shadow:0 0 18px rgba(195,139,255,.35);}
 #s-campaign.swarm .mission .num{color:#a6ff4a;}
