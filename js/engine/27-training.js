@@ -47,6 +47,15 @@ function avatarButtons(){ const u=G.avatar; if(!avatarAlive()||u.kind!=='unit') 
 /* ---- the training card: it stays on screen until you close it (Enter or the button), but the game keeps running,
    so you can try things out while you read. ◀ ▶ page through the earlier steps; "Practice again" runs that step once more.
    Closed, a "Tips" tab at the top brings it back. ---- */
+/* the card sits top right; drag it by its label anywhere you like (remembered in hc-tutpos, double-click the label to put it back) */
+function tutPlace(){ const c=$('#tut-card'), p=store.get('hc-tutpos',null); if(!c) return;
+  if(p){ c.style.left=Math.max(0,Math.min(innerWidth-80,p.x))+'px'; c.style.top=Math.max(48,Math.min(innerHeight-60,p.y))+'px'; c.style.right='auto'; } else { c.style.left=''; c.style.top=''; c.style.right=''; } }
+(()=>{ const who=$('#tut-who'); if(!who) return; let drag=null;
+  who.addEventListener('pointerdown',e=>{ const r=$('#tut-card').getBoundingClientRect(); drag={dx:e.clientX-r.left,dy:e.clientY-r.top}; who.setPointerCapture(e.pointerId); e.preventDefault(); });
+  who.addEventListener('pointermove',e=>{ if(!drag) return; store.set('hc-tutpos',{x:e.clientX-drag.dx,y:e.clientY-drag.dy}); tutPlace(); });
+  who.addEventListener('pointerup',()=>{ drag=null; });
+  who.addEventListener('dblclick',()=>{ try{ localStorage.removeItem('hc-tutpos'); }catch(e){} tutPlace(); });
+  addEventListener('resize',tutPlace); tutPlace(); })();
 function tutShow(i){ const V=G.vars; V.cardOpen=true; V.cardView=i; tutRefresh(); SFX.play('radio'); }
 function tutRefresh(){ const c=$('#tut-card'), V=G&&G.vars, S=G&&G.tutSteps; if(c&&!S){ c.hidden=true; $('#tut-open').hidden=true; } if(!c||!S) return;   /* no training in this mission: no card */ const i=V.cardView??V.tutI, st=S[i]; if(!st) return;
   const cur=i===V.tutI, done=cur&&V.stepDone;

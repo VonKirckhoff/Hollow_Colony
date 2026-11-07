@@ -115,6 +115,11 @@ const DEV_HELP = {
   /* playing the swarm */
   'FIRST_HUNGER|preyEvery':'Training The First Hunger: seconds before a new pair of soldiers wanders into the open once the last ones are down.',
   'FIRST_HUNGER|prey':'Training The First Hunger: how many soldiers wander in each time.',
+  'FIRST_HUNGER|swarmMax':'Training The First Hunger: no new soldiers wander in while this many Swarm creatures roam (hive guards and Grafters do not count).',
+  'FIRST_HUNGER|drillHp':'Training The First Hunger: health of the drill squad soldiers (× normal).',
+  'FIRST_HUNGER|drillDmg':'Training The First Hunger: damage of the drill squad soldiers (× normal).',
+  'FIRST_HUNGER|drillRise':'Training The First Hunger: share of health a drill soldier gets back up with when knocked to 0 (they never fall).',
+  'FIRST_HUNGER|drillHeal':'Training The First Hunger: share of health per second a drill soldier heals while no Swarm is within 7 tiles.',
   'SWARM_PLAY|cap':'Playing the Swarm: most brood you can have hatched at once (hive guards do not count).',
   'SWARM_PLAY|kill':'Playing the Swarm: biomass for every soldier your brood kills.',
   'SWARM_PLAY|tunnel':'Playing the Swarm: seconds new brood needs to tunnel to a gathering point it cannot walk to.',

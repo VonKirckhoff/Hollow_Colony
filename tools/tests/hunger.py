@@ -21,13 +21,21 @@ with sync_playwright() as p:
       ok(G.vars.prey.filter(u=>!u.dead&&!u.downed).length===FIRST_HUNGER.prey,'and again');
       /* jump to a step */
       const go=t=>{ G.vars.tutI=idx(t); G.vars.tutState='start'; G.vars.tutAt=0; G.vars.cardOpen=false; step(0.5); if(G.vars.cardOpen) tutConfirm(); step(0.5); return G.vars.tutI; };
-      /* 2. tactic step: changing the tactic alone is not enough, a Lure attack is */
-      for(const u of G.vars.prey) u.dead=true; G.vars.prey=G.vars.prey.filter(u=>!u.dead);
-      const ti=go('Lure or Flank'); ok(G.vars.prey.some(u=>!u.dead&&!u.downed),'tactic step brings prey if none are standing');
+      /* 2. tactic step: a drill squad appears, changing the tactic alone is not enough, a Lure attack is; the drill soldiers never fall */
+      const ti=go('drill squad'); const D=G.vars.drill||[]; ok(D.length===FIRST_HUNGER.drill.length&&D.every(u=>!u.dead&&u.drill),'tactic step brings the drill squad ('+D.length+')');
       G.swarm.tactic='lure'; step(1); ok(G.vars.tutI===ti&&!G.vars.stepDone,'tactic changed but no attack yet: step waits');
-      G.swarm.biomass+=200; for(let i=0;i<5;i++) swarmBreed('crawler'); step(1);
-      const p=G.vars.prey.find(u=>!u.dead); sendWave(p.x,p.y); step(1);
+      G.swarm.biomass+=400; for(let i=0;i<8;i++) swarmBreed('brute'); step(1);
+      sendWave(D[0].x,D[0].y); step(1);
       ok(G.swarm.lastPlan==='lure'&&(G.vars.stepDone||G.vars.tutI>ti),'a Lure attack ticks the step off');
+      for(const u of D) damage(u,u.maxHp*5,null); ok(D.every(u=>!u.dead&&!u.downed&&u.hp>u.maxHp*0.5),'drill soldiers get back up at once');
+      step(40); ok(D.every(u=>!u.dead&&!u.downed),'drill squad still standing after 40 s of fighting');
+      /* 2b. no new prey while the Swarm is too many */
+      for(const u of G.vars.prey) u.dead=true; G.vars.prey=[]; const extra=[]; for(let i=0;i<FIRST_HUNGER.swarmMax;i++){ const u=makeUnit('crawler','swarm',30.5*32,9.5*32); u.role='brood'; extra.push(u); }
+      step(FIRST_HUNGER.preyEvery+3); ok(!G.vars.prey.length,'no new prey while '+swarmRoaming()+' roam');
+      for(const u of extra) u.dead=true; for(const u of myBrood()) u.dead=true; step(FIRST_HUNGER.preyEvery+5); ok(G.vars.prey.length>=FIRST_HUNGER.prey,'prey comes again once the Swarm is spent ('+swarmRoaming()+' roam)');
+      /* 2c. a creature hatched from a cocoon waits at the gathering point */
+      const c=makeBuilding('cocoon','swarm',30,12,true); c.hatchType='husk'; c.hatchT=0.01; c.husk=true; step(1);
+      const h=G.ents.find(e=>!e.dead&&e.type==='husk'); ok(h&&h.role==='brood','hatched Husk joins the waiting brood ('+(h&&h.role)+')');
       /* 3. burrow at the brood limit */
       G.swarm.biomass+=2000; while(broodUsed()<broodCap()){ const n=broodUsed(); swarmBreed('crawler'); if(broodUsed()===n) break; }
       ok(broodUsed()>=broodCap(),'brood at its limit ('+broodUsed()+'/'+broodCap()+')');

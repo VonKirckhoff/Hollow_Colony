@@ -476,9 +476,9 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .mission.training .num{color:#5fe3b0;} .mission.training{border-style:dashed;}
 
 /* ---------- training card and highlights ---------- */
-#tut-card{position:fixed;left:50%;top:70px;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));z-index:12;display:grid;gap:10px;padding:16px 18px;
+#tut-card{position:fixed;right:16px;top:64px;width:min(430px,calc(100vw - 32px));z-index:12;display:grid;gap:10px;padding:16px 18px;
   background:rgba(12,14,20,.96);border:1px solid var(--corps,#ffb347);box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 0 1px rgba(255,179,71,.15);}
-#tut-card .lbl{color:var(--corps,#ffb347);} #tut-card p{margin:0;font-size:15px;line-height:1.55;color:var(--ink);}
+#tut-card .lbl{color:var(--corps,#ffb347);cursor:move;user-select:none;} #tut-card .lbl::after{content:'⠿ drag';float:right;color:var(--dim);} #tut-card p{margin:0;font-size:14px;line-height:1.5;color:var(--ink);}
 #tut-card kbd{display:inline-block;min-width:18px;text-align:center;padding:0 5px;border:1px solid #6a7080;border-bottom-width:2px;background:#1d212b;color:#ffe2a8;font-family:var(--f-display);font-size:12px;}
 #tut-card .tut-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;} #tut-step{font-family:var(--f-display);font-size:11px;letter-spacing:.1em;color:var(--dim);}
 #tut-card.swarm{border-color:#a6ff4a;} #tut-card.swarm .lbl{color:#a6ff4a;}
@@ -486,7 +486,7 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 @keyframes tutpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.7);}50%{box-shadow:0 0 0 6px rgba(255,210,63,0);}}
 #tut-card .tut-foot{flex-wrap:wrap;} .tut-nav{display:flex;align-items:center;gap:8px;margin-right:auto;} .tut-nav .btn{padding:4px 10px;} .tut-nav .btn:disabled{opacity:.3;cursor:default;}
 #tut-card.past{border-style:dashed;opacity:.97;} #tut-card.done{border-color:#5fe3b0;} #tut-card.done #tut-step{color:#5fe3b0;}
-#tut-open{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:11;padding:4px 14px;font-size:11px;}
+#tut-open{position:fixed;right:16px;top:58px;z-index:11;padding:4px 14px;font-size:11px;}
 
 /* control groups in the selection panel */
 .gchips{display:flex;align-items:center;gap:6px;margin-bottom:6px;} .gchips .lbl{margin-right:2px;}

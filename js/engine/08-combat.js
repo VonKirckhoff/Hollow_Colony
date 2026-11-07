@@ -85,6 +85,7 @@ function damage(t,amt,src){
   if(t.kind==='unit'&&t.faction==='swarm'&&t.def.bio!==false&&!(t.splatT>G.time)){ t.splatT=G.time+0.12; hitSplat(t,src); }   /* green ichor */
   if(t.faction===G.side&&!t.def.ground) hurtNote(t,amt,src);   /* heavy damage: the screen edge glows red */
   const was=t.hp; t.hp-=amt; if(t.def.noDestroy&&t.hp<1) t.hp=1; t.flash=0.07;
+  if(t.drill&&t.hp<1){ t.hp=t.maxHp*t.drill.rise; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1,max:1,txt:'HOLDS',col:'#ffb347'}); }   /* a drill soldier (training) gets up again at once: something to practise tactics on */
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
   if(t.kind==='building') t.hitBy=src;
