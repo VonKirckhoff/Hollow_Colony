@@ -13,7 +13,7 @@ with sync_playwright() as p:
       const ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m); try{ step(1);
       const steps=G.tutSteps, idx=t=>steps.findIndex(s=>(s.obj||'').includes(t));
       const go=t=>{ G.vars.tutI=idx(t); G.vars.tutState='start'; G.vars.tutAt=0; G.vars.cardOpen=false; step(0.5); if(G.vars.cardOpen) tutConfirm(); step(0.5); return G.vars.tutI; };
-      ok(steps.length===9,'9 steps ('+steps.length+')'); ok(demoBrood().length>=6,'starts with a brood ('+demoBrood().length+')');
+      ok(steps.length===10,'10 steps ('+steps.length+')'); ok(demoBrood().length>=6,'starts with a brood ('+demoBrood().length+')');
       ok(hives().length===4&&hives().some(h=>h.tx===WEST_NEST.x&&h.ty===WEST_NEST.y),'a young nest in the west');
       ok(!G.vars.prey,'no soldiers in the open');
       
@@ -62,7 +62,7 @@ with sync_playwright() as p:
       damage(tr2,tr2.maxHp*5,biter); ok(tr2.dead&&G.ents.filter(e=>!e.dead&&e.kind==='body').length===nb&&G.swarm.biomass>bm,'with '+BROOD_TACTICS.huskMax+' Husks: dies without a body, still feeds us');
       hs2.forEach(u=>u.dead=true);
       /* 2e. the two-teams step */
-      const ti=go('Two teams'); const br=[]; G.swarm.biomass+=500; for(let i=0;i<6;i++){ swarmBreed('crawler'); } step(1); const mine=myBrood();
+      const ti=go('Two teams'); const br=[]; G.swarm.biomass+=500; swarmBreed('crawler',6); batchReleaseAll(); step(SWARM_PLAY.batch.grow+3); const mine=myBrood();
       selectEntities(mine.slice(0,3),false); G.groups['1']=[...G.sel]; selectEntities(mine.slice(3),false); G.groups['2']=[...G.sel];
       const d0=G.vars.drill.find(u=>!u.dead&&!u.downed); selectEntities(G.groups['1'],false); swarmRight(d0.x,d0.y); step(1);
       ok(G.vars.tutI===ti&&!G.vars.stepDone,'one team sent: step waits');

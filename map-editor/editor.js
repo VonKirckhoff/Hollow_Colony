@@ -1,3 +1,4 @@
+/* Hollow Colony map editor · © 2026 VonKirckhoff. All rights reserved. */
 'use strict';
 /* =====================================================================
    HOLLOW COLONY MAP EDITOR

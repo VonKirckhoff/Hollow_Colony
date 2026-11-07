@@ -100,7 +100,7 @@ function groupChips(sel){ const ks=Object.keys(G.groups||{}).sort(), out=[];
   return out.length?`<div class="gchips"><span class="lbl">Groups</span>${out.join('')}</div>`:''; }
 function unitTitle(e){ return e.vet ? `${RANKS[e.vet.rank].abbr} ${e.vet.name}${e.vet.risen?' (risen)':''} · ${e.def.name}` : e.stageName ? `${e.stageName} (turning into a Husk)` : e.def.name; }
 function rankBadge(e){ return e.vet&&e.vet.rank>0 ? `<span class="rank">${RANKS[e.vet.rank].mark}</span>` : ''; }
-const CMD_ROWS=['Avatar','Brood','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
+const CMD_ROWS=['Avatar','Brood','Batch','Orders','Formation','Build','Sentry','Train','Dropship','Placing'];
 function renderCmdCard(){ CMDS=cmdButtons();
   const hl=G.tutHL&&G.tutHL.keys;
   const btn=(c,i)=>`<button type="button" class="cmd ${c.off?'off':''} ${c.active?'active':''} ${hl&&hl.includes(String(c.key).toLowerCase())?'tut-hl':''}" data-cmd="${i}" data-key="${c.key||''}" data-tip="${c.tip}">${c.img?`<img alt="" src="${c.img}">`:`<span class="glyph">${c.glyph}</span>`}<span class="key">${c.key}</span>${c.cost?`<span class="cost">${c.cost}</span>`:''}</button>`;

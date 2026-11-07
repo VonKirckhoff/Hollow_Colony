@@ -18,7 +18,7 @@ cv.addEventListener('pointerdown',e=>{
       if(s) packSentry(s); else toast('Click one of your Sentry Guns.'); return; }
     if(ui.flare){ throwFlare(w.x,w.y); return; }
     if(ui.burrow){ burrowAt(w.x,w.y); return; }
-    if(ui.rallyPick){ ui.rallyPick=false; cv.classList.remove('amove'); setRally(w.x,w.y); return; }
+    if(ui.rallyPick){ ui.rallyPick=false; cv.classList.remove('amove'); setRallyOrTeam(w.x,w.y); return; }
     if(ui.amove){ attackMoveAt(w.x,w.y); return; }
     ui.drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,box:false,shift:e.shiftKey};
   }
@@ -72,7 +72,7 @@ function minimapPointer(e){ const r=mm.getBoundingClientRect(); const x=(e.clien
 mm.addEventListener('pointerdown',e=>{ if(!G) return; e.preventDefault(); const p=minimapPointer(e); if(e.button===2){ if(!G.over) smartCommand(p.x,p.y); return; } mmDrag=true; p.move(); });
 mm.addEventListener('pointermove',e=>{ if(mmDrag&&G) minimapPointer(e).move(); });
 // HUD clicks (delegated, on pointerdown so rebuilt markup never swallows a click)
-$('#cmdcard').addEventListener('pointerdown',e=>{ const b=e.target.closest('[data-cmd]'); if(!b) return; e.preventDefault(); const c=CMDS[+b.dataset.cmd]; if(c) c.act(); G.selDirty=true; });
+$('#cmdcard').addEventListener('pointerdown',e=>{ const b=e.target.closest('[data-cmd]'); if(!b) return; e.preventDefault(); const c=CMDS[+b.dataset.cmd]; if(c) c.act(e); G.selDirty=true; });
 $('#selection').addEventListener('pointerdown',e=>{ const q=e.target.closest('[data-cancel]'); if(q){ const b=G.sel[0]; if(b) cancelTrain(b,+q.dataset.cancel); return; }
   const gh=e.target.closest('[data-type]'); if(gh){ selectEntities(G.sel.filter(x=>!x.dead&&x.type===gh.dataset.type),false); return; }
   const o=e.target.closest('[data-only]'); if(o){ const ent=G.sel.find(x=>x.id===+o.dataset.only); if(ent){ selectEntities([ent],false); if(e.detail>1) centerOn(ent.x,ent.y); } } });
@@ -118,10 +118,10 @@ window.addEventListener('keydown',e=>{
         /* the group remembers its formation: back into it if they are not in it now */
         const f=(G.groupForm||{})[n], us=myUnits(); if(f&&us.length>1&&!us.every(u=>u.formation===f)&&(f.shape!=='custom'||customForm())){ groupFormUp(us,f); uiUsed('groupform'); toast(`Group ${n}: back in ${FORMATIONS[f.shape].name} formation.`,true); } } }
     return; }
-  if(e.key===' '){ e.preventDefault(); if(G.alert) centerOn(G.alert.x,G.alert.y); return; }
+  if(e.key===' '){ e.preventDefault(); if(G.side==='swarm'&&batchReleaseAll()) return; if(G.alert) centerOn(G.alert.x,G.alert.y); return; }   /* Swarm: Space hatches the batches now */
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(k==='n'&&G.mission.training){ G.vars.skip=true; toast('Step skipped.',true); return; }   /* training: skip a step */
-  const c=CMDS.find(c=>c.key.toLowerCase()===k); if(c){ e.preventDefault(); c.act(); G.selDirty=true; }
+  const c=CMDS.find(c=>c.key.toLowerCase()===k); if(c){ e.preventDefault(); c.act(e); G.selDirty=true; }
 });
 window.addEventListener('keyup',e=>{ ui.keys[e.key]=false; });
 /* Camera follow: after a move or attack order the camera glides along with the selected squad.

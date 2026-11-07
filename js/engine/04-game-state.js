@@ -29,7 +29,7 @@ function newGame(mission, diffKey){
       sel:[], groups:{}, groupForm:{}, objectives:[], triggers:mission.triggers.map(t=>({...t,fired:false})), vars:{}, timer:null,
       stats:{ kills:0, lost:0, soldiers:0, assets:0, crates:0, cocoons:0, built:0, trained:0, hives:0 }, msgs:[], over:null, paused:false,
       cam:{x:0,y:0}, pings:[], pools:[], flareList:[], barks:[], flares:(mission.flares!==undefined?mission.flares:mission.dark?SQUAD.flare.perDarkMission:SQUAD.flare.perMission), markers:[], alert:null, alertT:0, trigT:0, fogT:0, hudT:0, selDirty:true, objDirty:true, msgDirty:true,
-      swarm:{ cfg:mission.swarm, biomass:mission.swarm.biomass||0, nextWave:mission.swarm.waves?mission.swarm.waves.first*(DIFFICULTY[diffKey]||DIFFICULTY.normal).interval:Infinity, waveN:0, rally:null, burrowAt:-99 } };
+      swarm:{ cfg:mission.swarm, biomass:mission.swarm.biomass||0, nextWave:mission.swarm.waves?mission.swarm.waves.first*(DIFFICULTY[diffKey]||DIFFICULTY.normal).interval:Infinity, waveN:0, rally:null, burrowAt:-99, teamRally:{}, hatchTeam:null } };
   for(let i=0;i<N;i++) G.block[i]=map.walk[i]?0:1;
   initPathBuffers();
   const st=mission.start;
@@ -49,7 +49,8 @@ function newGame(mission, diffKey){
   for(const [type,at,n] of st.swarmUnits||[]) spawnAt(type,'swarm',at,n).forEach(u=>{ u.role='guard'; u.guardAt={x:u.x,y:u.y}; u.order={type:'guard',x:u.x,y:u.y,wait:rand(0,4)}; });
   for(const w of map.wild) spawnAt('grazer','wild',w,2).forEach(u=>u.home={x:u.x,y:u.y});
   for(const c of map.crates) G.ents.push({ id:NEXT_ID++, kind:'crate', x:(c.x+.5)*TILE, y:(c.y+.5)*TILE, value:40+Math.floor(Math.random()*3)*10, r:8, faction:'none' });
-  if(typeof spawnRelics==='function') spawnRelics(mission);   /* hidden relics and ancient eggs (29-relics.js) */
+  if(typeof spawnRelics==='function') spawnRelics(mission);
+  if(typeof spawnOldEggs==='function') spawnOldEggs(mission);   /* old eggs that wake into a nest (26-swarm-command.js) */   /* hidden relics and ancient eggs (29-relics.js) */
   for(const o of mission.objectives) G.objectives.push({ ...o, state:'active' });
   const cp=pt(st.camera||'P'); centerOn((cp.x+.5)*TILE,(cp.y+.5)*TILE);
   deployRoster();

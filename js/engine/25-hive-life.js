@@ -219,7 +219,7 @@ function rootHive(u){
     if(tx>=h.tx&&tx<h.tx+3&&ty>=h.ty&&ty<h.ty+3){ const f=nearestWalkable(tx,ty); if(f){ e.x=(f.x+.5)*TILE; e.y=(f.y+.5)*TILE; e.path=null; } } }
   G.fx.push({k:'boom',x:h.x,y:h.y,t:0.6,max:0.6,r:40,col:'#c38bff'}); addDecal(h.x,h.y,30,'rgba(70,30,90,.5)');
   G.pings.push({x:h.x,y:h.y,t:0,col:'#a6ff4a'}); SFX.play('horn');
-  say('Alert','A new hive has grown where the Husk took root.','alert'); G.objDirty=true;
+  if(G.side!=='swarm') say('Alert','A new hive has grown where the Husk took root.','alert'); G.objDirty=true;   /* playing the Swarm, the Brood says it itself */
   return h; }
 function drawRooting(u,now){
   const p=1-u.rootT/u.rootMax, R=10+p*22;

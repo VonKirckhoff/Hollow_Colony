@@ -25,7 +25,7 @@ with sync_playwright() as p:
       /* 1b. fauna first: kill a grazer, drag it home, it becomes a Bloater */
       for(const u of G.vars.prey) u.dead=true; for(const e of G.ents) if(!e.dead&&e.kind==='body') e.dead=true; G.vars.preyAt=1e9;   /* a quiet field for the fauna part */
       const fi=go('Kill a grazer'); const gz=G.vars.gz; ok(gz&&!gz.dead&&G.markers.some(m=>m.id==='tut'),'fauna step marks a grazer');
-      G.swarm.biomass+=300; for(let i=0;i<4;i++) swarmBreed('drone'); step(1); for(const u of myBrood()) u.invuln=true; sendWave(gz.x,gz.y);
+      G.swarm.biomass+=300; swarmBreed('drone',4); batchReleaseAll(); step(SWARM_PLAY.batch.grow+2); for(const u of myBrood()) u.invuln=true; sendWave(gz.x,gz.y);
       for(let i=0;i<60&&G.vars.tutI===fi;i++){ step(1); if(G.vars.stepDone&&G.vars.cardOpen) tutConfirm(); }
       ok(G.vars.tutI>fi,'grazer killed: carcass on the ground');
       { const cb=G.ents.find(e=>!e.dead&&e.kind==='body'&&e.fauna); step(20); ok(cb&&!cb.home&&!cb.carrier&&!G.ents.some(e=>!e.dead&&e.claim===cb),'the carcass stays put until H (manualHaul)'); }
@@ -50,7 +50,7 @@ with sync_playwright() as p:
       const cc=makeBuilding('cocoon','swarm',30,12,true); const c=cc; c.hatchType='husk'; c.hatchT=0.01; c.husk=true; step(1);
       const h=G.ents.find(e=>!e.dead&&e.type==='husk'); ok(h&&h.role==='brood','hatched Husk joins the waiting brood ('+(h&&h.role)+')');
       /* 3. burrow at the brood limit */
-      G.swarm.biomass+=2000; while(broodUsed()<broodCap()){ const n=broodUsed(); swarmBreed('crawler'); if(broodUsed()===n) break; }
+      G.swarm.biomass+=2000; while(broodUsed()<broodCap()){ const n=broodUsed(); swarmBreed('crawler'); if(broodUsed()===n) break; } batchReleaseAll(); step(SWARM_PLAY.batch.grow+SWARM_PLAY.batch.per*30+1);
       ok(broodUsed()>=broodCap(),'brood at its limit ('+broodUsed()+'/'+broodCap()+')');
       G.swarm.burrowAt=G.time; const bi=go('Burrow up'); ok(burrowReady(),'burrow ready');
       const s=G.map.sites.slice().find(s=>{ const x=(s.x+.5)*32,y=(s.y+.5)*32; return walkableT(s.x,s.y)&&G.map.height[s.y*G.map.w+s.x]===0&&!G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&Math.hypot(e.x-x,e.y-y)<8*32); });

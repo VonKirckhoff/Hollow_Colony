@@ -4,7 +4,7 @@
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
-  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
+  { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','seedling','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
   { id:'other',  name:'Other',       units:['hunter','grazer'] },
   { id:'relics', name:'Relics',      relics:true }
 ];
@@ -23,6 +23,7 @@ const INTEL_NOTES = {
   charge:   'Mission object: armed by an Engineer, then it has to survive its fuse.',
   generator:'Mission object: an Engineer repairs it to full to bring it online. It goes down when badly damaged.',
   crawler:  'Fast and fragile, often in numbers. Cheap to lose, so the Swarm throws them first.',
+  seedling: 'A swollen pod on thin legs that a hive grows to carry the Brood somewhere new. It cannot fight. Where it digs in, far from people and other nests, a young nest grows within seconds. Kill it before it roots.',
   bloater:  'Lunar fauna the Swarm killed, dragged home to a hive and remade. Slow and tough, and when it dies it bursts in a cloud of acid that burns your soldiers (and the Swarm). Kill it at range.',
   grafter:  'The parasite of the Swarm. It only hatches from a hive egg when a body (a soldier, or a grazer) lies in the creep of its hive. It runs to the body, latches on and infects it in a few seconds: then the body becomes a cocoon. It cannot fight. One shot kills it.',
   egg:      'A hive keeps no eggs waiting: it lays one right at its own foot the moment a body lies in its creep, and the Grafter inside goes for the body. Shoot the egg before it opens.',

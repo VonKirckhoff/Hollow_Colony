@@ -33,6 +33,16 @@ const SPRITES = {
     "..kkCkkkCkkCkk..",
     "...kCk.kCk.kk...",
     "...kk..kk......."],
+  seedling:[
+    ".....kkkk.......",
+    "...kkCppCkk.....",
+    "..kCpCeeCpCk....",
+    ".kCpeEeeEepCk...",
+    ".kCpEeeeeEpCk...",
+    ".kCCpeEEepCCk...",
+    "..kkCCppCCkk....",
+    "...kCk.kCk.kCk..",
+    "..kk...kk...kk.."],
   grafter:[
     "..........kk",
     "...kkkk..kbk",

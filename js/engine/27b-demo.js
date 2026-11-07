@@ -31,8 +31,8 @@ function demoTap(p){ if(p) G.pings.push({x:p.x,y:p.y,t:0,col:'#ffffff'}); }
 function demoPress(sel){ const el=document.querySelector(sel); if(!el) return; el.classList.add('demo-press'); setTimeout(()=>el.classList.remove('demo-press'),650); }
 /* your brood: the creatures you hatched or steer, free of other jobs */
 function demoBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.boss&&!e.def.grafter&&(e.mine||e.role==='brood')&&e.role!=='guard'&&!e.claim&&!e.haul&&!e.tunnel&&!(e.stage!=null&&e.stage<HUSK_STAGES.length-1)); }
-function demoHatch(type){ if(broodUsed()>=broodCap()) return; const c=UNITS[type].biomass; if(G.swarm.biomass<c) G.swarm.biomass+=c;   /* the demo never stalls for biomass */
-  demoPress(`[data-key="${SWARM_PLAY.keys[type]}"]`); swarmBreed(type); }
+function demoHatch(type){ if(broodUsed()>=broodCap()||broodPending()>=3) return; const c=UNITS[type].biomass; if(G.swarm.biomass<c) G.swarm.biomass+=c;   /* the demo never stalls for biomass */
+  demoPress(`[data-key="${SWARM_PLAY.keys[type]}"]`); if(swarmBreed(type)) batchRelease(nestHive()); }   /* an egg in the batch, and Space: it hatches in a moment */
 function demoSend(x,y,list){ selectEntities(list||[],false); demoTap({x,y}); sendWave(x,y); }
 function demoMove(list,x,y){ if(!list||!list.length) return; selectEntities(list,false); demoTap({x,y}); swarmRight(x,y); }
 function demoHarvest(){ selectEntities([],false); swarmHarvest(); }

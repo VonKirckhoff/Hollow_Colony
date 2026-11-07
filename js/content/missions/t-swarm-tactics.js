@@ -15,6 +15,7 @@ const BROOD_TACTICS = { drill:['trooper','trooper','trooper','engineer'], drillH
   ring:6, chaseR:12, chaseFoes:2, chaseTime:15, refill:10, flight:12, huskMax:4 };
 const DRILL_AT = {x:19,y:20}, LURE_AT = {x:9,y:26}, PAD_AT = {x:16,y:22}, SIDE_AT = {x:16,y:13}, AMBUSH_AT = {x:4,y:27}, BITE_AT = {x:34,y:22};
 const WEST_NEST = {x:3,y:31};   /* top-left of the young western nest (3×3) */
+const TEAM_N = {x:21,y:11}, TEAM_E = {x:31,y:20};   /* the demo's team points: north and east of the ring, out of reach of their gun */
 const WEST_WAY = [{x:22,y:7},{x:8,y:9},{x:3,y:14},{x:4,y:21},AMBUSH_AT];   /* the demo's way round to the lone tower, out of reach of their gun */
    /* DRILL_AT: the outpost (Q) · LURE_AT: the lone Relay Tower outside the ring (on the build site at 8,25) · PAD_AT: where the dropship lands
       · SIDE_AT: the way round for the second team · AMBUSH_AT: where the demo hides the brood · BITE_AT: where the demo's biter runs to */
@@ -81,7 +82,7 @@ TRAINING.swarmTactics = {
     'Play The First Hunger first. Press <b>N</b> to skip a step. Nothing here counts for the campaign.'
   ],
   start:{ camera:{x:27,y:13}, rally:{x:31,y:9}, units:[], hives:['a','b','c'] },   /* the gathering point out of reach of their Sentry Gun */
-  swarm:{ hatchToBrood:true, manualHaul:true, biomass:300, rate:1.2, guardMax:1, guardEvery:30, aggro:0, waves:null, cap:24, unlock:{ spitter:0, brute:0 } },
+  swarm:{ manualHaul:true, biomass:300, rate:1.2, guardMax:1, guardEvery:30, aggro:0, waves:null, cap:24, unlock:{ spitter:0, brute:0 } },
   objectives:[ { id:'tut', text:'Training' } ],
   triggers:[
     { when:g=>g.time>0.05, do:g=>{
@@ -113,6 +114,15 @@ TRAINING.swarmTactics = {
         done:g=>{ const grp=n=>((G.groups||{})[n]||[]).filter(u=>!u.dead&&u.kind==='unit'&&u.faction==='swarm'); const a=grp('1'), b=grp('2'), sent=u=>u.role==='wave'||(u.target&&u.target.faction==='corps');
           if(a.length&&a.some(u=>!b.includes(u))&&a.some(sent)) g.vars.team1=true; if(b.length&&b.some(u=>!a.includes(u))&&b.some(sent)) g.vars.team2=true;   /* remembered: a team may be beaten before the other gets there */
           return !!(g.vars.team1&&g.vars.team2); },
+        after:g=>demoRetreat() },
+      { keys:['1','G','T','Shift','A'], say:'Every team can have its own gathering point. Press [1] to select team 1, press [G] and click somewhere north of the ring; select team 2 and give it a point in the east. A hive hatches straight into a team too: press [T] to choose which one. Now press [Shift]+[A] with nothing selected and click the drill squad: every team goes from its own point, and the closer ones wait, so they all bite at the same time.', obj:'Two team points, then Shift+A: all together',
+        setup:g=>{ g.biomass(150); g.vars.sync0=G.swarm.syncN||0; },
+        demo:(g,D)=>{ const us=demoBrood(); if(!D.mem.t){ const ts=swarmTeams(); if(ts.length<2){ if(us.length<6){ demoHatch(['crawler','drone','crawler'][us.length%3]); return; } const h=Math.ceil(us.length/2); G.groups=G.groups||{}; G.groups['1']=us.slice(0,h); G.groups['2']=us.slice(h); }
+            D.mem.t=1; const a=tactPt(TEAM_N), b=tactPt(TEAM_E); selectEntities(G.groups['1'].filter(u=>!u.dead),false); setTeamRally('1',a.x,a.y); demoLook(D,a); return; }
+          if(!D.mem.u){ D.mem.u=1; const b=tactPt(TEAM_E); selectEntities(G.groups['2'].filter(u=>!u.dead),false); setTeamRally('2',b.x,b.y); demoLook(D,b); return; }
+          const a=tactPt(TEAM_N), b=tactPt(TEAM_E), ready=['1','2'].every(n=>(G.groups[n]||[]).filter(u=>!u.dead).filter(u=>dist(u,n==='1'?a:b)<4*TILE).length>=1);
+          if(!ready&&D.t<30) return; const d=drillAlive(g)[0]; if(!d||D.mem.s) return; D.mem.s=1; selectEntities([],false); demoTap(d); sendWave(d.x,d.y,true); demoLook(D,d); },
+        done:g=>(G.swarm.syncN||0)>g.vars.sync0&&Object.keys(G.swarm.teamRally).filter(n=>teamAlive(n)).length>=2,
         after:g=>demoRetreat() },
       { keys:['A'], say:'Lure one out. Take the brood round to the lone Relay Tower (the marker), the long way, out of reach of their gun, and hide it near the tower. Then send a single creature to bite the tower. It cannot fall: once it is dead it is nothing to bite. Their Engineer walks out to mend it. Outside the ring he is soft: bring him down.', obj:'Lure the Engineer out with the lone tower and bring him down', mark:LURE_AT, markLabel:'Lone tower',
         setup:g=>{ g.vars.le0=g.vars.luredEng||0; g.biomass(100); g.reveal(LURE_AT,6,120); },

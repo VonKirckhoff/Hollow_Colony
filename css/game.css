@@ -456,7 +456,16 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .troph-hero .tvoid{color:#ff9a8f;}
 
 /* ---------- the Swarm campaign ---------- */
-.camp-side{justify-self:start;}
+.camp-side{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:14px;}
+.camp-side button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 16px;cursor:pointer;text-align:left;background:rgba(12,14,20,.7);border:2px solid var(--line);color:var(--dim);font-family:var(--f-display);transition:border-color .15s,background .15s;}
+.camp-side button b{font-size:18px;letter-spacing:.06em;color:var(--ink);font-weight:700;}
+.camp-side .cs-k{font-size:9px;letter-spacing:.16em;text-transform:uppercase;}
+.camp-side .cs-n,.camp-side .cs-p{font-family:var(--f-body,inherit);font-size:12px;}
+.camp-side button[data-side="corps"]:hover,.camp-side button[data-side="corps"].on{border-color:var(--corps);}
+.camp-side button[data-side="corps"].on{background:rgba(255,179,71,.14);} .camp-side button[data-side="corps"].on b{color:var(--corps);}
+.camp-side button[data-side="swarm"]:hover,.camp-side button[data-side="swarm"].on{border-color:#a6ff4a;}
+.camp-side button[data-side="swarm"].on{background:linear-gradient(135deg,rgba(166,255,74,.12),rgba(195,139,255,.16));} .camp-side button[data-side="swarm"].on b{color:#a6ff4a;}
+.camp-side button:not(.on) .cs-p{color:var(--dim);} .camp-side button.on .cs-k{color:var(--ink);}
 .swarm-only{display:none;}
 #s-campaign.swarm .swarm-only{display:block;}
 #s-campaign.swarm .hero-card,#s-campaign.swarm #btn-vets,#s-campaign.swarm #btn-ceno,#s-campaign.swarm #btn-troph{display:none;}
@@ -468,7 +477,7 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .msg.intercept{opacity:.72;} .msg.intercept .who{color:#8a93a6 !important;}
 .msg.swarm .who{color:#a6ff4a !important;} .msg.swarm .txt{color:#e3d4ff;}
 body.as-swarm #r-salvage{color:#a6ff4a;}
-.camp-side button[data-side="swarm"].on{background:#a6ff4a;color:#0b1206;}
+
 .trow.grand{grid-template-columns:minmax(110px,1fr) repeat(2,minmax(0,1.95fr));} .trow.grand .grandp{min-height:76px;}
 .trow.grand .grandp b{color:#d8cfb8;} .trow.grand .grandp.won b{color:#fff3c9;}
 .plaque.won.swarm{border-color:rgba(166,255,74,.5);color:#a6ff4a;background:linear-gradient(#1f2a14,#11180b);} .plaque.won.swarm svg{filter:drop-shadow(0 0 6px rgba(166,255,74,.5));}

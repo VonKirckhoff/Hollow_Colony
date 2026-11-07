@@ -27,6 +27,7 @@ function buildCampaign(){
   const sw=ui.campSide==='swarm', L=campList(); $('#s-campaign').classList.toggle('swarm',sw);
   document.querySelectorAll('[data-side]').forEach(b=>{ const on=b.dataset.side===(sw?'swarm':'corps'); b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
   $('#camp-eyebrow').textContent=sw?'CAMPAIGN · THE SWARM':'CAMPAIGN · LUNAR CORPS'; $('#camp-title').textContent=sw?'The Long Hunger':'Operation Hollow Light';
+  for(const [k,LL] of [['corps',MISSIONS],['swarm',SWARM_MISSIONS]]){ const el=$('#cs-p-'+k); if(el) el.textContent=`${LL.filter(m=>isDone(m.id)).length} / ${LL.length} missions`; }   /* progress on the side buttons */
   buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
   const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete${sw?' · more to come':''}`;
