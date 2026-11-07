@@ -115,6 +115,7 @@ const DEV_HELP = {
   /* playing the swarm */
   'FIRST_HUNGER|preyEvery':'Training The First Hunger: seconds before a new pair of soldiers wanders into the open once the last ones are down.',
   'FIRST_HUNGER|prey':'Training The First Hunger: how many soldiers wander in each time.',
+  'FIRST_HUNGER|huskMax':'Training The First Hunger: no new soldiers wander in while this many are turned or turning (bodies, cocoons, Twitchers, Husks).',
   'FIRST_HUNGER|swarmMax':'Training The First Hunger: no new soldiers wander in while this many Swarm creatures roam (hive guards and Grafters do not count).',
   'FIRST_HUNGER|drillHp':'Training The First Hunger: health of the drill squad soldiers (× normal).',
   'FIRST_HUNGER|drillDmg':'Training The First Hunger: damage of the drill squad soldiers (× normal).',

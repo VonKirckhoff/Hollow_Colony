@@ -77,7 +77,7 @@ function render(now){
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*e.progress),2); }
     if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); } }
   // the kills a full-grown Husk (or Matriarch) has on its conscience: a little skull and the count (n/4 = on its way to Matriarch)
-  for(const e of list) if(e.kind==='unit'&&e.def.founder&&!e.avatar&&(e.kills>0||e.def.matriarch||e.stage===HUSK_STAGES.length-1)) drawKillTally(e);
+  for(const e of list) if(e.kind==='unit'&&e.def.founder&&!e.avatar&&(e.kills>0||e.def.matriarch||(e.stage===HUSK_STAGES.length-1&&G.side!=='swarm'))) drawKillTally(e);   /* playing the Swarm: only a Husk that has killed shows its tally */
   // status labels of mission objects (generators, charges)
   ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
   for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!==G.side&&!isVisible(e)) continue;
@@ -237,7 +237,7 @@ function drawTunnel(b,now){ const a=WALL_ROT[b.wall]||0, art=ARTC.tunnel, w=art.
   const g=ctx.createRadialGradient(0,-2,2,0,-2,18); g.addColorStop(0,`rgba(166,255,74,${0.12+0.08*Math.sin(now/350+b.id)})`); g.addColorStop(1,'rgba(166,255,74,0)');
   ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(-20,-22,40,40); ctx.globalCompositeOperation='source-over'; ctx.restore(); }
 
-function drawKillTally(e){ const n=e.kills||0, txt=e.def.matriarch?`${n}`:`${n}/${HUSK_WARRIOR.matriarch}`, sp=SPR[e.sprite||e.def.sprite];
+function drawKillTally(e){ const n=e.kills||0, txt=(e.def.matriarch||G.side==='swarm')?`${n}`:`${n}/${HUSK_WARRIOR.matriarch}`,   /* /4: kills to a Matriarch, which only grows when you play the Corps */ sp=SPR[e.sprite||e.def.sprite];
   const y=Math.round(e.y-sp.h*(e.def.scale||2)-17); ctx.font='9px Silkscreen, monospace'; const tw=Math.ceil(ctx.measureText(txt).width), W=tw+12, x=Math.round(e.x-W/2);
   ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(x-1,y-1,W+2,10);
   const c=n>0?'#ff5a4f':'#8a8f9c'; ctx.fillStyle=c;   /* pixel skull */
