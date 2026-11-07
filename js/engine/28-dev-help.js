@@ -113,6 +113,8 @@ const DEV_HELP = {
   'MOLT|time':'Seconds a Husk stage takes to molt into the next one.',
   'MOLT|vuln':'Damage taken while molting, ×.',
   /* playing the swarm */
+  'FIRST_HUNGER|preyEvery':'Training The First Hunger: seconds before a new pair of soldiers wanders into the open once the last ones are down.',
+  'FIRST_HUNGER|prey':'Training The First Hunger: how many soldiers wander in each time.',
   'SWARM_PLAY|cap':'Playing the Swarm: most brood you can have hatched at once (hive guards do not count).',
   'SWARM_PLAY|kill':'Playing the Swarm: biomass for every soldier your brood kills.',
   'SWARM_PLAY|tunnel':'Playing the Swarm: seconds new brood needs to tunnel to a gathering point it cannot walk to.',

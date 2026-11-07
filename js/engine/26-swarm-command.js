@@ -29,7 +29,7 @@ const TACTIC_INFO = {
 function swarmSide(){ return !!G && G.side==='swarm'; }
 function myBrood(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.role==='brood'); }
 function broodUsed(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.mine).length; }
-function broodCap(){ return G.swarm.cfg.cap||SWARM_PLAY.cap; }
+function broodCap(){ return (G.swarm.cfg.cap||SWARM_PLAY.cap)+(G.swarm.capExtra||0); }   /* capExtra: room a mission script adds (the training's burrow step) */
 function broodUnlocked(type){ const at=(G.swarm.cfg.unlock||{})[type] ?? UNITS[type].unlock ?? 0; return G.time>=at; }
 function nestHive(){ const s=G.sel.find(e=>!e.dead&&e.type==='hive'); if(s) return s; const r=G.swarm.rally; const hs=hives(); if(!hs.length) return null; return r?hs.reduce((a,b)=>dist(a,r)<=dist(b,r)?a:b):hs[0]; }
 /* waiting brood stays near the gathering point and fights whatever comes close */
@@ -79,7 +79,7 @@ function sendWave(x,y){ ui.amove=false; cv.classList.remove('amove'); G.selDirty
   for(const u of us){ freeFromJobs(u); u.post=null; }
   const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
   for(const u of us){ u.role='wave'; u.target=t||null; u.order={type:'amove',x:x+rand(-24,24),y:y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); }
-  const plan=waveTactic(us,G.swarm.tactic); if(sel.length) startFollow();
+  const plan=waveTactic(us,G.swarm.tactic); G.swarm.sent=(G.swarm.sent||0)+1; G.swarm.lastPlan=plan; if(sel.length) startFollow();   /* sent/lastPlan: for the training's tactic step */
   G.pings.push({x,y,t:0,col:'#ff5a4f'}); SFX.play('horn');
   say('The Brood',`${us.length} go${us.length===1?'es':''} to feed${plan!=='direct'?` (${TACTIC_INFO[plan].name.toLowerCase()})`:''}.`,'swarm'); }
 function cycleTactic(){ const ks=Object.keys(TACTIC_INFO), i=ks.indexOf(G.swarm.tactic); G.swarm.tactic=ks[(i+1)%ks.length]; toast(`Tactic: ${TACTIC_INFO[G.swarm.tactic].name}. ${TACTIC_INFO[G.swarm.tactic].tip}`,true); G.selDirty=true; }

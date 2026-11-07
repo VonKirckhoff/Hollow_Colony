@@ -2,6 +2,13 @@
 /* Training (the Swarm): The First Hunger, in Kappa Basin. Every order of the Brood, step by step.
    Hives → hatching → the gathering point → steering a selection → attacking → bringing the fallen home → egg and Grafter
    → the Husk → tactics → burrowing → tearing down an outpost. Press N to skip a step. */
+/* FIRST_HUNGER: preyEvery = seconds before a new pair of soldiers wanders into the open once the last ones are down · prey = how many come */
+const FIRST_HUNGER = { preyEvery:12, prey:2 };
+const PREY_AT = {x:36,y:24};
+function preyStanding(g){ return (g.vars.prey||[]).some(u=>!u.dead&&!u.downed); }
+function newPrey(g,talk){ g.vars.prey=(g.vars.prey||[]).filter(u=>!u.dead&&u.downed);   /* keep the ones still bleeding out (the step checks look at the list) */
+  const us=g.spawn('trooper',PREY_AT,FIRST_HUNGER.prey); for(const u of us){ u.order={type:'hold'}; u.stance='hold'; g.vars.prey.push(u); }
+  g.reveal(PREY_AT,5,8); g.ping(PREY_AT); if(talk) g.brood_say('More of the soft ones wander into the open. Feed.'); return us; }
 TRAINING.swarm = {
   id:'training-swarm', side:'swarm', training:true, title:'The First Hunger', map:'kappa',
   summary:'Learn to be the Brood: hatching, gathering, striking, and what the Swarm does with the fallen.',
@@ -15,7 +22,12 @@ TRAINING.swarm = {
   objectives:[ { id:'tut', text:'Training' } ],
   triggers:[
     { when:g=>g.time>0.05, do:g=>{ g.vars.prey=g.corps().filter(u=>Math.hypot(u.x-(36.5*TILE),u.y-(24.5*TILE))<4*TILE); for(const u of g.corps()){ u.order={type:'hold'}; u.stance='hold'; }
-        g.place('sentry','Q',3,-2); const s=G.map.sites.slice().sort((a,b)=>Math.hypot(a.x-19,a.y-20)-Math.hypot(b.x-19,b.y-20))[0]; makeBuilding('relay','corps',s.x,s.y,true); } },
+        g.place('sentry','Q',3,-2); const s=G.map.sites.slice().sort((a,b)=>Math.hypot(a.x-19,a.y-20)-Math.hypot(b.x-19,b.y-20))[0]; g.vars.relaySite={x:s.x,y:s.y}; makeBuilding('relay','corps',s.x,s.y,true); } },
+    /* a steady supply of prey: once the soldiers in the open are all down, a new pair wanders in after FIRST_HUNGER.preyEvery seconds,
+       so the hunt, the fallen and the tactics can be practised again and again */
+    { repeat:true, when:g=>!!g.vars.prey, do:g=>{ if(preyStanding(g)){ g.vars.preyAt=null; return; }
+        if(g.vars.preyAt==null){ g.vars.preyAt=g.time+FIRST_HUNGER.preyEvery; return; }
+        if(g.time>=g.vars.preyAt){ g.vars.preyAt=null; newPrey(g,true); } } },
     ...tutorial([
       { say:'We wake. Learn what the Brood can do. The world keeps moving while a card is open; try things as you read. Close a card with [Enter]; the next one comes once you have done what it asks. What we talk about lights up. ◀ and ▶ page back through earlier tips; Practice again redoes one. The Tips tab at the top brings the card back. [N] skips a step.', obj:'Listen to the Brood', hl:['#objectives'], done:g=>g.time>2 },
       { say:'Look around: arrow keys, the edge of the screen, or click the minimap. Our three nests ring the basin.', obj:'Move the camera', hl:['#minimap-wrap'], setup:g=>{ g.vars.cam0={...G.cam}; }, done:tut.camMoved },
@@ -28,12 +40,22 @@ TRAINING.swarm = {
         setup:g=>{ g.reveal({x:36,y:24},5,10); }, done:g=>g.vars.prey.every(u=>u.dead||u.downed) },
       { keys:['H'], say:'We do not finish the fallen: a whole body is worth more. They bleed out. Then press [H]: the brood carries them home to the creep of a hive.', obj:'Bring a body home (H)', done:()=>(G.stats.fed||0)>=1 },
       { say:'On the creep an egg opens. A Grafter crawls out, latches onto the body and infects it. Watch.', obj:'Watch the Grafter turn the body', done:()=>G.stats.cocoons>=1 },
-      { say:'The cocoon beats faster and faster. What crawls out grows: Twitcher, Shambler, Husk. The Shambler hides to finish turning; the Husk roots into a new hive.', obj:'Watch it grow', done:g=>G.ents.some(e=>e.type==='husk'&&!e.dead&&e.stage>=1)||g.time>g.vars.tutStart+45 },
+      { say:'The cocoon beats faster and faster. What crawls out is a Twitcher, weak while it turns; it molts once and becomes a Husk. The Husk is a warrior: it hunts their soldiers on its own, and you can select and steer it like the rest of the brood.', obj:'Watch it grow', done:g=>G.ents.some(e=>e.type==='husk'&&!e.dead&&e.stage>=1)||g.time>g.vars.tutStart+45 },
       ...topbarSteps('swarm'),
-      { keys:['T'], say:'How the brood attacks: press [T] to change the tactic. Direct goes straight in, Lure sends bait first, Flank swings half round the side. Pick Flank.', obj:'Change the tactic to Flank (T)', done:()=>G.swarm.tactic==='flank' },
-      { keys:['B'], say:'Press [B] and click open ground, away from their eyes: a small brood digs up out of the rock.', obj:'Burrow up a brood (B + click)', setup:g=>{ g.biomass(60); }, done:()=>G.swarm.burrowAt>0 },
+      { keys:['T','A'], say:'How the brood attacks: press [T] to change the tactic. Direct goes straight in, Lure sends a few fast ones first as bait and the rest a few seconds later, Flank swings half round the side. Pick Lure or Flank, then send at least three of the brood at the soldiers in the open with [A]. Try both if you like: new soldiers keep coming.', obj:'Attack with Lure or Flank (T, then A + click)', mark:PREY_AT, markLabel:'Prey',
+        setup:g=>{ g.vars.w0=G.swarm.sent||0; g.biomass(60); if(!preyStanding(g)) newPrey(g,false); g.reveal(PREY_AT,5,10); },
+        done:g=>(G.swarm.sent||0)>g.vars.w0&&G.swarm.lastPlan&&G.swarm.lastPlan!=='direct' },
+      { keys:['B'], say:'Press [B] and click open ground, away from their eyes: a small brood digs up out of the rock. (For this step the brood limit stretches, so there is always room.)', obj:'Burrow up a brood (B + click)',
+        setup:g=>{ const B=SWARM_PLAY.burrow; if(G.swarm.biomass<B.cost) g.biomass(B.cost-G.swarm.biomass+15);
+          const short=broodUsed()+B.units.length-broodCap(); if(short>0) G.swarm.capExtra=(G.swarm.capExtra||0)+short;   /* room for one burrow, even at the limit */
+          if(!burrowReady()) G.swarm.burrowAt=G.time-B.cooldown; g.vars.b0=G.swarm.burrowAt; },
+        done:g=>G.swarm.burrowAt>g.vars.b0 },
       { say:'Their outpost hums at the centre: a tower and a gun that turns by itself. Grow the brood and tear both down. Every soldier we kill feeds us.', obj:'Destroy the Relay Tower and the Sentry Gun', mark:'Q', markLabel:'Outpost',
-        setup:g=>{ g.biomass(200); }, done:()=>tut.built('relay').length===0&&tut.built('sentry').length===0, after:g=>g.win('The outpost is torn open. The Brood is ready to wake under Kappa Station.') }
+        setup:g=>{ g.biomass(200); let rebuilt=false;   /* torn down before this step? Then they have built it up again, so there is something to practise on */
+          if(!tut.built('relay').length&&g.vars.relaySite){ makeBuilding('relay','corps',g.vars.relaySite.x,g.vars.relaySite.y,true); rebuilt=true; }
+          if(!tut.built('sentry').length){ g.place('sentry','Q',3,-2); rebuilt=true; }
+          if(rebuilt){ if(!g.near('corps','Q',6)) for(const u of g.spawn('trooper','Q',2)){ u.order={type:'hold'}; u.stance='hold'; }
+            g.ping('Q'); g.brood_say('They have raised their outpost again. Tear it down once more.'); } }, done:()=>tut.built('relay').length===0&&tut.built('sentry').length===0, after:g=>g.win('The outpost is torn open. The Brood is ready to wake under Kappa Station.') }
     ])
   ]
 };

@@ -74,7 +74,7 @@ function topbarSteps(side){ const sw=side==='swarm', used=n=>(G.uiUse&&G.uiUse[n
       setup:g=>{ g.vars.u0=used('voices'); g.vars.u1=used('volume'); }, done:g=>used('voices')>=g.vars.u0+2&&used('volume')>g.vars.u1&&ui.voices },
     { say:'Sound on/off mutes every sound in the game. Switch it off, listen to the silence, and switch it on again.', obj:'Switch the sound off and on', hl:['#btn-sound'],
       setup:g=>{ g.vars.u0=used('sound'); }, done:g=>used('sound')>=g.vars.u0+2&&!SFX.muted },
-    { say:'Menu, [P] or [Esc] pauses the game. From there you can open the Field Manual, restart or quit. Open it and resume.', obj:'Open the menu (P) and resume', hl:['#btn-menu'],
+    { say:'Menu, [P] or [Esc] pauses the game. From there you can open the Field Manual, restart or quit. In a mission the menu also has Save game: one slot, and Continue on the main menu picks it up again. A training is not saved, so here the button is missing. Open the menu and resume.', obj:'Open the menu (P) and resume', hl:['#btn-menu'],
       setup:g=>{ g.vars.u0=used('resume'); }, done:g=>used('resume')>g.vars.u0 }
   ]; }
 /* small helpers for the step checks */
