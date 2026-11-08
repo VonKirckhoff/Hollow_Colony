@@ -84,6 +84,11 @@ CASES=[
   step(ROGUE.taint.feralTime+ROGUE.taint.collapse+6); const p=formationSpot(u); ok(u.formation===f,'back in his formation'); ok(p&&Math.hypot(u.x-p.x,u.y-p.y)<TILE*1.5,'and back in his place');
   const w=crew().find(x=>x.type==='gunner'); w.formation=null; w.slot=null; w.vet.taint=100; step(0.2); tp(w,Math.floor(w.x/TILE)+0,Math.floor(w.y/TILE)); step(ROGUE.taint.feralTime+ROGUE.taint.collapse+8); const m=nearestOf(w,e=>e!==w&&e.crew&&!e.dead); ok(dist(w,m)<3*TILE,'no formation: he walks back to the crew');'''),
 ('intel tab','''goMenu('intel'); ok([...document.querySelectorAll('[data-itab]')].some(b=>b.dataset.itab==='rogue'),'Rogue Strain tab'); intelTab='rogue'; buildIntel(); ok(document.querySelectorAll('#intel-list .ili').length===7+6+ROGUE_INTEL.length,'crew, strains, rules'); ok(/Haesaert/.test(document.getElementById('intel-grid').innerHTML),'first card: the Captain'); goMenu('menu');'''),
+('the crew sounds different','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt), d=crew().find(x=>x.vet.id==='osp-devreese');
+  G.barkNext=0; bark(u,'move'); ok(G.barks.some(b=>b.u===u&&ROGUE_VOICE.move.includes(b.text)),'a crew line, not a Corps line');
+  u.vet.taint=0; const t0=crewTone(u,false); u.vet.taint=100; const t1=crewTone(u,false); ok(t1.pitch<t0.pitch*0.6&&t1.rate<t0.rate,'the taint drags the voice down');
+  ok(crewTone(d,false).pitch>t0.pitch,'Devreese higher than the men'); u.vet.taint=100; step(0.2); ok(u.feral>0&&crewVoicePool(u,'select')===ROGUE_VOICE.feral&&crewTone(u,false).pitch===ROGUE_VOICE_TONE.feralPitch,'feral: only growls');
+  const l=makeUnit('trooper','loyal',u.x+60,u.y); G.lastFight=-99; G.barkNext=0; const w=crew().find(x=>x.type==='gunner'); fire(w,l); ok(G.barks.some(b=>b.u===w&&ROGUE_VOICE.loyal.includes(b.text)),'first shots at the Corps: a loyal line');'''),
 ('corps campaign untouched','''resetRogue(); __hc.startMission(MISSIONS[0]); const G=__hc.G; step(2); ok(!G.rogue&&!G.ents.some(e=>e.crew),'no crew in a Corps mission'); ok(document.getElementById('r-dna-wrap').hidden,'no DNA counter');''')
 ]
 res=[]

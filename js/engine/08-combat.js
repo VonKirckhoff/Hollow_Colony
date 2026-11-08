@@ -36,7 +36,7 @@ function findTarget(u,rangeTiles,unitsOnly){
 function fire(u,t){
   const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Brood Mother's screech */ const dm=(u.dmgMul||1)*(u.blindT>0?SWARM_LIGHT.dmg:1)*(u.crew?feverOf(u)*(u.feral>0?1.3:1):1);   /* Rogue: taint is fever, feral hits harder */
   if(u.type==='trooper'&&hasPerk(u)&&t.kind==='unit') throwGrenade(u,t);
-  if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,'contact'); G.lastFight=G.time; }
+  if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,u.crew&&t.faction==='loyal'?'loyal':'contact'); G.lastFight=G.time; }
   const ang=Math.atan2(t.y-u.y,t.x-u.x); u.angle=ang;
   const mx = u.kind==='building' ? u.x+Math.cos(ang)*12 : u.x+u.face*12, my = u.kind==='building' ? u.y-4+Math.sin(ang)*12 : u.y-8;
   if(u.faction==='corps'||isVisible(u)) SFX.play(d.attack==='bullet'?(u.type==='gunner'?'gunner':u.type==='sentry'?'sentry':'rifle'):d.attack==='flame'?'flame':d.attack==='acid'?'spit':d.attack==='plasma'?'plasma':'slash',u.x,u.y);

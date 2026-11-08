@@ -48,6 +48,31 @@ const ROGUE = {
 };
 /* Corps voices heard over the radio in a Rogue mission: shown as an intercept */
 const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Kestrel','Dr. Maas','Lt. Okafor','Corps patrol','Outpost Kappa','Corps radio'];
+/* ROGUE_VOICE: what the Osprey crew says instead of the Corps lines (VOICE in veterans.js). Kinds the crew lacks fall back to VOICE.
+   Extra kinds: loyal (first shots at the loyal Corps), taint (said now and then from 85% taint), seizure, feral, stab (the Medic doses someone).
+   The voice itself is lower and slower than the Corps, and drops further as the taint climbs (ROGUE_VOICE_TONE). */
+const ROGUE_VOICE = {
+  select:  ['Talk.','What now, Captain?','Still breathing.','Yeah?','Say it.','Listening.','Make it quick.','Still here. Mostly.'],
+  move:    ['Quiet. Moving.','Into the dark.','Stay low.','Going.','Keep to the shadows.','Moving. No noise.','Fine.'],
+  attack:  ['Take them apart!','Leave nothing!','Shoot, don\'t burn!','Bleed them!','Put them down!','Make it count!'],
+  contact: ['Company.','I smell them.','Something\'s coming.','They\'re close. I can feel it.','Movement. Ours or theirs?','Here they come.'],
+  loyal:   ['Corps. Our old friends.','Corps kit. Don\'t let them call it in!','It\'s the Corps! Shoot first, remember later.','Our own people... no. Not any more.'],
+  down:    ['{name}! Get up, the strain won\'t let you go!','{name} is down! Leave the body, we come back for it.','No, {name}! ...it\'s still moving in there.','We lost {name}. For now.'],
+  hurt:    ['It burns... the strain\'ll fix it.','Barely felt that.','Hit! It\'s already knitting.','That\'ll leave a mark.','Ugh. Again.'],
+  downed:  ['I\'m down... it won\'t let me die.','Can\'t move... it\'s holding me together.','Doc! Doc, it hurts different!','Leave me. No. Don\'t.'],
+  revived: ['Back. Don\'t ask how.','Still alive. Sort of.','On my feet.','Thanks, Doc. I think.'],
+  heal:    ['Hold still. This is not medicine any more.','Breathe. Let it work.','Stay with me.','Your blood looks wrong. Hold still.'],
+  build:   ['On it.','Give me a minute.','Building. Keep them off me.','Corps junk. It\'ll do.'],
+  flare:   ['Light out! Cover your eyes.','Flare! Hate the light now.','Lighting it.'],
+  grenade: ['Frag!','Catch!','Fire in the hole!'],
+  waver:   ['The Captain\'s down!','Haesaert! Who leads now?!','Without the Captain we\'re just deserters!'],
+  taint:   ['I can hear them singing...','My hands won\'t stop shaking.','It\'s so loud in my head.','The hive... it\'s calling me.','I\'m fine. I\'m fine. I\'m fine.','Doc... my eyes feel wrong.'],
+  seizure: ['Gnnh...','Not now... not now!','Hold me down!'],
+  feral:   ['GRRAAH!','MINE.','Hhhhrrr...','Kill... kill...','HUNGRY.'],
+  stab:    ['Needle in. Breathe.','There. Come back to us.','One dose. Make it last.','Easy. Easy now.']
+};
+/* how the crew sounds: pitch and rate for the browser's speech voice. taint 0 → base, taint 100 → base − drop. feral: pitch/rate below. */
+const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDrop:0.25, feralPitch:0.1, feralRate:0.62, taintChance:0.3 };
 /* in a Rogue job, the engine's own warnings (hives, husks, the hunt) come from the crew instead of these advisors */
 const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Haesaert' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */

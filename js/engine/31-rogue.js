@@ -48,6 +48,15 @@ function feverOf(u){ return u&&u.crew&&u.vet&&u.vet.taint>0 ? 1+u.vet.taint*ROGU
 /* the Swarm smells one of its own: the hunt passes him by (taint ≥ scent, or the Hive strain) */
 function rogueHuntSkip(e){ return !!(e.crew&&e.vet&&(e.scent||e.vet.taint>=ROGUE.taint.scent)); }
 
+/* ---- the crew's voice: their own lines (ROGUE_VOICE), and a tone that drops as the taint climbs ---- */
+function crewVoicePool(u,kind){ const T=ROGUE.taint, t=u.vet.taint||0;
+  if(u.feral>0) return ROGUE_VOICE.feral;
+  if(t>=T.seizure&&kind!=='down'&&kind!=='seizure'&&kind!=='feral'&&Math.random()<ROGUE_VOICE_TONE.taintChance) return ROGUE_VOICE.taint;
+  return ROGUE_VOICE[kind]||null; }
+function crewTone(u,urgent){ const V=ROGUE_VOICE_TONE, h=nameHash(u.vet.name), f=u.vet.sex==='f', k=Math.min(1,(u.vet.taint||0)/100);
+  if(u.feral>0) return { pitch:V.feralPitch, rate:V.feralRate };
+  const base=(f?V.pitchF:V.pitch)+(h%4)*0.03;
+  return { pitch:Math.max(0.1,base*(1-V.drop*k)), rate:Math.max(0.5,V.rate*(1-V.rateDrop*k)+(urgent?0.15:0)) }; }
 /* ---- the mission is won: what the crew carries home ---- */
 function rogueSettle(){
   const R=rogueStore(), T=ROGUE.taint, alive=new Map(), FV=G.fallenVets||{}, res={ back:[], dna:{...G.rogue.dna}, promoted:[], taint:[] };
@@ -94,6 +103,7 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
     if(u.knit&&u.hp<u.maxHp&&G.time-(u.hitAt??-99)>4) u.hp=Math.min(u.maxHp,u.hp+u.knit*dt);
     if(v.taint>=T.seizure){ u.seizeT=(u.seizeT??rand(T.seizureEvery,T.seizureEvery2)*0.5)-dt;
       if(u.seizeT<=0){ u.seizeT=rand(T.seizureEvery,T.seizureEvery2); u.stunT=T.seizureTime; u.target=null; G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.2,max:1.2,txt:'SEIZURE',col:'#9dff6a'});
+        G.barkNext=0; bark(u,'seizure');
         if(!G.saidSeize){ G.saidSeize=true; say('Devreese',`${v.name} is seizing! Too much strain in the blood. A stabilizer dose brings it down: select me and press J.`,'crew'); } } }
     else u.seizeT=null;
     if(v.taint>=T.feral) goFeral(u); }
@@ -108,7 +118,7 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
 function goFeral(u){ const T=ROGUE.taint; if(u.feral>0) return; u.feral=T.feralTime; G.rogue.feral++; u.order=null; u.path=null; u.target=null; u.stance=null;
   u.feralForm=u.formation||null; u.feralSlot=u.slot||null; u.feralSeq=u.formSeq; u.formation=null; u.slot=null;   /* he keeps his place; he takes it again afterwards */
   if(G.sel.includes(u)){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
-  applyRank(u); SFX.play('huskroar',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.6,max:1.6,txt:'FERAL',col:'#ff5a4f'}); G.pings.push({x:u.x,y:u.y,t:0,col:'#ff5a4f'});
+  applyRank(u); G.barkNext=0; bark(u,'feral'); SFX.play('huskroar',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.6,max:1.6,txt:'FERAL',col:'#ff5a4f'}); G.pings.push({x:u.x,y:u.y,t:0,col:'#ff5a4f'});
   say(u.vet.type==='medic'?'Capt. Haesaert':'Devreese',`${u.vet.name} has gone feral! Stay clear of ${pron(u.vet,'him')}, it passes. Or get a stabilizer into ${pron(u.vet,'him')}.`,'crew alert'); }
 function endFeral(u,dosed){ const T=ROGUE.taint; u.feral=0; applyRank(u); u.target=null; u.order=null;
   if(!dosed){ u.stunT=T.collapse; u.vet.taint=T.after; G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.4,max:1.4,txt:'COLLAPSES',col:'#9dff6a'}); }
@@ -138,6 +148,7 @@ function exitTick(){ if(!G.rogue.exitOpen) return;
       dustPuff(u.x,u.y,8); SFX.play('ack'); G.fx.push({k:'text',x:u.x,y:u.y-24,t:1.2,max:1.2,txt:'INTO THE DARK',col:'#e2556b'}); } } }
 /* a feral soldier runs at whatever is closest and hostile; nobody can give him orders */
 function feralThink(u,dt){
+  u.growlT=(u.growlT??rand(2,4))-dt; if(u.growlT<=0){ u.growlT=rand(3,6); bark(u,'feral'); }   /* he growls now and then */
   if(!u.target||!validTarget(u,u.target)||dist(u,u.target)>14*TILE){ u.feralScan=(u.feralScan||0)-dt;
     if(u.feralScan<=0){ u.feralScan=0.5; u.target=nearestOf(u,e=>e.kind==='unit'&&!e.dead&&!e.downed&&hostile(u.faction,e.faction)&&e.faction!=='wild'&&dist(u,e)<14*TILE&&!e.invuln); } }
   if(u.target){ engage(u,dt,false); return; }
@@ -152,7 +163,7 @@ function rogueStabilize(){ const meds=myUnits().filter(u=>u.crew&&u.def.heal);
   if(!t){ toast(`Nobody within ${ROGUE.stab.reach} tiles needs a dose.`); return; }
   G.rogue.stab--; t.vet.taint=Math.max(0,t.vet.taint-ROGUE.stab.amount); if(t.feral>0) endFeral(t,true); t.seizeT=null; uiUsed('stab');
   SFX.play('heal',t.x,t.y); G.fx.push({k:'text',x:t.x,y:t.y-30,t:1.4,max:1.4,txt:'STABILIZED',col:'#7fdfff'}); for(let i=0;i<10;i++) G.fx.push({k:'spark',x:t.x+rand(-6,6),y:t.y-rand(4,18),vx:rand(-20,20),vy:rand(-50,-10),t:0.6,max:0.6,col:'#7fdfff'});
-  by.face=t.x>=by.x?1:-1; G.selDirty=true; }
+  by.face=t.x>=by.x?1:-1; G.barkNext=0; bark(by,'stab'); G.selDirty=true; }
 
 /* ---- kills: samples, harvests and the loyal Corps ---- */
 const burntBy=(e,src)=>!!((src&&src.def&&src.def.attack==='flame')||e.burnT>0||(src&&src.dead&&!src.def));

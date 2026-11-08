@@ -124,10 +124,10 @@ function drawFlares(now){
 
 /* ---- voices: short lines in a speech bubble with a radio click ---- */
 function bark(u,kind,arg){
-  if(!u||u.dead||!G||!VOICE[kind]) return;
+  if(!u||u.dead||!G||!(VOICE[kind]||(u.crew&&ROGUE_VOICE[kind]))) return;
   const now=G.time; if(now<(G.barkNext||0) && kind!=='down') return;
   G.barkNext=now+SQUAD.voice.gap;
-  const pool=(u.vet&&u.vet.risen&&VOICE_RISEN[kind])||VOICE[kind]; let line=pick(pool); if(arg) line=line.replace('{name}',arg);
+  const pool=(u.crew&&crewVoicePool(u,kind))||(u.vet&&u.vet.risen&&VOICE_RISEN[kind])||VOICE[kind]; let line=pick(pool);   /* crewVoicePool: the Osprey crew (31-rogue.js) */ if(arg) line=line.replace('{name}',arg);
   G.barks=G.barks.filter(b=>b.u!==u); G.barks.push({u,text:line,t:2.2});
   if(G.barks.length>3) G.barks.shift(); SFX.play('chirp'); speak(u,line,kind);
 }
@@ -150,7 +150,8 @@ function speak(u,line,kind){
     const h=nameHash(u.vet?u.vet.name:u.id), sex=u.vet&&u.vet.sex;
     /* your own soldier speaks with a woman's or a man's voice, as you chose; if the browser has none of that kind, the pitch does the work */
     const list=sex==='f'?VOICES_F:sex==='m'?VOICES_M:VOICES_EN, pool=list.length?list:VOICES_EN; if(pool.length) ut.voice=pool[h%pool.length];
-    const z=u.vet&&u.vet.risen; ut.pitch=z?(sex==='f'?0.5:0.1):sex==='f'?(VOICES_F.length?1.05:1.5)+(h%3)*0.05:sex==='m'?0.75+(h%4)*0.05:0.8+(h%7)*0.06; ut.rate=z?0.7:urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
+    const z=u.vet&&u.vet.risen; if(u.crew){ const tn=crewTone(u,urgent); ut.pitch=tn.pitch; ut.rate=tn.rate; ut.volume=clamp(ui.voiceVol,0,1); setTimeout(()=>{ try{ speechSynthesis.speak(ut); }catch(e){} },90); return; }   /* the Osprey crew: lower, slower, and the taint drags it down (31-rogue.js) */
+    ut.pitch=z?(sex==='f'?0.5:0.1):sex==='f'?(VOICES_F.length?1.05:1.5)+(h%3)*0.05:sex==='m'?0.75+(h%4)*0.05:0.8+(h%7)*0.06; ut.rate=z?0.7:urgent?1.25:1.1; ut.volume=clamp(ui.voiceVol,0,1);
     setTimeout(()=>{ try{ speechSynthesis.speak(ut); }catch(e){} },90);   // after the radio click
   }catch(e){}
 }
