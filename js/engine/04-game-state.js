@@ -38,7 +38,8 @@ function newGame(mission, diffKey){
      An entry can be {x,y, wall:'n'|'s'|'e'|'w', creep:<tiles>, eggs:<n>}: wall draws it as a Swarm tunnel breaking out of the map wall;
      creep grows a small patch of creep round it, with eggs on it, so bodies are dragged there and a Husk can hatch there (it is a nest, see nests()). */
   for(const at of st.shafts||[]){ const p=pt(at); if(!p) continue; const s=makeBuilding('shaft','swarm',p.x-1,p.y-1,true); s.invuln=true;
-    if(typeof at==='object'){ if(at.wall) s.wall=at.wall; if(at.creep) s.cfg={ creep:at.creep, eggs:at.eggs!=null?at.eggs:1 }; } }
+    if(typeof at==='object'){ if(at.wall) s.wall=at.wall; if(at.creep) s.cfg={ creep:at.creep, eggs:at.eggs!=null?at.eggs:1 }; }
+    if(at&&at.exit){ s.exit=true; s.faction='none'; s.cfg=null; s.label=at.label||'Way out'; } }   /* Rogue: the crew's way out (31-rogue.js), the Swarm does not use it */
   for(const [at,label] of st.uplinks||[]){ const p=pt(at); const u=makeBuilding('uplink','corps',p.x-1,p.y-1,true); u.invuln=true; u.r=TILE; u.label=label; u.cap=0; u.owned=false; u.point=at; }
   if(mission.landingZone){ const L=mission.landingZone; const lz=makeBuilding('lz','corps',L.tx,L.ty,true); lz.flight=null; lz.invuln=true; lz.r=TILE*1.5; }
   /* hives: a map point ('a'), or { at:'a', hp, guardMax, guardEvery, guards:[types], aggro, aggroBrood, aggroCooldown, brood, rage } to tune one hive */

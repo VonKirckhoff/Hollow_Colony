@@ -13,10 +13,10 @@ ROGUE_MISSIONS.push(
     ],
     start:{ salvage:0, camera:{x:41,y:13}, crewAt:{x:41,y:13},
       units:[], buildings:[], hives:['a','b','c'],
-      shafts:[ {x:40,y:2,wall:'n',creep:3,eggs:1}, {x:61,y:21,wall:'e',creep:3,eggs:1}, {x:38,y:41,wall:'s',creep:3,eggs:1} ],
+      shafts:[ {x:40,y:2,wall:'n',creep:3,eggs:1}, {x:61,y:21,wall:'e',creep:3,eggs:1}, {x:38,y:41,wall:'s',exit:true,label:'South tunnel'} ],
       swarmUnits:[ ['drone','3',3], ['crawler','5',3], ['drone','4',2], ['crawler','6',2] ] },
     tough:{ husk:{ hp:1.3, armor:0.2 } },
-    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:8, aggroBrood:50, aggroCooldown:16, waves:null,
+    swarm:{ shaftHeirs:true, biomass:40, rate:0.3, guardMax:4, guardEvery:14, aggro:8, aggroBrood:50, aggroCooldown:16, waves:null,
       hunt:{ every:35, afterEvery:20, budget:45, afterBudget:70, grow:0.2, growMax:10 } },
     objectives:[
       { id:'freezer', text:'Crack Dr. Maas\'s sample freezer in the lab (an Engineer)' },
@@ -51,10 +51,10 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.dustDue&&g.time>g.vars.radioT+9, do:g=>g.crewSay('Capt. Haesaert','Lost with all hands. ...Fine by me. Nobody hunts a dead man. Finish the job and get underground before Dust sees us.') },
       { repeat:true, when:g=>!g.vars.dnaDone, do:g=>{ const n=g.dna(); g.setText('dna',`Bottle Swarm DNA (${Math.min(6,n)}/6)`); if(n>=6){ g.vars.dnaDone=true; g.complete('dna'); } } },
       /* both done: out through the Swarm tunnel in the south wall */
-      { when:g=>g.isDone('freezer')&&g.vars.dnaDone, do:g=>{ g.addObjective('escape','Everyone into the Swarm tunnel in the south wall'); g.marker('exit',{x:38,y:40},'South tunnel');
+      { when:g=>g.isDone('freezer')&&g.vars.dnaDone, do:g=>{ g.addObjective('escape','Everyone into the Swarm tunnel in the south wall (right-click it)'); g.exitMark('exit'); g.openExit();
           g.crewSay('Devreese','That is enough to start with. The tunnel in the south wall, Captain. They dug it; it goes deep.'); g.vars.escape=true; } },
-      { repeat:true, when:g=>g.vars.escape&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the Swarm tunnel in the south wall (${Math.min(g.crewNear({x:38,y:40},4),g.crewUp())}/${g.crewUp()})`) },
-      { when:g=>g.vars.escape&&g.crewUp()>0&&g.crewNear({x:38,y:40},4)>=g.crewUp(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');
+      { repeat:true, when:g=>g.vars.escape&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the Swarm tunnel in the south wall, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
+      { when:g=>g.vars.escape&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');
           g.win('The Osprey crew drops into the Swarm\'s own tunnels. Behind them Squad Dust kicks in the lab door and finds Dr. Maas, and a clue nobody can explain. Nobody looks for the dead.'); } },
       /* Dust lands: if the crew is still here, they will be found */
       { when:g=>g.vars.dustDue&&g.timerLeft()===0, do:g=>{ g.clearTimer(); g.pad('P','dust'); g.landShip('dust',3); g.vars.dustAt=g.time+3.2; } },
@@ -62,7 +62,7 @@ ROGUE_MISSIONS.push(
           const squad=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1),...g.loyal('medic','P',1)];
           g.hunt(squad.filter(u=>!u.def.heal)); g.say('Sgt. Kessler','Dust on the ground. Spread out, the lab is north-east. Watch for the... Contact! Corps armour, no IFF! Who the hell are you?');
           g.crewSay('Capt. Haesaert','That is Dust. Do not let them pin us, get to the tunnel!'); } },
-      { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The Osprey crew dies in Hollow Colony after all. This time the report is true.') }
+      { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The Osprey crew dies in Hollow Colony after all. This time the report is true.') }
     ]
   }
 );

@@ -16,9 +16,9 @@ ROGUE_MISSIONS.push(
     stab:1,
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c','d','e'], hiveHp:1.4,
-      shafts:[ {x:31,y:2,wall:'n'}, {x:74,y:2,wall:'n'}, {x:56,y:40,wall:'s'} ],
+      shafts:[ {x:31,y:2,wall:'n'}, {x:74,y:2,wall:'n'}, {x:56,y:40,wall:'s',exit:true,label:'South shaft'} ],
       swarmUnits:[ ['drone','b',3], ['spitter','b',1], ['drone','c',3], ['crawler','c',2], ['drone','d',3], ['spitter','d',1], ['drone','e',2], ['drone','a',2], ['crawler','a',2] ] },
-    swarm:{ biomass:45, rate:0.36, guardMax:5, guardEvery:15, aggro:7, waves:null, unlock:{ spitter:90, brute:400 },
+    swarm:{ shaftHeirs:true, biomass:45, rate:0.36, guardMax:5, guardEvery:15, aggro:7, waves:null, unlock:{ spitter:90, brute:400 },
       hunt:{ every:45, afterEvery:20, budget:40, afterBudget:60, grow:0.15, growMax:8 } },
     objectives:[ { id:'calm', text:'Keep the fevered one next to a living hive for 20 seconds (0/20)' } ],
     triggers:[
@@ -41,7 +41,7 @@ ROGUE_MISSIONS.push(
           g.setText('calm',`Keep ${u.vet.name} next to a living hive for 20 seconds (${Math.floor(g.vars.calm)}/20)`);
           if(g.vars.calm>=20){ g.vars.cured=true; u.vet.taint=Math.min(u.vet.taint,40); if(u.feral>0) endFeral(u,true); g.complete('calm'); SFX.play('complete');
             g.crewSay('Devreese',`It is quiet. ${u.vet.name}, look at me. ...Good. The fever broke. Now let us get out of this canyon.`);
-            g.addObjective('escape','Everyone into the old mine shaft in the south'); g.marker('exit',{x:56,y:38},'South shaft'); }
+            g.addObjective('escape','Everyone into the old mine shaft in the south (right-click it)'); g.exitMark('exit'); g.openExit(); }
           else if(!hives().length){ g.vars.cured=true; g.fail('calm'); g.lose(`Every hive in Ridgeback Canyon is ash. ${u.vet.name}'s fever does not break.`); } } },
       { when:g=>g.vars.pt&&g.vars.pt.dead&&!g.vars.cured, do:g=>{ g.fail('calm'); g.lose(`${g.vars.pt.vet.name} is dead, and with nothing to quiet it, the strain does not let ${pron(g.vars.pt.vet,'him')} come back.`); } },
       /* the sweep team goes from hive to hive */
@@ -51,10 +51,10 @@ ROGUE_MISSIONS.push(
       /* the sweep team wiped out: Okafor sends a second one (once) */
       { when:g=>g.time>40&&!g.vars.cured&&!g.loyals().some(u=>u.sweep), do:g=>{ g.vars.team2=g.time+35; g.say('Lt. Okafor','Sweep team one is gone. Team two, you are up. Same orders: burn every nest.'); } },
       { when:g=>g.vars.team2&&g.time>g.vars.team2&&!g.vars.cured, do:g=>{ const sq=[...g.loyal('trooper','9',2),...g.loyal('gunner','9',1),...g.loyal('pyro','9',1),...g.loyal('medic','9',1)]; for(const u of sq){ u.sweep=true; u.home=null; } g.vars.sweepAt=g.time; } },
-      { repeat:true, when:g=>g.isDone('calm')&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old mine shaft in the south (${Math.min(g.crewNear({x:56,y:38},4),g.crewUp())}/${g.crewUp()})`) },
-      { when:g=>g.isDone('calm')&&g.crewUp()>0&&g.crewNear({x:56,y:38},4)>=g.crewUp(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');
+      { repeat:true, when:g=>g.isDone('calm')&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old mine shaft in the south, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
+      { when:g=>g.isDone('calm')&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');
           g.win(`They carry ${g.vars.pt.vet.name} down the shaft, quiet and cool. Devreese writes one line in Maas's notebook: the strain obeys the hive. Nobody wants to say out loud what that means for the rest of them.`); } },
-      { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The crew falls in Ridgeback Canyon.') }
+      { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The crew falls in Ridgeback Canyon.') }
     ]
   }
 );

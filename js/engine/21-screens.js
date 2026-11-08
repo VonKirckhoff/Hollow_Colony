@@ -160,9 +160,11 @@ function intelCard(img,name,role,fac,desc,note,st,tags,perk){
   return `<article class="icard f-${fac}"><div class="pic"><img alt="" src="${img}"></div><h3>${name}</h3><div class="role">${role||''}</div>
     <p>${desc||''}</p>${note?`<p class="note">${note}</p>`:''}<dl>${st.join('')}</dl><div class="tags">${tags.filter(Boolean).map(x=>`<span>${x}</span>`).join('')}${perk}</div></article>`; }
 function buildIntel(){
-  $('#intel-tabs').innerHTML=INTEL_TABS.map(t=>`<button type="button" role="tab" class="${t.id==='swarm'?'swarm':''}" data-itab="${t.id}" aria-selected="${t.id===intelTab}">${t.name}</button>`).join('');
-  const T=INTEL_TABS.find(t=>t.id===intelTab)||INTEL_TABS[0];
+  const TABS=INTEL_TABS.filter(t=>!t.rogue||rogueUnlocked()); if(!TABS.some(t=>t.id===intelTab)) intelTab=TABS[0].id;
+  $('#intel-tabs').innerHTML=TABS.map(t=>`<button type="button" role="tab" class="${t.id==='swarm'?'swarm':t.rogue?'rogue':''}" data-itab="${t.id}" aria-selected="${t.id===intelTab}">${t.name}</button>`).join('');
+  const T=TABS.find(t=>t.id===intelTab)||TABS[0];
   if(T.relics){ buildRelicIntel(); return; }
+  if(T.rogue){ buildRogueIntel(); return; }
   /* list on the left, the full card of the selected entry on the right: no scrolling, however many entries a tab has */
   const items=[...(T.units||[]).map(id=>({id,u:true})),...(T.buildings||[]).map(id=>({id,u:false}))].filter(x=>x.u?UNITS[x.id]:BUILDINGS[x.id]);
   const sel=Math.min(intelSel[T.id]||0,items.length-1);
@@ -184,8 +186,8 @@ $('#intel-list').addEventListener('click',e=>{ const b=e.target.closest('[data-i
 $('#intel-list').addEventListener('keydown',e=>{ if(e.key!=='ArrowDown'&&e.key!=='ArrowUp') return; e.preventDefault(); const n=$('#intel-list').children.length, i=(intelSel[intelTab]||0)+(e.key==='ArrowDown'?1:-1);
   intelSel[intelTab]=(i+n)%n; buildIntel(); const nb=$(`[data-isel="${intelSel[intelTab]}"]`); if(nb) nb.focus({preventScroll:true}); });
 $('#intel-tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-itab]'); if(!b) return; intelTab=b.dataset.itab; buildIntel(); $(`[data-itab="${intelTab}"]`).focus(); });
-$('#intel-tabs').addEventListener('keydown',e=>{ if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return; const i=INTEL_TABS.findIndex(t=>t.id===intelTab), n=INTEL_TABS.length;
-  intelTab=INTEL_TABS[(i+(e.key==='ArrowRight'?1:n-1))%n].id; buildIntel(); $(`[data-itab="${intelTab}"]`).focus(); });
+$('#intel-tabs').addEventListener('keydown',e=>{ if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return; const TABS=INTEL_TABS.filter(t=>!t.rogue||rogueUnlocked()), i=TABS.findIndex(t=>t.id===intelTab), n=TABS.length;
+  intelTab=TABS[(i+(e.key==='ArrowRight'?1:n-1))%n].id; buildIntel(); $(`[data-itab="${intelTab}"]`).focus(); });
 $('#intel-back').addEventListener('click',()=>goMenu(ui.intelFrom||'menu'));
 let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');

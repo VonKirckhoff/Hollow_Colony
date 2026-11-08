@@ -103,7 +103,7 @@ function runTriggers(){
     if(ok){ t.fired=true; try{ t.do(G.api); }catch(e){ console.error('Trigger action error',e); } } }
   // default defeat: nothing left
   if(!G.over && G.side==='swarm'){ if(!G.ents.some(e=>!e.dead&&e.faction==='swarm'&&(e.kind==='unit'||e.type==='hive'||e.type==='cocoon'))) endGame(false,'The brood is ash. Nothing is left to remember the hunger.'); }
-  else if(!G.over && !G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground)) endGame(false,'Your forces have been wiped out.');
+  else if(!G.over && !G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground) && !(G.rogue&&G.rogue.out&&G.rogue.out.length)) endGame(false,'Your forces have been wiped out.');   /* (Rogue: the crew that went down the shaft is safe) */
 }
 /* After a defeat the battle carries on behind the report: the simulation keeps running (no more triggers), the fog lifts
    and you can pan around to watch what the Swarm does next (23-main-loop.js, 13-fog-of-war.js, 20-input.js, showEnd). */

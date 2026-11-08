@@ -15,10 +15,10 @@ ROGUE_MISSIONS.push(
     ],
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['c','a'],
-      shafts:[ {x:79,y:35,wall:'e'}, {x:8,y:8,wall:'w'} ],
+      shafts:[ {x:79,y:35,wall:'e',exit:true,label:'East shaft'}, {x:8,y:8,wall:'w'} ],
       swarmUnits:[ ['drone','c',3], ['crawler','c',2], ['drone','a',3], ['spitter','a',1] ] },
     stab:0,
-    swarm:{ biomass:50, rate:0.3, guardMax:5, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:200, brute:9999 },
+    swarm:{ shaftHeirs:true, biomass:50, rate:0.3, guardMax:5, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:200, brute:9999 },
       hunt:{ every:40, afterEvery:20, budget:40, afterBudget:60, grow:0.15, growMax:8 } },
     objectives:[
       { id:'caches', text:'Take the three caches on Kappa Station (0/3)' },
@@ -39,7 +39,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.time>16, do:g=>g.crewSay('Braet','Hold fire, Captain? (Q) We walk past them like ghosts.') },
       /* the caches */
       { repeat:true, when:g=>!!g.vars.caches&&!g.vars.cachesDone, do:g=>{ const n=g.vars.caches.filter(c=>c.dead).length; g.setText('caches',`Take the three caches on Kappa Station (${n}/3)`);
-          if(n>=3){ g.vars.cachesDone=true; g.complete('caches'); g.unmark('st'); g.addObjective('escape','Everyone into the old mine shaft in the east wall'); g.marker('exit',{x:77,y:35},'East shaft');
+          if(n>=3){ g.vars.cachesDone=true; g.complete('caches'); g.unmark('st'); g.addObjective('escape','Everyone into the old mine shaft in the east wall (right-click it)'); g.exitMark('exit'); g.openExit();
             g.crewSay('Capt. Haesaert','That is all of it. East wall, the old shaft. Move.'); } } },
       /* seen: the towers start calling */
       { when:g=>!!g.spotted(), do:g=>{ const s=g.spotted(); g.vars.alarm=true; g.fail('quiet');
@@ -57,11 +57,11 @@ ROGUE_MISSIONS.push(
           const sq=[...g.loyal('trooper',{x:46,y:37},2+(g.vars.calls>1?1:0)),...g.loyal('gunner',{x:46,y:37},1)]; g.hunt(sq);
           for(let i=0;i<14;i++) G.fx.push({k:'dust',x:(46+rand(-2,2))*TILE,y:(37+rand(-1,1))*TILE,vx:rand(-40,40),vy:rand(-20,10),t:1.6,max:1.6,r0:6,r1:20,col:'#8a857e'});
           SFX.play('land',46*TILE,37*TILE); g.say('Dropship Kestrel','Kestrel on the Kappa pad. Fire team is out, hunting.'); } },
-      { repeat:true, when:g=>g.vars.cachesDone&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old mine shaft in the east wall (${Math.min(g.crewNear({x:77,y:35},4),g.crewUp())}/${g.crewUp()})`) },
-      { when:g=>g.vars.cachesDone&&g.crewUp()>0&&g.crewNear({x:77,y:35},4)>=g.crewUp(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); if(!g.vars.alarm) g.complete('quiet');
+      { repeat:true, when:g=>g.vars.cachesDone&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old mine shaft in the east wall, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
+      { when:g=>g.vars.cachesDone&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); if(!g.vars.alarm) g.complete('quiet');
           g.win(g.vars.alarm?(g.vars.towersDone?'Kappa Station goes dark mid-sentence. By the time Tycho asks again, the Osprey crew is a kilometre down a mine shaft with three caches on their backs.':'The crew vanishes down the shaft with the caches, but Kappa got its call out. Tycho knows somebody is out here, wearing Corps armour.')
             :'Kappa Station never knew they were there. Three caches are missing, and the duty log says nothing at all.'); } },
-      { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The crew falls at Kappa Station. The Corps buries them as raiders, faces unknown.') }
+      { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The crew falls at Kappa Station. The Corps buries them as raiders, faces unknown.') }
     ]
   }
 );

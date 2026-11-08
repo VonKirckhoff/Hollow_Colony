@@ -56,6 +56,7 @@ function entityAt(wx,wy,filter){ let best=null, bd=Infinity;
 function smartCommand(wx,wy){ if(G.side==='swarm'){ swarmRight(wx,wy); return; }   /* playing the Swarm: right-click calls the brood together */
   const units=myUnits(); const blds=G.sel.filter(e=>e.kind==='building'&&e.faction==='corps');
   if(!units.length){ for(const b of blds) if(b.def.trains||b.def.reinforce){ b.rally={x:wx,y:wy}; b.rallyN=0; G.pings.push({x:wx,y:wy,t:2.2,col:'#5fe3b0'}); } return; }
+  const ex=exitAt(wx,wy); if(ex){ exitOrder(units,ex); return; }   /* Rogue: right-click a way out and the squad goes in */
   const t=entityAt(wx,wy,e=>e.kind!=='crate');
   if(t && t.faction!=='corps' && t.faction!=='none'){ if(!attackInFormation(units,t,'amove')) engageTarget(units,t);
     SFX.play('attack'); startFollow(); G.pings.push({x:t.x,y:t.y,t:2.4,col:'#ff5a4f'}); return; }

@@ -19,7 +19,7 @@ CASES=[
   const vials=G.ents.filter(e=>!e.dead&&e.rogue&&e.dna==='hive'); ok(vials.length+(G.rogue.dna.hive||0)===2,'two hive samples in the freezer'); for(const v of vials){ tp(eng,Math.floor(v.x/TILE),Math.floor(v.y/TILE)); step(0.3); }
   ok(G.rogue.dna.hive===2,'picked up'); step(7); ok(G.timer&&G.timer.label==='Dust lands','the radio: Dust is coming');
   G.rogue.dna.drone=4; step(1); ok(G.objectives.find(o=>o.id==='escape'),'six samples: the way out opens');
-  const st=G.rogue.stab; for(const u of crew()) tp(u,38,39); step(1); ok(G.over&&G.over.win,'into the tunnel: won');
+  const st=G.rogue.stab; const ex=G.ents.find(e=>e.exit), sp=exitSpot(ex); for(const u of crew()) tp(u,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); step(1); ok(G.over&&G.over.win,'into the tunnel: won');
   const R=rogueStore(); ok(R.dna.hive===2&&R.dna.drone===4,'samples in the lab'); ok(R.crew.every(v=>v.missions===1),'one job for everyone'); ok(R.stab===st,'unused doses are kept ('+R.stab+')');
   ok(/Samples/.test(rogueEndHtml()),'end screen shows the samples');'''),
 ('dna drops, fire, harvest','''resetRogue(); const G=start(2); step(1); calm(); const tr=crew().find(u=>u.type==='trooper'&&!u.vet.capt), py=crew().find(u=>u.type==='pyro'); const keep=ROGUE.dna.drone; ROGUE.dna.drone=1;
@@ -45,18 +45,18 @@ CASES=[
   for(const e of G.ents) if(e.faction==='swarm') e.invuln=true; const u=crew()[1]; tp(u,40,36); u.invuln=true; step(3); ok(G.vars.alarm&&G.timer&&G.timer.label==='Call to Tycho','seen: the towers start calling'); ok(G.objectives.find(o=>o.id==='quiet').state==='failed','not quiet any more');
   for(const r of G.vars.relays){ r.invuln=false; kill(r,u); } step(1); ok(G.objectives.find(o=>o.id==='towers').state==='done'&&!G.timer,'both towers down: dead air');
   for(const e of G.ents) if(e.faction==='loyal') e.dead=true; for(const c of G.vars.caches){ tp(u,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); step(0.3); } step(1); ok(G.objectives.find(o=>o.id==='caches').state==='done','three caches taken');
-  ok(G.rogue.stab>=2,'a cache held stabilizer'); for(const x of crew()) tp(x,77,35); step(1); ok(G.over&&G.over.win,'out through the east shaft: won');'''),
+  ok(G.rogue.stab>=2,'a cache held stabilizer'); { const sp=exitSpot(G.ents.find(e=>e.exit)); for(const x of crew()) tp(x,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); } step(1); ok(G.over&&G.over.win,'out through the east shaft: won');'''),
 ('dead air: the call gets through','''resetRogue(); const G=start(1); step(1); for(const e of G.ents) if(e.faction==='swarm') e.invuln=true; const u=crew()[1]; tp(u,40,36); u.invuln=true; step(3);
   G.timer.end=G.time+0.3; step(1); ok(G.vars.called,'the call went through'); const n=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.hunter).length; step(21); ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.hunter).length>n,'Kestrel brings hunters');'''),
 ('cold harvest: lights, harvest, escape','''resetRogue(); const G=start(2); step(1.5); ok(G.vars.gens.length===5&&G.vars.gens.every(g=>g.powered),'five lit generators of the Corps');
   const u=crew()[0]; u.invuln=true; tp(u,Math.floor(G.vars.gens[0].x/TILE)+2,Math.floor(G.vars.gens[0].y/TILE)+2); step(1); ok(G.objectives.find(o=>o.id==='dark').state==='failed','walk into the light: seen');
   for(const e of G.ents) if(e.faction==='loyal') e.dead=true; calm(); const tr=crew().find(x=>x.type==='trooper'); for(const h of hives().slice(0,3)){ h.invuln=false; kill(h,tr); } step(1);
-  ok(G.objectives.find(o=>o.id==='harvest').state==='done','three hives harvested'); for(const x of crew()) tp(x,17,37); step(1); ok(G.over&&G.over.win,'down the shaft: won'); ok(rogueStore().dna.hive===3*ROGUE.dna.hive||true,'samples');'''),
+  ok(G.objectives.find(o=>o.id==='harvest').state==='done','three hives harvested'); { const sp=exitSpot(G.ents.find(e=>e.exit)); for(const x of crew()) tp(x,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); } step(1); ok(G.over&&G.over.win,'down the shaft: won'); ok(rogueStore().dna.hive===3*ROGUE.dna.hive||true,'samples');'''),
 ('cold harvest: burnt too many','''resetRogue(); const G=start(2); step(1.5); calm(); const py=crew().find(x=>x.type==='pyro'); for(const h of hives().slice(0,2)){ h.invuln=false; kill(h,py); } step(1); ok(G.over&&!G.over.win,'burn two of four: nothing left to harvest');'''),
 ('the fever','''resetRogue(); const G=start(3); step(1); const p=G.vars.pt; ok(p&&p.vet.taint>=72,'one of the crew is burning up: '+(p&&p.vet.name)); const t0=p.vet.taint; step(10); ok(p.vet.taint>t0+3||p.feral>0,'the fever climbs');
   ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.sweep).length===6,'a sweep team in the east'); step(20); const sq=G.ents.find(e=>!e.dead&&e.sweep); ok(sq&&sq.order&&sq.order.k==='d','they march on the first hive');
   calm(); for(const e of G.ents) if(e.crew) e.invuln=true; const h=hives()[0]; tp(p,Math.floor(h.x/TILE)+2,Math.floor(h.y/TILE)+2); for(let i=0;i<24&&!G.vars.cured;i++){ tp(p,Math.floor(h.x/TILE)+2,Math.floor(h.y/TILE)+2); step(1); }
-  ok(G.objectives.find(o=>o.id==='calm').state==='done'&&p.vet.taint<=43,'twenty seconds at a hive: the fever breaks'); for(const x of crew()) tp(x,56,38); step(1); ok(G.over&&G.over.win,'into the south shaft: won');'''),
+  ok(G.objectives.find(o=>o.id==='calm').state==='done'&&p.vet.taint<=43,'twenty seconds at a hive: the fever breaks'); { const sp=exitSpot(G.ents.find(e=>e.exit)); for(const x of crew()) tp(x,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); } step(1); ok(G.over&&G.over.win,'into the south shaft: won');'''),
 ('hunted: Kessler, the call, the Magpie','''resetRogue(); const G=start(4); step(14); const k=G.vars.kessler; ok(k&&k.faction==='loyal'&&k.maxHp>UNITS.trooper.hp*2,'Kessler lands, tough'); ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.hunter).length>=5,'his squad hunts');
   k.hp=k.maxHp*0.25; step(1); ok(G.vars.kOut&&k.invuln,'badly hurt: he pulls back'); step(21); ok(G.objectives.find(o=>o.id==='kessler').state==='done','he walked away: optional done');
   for(const e of G.ents) if(e.faction==='loyal'||e.faction==='swarm') e.dead=true; const up=G.ents.find(e=>e.def&&e.def.capture&&e.point==='3'); for(const x of crew()){ tp(x,44,31); x.invuln=true; } step(22);
@@ -73,6 +73,17 @@ CASES=[
 ('mothers blood: Dust gets there first','''resetRogue(); const G=start(5); step(1); calm(); const m=G.vars.mother; m.invuln=false; for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); damage(m,1e8,null); step(1); G.timer.end=G.time+0.3; step(1); ok(G.over&&!G.over.win,'no choice in time: lost');'''),
 ('save and load a job','''resetRogue(); const G=start(0); step(2); const u=crew()[3]; u.vet.taint=44; G.rogue.dna.drone=2; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); const G2=__hc.G; step(0.5);
   ok(G2.mission.rogue&&G2.ents.filter(e=>!e.dead&&e.crew).length===7,'the crew is back'); ok(G2.ents.some(e=>e.crew&&Math.round(e.vet.taint)===44),'taint kept'); ok(G2.rogue.dna.drone===2,'samples kept'); ok(typeof G2.api.loyal==='function','the Rogue mission API is there'); localStorage.removeItem('hc-save');'''),
+('exit shaft, shaft heirs, advisors','''resetRogue(); const G=start(0); step(1); calm(); const ex=G.ents.find(e=>e.exit); ok(ex&&ex.faction==='none'&&!shafts().includes(ex),'the south tunnel is a way out, not a Swarm shaft'); ok(G.swarm.cfg.shaftHeirs&&shafts().length===2,'the other two shafts are heirs');
+  const u=crew()[2]; selectEntities([u],false); smartCommand(ex.x,ex.y); ok(u.order&&Math.hypot(u.order.x-exitSpot(ex).x,u.order.y-exitSpot(ex).y)<TILE*1.5,'right-click the tunnel: he walks to it');
+  tp(u,Math.floor(exitSpot(ex).x/TILE),Math.floor(exitSpot(ex).y/TILE)); step(0.5); ok(!u.dead,'shut before the job is done');
+  G.api.openExit(); step(0.5); ok(u.dead&&G.rogue.out.length===1,'open: he goes in'); for(const x of crew()) x.dead=true; step(0.5); ok(!G.over||G.over.win,'no defeat while someone got out');
+  const hs=hives(); for(const h of hs){ h.invuln=false; kill(h,null); } step(1); ok(shafts().every(s=>s.heir),'hives gone: the shafts take over');
+  say('Dr. Maas','test line'); ok(G.msgs.some(m=>m.who==='Devreese'&&m.text==='test line'),'Maas\\'s engine warnings come from Devreese');'''),
+('feral comes back to the squad','''resetRogue(); const G=start(0); step(1); calm(); for(const x of crew()) x.invuln=true; selectEntities(crew(),false); setFormation('line'); step(3);
+  const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt), f=u.formation; ok(!!f,'in a formation'); u.vet.taint=100; step(0.2); ok(u.feral>0&&!u.formation,'feral: out of the line');
+  step(ROGUE.taint.feralTime+ROGUE.taint.collapse+6); const p=formationSpot(u); ok(u.formation===f,'back in his formation'); ok(p&&Math.hypot(u.x-p.x,u.y-p.y)<TILE*1.5,'and back in his place');
+  const w=crew().find(x=>x.type==='gunner'); w.formation=null; w.slot=null; w.vet.taint=100; step(0.2); tp(w,Math.floor(w.x/TILE)+0,Math.floor(w.y/TILE)); step(ROGUE.taint.feralTime+ROGUE.taint.collapse+8); const m=nearestOf(w,e=>e!==w&&e.crew&&!e.dead); ok(dist(w,m)<3*TILE,'no formation: he walks back to the crew');'''),
+('intel tab','''goMenu('intel'); ok([...document.querySelectorAll('[data-itab]')].some(b=>b.dataset.itab==='rogue'),'Rogue Strain tab'); intelTab='rogue'; buildIntel(); ok(document.querySelectorAll('#intel-list .ili').length===7+6+ROGUE_INTEL.length,'crew, strains, rules'); ok(/Haesaert/.test(document.getElementById('intel-grid').innerHTML),'first card: the Captain'); goMenu('menu');'''),
 ('corps campaign untouched','''resetRogue(); __hc.startMission(MISSIONS[0]); const G=__hc.G; step(2); ok(!G.rogue&&!G.ents.some(e=>e.crew),'no crew in a Corps mission'); ok(document.getElementById('r-dna-wrap').hidden,'no DNA counter');''')
 ]
 res=[]

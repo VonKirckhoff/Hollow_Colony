@@ -6,6 +6,7 @@ const INTEL_TABS = [
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','charge','generator'] },
   { id:'swarm',  name:'Swarm',       units:['crawler','drone','spitter','brute','seedling','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane'] },
   { id:'other',  name:'Other',       units:['grazer'] },
+  { id:'rogue',  name:'Rogue Strain', rogue:true },   /* the Osprey crew, strains and taint (31-rogue.js); shown once the Rogue campaign is open */
   { id:'relics', name:'Relics',      relics:true }
 ];
 const INTEL_NOTES = {

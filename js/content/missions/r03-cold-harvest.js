@@ -15,7 +15,7 @@ ROGUE_MISSIONS.push(
     dark:{ sight:0.5 }, flares:2,
     start:{ salvage:0, camera:{x:24,y:53}, crewAt:{x:24,y:53},
       units:[], buildings:[], hives:['a','b','c',{at:{x:50,y:39}}], hiveHp:1.2,
-      shafts:[ {x:16,y:36} ],
+      shafts:[ {x:16,y:36,exit:true,label:'Mine shaft'} ],
       swarmUnits:[ ['drone','a',3], ['crawler','a',2], ['drone','b',3], ['spitter','b',1], ['drone','c',3], ['crawler','c',2], ['drone',{x:50,y:39},2], ['spitter',{x:50,y:39},1] ] },
     swarm:{ biomass:50, rate:0.38, guardMax:5, guardEvery:14, aggro:7, waves:null, unlock:{ spitter:120, brute:420 },
       hunt:{ every:40, afterEvery:20, budget:45, afterBudget:60, grow:0.2, growMax:8 } },
@@ -43,14 +43,14 @@ ROGUE_MISSIONS.push(
           if(!g.vars.lightSaid){ g.vars.lightSaid=true; g.fail('dark'); g.say('Corps patrol','Movement in the light! Corps armour, no IFF... open fire!'); g.crewSay('Capt. Haesaert','We are lit! Back into the dark!'); }
           if(G.time>(g.vars.huntAt||0)){ g.vars.huntAt=G.time+30; const near=g.loyals().filter(l=>l.patrol).slice(0,3); for(const l of near){ l.order={type:'amove',x:lit.x,y:lit.y}; setPath(l,lit.x,lit.y); } } } } },
       { repeat:true, when:g=>!g.vars.harvestDone, do:g=>{ const n=g.harvested(); g.setText('harvest',`Harvest three hives: kill them without fire (${Math.min(3,n)}/3)`);
-          if(n>=3){ g.vars.harvestDone=true; g.complete('harvest'); g.addObjective('escape','Everyone down the old mine shaft in the south-west'); g.marker('exit',{x:17,y:37},'Mine shaft');
+          if(n>=3){ g.vars.harvestDone=true; g.complete('harvest'); g.addObjective('escape','Everyone down the old mine shaft in the south-west (right-click it)'); g.exitMark('exit'); g.openExit();
             g.crewSay('Devreese','Three hives. My bags are heavy and wet. Get us out of here.'); }
           else if(g.hives()+n<3){ g.vars.harvestDone=true; g.fail('harvest'); g.lose('Too many hives burnt. There is nothing left in Mare Colony worth harvesting.'); } } },
       { when:g=>g.harvested()>=1, do:g=>g.crewSay('Devreese','One! Do not touch the samples with bare hands. Do not lick your fingers, Braet.') },
-      { repeat:true, when:g=>g.vars.harvestDone&&!g.vars.won&&g.isDone('harvest'), do:g=>g.setText('escape',`Everyone down the old mine shaft in the south-west (${Math.min(g.crewNear({x:17,y:37},4),g.crewUp())}/${g.crewUp()})`) },
-      { when:g=>g.isDone('harvest')&&g.crewUp()>0&&g.crewNear({x:17,y:37},4)>=g.crewUp(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); if(!g.vars.lightSaid) g.complete('dark');
+      { repeat:true, when:g=>g.vars.harvestDone&&!g.vars.won&&g.isDone('harvest'), do:g=>g.setText('escape',`Everyone down the old mine shaft in the south-west, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
+      { when:g=>g.isDone('harvest')&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); if(!g.vars.lightSaid) g.complete('dark');
           g.win(g.vars.lightSaid?'In the morning the Corps finds three dead hives with their hearts cut out, and the tracks of seven boots going down a mine shaft.':'In the morning the Corps finds three dead hives with their hearts cut out. Not one sentry saw a thing.'); } },
-      { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The crew dies in the dark streets of Mare Colony.') }
+      { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The crew dies in the dark streets of Mare Colony.') }
     ]
   }
 );

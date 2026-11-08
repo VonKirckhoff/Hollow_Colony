@@ -48,6 +48,8 @@ const ROGUE = {
 };
 /* Corps voices heard over the radio in a Rogue mission: shown as an intercept */
 const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Kestrel','Dr. Maas','Lt. Okafor','Corps patrol','Outpost Kappa','Corps radio'];
+/* in a Rogue job, the engine's own warnings (hives, husks, the hunt) come from the crew instead of these advisors */
+const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Haesaert' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [
   { id:'rogue:done',   name:'Ghost Crew',   what:'Win every Rogue Strain mission' },
