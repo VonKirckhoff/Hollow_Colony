@@ -97,6 +97,7 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
     if(u.rogueAcid>0&&acidTick){ u.rogueAcid-=0.25; const fl=u.flash; damage(u,2*0.25*4,u.acidBy&&!u.acidBy.dead?u.acidBy:{faction:'corps',dead:true,def:{}}); u.flash=fl;
       if(!u.dead&&Math.random()<0.5&&animOnScreen(u.x,u.y)) G.fx.push({k:'spark',x:u.x+rand(-5,5),y:u.y-rand(4,14),vx:rand(-10,10),vy:rand(-30,-10),t:0.4,max:0.4,col:'#a6ff4a'}); }
     if(!u.crew||u.dead||!u.vet) continue; const v=u.vet;
+    if(u.sorryAt&&G.time>u.sorryAt&&!(u.feral>0)&&!u.downed){ u.sorryAt=null; G.barkNext=0; bark(u,'sorry'); }   /* back to his senses */
     if(u.feral>0){ u.feral-=dt; if(u.feral<=0) endFeral(u,false); continue; }
     if(u.downed) continue;
     if(creepAt(u.x,u.y)>0.3){ v.taint=Math.min(T.feral,v.taint+T.creep*dt); if(v.taint>=T.mend&&u.hp<u.maxHp) u.hp=Math.min(u.maxHp,u.hp+T.mendRate*dt); }
@@ -123,7 +124,7 @@ function goFeral(u){ const T=ROGUE.taint; if(u.feral>0) return; u.feral=T.feralT
 function endFeral(u,dosed){ const T=ROGUE.taint; u.feral=0; applyRank(u); u.target=null; u.order=null;
   if(!dosed){ u.stunT=T.collapse; u.vet.taint=T.after; G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.4,max:1.4,txt:'COLLAPSES',col:'#9dff6a'}); }
   else u.stunT=0.8;
-  u.home={x:u.x,y:u.y}; G.selDirty=true; backToSquad(u); }
+  u.home={x:u.x,y:u.y}; G.selDirty=true; backToSquad(u); u.sorryAt=G.time+u.stunT+0.6; }
 /* after a feral fit he goes back to his squad: his old place in the formation if it still exists, else to the nearest of the crew */
 function backToSquad(u){ const f=u.feralForm; u.feralForm=null;
   if(f&&G.ents.some(e=>e!==u&&!e.dead&&!e.downed&&e.kind==='unit'&&e.formation===f)){ u.formation=f; u.slot=u.feralSlot; u.formSeq=u.feralSeq; backInFormation(u); if(rejoinFormation(u)) return; }

@@ -62,6 +62,8 @@ ROGUE_MISSIONS.push(
           const squad=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1),...g.loyal('medic','P',1)];
           g.hunt(squad.filter(u=>!u.def.heal)); g.say('Sgt. Kessler','Dust on the ground. Spread out, the lab is north-east. Watch for the... Contact! Corps armour, no IFF! Who the hell are you?');
           g.crewSay('Capt. Haesaert','That is Dust. Do not let them pin us, get to the tunnel!'); } },
+      /* the freezer needs an Engineer: if the crew has none left (dead, not just down), the job cannot be done */
+      { when:g=>g.time>2&&!g.vars.fzDone&&!g.crew().some(u=>u.def.builder), do:g=>{ g.fail('freezer'); g.lose('Cnudde is dead, and nobody else in the crew can open Dr. Maas\'s freezer. Without her samples there is nothing to run with.'); } },
       { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The Osprey crew dies in Hollow Colony after all. This time the report is true.') }
     ]
   }

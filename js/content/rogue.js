@@ -49,7 +49,7 @@ const ROGUE = {
 /* Corps voices heard over the radio in a Rogue mission: shown as an intercept */
 const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Kestrel','Dr. Maas','Lt. Okafor','Corps patrol','Outpost Kappa','Corps radio'];
 /* ROGUE_VOICE: what the Osprey crew says instead of the Corps lines (VOICE in veterans.js). Kinds the crew lacks fall back to VOICE.
-   Extra kinds: loyal (first shots at the loyal Corps), taint (said now and then from 85% taint), seizure, feral, stab (the Medic doses someone).
+   Extra kinds: loyal (first shots at the loyal Corps), taint (said now and then from 85% taint), seizure, feral, stab (the Medic doses someone), sorry (back to his senses after a feral fit).
    The voice itself is lower and slower than the Corps, and drops further as the taint climbs (ROGUE_VOICE_TONE). */
 const ROGUE_VOICE = {
   select:  ['Talk.','What now, Captain?','Still breathing.','Yeah?','Say it.','Listening.','Make it quick.','Still here. Mostly.'],
@@ -69,7 +69,8 @@ const ROGUE_VOICE = {
   taint:   ['I can hear them singing...','My hands won\'t stop shaking.','It\'s so loud in my head.','The hive... it\'s calling me.','I\'m fine. I\'m fine. I\'m fine.','Doc... my eyes feel wrong.'],
   seizure: ['Not now... not now!','Hold me down!','It\'s taking me!','Can\'t... control...','Make it stop!','Someone... pin me!'],
   feral:   ['Kill... kill...','HUNGRY.','Bleed... feed...','Rip them open.','No more words.','Meat.'],
-  stab:    ['Needle in. Breathe.','There. Come back to us.','One dose. Make it last.','Easy. Easy now.']
+  stab:    ['Needle in. Breathe.','There. Come back to us.','One dose. Make it last.','Easy. Easy now.'],
+  sorry:   ['Sorry about that.','...did I hurt anyone?','That wasn\'t me. That wasn\'t me.','I\'m back. I\'m back.','Don\'t look at me like that.','Won\'t happen again. Probably.']
 };
 /* how the crew sounds: pitch and rate for the browser's speech voice. taint 0 → base, taint 100 → base − drop. feral: pitch/rate below. */
 const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDrop:0.25, feralPitch:0.1, feralRate:0.62, taintChance:0.3 };
