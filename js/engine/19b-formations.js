@@ -231,7 +231,7 @@ function marchStep(f,dt){ const m=f.march, us=marchMembers(f);
     settleFormation(f,formMembers(f).filter(u=>u.formSeq===f.seq),m.dest,m.endDir,m.type,true); }
 }
 /* A member walking under a formation order (instead of plain stepMove). Returns true when he has arrived. */
-function walkOrder(u,dt){ const o=u.order, f=o.form;
+function walkOrder(u,dt){ const o=u.order; if(!o) return false; const f=o.form;   /* no order (dropped this frame): nothing to walk */
   if(f&&(u.formation!==f||o.seq!==f.seq)){ u.order=null; u.path=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; return false; }   /* an order from an older line-up: dropped (he goes to his current place; where he stands is his spot now, not where he last stood still) */
   const m=f&&f.march;
   if(m&&!m.done){ const p=(m.spots&&m.spots.get(u.id))||{x:m.x,y:m.y}, d=Math.hypot(p.x-u.x,p.y-u.y);

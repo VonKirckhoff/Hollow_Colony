@@ -7,7 +7,7 @@ const FV_ORDER=['d','e','c','b','a'];   /* the order in which the sweep team bur
 /* FV_SWEEP: how the sweep team works a hive. They stop `stand` tiles short of it in a circle (`ring` tiles across, Pyro, Medic and
    Engineer in the middle) and hold there against whatever comes. Once nothing of the Swarm is within `clear` tiles of the circle (or going for one of them) for `quiet` seconds,
    the rifles go in to shoot the hive from range; the Pyro joins once it is below `pyroAt` health. If the Swarm comes again, back into the circle. */
-const FV_SWEEP={ stand:7.5, ring:1.7, clear:5.5, quiet:4, pyroAt:0.5 };
+const FV_SWEEP={ stand:6.5, ring:1.7, clear:5.5, quiet:4, pyroAt:0.5 };
 function sweepTick(g){ const V=g.vars, team=g.loyals().filter(u=>u.sweep); if(!team.length) return;
   let k=FV_ORDER[V.sweepI]; while(k&&!g.hiveAt(k)){ V.sweepI++; k=FV_ORDER[V.sweepI]; } if(!k) return; const w=g.where(k), hive=hives().find(h=>dist(h,w)<2*TILE); if(!hive) return;
   if(!V.sw||V.sw.k!==k){ const cx=team.reduce((s,u)=>s+u.x,0)/team.length, cy=team.reduce((s,u)=>s+u.y,0)/team.length, a=Math.atan2(cy-hive.y,cx-hive.x);
