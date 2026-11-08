@@ -65,10 +65,10 @@ const ROGUE_VOICE = {
   build:   ['On it.','Give me a minute.','Building. Keep them off me.','Corps junk. It\'ll do.'],
   flare:   ['Light out! Cover your eyes.','Flare! Hate the light now.','Lighting it.'],
   grenade: ['Frag!','Catch!','Fire in the hole!'],
-  waver:   ['The Captain\'s down!','Haesaert! Who leads now?!','Without the Captain we\'re just deserters!'],
+  waver:   ['The Captain\'s down!','Without the Captain we\'re just deserters!','Captain\'s gone... what now?','Who gives the orders now?!','Don\'t look at me... I can\'t lead!','We\'re lost. The strain\'ll take us next.','No Captain... no Corps... nothing left.'],
   taint:   ['I can hear them singing...','My hands won\'t stop shaking.','It\'s so loud in my head.','The hive... it\'s calling me.','I\'m fine. I\'m fine. I\'m fine.','Doc... my eyes feel wrong.'],
-  seizure: ['Gnnh...','Not now... not now!','Hold me down!'],
-  feral:   ['GRRAAH!','MINE.','Hhhhrrr...','Kill... kill...','HUNGRY.'],
+  seizure: ['Not now... not now!','Hold me down!','It\'s taking me!','Can\'t... control...','Make it stop!','Someone... pin me!'],
+  feral:   ['Kill... kill...','HUNGRY.','Bleed... feed...','Rip them open.','No more words.','Meat.'],
   stab:    ['Needle in. Breathe.','There. Come back to us.','One dose. Make it last.','Easy. Easy now.']
 };
 /* how the crew sounds: pitch and rate for the browser's speech voice. taint 0 → base, taint 100 → base − drop. feral: pitch/rate below. */
