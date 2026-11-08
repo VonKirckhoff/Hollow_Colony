@@ -195,7 +195,7 @@ function hiveBrood(h,target,budget){ let left=budget, guard=0; const out=[], onl
 function hiveWatch(h,dt){
   h.watchT=(h.watchT||0)-dt; if(h.watchT>0) return; h.watchT=0.5;
   const R=hiveOpt(h,'aggro',HIVE_DEFENCE.aggro)*(G.diff.aggro||1)*TILE; if(R<=0||G.time<(h.aggroAt||0)) return;
-  const t=nearestOf(h,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.downed); if(!t||dist(h,t)>R) return;
+  const t=nearestOf(h,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.downed&&!e.scent);   /* Hive Scent (Rogue): the hive does not notice him */ if(!t||dist(h,t)>R) return;
   const D=G.diff, rage=hiveOpt(h,'rage',G.swarm.cfg.hiveRage||1);
   h.aggroAt=G.time+hiveOpt(h,'aggroCooldown',HIVE_DEFENCE.aggroCooldown)*D.interval;
   for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&e.homeHive===h.id){ e.target=t; } }
@@ -218,7 +218,7 @@ function huntCfg(){ const h=G.swarm.cfg.hunt; return h&&typeof h==='object'?{...
 function swarmHunt(dt){ if(G.side!=='corps'||G.mission.training) return; const S=G.swarm, lost=afterDefeat(); if(!lost&&S.cfg.hunt===false) return;
   const HUNT=huntCfg();
   S.huntT=(S.huntT??(lost?HUNT.first:HUNT.every))-dt; if(S.huntT>0) return; S.huntT=lost?HUNT.afterEvery:HUNT.every;
-  const corps=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.def.ground); if(!corps.length) return;
+  const corps=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.def.ground&&!rogueHuntSkip(e)); if(!corps.length) return;   /* Rogue: a tainted one smells like the brood */
   const near=u=>{ let b=null, bd=Infinity; for(const e of corps){ const d=dist(u,e); if(d<bd){ bd=d; b=e; } } return b; };
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='swarm'||u.target||u.claim||u.haul||u.def.boss||u.def.grafter||u.def.founder) continue;
     if(!(u.role==='hunt'||u.role==='wave')||(u.order&&u.order.type==='amove')) continue; const t=near(u); u.order={type:'amove',x:t.x,y:t.y}; setPath(u,t.x,t.y); }

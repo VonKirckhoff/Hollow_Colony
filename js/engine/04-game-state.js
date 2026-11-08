@@ -54,7 +54,8 @@ function newGame(mission, diffKey){
   for(const o of mission.objectives) G.objectives.push({ ...o, state:'active' });
   const cp=pt(st.camera||'P'); centerOn((cp.x+.5)*TILE,(cp.y+.5)*TILE);
   deployRoster();
-  G.api=makeApi();
+  if(mission.rogue) rogueDeploy();   /* the Osprey crew (31-rogue.js) */
+  G.api=makeApi(); if(mission.rogue) Object.assign(G.api,rogueApi());
   computeFog();
 }
 function pt(at){ if(!at) return null; if(typeof at==='object') return at; const arr=G.map.points[at]; return arr?arr[0]:null; }

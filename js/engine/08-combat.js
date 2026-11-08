@@ -29,12 +29,12 @@ function findTarget(u,rangeTiles,unitsOnly){
     if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue; if(fireBlocked(u,e)) continue;   /* not through rock or a membrane */
-    let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0) + (e.def.escort&&u.faction==='swarm' ? -SWARM_VIP.pull*TILE : 0);   /* the Swarm goes for an escort (Dr. Maas) first */
+    let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0) + (e.def.escort&&u.faction==='swarm' ? -SWARM_VIP.pull*TILE : 0) + (e.scent&&u.faction==='swarm' ? 4*TILE : 0);   /* Hive Scent (Rogue): the brood picks him last */   /* the Swarm goes for an escort (Dr. Maas) first */
     if(score<bs){ bs=score; best=e; } }
   return best;
 }
 function fire(u,t){
-  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Brood Mother's screech */ const dm=(u.dmgMul||1)*(u.blindT>0?SWARM_LIGHT.dmg:1);
+  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Brood Mother's screech */ const dm=(u.dmgMul||1)*(u.blindT>0?SWARM_LIGHT.dmg:1)*(u.crew?feverOf(u)*(u.feral>0?1.3:1):1);   /* Rogue: taint is fever, feral hits harder */
   if(u.type==='trooper'&&hasPerk(u)&&t.kind==='unit') throwGrenade(u,t);
   if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,'contact'); G.lastFight=G.time; }
   const ang=Math.atan2(t.y-u.y,t.x-u.x); u.angle=ang;
@@ -46,7 +46,7 @@ function fire(u,t){
     G.fx.push({k:'flash',x:mx,y:my,t:0.05,max:0.05}); if(u.faction==='corps') muzzleLight(mx,my);
     strayRound(mx,my,t);   /* now and then a round goes past: dust or rock chips */
     if(Math.random()<0.35) G.fx.push({k:'spark',x:hx,y:hy,vx:rand(-40,40),vy:rand(-60,0),t:0.25,max:0.25,col:'#ffe2a8'});
-    damage(t,d.damage*dm,u); if(u.type==='gunner'){ suppress(t); ejectCasing(u); } if(u.type==='sentry') sentryFired(u);
+    damage(t,d.damage*dm,u); if(u.acidRounds) acidRound(u,t); if(u.type==='gunner'){ suppress(t); ejectCasing(u); } if(u.type==='sentry') sentryFired(u);
   } else if(d.attack==='flame'){ if(Math.random()<0.4) muzzleLight(mx,my);
     for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200)*(1+(u.rangeBonus||0)/(d.range||1)*0.8); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
@@ -110,6 +110,7 @@ function kill(e,src){
     addDecal(e.x,e.y,big*0.55,e.faction==='swarm'?'rgba(48,90,20,.55)':'rgba(10,10,12,.6)');
     if(e.type==='charge' && e.tag) chargeLost(e);
     if(e.type==='hive') G.stats.hives++;
+    if(e.type==='hive') rogueKill(e,src);   /* Rogue: a hive killed without fire is harvested */
     if(e.type==='hive' && src && src.faction==='corps') gainXP(src,VET_XP.hive);
     if(e.faction===G.side){ G.stats.lost++; G.stats.assets=(G.stats.assets||0)+1; }   /* a building of yours: towers, sentries, barricades, charges */
     if(e.type==='cocoon' && src && src.faction==='corps') G.fx.push({k:'text',x:e.x,y:e.y-14,t:1,max:1,txt:'PURGED',col:'#a6ff4a'});
@@ -119,6 +120,7 @@ function kill(e,src){
     if(e.faction==='corps'||isVisible(e)) SFX.play(e.faction==='swarm'?'squelch':'death',e.x,e.y);
     for(let i=0;i<8;i++) G.fx.push({k:'spark',x:e.x,y:e.y-6,vx:rand(-70,70),vy:rand(-90,10),t:0.45,max:0.45,col:e.faction==='swarm'?'#a6ff4a':'#d23a3a'});
     if(e.faction===G.side){ G.stats.lost++; G.stats.soldiers=(G.stats.soldiers||0)+1; }
+    rogueKill(e,src);   /* Rogue: samples, the loyal Corps, a fallen crew member (31-rogue.js) */
     if(e.faction==='corps') obituary(e); if(e.faction==='corps'&&e.def.bio&&e.fallT==null) soldierFalls(e);
     if(src&&src.avatar) avatarFed(src,e);
     if(src&&src.type==='husk'&&!src.dead&&e.faction==='corps'&&e.kind==='unit') huskScream(src);   /* a Husk screams over its kill */   /* the creature you steer grows by feeding */
@@ -129,7 +131,7 @@ function kill(e,src){
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
     if(e.faction==='corps' && e.def.bio && src && src.def && src.def.boss && src.def.feedHeal && !src.dead){ src.hp=Math.min(src.maxHp,src.hp+src.def.feedHeal*src.maxHp); G.fx.push({k:'text',x:src.x,y:src.y-80,t:1.2,max:1.2,txt:'FEEDS',col:'#a6ff4a'}); }   /* what she kills, she eats: it heals her */
-    if(e.faction==='corps' && e.def.bio && !e.noBody && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
+    if((e.faction==='corps'||e.faction==='loyal') && e.def.bio && !e.noBody && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
     else if(e.faction==='wild' && e.def.bio && src && src.faction==='swarm' && !src.avatar && !(src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e,true);   /* fauna: the Swarm drags the carcass home, a Grafter turns it into a Bloater */
     else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y) && creepAt(e.x,e.y)>0.3){   /* nothing hatches off the creep */
       const c=makeBuilding('cocoon','swarm',Math.floor(e.x/TILE),Math.floor(e.y/TILE),true); c.x=e.x; c.y=e.y; c.r=9;

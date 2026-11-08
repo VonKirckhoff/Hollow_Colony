@@ -554,3 +554,38 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #demo-banner{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:13;padding:5px 14px;background:rgba(12,14,20,.92);border:1px solid #a6ff4a;color:var(--ink);font-family:var(--f-display);font-size:11px;letter-spacing:.06em;pointer-events:none;}
 #demo-banner b{color:#a6ff4a;margin-right:6px;}
 .demo-press{outline:2px solid #ffffff !important;outline-offset:2px;filter:brightness(1.5);}
+
+/* ---------- Rogue Strain: the Osprey crew (31-rogue.js) ---------- */
+:root{ --rogue:#e2556b; --taint:#9dff6a; --loyal:#7fb2ff; }
+.camp-side.three{grid-template-columns:1fr 1fr 1fr;}
+.camp-side button[data-side="rogue"]:hover,.camp-side button[data-side="rogue"].on{border-color:var(--rogue);}
+.camp-side button[data-side="rogue"].on{background:linear-gradient(135deg,rgba(226,85,107,.16),rgba(157,255,106,.08));} .camp-side button[data-side="rogue"].on b{color:var(--rogue);}
+.rogue-only{display:none;}
+#s-campaign.rogue .rogue-only{display:block;}
+#s-campaign.rogue #btn-vets,#s-campaign.rogue #btn-ceno{display:none;}
+#s-campaign.rogue .eyebrow,#s-brief.rogue .eyebrow{color:var(--rogue);}
+#s-campaign.rogue .h,#s-brief.rogue .h{color:#ffd9de;text-shadow:0 0 18px rgba(226,85,107,.35);}
+#s-campaign.rogue .mission .num{color:var(--rogue);} #s-campaign.rogue .mission:hover{border-color:var(--rogue);}
+#s-campaign.rogue .hero-card{border-left-color:var(--rogue);gap:8px;}
+.dna-row{display:flex;flex-wrap:wrap;gap:5px;}
+.dchip{font-size:11px;padding:3px 7px;border:1px solid rgba(157,255,106,.35);color:#cfe8b0;background:rgba(20,30,14,.6);white-space:nowrap;}
+.dchip b{color:var(--taint);font-weight:600;} .dchip.zero{opacity:.45;} .dchip.stab{border-color:rgba(127,223,255,.4);color:#bfeaff;} .dchip.stab b{color:#7fdfff;}
+.crew-list{display:grid;gap:2px;max-height:236px;overflow:auto;}
+.crow{display:grid;grid-template-columns:20px minmax(0,1fr) 110px 74px;gap:8px;align-items:center;padding:3px 8px;background:var(--panel-2);border:1px solid var(--line);color:inherit;font:inherit;text-align:left;cursor:pointer;}
+.crow img{width:20px;height:20px;image-rendering:pixelated;} .crow.on{border-color:var(--rogue);background:#2a161b;}
+.crow .cn{font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .crow .cn small{font-size:11px;color:var(--dim);margin-left:6px;}
+.crow .cs{display:flex;gap:2px;justify-content:flex-end;color:var(--taint);font-size:12px;} .crow .cs .ms{color:#ffd23f;}
+.tbar2{position:relative;display:block;height:7px;background:#0b0c11;border:1px solid #2c3326;}
+.tbar2>span{display:block;height:100%;} .tbar2 i{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.25);}
+.crew-detail{display:grid;gap:7px;}
+.splice-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:5px;}
+.splice{display:grid;justify-items:start;gap:1px;padding:5px 7px;background:#141a10;border:1px solid rgba(157,255,106,.3);color:#d8f0c4;font:inherit;text-align:left;cursor:pointer;}
+.splice .g{font-size:15px;color:var(--taint);line-height:1;} .splice b{font-size:12px;font-weight:600;} .splice small{font-size:10px;color:#93a582;}
+.splice:hover:not([disabled]){border-color:var(--taint);background:#1c2615;}
+.splice[disabled]{opacity:.4;cursor:not-allowed;} .splice.has{opacity:1;border-color:var(--taint);background:#1d2b14;} .splice.has small{color:var(--taint);}
+.splice.stabb{border-color:rgba(127,223,255,.35);background:#10191d;} .splice.stabb .g{color:#7fdfff;}
+.msg.crew{border-left-color:var(--rogue);} .msg.crew .who{color:var(--rogue);}
+.msg.intercept{border-left-color:var(--loyal);} .msg.intercept .who{color:var(--loyal);}
+.plaque.won.rogue{border-color:rgba(226,85,107,.55);color:var(--rogue);background:linear-gradient(#2e1419,#1a0b0e);} .plaque.won.rogue svg{filter:drop-shadow(0 0 6px rgba(226,85,107,.5));}
+.trow.rogue-row{grid-template-columns:110px repeat(5,minmax(0,1fr));}
+@media (max-width:640px){ .camp-side.three{grid-template-columns:1fr;} .crow{grid-template-columns:22px minmax(0,1fr) 60px;} .crow .cs{display:none;} .trow.rogue-row{grid-template-columns:repeat(3,minmax(0,1fr));} }

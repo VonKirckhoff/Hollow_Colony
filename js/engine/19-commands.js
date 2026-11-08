@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 2r. commands ---------- */
-function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead&&!e.downed); }   /* the downed take no orders */
+function myUnits(){ return G.sel.filter(e=>e.kind==='unit'&&e.faction==='corps'&&!e.dead&&!e.downed&&!(e.feral>0)); }   /* the downed take no orders */
 /* Stances stay with a soldier until you change them: 'attack' (every move becomes an attack-move) or 'hold' (after every move he holds the new spot).
    Cancel order (S) clears both the current order and the stance. */
 /* only one pointer mode at a time: attack target, flare, sentry pick-up or building placement */

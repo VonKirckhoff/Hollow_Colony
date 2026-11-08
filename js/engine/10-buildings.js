@@ -12,7 +12,7 @@ function updateBuilding(b,dt){
   if(d.armTime) updateChargeSite(b,dt);
   if(d.fuse) updateCharge(b,dt);
   if(d.regen){ b.calm=(b.calm||0)+dt; if(b.calm>d.regenDelay && b.hp<b.maxHp) b.hp=Math.min(b.maxHp,b.hp+d.regen*dt); }
-  if(d.income) G.salvage+=d.income*dt;
+  if(d.income&&b.faction==='corps') G.salvage+=d.income*dt;   /* a loyal relay (Rogue) pays the other side */
   if(d.capture){
     const R1=2.5*TILE, R2=3.5*TILE;
     const ours=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&dist(e,b)<R1);

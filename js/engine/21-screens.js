@@ -21,17 +21,22 @@ function goMenu(name){
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(b) goMenu(b.dataset.go); });
 /* two campaigns: the Lunar Corps (MISSIONS) and the Swarm (SWARM_MISSIONS); the campaign screen shows one at a time */
-function campList(){ return ui.campSide==='swarm'?SWARM_MISSIONS:MISSIONS; }
+function campList(){ return ui.campSide==='swarm'?SWARM_MISSIONS:ui.campSide==='rogue'?ROGUE_MISSIONS:MISSIONS; }
+/* the campaign a mission belongs to: 'corps', 'swarm' or 'rogue' (Rogue Strain, 31-rogue.js) */
+const sideOf=m=>m.side==='swarm'?'swarm':m.rogue?'rogue':'corps';
+const listOf=m=>sideOf(m)==='swarm'?SWARM_MISSIONS:sideOf(m)==='rogue'?ROGUE_MISSIONS:MISSIONS;
 function isUnlocked(i){ const L=campList(); return i===0 || isDone(L[i-1].id); }
 function buildCampaign(){
-  const sw=ui.campSide==='swarm', L=campList(); $('#s-campaign').classList.toggle('swarm',sw);
-  document.querySelectorAll('[data-side]').forEach(b=>{ const on=b.dataset.side===(sw?'swarm':'corps'); b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
-  $('#camp-eyebrow').textContent=sw?'CAMPAIGN · THE SWARM':'CAMPAIGN · LUNAR CORPS'; $('#camp-title').textContent=sw?'The Long Hunger':'Operation Hollow Light';
-  for(const [k,LL] of [['corps',MISSIONS],['swarm',SWARM_MISSIONS]]){ const el=$('#cs-p-'+k); if(el) el.textContent=`${LL.filter(m=>isDone(m.id)).length} / ${LL.length} missions`; }   /* progress on the side buttons */
-  buildHero();
+  if(ui.campSide==='rogue'&&!rogueUnlocked()) ui.campSide='corps';   /* the Rogue side opens after Corps mission 4 */
+  const sw=ui.campSide==='swarm', rg=ui.campSide==='rogue', L=campList(); $('#s-campaign').classList.toggle('swarm',sw); $('#s-campaign').classList.toggle('rogue',rg);
+  const rb=$('[data-side="rogue"]'); if(rb) rb.hidden=!rogueUnlocked(); $('#camp-side').classList.toggle('three',rogueUnlocked());
+  document.querySelectorAll('[data-side]').forEach(b=>{ const on=b.dataset.side===ui.campSide; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+  $('#camp-eyebrow').textContent=sw?'CAMPAIGN · THE SWARM':rg?'CAMPAIGN · THE OSPREY CREW':'CAMPAIGN · LUNAR CORPS'; $('#camp-title').textContent=sw?'The Long Hunger':rg?'Rogue Strain':'Operation Hollow Light';
+  for(const [k,LL] of [['corps',MISSIONS],['swarm',SWARM_MISSIONS],['rogue',ROGUE_MISSIONS]]){ const el=$('#cs-p-'+k); if(el) el.textContent=`${LL.filter(m=>isDone(m.id)).length} / ${LL.length} missions`; }   /* progress on the side buttons */
+  if(rg) buildCrew(); else buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
   const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete`;
-  const trs=trainingsOf(sw?'swarm':'corps');
+  const trs=rg?[]:trainingsOf(sw?'swarm':'corps');
   $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
@@ -48,7 +53,7 @@ function buildHero(){
     <div class="hrow">${HERO_TYPES.map(t=>`<button type="button" class="htype ${t===heroType?'on':''}" data-htype="${t}" ${locked&&t!==h.type?'disabled':''}><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</button>`).join('')}</div>
     <div class="hrow"><button class="btn primary" type="button" id="hero-save">${h?'Save':'Enlist'}</button>${h?'<button class="btn" type="button" id="hero-cancel">Cancel</button>':''}</div>`;
 }
-$('#hero-card').addEventListener('click',e=>{
+$('#hero-card').addEventListener('click',e=>{ if(ui.campSide==='rogue') return;   /* the Rogue side: the splice lab (31-rogue.js) */
   if(e.target.closest('#hero-edit')){ heroEdit=true; heroType=null; heroSex=null; buildHero(); const i=$('#hero-name'); if(i) i.focus(); return; }
   if(e.target.closest('#hero-cancel')){ heroEdit=false; buildHero(); return; }
   const sx=e.target.closest('[data-hsex]'); if(sx){ heroSex=sx.dataset.hsex; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; voiceSample(heroSex); return; }
@@ -92,8 +97,8 @@ $('#s-cenotaph').addEventListener('click',e=>{
 /* Trophy wall: a plaque per role and difficulty column. Earned plaques carry every soldier who earned them; your own soldier's progress shows on his row. */
 const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
 function buildTrophies(){
-  checkGrand(); let T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus(), total=HERO_TYPES.length*TROPHY_COLS.length+FLAWLESS_COLS.length+4;
-  let earned=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0)+FLAWLESS_COLS.filter(c=>T['flawless:'+c.key]).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0)+(rs.item.at?1:0)+(rs.egg.at?1:0);
+  checkGrand(); checkRogueTrophies(); let T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus(), total=HERO_TYPES.length*TROPHY_COLS.length+FLAWLESS_COLS.length+4+ROGUE_TROPHIES.length;
+  let earned=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0)+FLAWLESS_COLS.filter(c=>T['flawless:'+c.key]).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0)+(rs.item.at?1:0)+(rs.egg.at?1:0)+ROGUE_TROPHIES.filter(t=>T[t.id]).length;
   $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${hero.tp&&hero.tp.void?'<span class="tvoid">Not on a trophy run: this soldier did not start at mission 1.</span>':TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
   const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}${c.sub?`<i>${c.sub}</i>`:''}</span>`).join('')}</div>`;
@@ -109,7 +114,7 @@ function buildTrophies(){
     `<div class="trow grand"><span class="trole">Grand</span>${[
       ['corps','Hollow Light','Every role and Flawless trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need],
       ['swarm','The Long Hunger','Every Swarm mission on every difficulty',`Easy ${gs.swarm.easy} · Normal ${gs.swarm.normal} · Hard ${gs.swarm.hard} / ${gs.swarm.need}`,gs.swarm.need?(gs.swarm.easy+gs.swarm.normal+gs.swarm.hard)/(3*gs.swarm.need):0]
-    ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`+relicRow();
+    ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`+relicRow()+rogueTrophyRow();
 }
 /* relics on the trophy wall: Archivist (every hidden item) and Egg Hunter (every ancient egg) */
 function relicStatus(){ const F=relicsFound(), part=k=>{ const all=RELICS.filter(r=>r.kind===k), got=all.filter(r=>F[r.id]); return { have:got.length, need:all.length, at:got.length===all.length&&all.length?Math.max(...got.map(r=>F[r.id].at)):null }; };
@@ -186,8 +191,11 @@ let resetArm=null;
 $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
   if(!resetArm){ b.classList.add('armed'); b.textContent='Click again to erase all progress'; resetArm=setTimeout(()=>{ resetArm=null; b.classList.remove('armed'); b.textContent='Reset campaign'; },4000); return; }
   clearTimeout(resetArm); resetArm=null;
+  if(ui.campSide==='rogue'){ for(const m of ROGUE_MISSIONS) delete ui.progress.results[m.id]; store.set('hc-progress',ui.progress); resetRogue();   /* the Rogue side: only its own jobs, crew and lab */
+    try{ const s=savedInfo(); if(s&&ROGUE_MISSIONS.some(m=>m.id===s.missionId)) localStorage.removeItem('hc-save'); }catch(e){} if(typeof refreshContinue==='function') refreshContinue();
+    b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('The Osprey crew starts over: jobs, strains, taint and samples erased.',true); return; }
   ui.progress={results:{}}; store.set('hc-progress',ui.progress);
-  ui.roster=emptyRoster(); saveRoster();
+  ui.roster=emptyRoster(); saveRoster(); resetRogue();
   try{ localStorage.removeItem('hc-save'); }catch(e){}   /* the saved mission goes too */
   if(typeof refreshContinue==='function') refreshContinue();
   b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress and the saved game erased.',true); });
@@ -195,19 +203,19 @@ let briefIdx=0;
 /* the trainings of one side, in order (The First Hunger, then Brood Tactics …) */
 function trainingsOf(side){ return Object.values(TRAINING).filter(t=>(t.side||'corps')===side); }
 function briefMission(i){ return i<0?trainingsOf(ui.campSide==='swarm'?'swarm':'corps')[-1-i]:campList()[i]; }
-function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swarm';
-  $('#b-eyebrow').textContent=`${sw?'THE SWARM · ':''}${m.training?'TRAINING':'MISSION '+(i+1)} · ${MAPS[m.map].name.toUpperCase()}`; $('#s-brief').classList.toggle('swarm',sw); $('#b-start').textContent=sw?'Wake':'Deploy'; $('#b-title').textContent=m.title;
+function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swarm', rg=!!m.rogue;
+  $('#b-eyebrow').textContent=`${sw?'THE SWARM · ':rg?'ROGUE STRAIN · ':''}${m.training?'TRAINING':(rg?'JOB ':'MISSION ')+(i+1)} · ${MAPS[m.map].name.toUpperCase()}`; $('#s-brief').classList.toggle('swarm',sw); $('#s-brief').classList.toggle('rogue',rg); $('#b-start').textContent=sw?'Wake':rg?'Go dark':'Deploy'; $('#b-title').textContent=m.title;
   $('#b-text').innerHTML=m.briefing.map(p=>`<p>${p}</p>`).join('');
   const res=resultOf(m.id); $('#b-eyebrow').textContent+= res?` · COMPLETED ON ${DIFFICULTY[res.diff].label.toUpperCase()}`:'';
-  const nv=sw?0:ui.roster.active.length; $('#b-text').innerHTML+= nv?`<p class="rdim">${nv} veteran${nv>1?'s':''} on the roster will join this mission: ${ui.roster.active.slice(0,6).map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(', ')}${nv>6?'…':''}.</p>`:'';
+  const nv=sw||rg?0:ui.roster.active.length; if(rg) $('#b-text').innerHTML+=rogueBriefNote(); $('#b-text').innerHTML+= nv?`<p class="rdim">${nv} veteran${nv>1?'s':''} on the roster will join this mission: ${ui.roster.active.slice(0,6).map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(', ')}${nv>6?'…':''}.</p>`:'';
   if(sw) $('#b-text').innerHTML+=`<p class="rdim">Difficulty makes the Lunar Corps tougher: Easy ${Math.round(SWARM_DIFF.easy.hp*100)}%, Hard ${Math.round(SWARM_DIFF.hard.hp*100)}% health, and more reinforcements on Hard.</p>`;
-  else if(!m.training){ const r=resultOf(m.id); if(r&&r.flawless) $('#b-text').innerHTML+=`<p class="rdim">Done flawless (no soldier lost) on ${DIFFICULTY[r.flawless].label}.</p>`; }
+  else if(!m.training&&!rg){ const r=resultOf(m.id); if(r&&r.flawless) $('#b-text').innerHTML+=`<p class="rdim">Done flawless (no soldier lost) on ${DIFFICULTY[r.flawless].label}.</p>`; }
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
   $('#b-watch').hidden=!m.demo;
   show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true}); }
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
 $('#b-watch').addEventListener('click',()=>startMission(briefMission(briefIdx),{demo:true}));
-$('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
+$('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; if(b.dataset.side==='rogue'&&!rogueUnlocked()) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
 function syncDiff(){ document.querySelectorAll('.diff-seg').forEach(seg=>{ seg.innerHTML=Object.entries(DIFFICULTY).map(([k,d])=>`<button type="button" data-diff="${k}" class="${k===ui.diff?'on':''}">${d.label}</button>`).join(''); }); }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-diff]'); if(!b) return; ui.diff=b.dataset.diff; store.set('hc-diff',ui.diff); syncDiff(); });
 function buildSkirmish(){
@@ -244,6 +252,7 @@ function startMission(m,opts){
   if(G.side==='swarm'){ const r=ptWorld(m.start.rally||m.start.camera||'P'); if(r) G.swarm.rally=r; selectEntities([],false); }
   else selectEntities(G.ents.filter(e=>e.kind==='unit'&&e.faction==='corps'),false);
   if(typeof demoBanner==='function') demoBanner(false); if(opts&&opts.demo&&typeof demoStart==='function') demoStart();   /* Watch mode */
+  rogueHud();   /* the DNA and stabilizer counters only in a Rogue job */
 }
 function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; const ps=$('#p-save'); if(ps) ps.hidden=!(typeof canSave==='function'&&canSave()); pauseLabels(); show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
@@ -268,7 +277,8 @@ function showEnd(){
     $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; }
   const ev=$('#e-vets'); const rr=G.rosterResult, promoted=(rr&&rr.promoted)||[], hero=heroOf();
   const fallenAll=(rr&&(rr.fallenAll||rr.fallen))||[];
-  if(o.win && m.id!=='skirmish' && m.side!=='swarm' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length))||(o.win&&heroOf()))){ ev.hidden=false;
+  if(o.win && m.rogue){ ev.hidden=false; ev.innerHTML=rogueEndHtml(); }
+  else if(o.win && m.id!=='skirmish' && m.side!=='swarm' && (promoted.length||(rr&&(rr.joined.length||fallenAll.length))||(o.win&&heroOf()))){ ev.hidden=false;
     const star=n=>hero&&hero.name===n?'<span class="vstar">★</span> ':'';
     // one row per rank, highest first; names alphabetical within a rank
     const byRank=list=>{ const m2=new Map(); for(const v of list){ if(!m2.has(v.rank)) m2.set(v.rank,[]); m2.get(v.rank).push(v.name); }
@@ -278,7 +288,7 @@ function showEnd(){
     ev.innerHTML=(tw.length?`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${tw.map(w=>`<div>${w.name}: ${UNITS[w.type].name} · ${TROPHY_COLS.find(c=>c.key===w.col).label}. It hangs on the Trophy wall.</div>`).join('')}</div>`:'')+run+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
       (rr&&rr.joined.length?`<div class="vsec"><span class="lbl">New on the roster</span>${byRank(rr.joined)}</div>`:'')+
       (fallen.length?`<div class="vsec fallen"><span class="lbl">Fallen</span>${fallen.map(v=>`<div class="vrow"><span class="vrank">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'<span class="vstar">★</span> ':''}${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}</i></span></div>`).join('')}</div>`:''); }
-  else if(!o.win && m.id!=='skirmish' && m.side!=='swarm' && G.fallenVets && Object.keys(G.fallenVets).length){ ev.hidden=false;   /* retry: show who fell, but nobody is lost */
+  else if(!o.win && m.id!=='skirmish' && m.side!=='swarm' && !m.rogue && G.fallenVets && Object.keys(G.fallenVets).length){ ev.hidden=false;   /* retry: show who fell, but nobody is lost */
     ev.innerHTML=`<div class="vsec"><span class="lbl">Retry</span><div>The roster is restored for another try. These soldiers fell, but they are not lost: ${Object.values(G.fallenVets).map(f=>`${RANKS[f.rank||0].abbr} ${f.name}`).sort().join(', ')}.</div></div>`; }
   else ev.hidden=true;
   if(G.flawless){ const html=`<div class="vsec troph"><span class="lbl">🏆 Flawless</span>${(G.flawlessWon||[]).length?G.flawlessWon.map(k=>`<div>Trophy earned: Flawless · ${DIFFICULTY[k].label}. It hangs on the Trophy wall.</div>`).join(''):''}<div>Not a single soldier lost on ${DIFFICULTY[G.diffKey].label}.</div></div>`;
@@ -287,8 +297,9 @@ function showEnd(){
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.relicsGot&&G.relicsGot.length){ const html=`<div class="vsec troph"><span class="lbl">✦ Relic found</span>${G.relicsGot.map(id=>{ const r=relicDef(id); return r?`<div>${r.name}. Read about it in Intel, tab Relics.</div>`:''; }).join('')}</div>`;   /* kept even if the mission was lost */
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=ev.innerHTML+html; }
-  const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Soldiers lost',S.soldiers!=null?S.soldiers:S.lost],['Assets lost',S.assets||0],['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
-  const LM=m.side==='swarm'?SWARM_MISSIONS:MISSIONS, idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=m.side==='swarm'?'swarm':'corps';
+  if(!o.win && m.rogue){ ev.hidden=false; ev.innerHTML=`<div class="vsec"><span class="lbl">Retry</span><div>Nothing is lost: the crew, their taint and the splice lab are as they were before this job.</div></div>`; }
+  const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Soldiers lost',S.soldiers!=null?S.soldiers:S.lost],['Assets lost',S.assets||0],...(m.rogue?[['Hives burned',S.hives],['Corps shot',S.loyal||0],['Samples',dnaTotal(G.rogue&&G.rogue.dna)]]:[['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]])]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
+  const LM=listOf(m), idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=sideOf(m);
   if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;
   btns+=`<button class="btn ${o.win&&(m.training||idx>=0)&&idx<LM.length-1?'':'primary'}" type="button" id="e-retry">${o.win?'Play again':'Retry'}</button><button class="btn" type="button" id="e-menu">Main menu</button>`;
   if(!o.win) btns+=`<button class="btn" type="button" id="e-watch" data-tip="Watch the field|Hide this report and watch the battle play on. Drag, the arrow keys or the minimap move the camera.">Watch the field</button>`;
@@ -306,7 +317,7 @@ function showEnd(){
 $('#e-report').addEventListener('click',()=>{ $('#s-end').classList.remove('watching'); $('#e-report').hidden=true; });
 
 /* top bar: the mission's title, and its mode: which campaign and number (or training / skirmish) and the difficulty */
-function missionTag(){ const m=G.mission, sw=m.side==='swarm', L=sw?SWARM_MISSIONS:MISSIONS, i=L.indexOf(m);
-  const mode=m.training?(sw?'Swarm training':'Corps training'):m.id==='skirmish'?'Skirmish':i>=0?`${sw?'Swarm':'Corps'} ${i+1}`:'Mission';
+function missionTag(){ const m=G.mission, sw=m.side==='swarm', L=listOf(m), i=L.indexOf(m);
+  const mode=m.training?(sw?'Swarm training':'Corps training'):m.id==='skirmish'?'Skirmish':i>=0?`${sw?'Swarm':m.rogue?'Rogue':'Corps'} ${i+1}`:'Mission';
   const diff=(sw?SWARM_DIFF:DIFFICULTY)[G.diffKey], d=diff&&diff.label?diff.label:G.diffKey;
-  $('#r-mode').textContent=`${mode} · ${d}`; $('#r-mtitle').textContent=m.title; $('#r-mission').dataset.tip=`${m.title}|${mode.replace(/^(Corps|Swarm) (\d)/,'$1 campaign, mission $2')}, ${d}.`; }
+  $('#r-mode').textContent=`${mode} · ${d}`; $('#r-mtitle').textContent=m.title; $('#r-mission').dataset.tip=`${m.title}|${mode.replace(/^(Corps|Swarm|Rogue) (\d)/,'$1 campaign, mission $2')}, ${d}.`; }

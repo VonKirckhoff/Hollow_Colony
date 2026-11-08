@@ -17,6 +17,8 @@
     <div class="res"><span class="lbl">Salvage</span><b id="r-salvage">0</b></div>
     <div class="res" id="r-supply-wrap"><span class="lbl">Supply</span><b id="r-supply">0/0</b></div>
     <div class="res" id="r-troops-wrap" data-tip="Troops|"><span class="lbl">Troops</span><b id="r-troops">0</b></div>
+    <div class="res" id="r-dna-wrap" hidden data-tip="DNA|"><span class="lbl">DNA</span><b id="r-dna">0</b></div>
+    <div class="res" id="r-stab-wrap" hidden data-tip="Stabilizer|"><span class="lbl">Stabilizer</span><b id="r-stab">0</b></div>
     <div class="res" id="r-timer-wrap" hidden><span class="lbl" id="r-timer-lbl">Timer</span><b id="r-timer">0:00</b></div>
     <div class="spacer"></div>
     <div class="res mission-tag" id="r-mission"><b id="r-mtitle"></b><span class="lbl" id="r-mode"></span></div>
@@ -77,9 +79,10 @@
 <section class="screen" id="s-campaign" hidden>
   <div class="sheet camp">
    <div class="camp-l">
-    <div class="camp-side" id="camp-side" role="tablist" aria-label="Choose a side"><button type="button" role="tab" data-side="corps"><span class="cs-k">Play as</span><b>Lunar Corps</b><span class="cs-n">Operation Hollow Light</span><span class="cs-p" id="cs-p-corps"></span></button><button type="button" role="tab" data-side="swarm"><span class="cs-k">Play as</span><b>The Swarm</b><span class="cs-n">The Long Hunger</span><span class="cs-p" id="cs-p-swarm"></span></button></div>
+    <div class="camp-side" id="camp-side" role="tablist" aria-label="Choose a side"><button type="button" role="tab" data-side="corps"><span class="cs-k">Play as</span><b>Lunar Corps</b><span class="cs-n">Operation Hollow Light</span><span class="cs-p" id="cs-p-corps"></span></button><button type="button" role="tab" data-side="swarm"><span class="cs-k">Play as</span><b>The Swarm</b><span class="cs-n">The Long Hunger</span><span class="cs-p" id="cs-p-swarm"></span></button><button type="button" role="tab" data-side="rogue" hidden><span class="cs-k">Play as</span><b>The Osprey crew</b><span class="cs-n">Rogue Strain</span><span class="cs-p" id="cs-p-rogue"></span></button></div>
     <div class="eyebrow" id="camp-eyebrow">CAMPAIGN · LUNAR CORPS</div>
     <h2 class="h" id="camp-title">Operation Hollow Light</h2>
+    <p class="lede rogue-only">The Osprey went down at Hollow Colony and its crew is listed as killed in action. They are not dead. Seven soldiers, no base, no dropship, hunted by the Swarm and by the Corps. Harvest Swarm DNA, splice it into the crew between jobs, and keep the taint from eating them alive.</p>
     <p class="lede swarm-only">Play the same story from the other side. You are the Brood: you choose what hatches, where it gathers and where it strikes, and the swarm does the rest. The Lunar Corps is played by the computer.</p>
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
@@ -211,6 +214,7 @@
       <div class="note"><b>Cenotaph</b>The fallen are cut into stone. In zombie mode you can raise them once.</div>
       <div class="note"><b>Training</b>Both campaigns start with a training (00) that walks you through every button. Press N to skip a step.</div>
       <div class="note"><b>Playing the Swarm</b>Pick The Swarm on the campaign screen. Q W E R hatch, right-click sets the gathering point (or moves the swarm units you selected), A + click attacks, H brings the fallen home, B + click burrows up a small brood. Ctrl + a number keeps a group: flank or lure with two groups of your own.</div>
+      <div class="note"><b>Rogue Strain</b>Opens once the Lunar Corps has won The Hollow Colony. You play the seven survivors of the Osprey. Swarm you kill without fire can leave DNA samples: walk over them. Between jobs, splice them into the crew on the campaign screen. Taint makes them stronger and stranger: from 85% seizures, at 100% a feral fit. A crew Medic with a stabilizer dose fixes that (J). The blue-grey soldiers are the loyal Corps: they shoot you on sight.</div>
       <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty. Flawless: win a mission without losing a soldier, one per difficulty. Two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</div>
     </div>
     <div class="fresh" id="fresh-box">
@@ -271,7 +275,7 @@
    <div class="troph-l">
     <div class="eyebrow">HALL OF HONOUR</div>
     <h2 class="h">Trophy wall</h2>
-    <p class="lede">One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. A win on Hard also counts for Normal and Easy. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Below them hang two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</p>
+    <p class="lede">One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. A win on Hard also counts for Normal and Easy. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Below them hang two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty. And once the Osprey crew goes rogue, a row of their own.</p>
     <div class="troph-hero" id="troph-hero"></div>
     <div class="row"><button class="btn" type="button" data-go="menu">Back</button><button class="btn" type="button" data-go="veterans">Veterans</button></div>
    </div>
@@ -344,6 +348,13 @@
 <script src="js/content/missions/t-corps-training.js"></script>
 <script src="js/content/missions/t-swarm-training.js"></script>
 <script src="js/content/missions/t-swarm-tactics.js"></script>
+<script src="js/content/rogue.js"></script>
+<script src="js/content/missions/r01-osprey-down.js"></script>
+<script src="js/content/missions/r02-dead-air.js"></script>
+<script src="js/content/missions/r03-cold-harvest.js"></script>
+<script src="js/content/missions/r04-the-fever.js"></script>
+<script src="js/content/missions/r05-hunted.js"></script>
+<script src="js/content/missions/r06-mothers-blood.js"></script>
 
 <script src="js/content/skirmish.js"></script>
 
@@ -383,6 +394,7 @@
 <script src="js/engine/28-dev.js"></script>
 <script src="js/engine/29-relics.js"></script>
 <script src="js/engine/30-save.js"></script>
+<script src="js/engine/31-rogue.js"></script>
 <script src="js/engine/23-main-loop.js"></script>
 <script src="js/engine/24-music.js"></script>
 </body>

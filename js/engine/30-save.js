@@ -58,7 +58,7 @@ function decodeGame(save){
   const triggers=save.triggers.map(t=>{ const o={}; for(const k of Object.keys(t)) o[k]=dec(t[k]); return o; });
   return { ents, g, triggers }; }
 function findMission(save){ if(save.missionId==='skirmish') return skirmishMission(save.mapId);
-  return [...MISSIONS,...(typeof SWARM_MISSIONS!=='undefined'?SWARM_MISSIONS:[])].find(m=>m.id===save.missionId)||null; }
+  return [...MISSIONS,...(typeof SWARM_MISSIONS!=='undefined'?SWARM_MISSIONS:[]),...(typeof ROGUE_MISSIONS!=='undefined'?ROGUE_MISSIONS:[])].find(m=>m.id===save.missionId)||null; }
 function saveGame(){ if(!canSave()){ toast(G&&G.mission.training?'Training cannot be saved.':'Nothing to save.'); return false; }
   try{ const s=encodeGame(), txt=JSON.stringify(s); localStorage.setItem(SAVE_KEY,txt); refreshContinue(); SFX.play('ack');
     toast(`Game saved: ${s.title}, ${fmtTime(s.time)}.`,true); return true; }

@@ -51,7 +51,7 @@ function render(now){
   for(const e of G.sel){ if(!e.dead&&e.def&&e.def.ground){ ctx.strokeStyle='#5fe3b0'; ctx.lineWidth=2; ctx.strokeRect(e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); continue; }
     if(e.dead||!list.includes(e)) continue; ctx.strokeStyle=e.faction===G.side?'#5fe3b0':'#ff5a4f'; ctx.lineWidth=2;
     ctx.beginPath(); if(e.kind==='building') ctx.ellipse(e.x,e.y+e.r*0.35,e.r*1.1,e.r*0.75,0,0,Math.PI*2); else ctx.ellipse(e.x,e.y+4,e.r+4,(e.r+4)*0.55,0,0,Math.PI*2); ctx.stroke(); }
-  for(const e of list){ if(e.kind==='unit') drawUnit(e); else if(e.kind==='building') drawBuilding(e,now); else if(e.kind==='body') drawBody(e,now); else if(e.relic) drawRelic(e,now); else if(e.oldEgg) drawOldEgg(e,now); else if(e.supply) drawSupply(e,now); else ctx.drawImage(ARTC.crate,Math.round(e.x-12),Math.round(e.y-10+Math.sin(now/300+e.id)*1.5),24,20); }
+  for(const e of list){ if(e.kind==='unit') drawUnit(e); else if(e.kind==='building') drawBuilding(e,now); else if(e.kind==='body') drawBody(e,now); else if(e.rogue) drawRogueCrate(e,now); else if(e.relic) drawRelic(e,now); else if(e.oldEgg) drawOldEgg(e,now); else if(e.supply) drawSupply(e,now); else ctx.drawImage(ARTC.crate,Math.round(e.x-12),Math.round(e.y-10+Math.sin(now/300+e.id)*1.5),24,20); }
   for(const e of shimmer){ const sp=SPR[e.def.sprite], s=2; ctx.globalAlpha=0.1+0.08*Math.sin(now/90+e.id); ctx.drawImage(e.face>0?sp.flash:sp.flashFlip,Math.round(e.x-sp.w+Math.sin(now/60)*2),Math.round(e.y-sp.h*s+4),sp.w*s,sp.h*s); ctx.globalAlpha=1; }
   // heal beams
   for(const e of list){ if(e.beam&&!e.beam.dead){ ctx.strokeStyle='rgba(120,255,190,.75)'; ctx.lineWidth=2; ctx.setLineDash([2,3]); ctx.lineDashOffset=-now/40; ctx.beginPath(); ctx.moveTo(e.x+e.face*4,e.y-12); ctx.lineTo(e.beam.x,e.beam.y-10); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='#9fffd0'; ctx.fillRect(e.beam.x-1,e.beam.y-22-((now/120)%8),2,2); } }
@@ -118,12 +118,14 @@ function drawUnit(u){
   drawShadow(u.x,u.y+3,u.r*0.95,u.r*0.42);
   const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
   const now=performance.now(), risen=u.vet&&u.vet.risen;
-  if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now);
+  if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew) drawTaint(u,now);
   const hov=ui.hover&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)));
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);
   if(u.carry){ const a=ARTC[BUILDINGS[u.carry.type].art]; ctx.drawImage(a,Math.round(u.x-u.face*9-9),y+2,18,18); }
-  if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
+  if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else if(u.faction==='loyal'){ const z=loyalSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
+  if(u.crew) drawTaintVeins(u,x,y,w,h,sp);   /* Rogue: the strain shows through */
+  if(u.faction==='loyal') drawLoyalMark(u,y-10);
   if(hov){ ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.35+0.15*Math.sin(now/120); ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
   if(u.flash>0){ ctx.globalAlpha=(u.def.scale||2)>=3?0.25:0.8; ctx.drawImage(u.face>0?sp.flash:sp.flashFlip,x,y,w,h); ctx.globalAlpha=1; }
   if(u.molt>0) drawMolt(u,x,y,w,h,now);
@@ -198,7 +200,7 @@ function renderMinimap(){
   mctx.imageSmoothingEnabled=false; mctx.drawImage(m.mini,0,0,mm.width,mm.height);
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||e.kind==='body') continue;
     if(e.faction!==G.side){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) continue; }
-    mctx.fillStyle=e.def.capture?(e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffffff'):e.faction==='corps'?(e.def.escort?'#ffffff':'#ffb347'):e.faction==='swarm'?'#a6ff4a':e.faction==='grey'?'#7ff6ff':'#d3c3a6';
+    mctx.fillStyle=e.def.capture?(e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffffff'):e.faction==='corps'?(e.def.escort?'#ffffff':'#ffb347'):e.faction==='swarm'?'#a6ff4a':e.faction==='loyal'?'#7fb2ff':e.faction==='grey'?'#7ff6ff':'#d3c3a6';
     const sz=e.kind==='building'?Math.max(3,e.size*s):Math.max(2,s*0.9);
     mctx.fillRect(Math.round(e.x/TILE*s-sz/2),Math.round(e.y/TILE*s-sz/2),Math.ceil(sz),Math.ceil(sz)); }
   mctx.imageSmoothingEnabled=true; mctx.drawImage(fogCanvas||m.mini,0,0,mm.width,mm.height); mctx.imageSmoothingEnabled=false;

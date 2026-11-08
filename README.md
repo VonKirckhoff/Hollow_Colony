@@ -541,6 +541,52 @@ Op het campagnescherm kies je bovenaan **Lunar Corps** of **The Swarm** (onthoud
 
 ---
 
+### De derde campagne: *Rogue Strain* (de Osprey-bemanning)
+
+Een derde knop op het campagnescherm, **Play as The Osprey crew** (rood), verschijnt pas als de Lunar Corps missie 4, *The Hollow Colony*, gewonnen heeft. Het verhaal: de Osprey, het eerste reddingsschip dat voor het lab van Dr. Maas neerstortte, staat geboekt als *verloren met alle opvarenden*. Dat klopt niet. Zeven overlevenden vonden Maas' stalen, zagen wat Swarm-DNA met een lichaam doet, en meldden zich nooit meer. Ze gaan AWOL en proberen zichzelf sterker te maken met Swarm-DNA. Je speelt die bemanning: geen basis, geen dropship, opgejaagd door de Swarm en door de Corps die ze achterlieten. (Het spoor uit missie 4, *"Swarm bodies here. Shot clean through... That was not us."*, was dus de bemanning.) Code: `js/engine/31-rogue.js`, inhoud: `js/content/rogue.js`, missies: `js/content/missions/r01-…` tot `r06-…` (in `ROGUE_MISSIONS`, missieveld `rogue:true`).
+
+**De bemanning** (`ROGUE_CREW`, vaste mensen met een eigen rooster in `hc-rogue`, los van de veteranen van de Lunar Corps): **Capt. Haesaert** (Trooper, Captain: leidt de squad met de AURA), **Sgt. Dehandschutter** (Gunner), **Cpl. Mortier** (Pyro), **Cpl. Devreese** (Medic, zij), **Pvt. Cnudde** (Engineer), **Pvt. Van Wesemael** en **Pvt. Braet** (Troopers). Ze nemen rang, XP, strains en taint mee van job tot job. Gaat er iemand dood in een job die je wint, dan komt die de volgende keer terug met **+20 taint** (*de strain naaide hem weer aan elkaar*). Een verloren job kost niets: alles staat terug zoals ervoor.
+
+**DNA oogsten.** Een Swarm-wezen dat de bemanning doodt (niet met vuur), laat soms een staal achter: een groen flesje op de grond (Crawler 35%, Drone 30%, Spitter 50%, Brute en Husk altijd; `ROGUE.dna`). Loop erover. Een **hive** die de bemanning doodt zonder vuur laat **3 Hive-stalen** achter (*HARVEST*); verbrandt Mortier hem, dan is er niets (*BURNT · NO SAMPLES*). Ook wat in de brandende grond of in de vlam sterft, levert niets op. De Pyro is dus je sterkste wapen, maar wat hij verbrandt, kun je niet gebruiken. Stalen rotten na 90 s weg. Bovenaan staan **DNA** (stalen deze job) en **Stabilizer** (dosissen).
+
+**Splicen (het splice lab op het campagnescherm).** Aan de Rogue-kant staat in plaats van *je eigen soldaat* het lab: je DNA-voorraad, de zeven bemanningsleden met hun taint-balk en strains, en per bemanningslid zes knoppen. Elke strain kan een soldaat één keer krijgen (`STRAINS`):
+
+| Strain | Uit | Kost | Taint | Effect |
+|---|---|---|---|---|
+| Night Eyes | Crawler | 3 | +10 | +2 zicht, verliest bijna niets in het donker, +5% snelheid |
+| Swift | Drone | 3 | +10 | +15% snelheid |
+| Acid Blood | Spitter | 3 | +14 | +15% schade, zijn kogels laten zuur in de wonde (2 s) |
+| Chitin | Brute | 2 | +16 | +20% pantser, +15% levenspunten |
+| Knitting Flesh | Husk | 2 | +18 | geneest 2,5 HP/s als hij 4 s niet geraakt is |
+| Hive Scent | Hive | 3 | +22 | de jacht laat hem links liggen, hives merken hem niet op, de brood kiest hem als laatste |
+
+Devreese splicet niemand voorbij **95% taint**. Een stabilizer-dosis in het lab haalt er 35 af.
+
+**Taint** (`ROGUE.taint`) werkt in twee richtingen. Elk punt geeft +0,2% schade (*fever*). Vanaf **30%** laat de jacht (*THE HUNT*) hem links liggen, vanaf **60%** geneest de schimmel hem (4 HP/s) en zie je groene aders door zijn pak. Maar vanaf **85%** krijgt hij af en toe een aanval (*SEIZURE*, 1,6 s op de grond) en op **100%** gaat hij **feral**: 10 s lang luistert hij niet meer, rent op het dichtste doelwit af (Swarm of Corps), sneller en harder, en zakt daarna 3 s in elkaar met 70% taint. Een tijdelijke straf, geen verlies. Op de schimmel staan kost +1,2 taint per seconde. Na elke gewonnen job zakt de taint met 8.
+
+**Stabilizer** (`ROGUE.stab`): selecteer een Medic van de bemanning en druk **J** (of de knop ✚ bij *Orders*): de soldaat met de meeste taint binnen 4 tegels krijgt −35 taint, een feral soldaat komt meteen tot zichzelf. Elke job begint met 1 dosis bovenop wat je bewaarde; dosissen die je niet gebruikt, blijven in het lab.
+
+**De loyale Corps** (factie `loyal`): soldaten en gebouwen van de Lunar Corps die op de bemanning schieten. Ze zijn blauwgrijs met een blauw chevronnetje (op de minimap blauw), vechten ook tegen de Swarm, komen elkaar helpen binnen 12 tegels, en laten een lichaam achter waar de Swarm een Husk van maakt. Een gedode loyale soldaat geeft 2 XP. Hun Relay Towers betalen jou niets. Op Easy/Hard hebben ze 85%/120% levenspunten (`ROGUE.loyal`).
+
+**De zes jobs:**
+
+| # | Job | Kaart | Doel |
+|---|---|---|---|
+| 1 | **Osprey Down** | Hollow Colony | Vóór *The Hollow Colony*. De bemanning kruipt gewond uit het wrak. Dr. Maas doet haar deur niet open (intercom), maar Cnudde (een Engineer) kraakt haar stalenvriezer in 12 s: 2 Hive-stalen en een stabilizer. Dan hoor je Varga de Osprey verloren verklaren en vertrekt Dust (4 min). Verzamel 6 stalen en verdwijn met iedereen door de Swarm-tunnel in de zuidwand. Blijf je te lang, dan landt Dust en jaagt op je. |
+| 2 | **Dead Air** | Kappa Canyons | Kappa Station is een Corps-bevoorradingspost. Neem de drie kisten op het platform (een met 2 stabilizers). Ziet een loyale soldaat of Sentry je, dan beginnen de twee Relay Towers Tycho te bellen: haal ze binnen 30 s neer of Kestrel brengt om de 80 s een jachtploeg. Optioneel: nooit gezien worden (*Hold fire*, Q, helpt). Weg via de oude mijnschacht in de oostwand. |
+| 3 | **Cold Harvest** | Mare Colony (donker) | De Corps heeft de vijf generatoren aan (onkwetsbaar). Wie van de bemanning in hun licht staat, wordt gezien door elke soldaat bij die generator, en een patrouille komt kijken. **Oogst 3 van de 4 hives** zonder vuur; verbrand je er te veel, dan verlies je. Optioneel: nooit in het licht. Weg via de mijnschacht in het zuidwesten. |
+| 4 | **The Fever** | Ridgeback Canyon | De bemanning met de meeste taint (niet de Captain of de Medic) heeft koorts: minstens 72 taint en +0,45 per seconde, dus telkens weer feral. Alleen het lied van een levende hive kalmeert de strain: houd hem **20 s binnen 4 tegels van een levende hive**. Een sweep team van Lt. Okafor verbrandt intussen de hives één voor één (zuidoost, noordoost, midden, noord, zuidwest); valt het weg, dan komt er één keer een tweede. Zijn alle hives weg voor hij genezen is, of sterft hij, dan verlies je. Weg via de zuidelijke schacht. |
+| 5 | **Hunted** | Selene Highlands | Sgt. Kessler (3× levenspunten, boss-balk) en zijn squad landen en jagen op je; na 4 min komt Okafor met nog een ploeg. Neem één van de drie uplink-bakens: de **Magpie** (een ertsvrachtschip zonder vragen) komt na 2,5 min naar dat baken; dan iedereen aan boord. Optioneel: **laat Kessler leven**. Onder 30% trekt hij zich terug (onkwetsbaar) en vertrekt; schiet je hem eerder dood, dan mislukt het. |
+| 6 | **Mother's Blood** | Maw Depths | Vóór *Brood Mother*. Het membraan voor de lair gaat open als de drie eierkamers weg zijn, **of** als een bemanningslid met **60+ taint** er 6 s tegenaan staat (*het kent zijn eigen soort*). Dood de Brood Mother (40% van haar gewone levenspunten). Haar hart blijft kloppen, en Dust daalt af (2,5 min). **Kies:** zet iemand (geen Pyro) 8 s op het hart: ***Ascension***, de Mother-strain gaat in iedereen (♛ in het lab). Of zet Mortier (een Pyro) 6 s ernaast: ***Ashes***, alles gaat in vlammen op. Kies je niet op tijd, dan verlies je. |
+
+**Trofeeën** (een rij *Rogue* op de Trophy wall, `ROGUE_TROPHIES`, bewaard in `hc-trophies`): *Ghost Crew* (alle zes jobs gewonnen), *Ascension* en *Ashes* (de twee eindes), *Full Strain* (één bemanningslid met alle zes strains), *Cold Blood* (alle jobs gewonnen zonder dat iemand ooit feral ging; sinds het laatste *Reset campaign* aan de Rogue-kant).
+
+**Reset campaign** aan de Rogue-kant wist alleen de Rogue-jobs, de bemanning, het lab en een bewaarde Rogue-job. Aan de andere kanten wist het nu ook het lab. De briefing van een job noemt de bemanning met hun taint; het eindscherm toont de stalen, wie terugkwam, promoties en de taint van iedereen.
+
+**Instelbaar:** `ROGUE` in `js/content/rogue.js` (ook in het dev panel, tab **Rogue**). Extra mission API voor Rogue-missies: `g.loyal(type, punt, n, { hunter, patrol:[punten], hold, tough })`, `g.loyalB(type, punt)`, `g.loyals()`, `g.hunt(lijst)`, `g.crew()`, `g.crewUp()`, `g.crewNear(punt, r)`, `g.crewMember(id)`, `g.spotted()`, `g.dna(soort?)`, `g.harvested()`, `g.sample(soort, punt, n)`, `g.cache(punt, { stab, loot })`, `g.stabs()`, `g.crewSay(wie, tekst)`, `g.ending(soort)`; in de missie: `start.crewAt` (waar de bemanning staat), `stab` (extra dosissen). Stemmen van de Corps (Varga, Kessler, Kestrel, Okafor …, `ROGUE_INTERCEPT`) komen binnen als *Intercept*, de bemanning spreekt in het rood.
+
+**Getest** met `tools/tests/rogue.py` (moet eindigen met `ALL OK`): ontgrendelen, het lab, stalen en vuur, oogsten, taint, aanvallen, feral, stabilizer, de strains, een gevallen bemanningslid, alle zes jobs (winst en verlies, beide eindes), opslaan en laden. *Osprey Down* is ook door een eenvoudige automatische speler uitgespeeld (Normal, 16 stalen). De balans van jobs 2 tot 6 is nog niet met de hand getest.
+
 ### Na een nederlaag: de strijd loopt door
 Mislukt een missie, dan is het rapport (*Defeat*) **doorzichtig** en speelt het gevecht erachter gewoon verder: de Swarm sleept zijn doden weg, Husks komen uit, golven trekken verder. De mist verdwijnt, zodat je alles ziet. Je kan de camera verslepen (muis), met de pijltjestoetsen bewegen of op de minimap klikken. Met **Watch the field** verberg je het rapport helemaal; **Show report** bovenaan haalt het terug. Triggers en scripts lopen niet meer (`afterDefeat()` in js/engine/14-mission-api-triggers.js). Zolang er nog soldaten leven, **jaagt de Swarm ze op** (zie *De jacht* bij de Husk): om de 20 seconden, met een gewone golf als er geen Husk is.
 
@@ -623,6 +669,8 @@ js/content/                     SECTION 1 — CONTENT: alles wat je normaal aanp
   maps/<key>.js                 één kaart per bestand: MAPS.<key> = { name, desc, layout }
   missions/_missions.js         uitleg van de missievelden + const MISSIONS = []
   missions/NN-<id>.js           één missie per bestand: MISSIONS.push({ … })
+  rogue.js                      ROGUE_MISSIONS, ROGUE_CREW, STRAINS, ROGUE, ROGUE_TROPHIES (de derde campagne)
+  missions/rNN-<id>.js          de jobs van Rogue Strain: ROGUE_MISSIONS.push({ … rogue:true })
   skirmish.js                   startopstelling voor skirmish
 js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
   00-core.js … 27-training.js basis, sprites en art, geluid, kaarten, spelstatus, entiteiten,
@@ -635,6 +683,7 @@ js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
                                 (25b-animations.js: brandende grond van de Pyro en de extra animaties)
                                 (26-swarm-command.js: spelen als de Swarm, de Lunar Corps als computer)
                                 (27-training.js: één wezen besturen van ei tot hive)
+                                (31-rogue.js: Rogue Strain, de Osprey-bemanning, DNA, taint, de loyale Corps)
 map-editor/                     de kaarteditor (leest de kaarten uit js/content/maps/)
 ```
 
@@ -831,6 +880,7 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 - **Spelsnelheid** 1,5× of 2× via de knop bovenaan, handig om te testen.
 - **Opgeslagen in de browser** (`localStorage`):
   - `hc-roster`: het veteranenrooster en de Cenotaph; `hc-zombie`: zombie mode aan of uit
+  - `hc-rogue`: de Osprey-bemanning (rang, strains, taint), het DNA in het splice lab, de stabilizers en het gekozen einde
   - `hc-progress`: per gewonnen missie de hoogste moeilijkheidsgraad, de beste tijd, de datum en de hoogste moeilijkheid waarop ze foutloos (zonder verlies) gewonnen werd
   - `hc-diff`: moeilijkheidsgraad
   - `hc-mute`: geluid aan/uit
@@ -849,6 +899,7 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
 - De muren in de ruïnes van Hollow Colony zijn in het donker soms moeilijk te onderscheiden.
 - Het spel is gemaakt voor muis en toetsenbord. Aanraken werkt basaal: tik om te selecteren of een bevel te geven, sleep om te scrollen.
 - De Swarm-campagne telt nu 8 missies (en twee trainingen). De balans van missies 4 tot 8 is nog niet uitgetest.
+- *Rogue Strain* telt 6 jobs; de balans van jobs 2 tot 6 is nog niet met de hand getest.
 - Ideeën die nog niet gebouwd zijn: relics in de Swarm-campagne. The Grey zijn in november 2026 uit het spel gehaald.
 
 ## Copyright

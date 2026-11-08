@@ -12,6 +12,7 @@ function hudTick(){
   $('#r-supply-wrap').hidden=!!(G.mission.noTraining||G.mission.landingZone);   // with a Landing Zone the troop limit replaces supply
   const sup=$('#r-supply'); sup.textContent= s.cap>0 ? `${s.used}/${s.cap}` : '—'; sup.classList.toggle('warn',s.cap>0&&s.used>=s.cap);
   if(G.side==='swarm'){ swarmHud(); $('#r-supply-wrap').hidden=false; }
+  rogueHud();
   $('#clock').textContent=fmtTime(G.time);
   const tw=$('#r-timer-wrap'); if(G.timer){ tw.hidden=false; $('#r-timer-lbl').textContent=G.timer.label; $('#r-timer').textContent=fmtTime(G.timer.end-G.time); } else tw.hidden=true;
   if(G.objDirty){ G.objDirty=false; $('#obj-list').innerHTML=G.objectives.filter(o=>o.state!=='hidden').map(o=>`<li class="${o.state}"><span class="box"></span><span>${o.text}${o.optional?'<span class="opt">OPTIONAL</span>':''}</span></li>`).join(''); }
@@ -38,6 +39,7 @@ function renderSelection(){
     if(e.vet&&e.vet.risen) stats+=`<span><b style="color:#9dff6a">☠ Risen</b></span>`;
     if(hasPerk(e)&&PERKS[e.type]) stats+=`<span>Ability <b>${PERKS[e.type].name}</b></span>`;
     if(e.leader) stats+=`<span><b style="color:#ffd23f">Leads the squad</b></span>`;
+    stats+=rogueStats(e);
     if(e.vet){ const nx=nextRank(e.vet); stats+=`<span>Rank <b>${RANKS[e.vet.rank].name}</b></span><span>XP <b>${e.vet.xp}${nx?' / '+nx.xp:''}</b></span><span>Kills <b>${e.vet.kills}</b></span>${e.vet.missions?`<span>Missions <b>${e.vet.missions}</b></span>`:''}`; }
     if(e.def.generator) stats+=`<span>Status <b>${e.powered?'Online':'Offline: repair to 100%'}</b></span>`;
     if(e.def.fuse) stats+=`<span>Detonates in <b>${Math.ceil(e.fuse)}s</b></span>`;
@@ -80,6 +82,7 @@ function cmdButtons(){
       out.push({row:'Build',key:d.key,img:ARTURL[d.art],cost:d.cost,off:G.salvage<d.cost||atLimit(bt),tip:`${d.name}|${d.desc} Cost ${d.cost}.${lim(bt)}`,act:()=>startPlacing(bt)}); }
       out.push({row:'Sentry',key:'U',glyph:'⇪',active:ui.picking==='pack',off:!G.ents.some(e=>e.type==='sentry'&&e.built&&!e.dead&&e.faction==='corps'),tip:'Pack up sentry|Then click one of your Sentry Guns. The Engineer folds it up and carries it, but walks slower. Right-clicking an undamaged sentry does the same.',
         act:()=>{ ui.picking='pack'; ui.placing=null; ui.amove=false; cv.classList.add('amove'); G.selDirty=true; }}); }
+    rogueButtons(units,out);   /* Rogue: the Medic's stabilizer */
     return out; }
   if(blds.length){ const b=blds[0];
     if(b.def.reinforce && b.built && !b.noOrders && !(G.mission.landingZone||{}).scripted){ const cap=troopCap(), full=troopCount()>=cap, fl=b.flight;

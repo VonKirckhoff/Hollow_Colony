@@ -6,7 +6,8 @@ function updateUnit(u,dt){
   if(u.emergeT>0) return;   /* still under the bulging ground (a burrowing wave) */
   if(u.stunT>0){ u.stunT-=dt; return; }   /* knocked down: he lies dazed a moment */
   if(u.dazeT>0) u.dazeT-=dt;
-  if(d.grafter){ grafterThink(u,dt); return; }   /* a Grafter only goes for its body */   /* down: immobile, bleeding out, waiting for a Medic */
+  if(d.grafter){ grafterThink(u,dt); return; }
+  if(u.feral>0){ u.cd-=dt; u.moving=false; u.anim+=dt; u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.beam=null; feralThink(u,dt); return; }   /* Rogue: feral, out of your control */   /* a Grafter only goes for its body */   /* down: immobile, bleeding out, waiting for a Medic */
   u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
   if(u.vet&&u.vet.risen&&u.hp<u.maxHp&&G.time-(u.hitAt??-99)>RISEN.calm) u.hp=Math.min(u.maxHp,u.hp+RISEN.regen*dt);   /* the risen knit themselves back together, once nothing has hit them for a while */ u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.moving=false; u.anim+=dt; u.beam=null;
   if(u.stance==='hold' && !u.order) u.order={type:'hold'};   /* defensive stance: hold wherever the last order left him */

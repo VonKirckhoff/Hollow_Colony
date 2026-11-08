@@ -8,10 +8,10 @@ function computeFog(){
   // Darkness (mission option dark:{ sight }): everyone sees less, and only running generators light the area around them.
   const dk=G.mission.dark;
   for(const e of G.ents){ if(e.dead||e.faction!==G.side) continue;
-    let r=e.kind==='building'&&!e.built?3:e.def.sight;
-    if(e.def.generator&&e.powered) r=Math.max(r,e.def.light); else if(dk) r=Math.max(2,r*dk.sight);
+    let r=e.kind==='building'&&!e.built?3:e.def.sight+(e.sightAdd||0);   /* sightAdd: Night Eyes (Rogue) */
+    if(e.def.generator&&e.powered) r=Math.max(r,e.def.light); else if(dk) r=Math.max(2,r*(e.nightEyes?Math.max(dk.sight,0.9):dk.sight));
     if(r>0) mark(e.x,e.y,r); }
-  if(dk&&G.side==='swarm') for(const e of G.ents) if(!e.dead&&e.def&&e.def.generator&&e.powered) mark(e.x,e.y,e.def.light*0.9);   /* playing the Swarm in the dark: their lit streets are seen from afar */
+  if(dk&&(G.side==='swarm'||G.mission.rogue)) for(const e of G.ents) if(!e.dead&&e.def&&e.def.generator&&e.powered&&e.faction!==G.side) mark(e.x,e.y,e.def.light*0.9);   /* (Rogue: the Corps' lit streets too) */   /* playing the Swarm in the dark: their lit streets are seen from afar */
   lampReveal();   /* in the dark: what the helmet lamps light up */
   G.reveals=G.reveals.filter(r=>r.until>G.time); for(const r of G.reveals) mark(r.x,r.y,r.r);
   for(const f of G.flareList) if(flareLit(f)) mark(f.x,f.y,SQUAD.flare.light);

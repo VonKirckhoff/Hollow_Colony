@@ -41,13 +41,13 @@ function nextRank(v){ const k=RANKS[v.rank+1]; return k&&(!k.heroOnly||v.hero)?k
 function hasPerk(u){ return !!(u&&u.vet&&RANKS[u.vet.rank].perk); }
 function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp, z=u.vet.risen;
   u.maxHp=u.def.hp*k.hp*(z?RISEN.hp:1); u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; u.speedMul=z?RISEN.speed:1;
-  u.rangeBonus=(hasPerk(u)&&PERKS[u.type]&&PERKS[u.type].range)||0; u.leader=!!k.aura; }
+  u.rangeBonus=(hasPerk(u)&&PERKS[u.type]&&PERKS[u.type].range)||0; u.leader=!!k.aura; if(u.crew) rogueStrainApply(u); }   /* a Rogue crew member: his strains on top (31-rogue.js) */
 function gainXP(u,amount){
   if(!u||u.dead||!u.vet||amount<=0) return; u.vet.xp+=amount;
   const r=rankFor(u.vet.xp,u.vet.hero); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'}); u.glintT=ANIM.glint;
     say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?` The squad rallies around ${pron(u.vet,'him')}.`:''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
-function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swarm' && !G.mission.training; }   /* the Swarm campaign keeps no roster */
+function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swarm' && !G.mission.training && !G.mission.rogue; }   /* the Rogue crew keeps its own roster (31-rogue.js) */   /* the Swarm campaign keeps no roster */
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */
 function deployRoster(){

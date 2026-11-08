@@ -183,7 +183,7 @@ function obituary(u){
   if(u.vet.hero||u.vet.rank>=1||(u.vet.missions||0)>=1){
     const m=u.vet.missions||0;
     if(u.leader) captainDown(u);
-    say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
+    if(!u.crew) say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
 }
 
 /* ---------- dropship: flies in from off the map, settles on the pad in a cloud of dust, unloads and lifts off again ---------- */
