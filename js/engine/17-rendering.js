@@ -123,9 +123,8 @@ function drawUnit(u){
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);
   if(u.carry){ const a=ARTC[BUILDINGS[u.carry.type].art]; ctx.drawImage(a,Math.round(u.x-u.face*9-9),y+2,18,18); }
-  if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else if(u.faction==='loyal'){ const z=loyalSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
+  if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
   if(u.crew) drawTaintVeins(u,x,y,w,h,sp);   /* Rogue: the strain shows through */
-  if(u.faction==='loyal') drawLoyalMark(u,y-10);
   if(hov){ ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.35+0.15*Math.sin(now/120); ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
   if(u.flash>0){ ctx.globalAlpha=(u.def.scale||2)>=3?0.25:0.8; ctx.drawImage(u.face>0?sp.flash:sp.flashFlip,x,y,w,h); ctx.globalAlpha=1; }
   if(u.molt>0) drawMolt(u,x,y,w,h,now);

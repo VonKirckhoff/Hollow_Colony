@@ -30,7 +30,7 @@ function rogueDeploy(){
   G.rogue={ dna:{}, stab:R.stab+ROGUE.stab.start+(G.mission.stab||0), feral:0, harvested:0, burnt:0, ending:null };
   const spots=freeTilesNear(at.x,at.y,list.length);
   list.forEach((v,i)=>{ const s=spots[i]||at, u=makeUnit(v.type,'corps',(s.x+.5)*TILE+rand(-4,4),(s.y+.5)*TILE+rand(-4,4));
-    u.vet={ ...v, strains:[...(v.strains||[])], taint:v.taint||0 }; delete u.vet.fallen; u.crew=true; u.home={x:u.x,y:u.y}; applyRank(u); u.hp=u.maxHp; G.deployedIds.add(v.id); });
+    u.vet={ ...v, strains:[...(v.strains||[])], taint:v.taint||0 }; delete u.vet.fallen; u.crew=true; u.sprite='crew_'+v.type; u.home={x:u.x,y:u.y}; applyRank(u); u.hp=u.maxHp; G.deployedIds.add(v.id); });
   if(G.usedNames) for(const v of list) G.usedNames.add(v.name);
 }
 /* strains on top of the rank bonuses (called from applyRank, so a promotion keeps them) */
@@ -193,15 +193,19 @@ function rogueApi(){ return {
 }; }
 
 /* ---- drawing ---- */
-function tintSprite(sp,key,col,mul){ let r=sp[key]; if(r) return r; r={};
-  for(const k of ['img','flip']){ const c=document.createElement('canvas'); c.width=sp[k].width; c.height=sp[k].height; const x=c.getContext('2d');
-    x.drawImage(sp[k],0,0); x.globalCompositeOperation='source-atop'; x.fillStyle=col; x.fillRect(0,0,c.width,c.height);
-    x.globalCompositeOperation='multiply'; x.fillStyle=mul; x.fillRect(0,0,c.width,c.height); x.globalCompositeOperation='destination-in'; x.drawImage(sp[k],0,0); r[k]=c; }
-  return sp[key]=r; }
-/* the loyal Corps: cold blue-grey kit and a blue chevron over the helmet */
-const loyalSprite=sp=>tintSprite(sp,'loyal','rgba(90,140,230,.32)','rgba(190,205,235,1)');
-function drawLoyalMark(e,top){ const x=Math.round(e.x), y=Math.round(top);
-  ctx.fillStyle='#000'; ctx.fillRect(x-4,y-1,9,5); ctx.fillStyle='#7fb2ff'; ctx.fillRect(x-3,y,2,2); ctx.fillRect(x-1,y+1,3,2); ctx.fillRect(x+2,y,2,2); }
+/* The Osprey crew wears black and dark brown with a red band round the arm; the loyal Corps keeps the normal Corps kit.
+   CREW_KIT: which sprite colours become which, and where the armband sits per type ([row, [columns]] in the sprite grid). */
+const CREW_KIT = { colors:{ a:'#3b2b20', A:'#1d1712', w:'#4a3727', W:'#2a2018' }, engineerY:'#4a3727', band:'#c8202e',
+  arm:{ trooper:[6,[3,4]], gunner:[6,[2,3]], pyro:[6,[4]], medic:[6,[3,4]], engineer:[6,[3,4]] } };
+function buildCrewSprite(type){ const rows=SPRITES[UNITS[type].sprite], arm=CREW_KIT.arm[type]||[6,[]];
+  const recolored=rows.map((r,j)=>[...r].map((ch,i)=>{ if(j===arm[0]&&arm[1].includes(i)&&ch!=='.'&&ch!=='k') return '\u0001';
+    if(type==='engineer'&&ch==='y') return '\u0002'; return ch; }).join(''));
+  const pal=ch=>ch==='\u0001'?CREW_KIT.band:ch==='\u0002'?CREW_KIT.engineerY:CREW_KIT.colors[ch]||PALETTE[ch]||'#ff00ff';
+  const h=recolored.length, w=Math.max(...recolored.map(r=>r.length));
+  const mk=fn=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d');
+    for(let j=0;j<h;j++) for(let i=0;i<w;i++){ const ch=recolored[j][i]; if(!ch||ch==='.') continue; x.fillStyle=fn(ch); x.fillRect(i,j,1,1); } return c; };
+  const img=mk(pal), flash=mk(()=>'#ffffff'); return { img, flip:mirror(img), flash, flashFlip:mirror(flash), w, h, url:img.toDataURL() }; }
+for(const t of ['trooper','gunner','pyro','medic','engineer']) SPR['crew_'+t]=buildCrewSprite(t);   /* used as u.sprite for the crew (rogueDeploy) */
 /* taint: a green glow that grows with it; above the mend line the veins show through; feral: a red one */
 function drawTaint(u,now,x,y,w,h,sp){ const t=u.vet.taint||0;
   if(u.feral>0){ const p=0.5+0.5*Math.sin(now/90); ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(u.x,u.y-10,2,u.x,u.y-10,26); g.addColorStop(0,`rgba(255,70,60,${0.28+0.18*p})`); g.addColorStop(1,'rgba(255,70,60,0)'); ctx.fillStyle=g; ctx.fillRect(u.x-28,u.y-38,56,56); ctx.globalCompositeOperation='source-over'; return; }
@@ -240,7 +244,7 @@ function buildCrew(){ const R=rogueStore(), el=$('#hero-card'); if(!crewSel||!R.
   const dna=STRAIN_ORDER.map(k=>`<span class="dchip ${R.dna[k]?'':'zero'}" title="${STRAINS[k].from} samples">${STRAINS[k].glyph} ${STRAINS[k].from} <b>${R.dna[k]||0}</b></span>`).join('');
   el.innerHTML=`<div class="lbl">The Osprey crew · splice lab</div>
     <div class="dna-row">${dna}<span class="dchip stab" title="Stabilizer doses: take one into the next mission, or use one here">✚ Stabilizer <b>${R.stab}</b></span></div>
-    <div class="crew-list">${R.crew.map(c=>`<button type="button" class="crow ${c.id===crewSel?'on':''}" data-crew="${c.id}"><img alt="" src="${iconUrl(c.type)}"><span class="cn">${c.capt?'✪ ':''}${crewTitle(c)}<small>${UNITS[c.type].name}${c.missions?` · ${c.missions} job${c.missions>1?'s':''}`:''}</small></span>${taintBar(c.taint)}<span class="cs">${c.strains.map(k=>k==='mother'?'<b title="Mother strain" class="ms">♛</b>':`<b title="${STRAINS[k]?STRAINS[k].name:k}">${STRAINS[k]?STRAINS[k].glyph:'?'}</b>`).join('')}</span></button>`).join('')}</div>
+    <div class="crew-list">${R.crew.map(c=>`<button type="button" class="crow ${c.id===crewSel?'on':''}" data-crew="${c.id}"><img alt="" src="${SPR['crew_'+c.type].url}"><span class="cn">${c.capt?'✪ ':''}${crewTitle(c)}<small>${UNITS[c.type].name}${c.missions?` · ${c.missions} job${c.missions>1?'s':''}`:''}</small></span>${taintBar(c.taint)}<span class="cs">${c.strains.map(k=>k==='mother'?'<b title="Mother strain" class="ms">♛</b>':`<b title="${STRAINS[k]?STRAINS[k].name:k}">${STRAINS[k]?STRAINS[k].glyph:'?'}</b>`).join('')}</span></button>`).join('')}</div>
     <div class="crew-detail"><p class="lede" style="margin:0"><b>${crewTitle(v)}</b>, ${UNITS[v.type].name}${v.sex==='f'?' (she)':''}. ${d.bio||''} Taint <b>${Math.round(v.taint)}%</b>${v.taint>=T.seizure?': seizures, close to going feral.':v.taint>=T.mend?': the creep heals '+pron(v,'him')+'.':v.taint>=T.scent?': the hunt passes '+pron(v,'him')+' by.':'.'}</p>
       <div class="splice-row">${STRAIN_ORDER.map(k=>{ const S=STRAINS[k], has=v.strains.includes(k), err=has?null:canSplice(v,k);
         return `<button type="button" class="splice ${has?'has':''}" data-splice="${k}" ${has||err?'disabled':''} title="${S.name}: ${S.text}${err&&!has?' · '+err:''}"><span class="g">${S.glyph}</span><b>${S.name}</b><small>${has?'carries it':`${S.cost} ${S.from} · +${S.taint} taint`}</small></button>`; }).join('')}

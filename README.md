@@ -566,7 +566,7 @@ Devreese splicet niemand voorbij **95% taint**. Een stabilizer-dosis in het lab 
 
 **Stabilizer** (`ROGUE.stab`): selecteer een Medic van de bemanning en druk **J** (of de knop ✚ bij *Orders*): de soldaat met de meeste taint binnen 4 tegels krijgt −35 taint, een feral soldaat komt meteen tot zichzelf. Elke job begint met 1 dosis bovenop wat je bewaarde; dosissen die je niet gebruikt, blijven in het lab.
 
-**De loyale Corps** (factie `loyal`): soldaten en gebouwen van de Lunar Corps die op de bemanning schieten. Ze zijn blauwgrijs met een blauw chevronnetje (op de minimap blauw), vechten ook tegen de Swarm, komen elkaar helpen binnen 12 tegels, en laten een lichaam achter waar de Swarm een Husk van maakt. Een gedode loyale soldaat geeft 2 XP. Hun Relay Towers betalen jou niets. Op Easy/Hard hebben ze 85%/120% levenspunten (`ROGUE.loyal`).
+**De loyale Corps** (factie `loyal`): soldaten en gebouwen van de Lunar Corps die op de bemanning schieten. Ze dragen het gewone Corps-uniform (op de minimap blauw); de bemanning zelf draagt zwart en donkerbruin met een **rode band om de arm** (`CREW_KIT` in js/engine/31-rogue.js), vechten ook tegen de Swarm, komen elkaar helpen binnen 12 tegels, en laten een lichaam achter waar de Swarm een Husk van maakt. Een gedode loyale soldaat geeft 2 XP. Hun Relay Towers betalen jou niets. Op Easy/Hard hebben ze 85%/120% levenspunten (`ROGUE.loyal`).
 
 **De zes jobs:**
 
