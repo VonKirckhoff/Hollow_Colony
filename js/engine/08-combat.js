@@ -148,7 +148,7 @@ function raiseAlert(t){ if(G.time-G.alertT<10) return; G.alertT=G.time; G.alert=
 function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&dist(e,h)<12*TILE) e.target=src; } hiveScream(h,src); }
 /* Lieutenant Trooper: a grenade now and then, aimed at the thickest group near his target */
 function throwGrenade(u,t){
-  const P=PERKS.trooper; if(G.time<(u.nadeAt||0)) return; if(dist(u,t)>P.range*TILE) return;
+  const P=PERKS.trooper; if(G.time<(u.nadeAt||0)) return; if(dist(u,t)>P.throw*TILE) return;
   let best=t, bn=0; for(const e of G.ents){ if(e.dead||e.kind!=='unit'||!hostile(u.faction,e.faction)||dist(e,t)>3*TILE) continue;
     let n=0; for(const o of G.ents) if(!o.dead&&o.kind==='unit'&&hostile(u.faction,o.faction)&&Math.hypot(o.x-e.x,o.y-e.y)<P.radius*TILE) n++; if(n>bn){ bn=n; best=e; } }
   if(bn<2 && !(t.def.supply>=2)) return;   /* not worth a grenade on a single small target */

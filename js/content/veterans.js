@@ -14,9 +14,9 @@ const RANKS = [
 ];
 /* Lieutenant abilities, one per type */
 const PERKS = {
-  trooper:  { name:'Grenade',      text:'Throws a grenade at groups of enemies', every:9, damage:55, radius:1.5, range:6 },
+  trooper:  { name:'Grenade',      text:'Throws a grenade at groups of enemies', every:9, damage:55, radius:1.5, throw:6 },   /* throw = how far the grenade goes (not his rifle) */
   gunner:   { name:'Steady aim',   text:'No slower fire while on the move' },
-  pyro:     { name:'Long flame',   text:'Flamer reaches further', range:1.5 },
+  pyro:     { name:'Long flame',   text:'Flamer reaches further', range:1.5 },   /* range = extra weapon reach (rangeBonus) */
   medic:    { name:'Field triage', text:'Heals everyone around him at once', share:0.6 },
   engineer: { name:'Quick hands',  text:'Builds, repairs and arms charges twice as fast', speed:2 }
 };
