@@ -79,7 +79,6 @@ const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDr
 const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Haesaert' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [
-  { id:'rogue:done',   name:'Ghost Crew',   what:'Win every Rogue Strain mission' },
   { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Mother strain' },
   { id:'rogue:ashes',  name:'Ashes',        what:'End the Rogue campaign by burning the heart' },
   { id:'rogue:full',   name:'Full Strain',  what:'One crew member carries all six strains' },

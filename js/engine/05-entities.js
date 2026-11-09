@@ -149,6 +149,11 @@ function checkGrand(){ const T=trophies(), g=grandStatus(), won=[];
   if(!T['grand:corps']&&g.corps.have>=g.corps.need){ T['grand:corps']={ at:Date.now() }; won.push('corps'); }
   if(!T['grand:swarm']&&g.swarm.need&&g.swarm.hard>=g.swarm.need){ T['grand:swarm']={ at:Date.now() }; won.push('swarm'); }
   if(won.length) store.set('hc-trophies',T); return won; }
+/* the Swarm by difficulty: every Swarm mission won on Easy / Normal / Hard (a win on Hard also counts for the lower ones). 'swarm:easy' … in hc-trophies. */
+const SWARM_TROPHIES=[ { id:'swarm:easy', name:'Hatchling', diff:'easy' }, { id:'swarm:normal', name:'Stalker', diff:'normal' }, { id:'swarm:hard', name:'Devourer', diff:'hard' } ];
+function swarmDiffCount(k){ return grandStatus().swarm[k]; }
+function checkSwarmTrophies(){ const T=trophies(), won=[]; for(const t of SWARM_TROPHIES){ if(!T[t.id]&&SWARM_MISSIONS.length&&swarmDiffCount(t.diff)>=SWARM_MISSIONS.length){ T[t.id]={ at:Date.now() }; won.push(t.id); } }
+  if(won.length) store.set('hc-trophies',T); return won; }
 function heroTrack(v){
   const tp=v.tp=v.tp||{}, id=G.mission.id, idx=MISSIONS.findIndex(m=>m.id===id), keys=Object.keys(DIFF_RANK).filter(k=>DIFF_RANK[k]<=DIFF_RANK[G.diffKey]);
   if(!tp.void) for(const k of keys){ tp[k]=tp[k]||[]; if(idx===trophyProgress(v,k)&&!tp[k].includes(id)) tp[k].push(id); }   /* only the next mission in line counts; a replay of an earlier one changes nothing */

@@ -79,7 +79,7 @@ function rogueSettle(){
 function rogueDiffCount(k){ return ROGUE_MISSIONS.filter(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[k]; }).length; }
 function rogueTrophyHave(id){ const t=ROGUE_TROPHIES.find(x=>x.id===id); if(t&&t.diff) return ROGUE_MISSIONS.length>0&&rogueDiffCount(t.diff)>=ROGUE_MISSIONS.length;
   const R=rogueStore(), all=ROGUE_MISSIONS.length&&ROGUE_MISSIONS.every(m=>isDone(m.id));
-  if(id==='rogue:done') return all; if(id==='rogue:ascend') return R.ending==='ascend'; if(id==='rogue:ashes') return R.ending==='ashes';
+  if(id==='rogue:ascend') return R.ending==='ascend'; if(id==='rogue:ashes') return R.ending==='ashes';
   if(id==='rogue:full') return R.crew.some(v=>STRAIN_ORDER.every(k=>v.strains.includes(k))); if(id==='rogue:cold') return all&&!R.flags.feral; return false; }
 function checkRogueTrophies(){ const T=trophies(), won=[]; for(const t of ROGUE_TROPHIES){ if(!T[t.id]&&rogueTrophyHave(t.id)){ T[t.id]={ at:Date.now() }; won.push(t.id); } }
   if(won.length) store.set('hc-trophies',T); return won; }
@@ -330,12 +330,7 @@ function rogueEndHtml(){ const r=G.rogueResult; if(!r) return ''; const out=[];
   out.push(`<div class="vsec"><span class="lbl">Taint</span><div>${r.taint.map(x=>`${x.name} ${x.to}%`).join(' · ')}</div></div>`);
   if((G.rogueWon||[]).length) out.push(`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${G.rogueWon.map(id=>{ const t=ROGUE_TROPHIES.find(x=>x.id===id); return `<div>${t.name}: ${t.what.toLowerCase()}. It hangs on the Trophy wall.</div>`; }).join('')}</div>`);
   return out.join(''); }
-/* the Trophy wall row */
-function rogueTrophyRow(){ const T=trophies();
-  const plaque=t=>{ const w=T[t.id], n=t.diff?rogueDiffCount(t.diff):0, N=ROGUE_MISSIONS.length;
-    return `<div class="plaque grandp rogue ${w?'won':''}" title="${t.name}|${t.what}">${CUP_SVG}<b>${t.name}</b><i>${t.what}</i><i>${w?new Date(w.at).toLocaleDateString():t.diff?`${n} / ${N} missions`:'not yet'}</i>${!w&&t.diff?`<span class="tbar"><span style="width:${Math.round(n/Math.max(1,N)*100)}%"></span></span>`:''}</div>`; };
-  return `<div class="trow grand rogue-row"><span class="trole">Rogue</span>${ROGUE_TROPHIES.filter(t=>!t.diff).map(plaque).join('')}</div>`
-    +`<div class="trow grand rogue-row diffs"><span class="trole">Rogue<i>by difficulty</i></span>${ROGUE_TROPHIES.filter(t=>t.diff).map(plaque).join('')}</div>`; }
+/* on the Trophy wall (21-screens.js): the story plaques go into the special block, the difficulty ones into the Rogue row */
 
 /* ---- Intel, tab Rogue Strain: the crew (as they stand now), the six strains, and how taint, samples, the stabilizer, the loyal Corps and the way out work ---- */
 const ART_CACHE={};

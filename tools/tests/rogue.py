@@ -75,8 +75,11 @@ CASES=[
 ('mothers blood: ashes and the trophies','''resetRogue(); for(const m of ROGUE_MISSIONS) recordWin(m.id,'normal',100,false); const T=trophies(); for(const t of ROGUE_TROPHIES) delete T[t.id]; store.set('hc-trophies',T);
   const G=start(5); step(1); calm(); for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); ok(G.vars.open,'three chambers gone: the lair opens');
   const m=G.vars.mother; m.invuln=false; damage(m,1e8,null); step(1); const py=crew().find(x=>x.type==='pyro'); py.invuln=true; const h=G.vars.heart; for(let i=0;i<9&&!G.over;i++){ tp(py,Math.floor(h.x/TILE)+1,Math.floor(h.y/TILE)); step(1); }
-  ok(G.over&&G.over.win&&rogueStore().ending==='ashes','Ashes'); const W=trophies(); ok(W['rogue:ashes']&&W['rogue:done']&&W['rogue:cold'],'trophies: Ashes, Ghost Crew, Cold Blood'); ok(!W['rogue:ascend'],'not Ascension');
-  goMenu('trophies'); ok(document.querySelectorAll('.plaque.rogue').length===8,'two Rogue rows on the Trophy wall');
+  ok(G.over&&G.over.win&&rogueStore().ending==='ashes','Ashes'); const W=trophies(); ok(W['rogue:ashes']&&W['rogue:cold']&&!ROGUE_TROPHIES.some(t=>t.id==='rogue:done'),'trophies: Ashes, Cold Blood (Ghost Crew is gone)'); ok(!W['rogue:ascend'],'not Ascension');
+  goMenu('trophies'); ok(document.querySelectorAll('.plaque.rogue').length===7,'Rogue: a difficulty row and four story plaques');
+  { const T=trophies(); for(const t of SWARM_TROPHIES) delete T[t.id]; store.set('hc-trophies',T); for(const m of SWARM_MISSIONS) recordWin(m.id,'normal',100,false); checkSwarmTrophies(); const S=trophies();
+    ok(S['swarm:easy']&&S['swarm:normal']&&!S['swarm:hard'],'Swarm on Normal: Hatchling and Stalker, not Devourer'); goMenu('trophies'); ok(document.querySelectorAll('.plaque.swarm').length===4&&document.querySelectorAll('.plaque.swarm.won').length===2,'Swarm row of three plus The Long Hunger, two won');
+    const wb=document.querySelector('#trophy-wall').getBoundingClientRect(); ok(wb.bottom<=innerHeight&&wb.top>=0,'the whole wall fits on the screen: '+Math.round(wb.top)+'..'+Math.round(wb.bottom)+' of '+innerHeight); }
   ok(!W['rogue:hard']&&W['rogue:normal']&&W['rogue:easy'],'Normal everywhere: Deserter and Turncoat, not Apex Strain');
   for(const m of ROGUE_MISSIONS.slice(0,5)) recordWin(m.id,'hard',100,false); checkRogueTrophies(); ok(!trophies()['rogue:hard'],'five of six on Hard: not yet');
   recordWin(ROGUE_MISSIONS[5].id,'hard',100,false); checkRogueTrophies(); ok(trophies()['rogue:hard'],'all six on Hard: Apex Strain');'''),

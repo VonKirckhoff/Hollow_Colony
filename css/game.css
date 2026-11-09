@@ -480,10 +480,7 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .msg.swarm .who{color:#a6ff4a !important;} .msg.swarm .txt{color:#e3d4ff;}
 body.as-swarm #r-salvage{color:#a6ff4a;}
 
-.trow.grand{grid-template-columns:minmax(110px,1fr) repeat(2,minmax(0,1.95fr));} .trow.grand .grandp{min-height:76px;}
-.trow.grand .grandp b{color:#d8cfb8;} .trow.grand .grandp.won b{color:#fff3c9;}
 .plaque.won.swarm{border-color:rgba(166,255,74,.5);color:#a6ff4a;background:linear-gradient(#1f2a14,#11180b);} .plaque.won.swarm svg{filter:drop-shadow(0 0 6px rgba(166,255,74,.5));}
-@media (max-width:640px){ .trow.grand{grid-template-columns:repeat(2,minmax(0,1fr));} }
 .mission.training .num{color:#5fe3b0;} .mission.training{border-style:dashed;}
 
 /* ---------- training card and highlights ---------- */
@@ -589,9 +586,26 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .msg.crew{border-left-color:var(--rogue);} .msg.crew .who{color:var(--rogue);}
 .msg.intercept{border-left-color:var(--loyal);} .msg.intercept .who{color:var(--loyal);}
 .plaque.won.rogue{border-color:rgba(226,85,107,.55);color:var(--rogue);background:linear-gradient(#2e1419,#1a0b0e);} .plaque.won.rogue svg{filter:drop-shadow(0 0 6px rgba(226,85,107,.5));}
-.trow.rogue-row{grid-template-columns:110px repeat(5,minmax(0,1fr));}
-.trow.rogue-row.diffs{grid-template-columns:110px repeat(3,minmax(0,1fr));} .trow.rogue-row .trole{flex-direction:column;align-items:flex-start;} .trow.rogue-row .trole i{font-family:var(--f-body,inherit);font-style:normal;font-size:10px;color:#8a8270;letter-spacing:0;}
-@media (max-width:640px){ .camp-side.three{grid-template-columns:1fr;} .crow{grid-template-columns:22px minmax(0,1fr) 60px;} .crow .cs{display:none;} .trow.rogue-row{grid-template-columns:repeat(3,minmax(0,1fr));} }
+@media (max-width:640px){ .camp-side.three{grid-template-columns:1fr;} .crow{grid-template-columns:22px minmax(0,1fr) 60px;} .crow .cs{display:none;} }
 
 .icard.f-rogue{border-top-color:var(--rogue);} .ili.f-rogue.on{border-left-color:var(--rogue);background:rgba(226,85,107,.08);}
 #intel-tabs button.rogue[aria-selected="true"]{color:var(--rogue);border-color:var(--rogue);}
+
+/* Trophy wall, compact (Nov 2026): everything fits on one screen. A plaque is a cup with its name and one line beside it. */
+#s-trophies .lede{font-size:13px;line-height:1.5;}
+.trophies{gap:4px;padding:10px 12px;}
+.trow{grid-template-columns:92px repeat(3,minmax(0,1fr));gap:6px;}
+.trole{font-size:11px;}
+.plaque{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:0;height:clamp(34px,5.2vh,46px);padding:3px 8px;text-align:left;overflow:hidden;}
+.plaque svg{flex:none;width:20px;height:20px;}
+.plaque .pt{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;}
+.plaque b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.plaque i{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.plaque .tbar{width:100%;height:3px;margin-top:2px;}
+.tspecial{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,210,63,.14);}
+.tspecial .plaque b{color:#d8cfb8;} .tspecial .plaque.won b{color:#fff3c9;}
+.plaque.won.relic svg{filter:drop-shadow(0 0 6px rgba(255,210,63,.45));}
+.trole.swarm{color:#a6ff4a;} .trole.rogue{color:var(--rogue);}
+@media (max-width:640px){ .trow{grid-template-columns:repeat(3,minmax(0,1fr));} .tspecial{grid-template-columns:repeat(2,minmax(0,1fr));} .plaque{height:auto;min-height:38px;} }
+@media (min-width:860px) and (max-width:1099px){ .sheet.troph-sheet{max-width:none;grid-template-columns:minmax(0,0.7fr) minmax(0,1.6fr);gap:18px;align-items:center;}
+  .troph-l .troph-hero{flex-direction:column;align-items:flex-start;} .troph-l .troph-hero .tcount{margin-left:0;} #s-trophies .lede{font-size:12px;} .trow{grid-template-columns:78px repeat(3,minmax(0,1fr));} }

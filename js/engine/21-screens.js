@@ -96,32 +96,42 @@ $('#s-cenotaph').addEventListener('click',e=>{
 });
 /* Trophy wall: a plaque per role and difficulty column. Earned plaques carry every soldier who earned them; your own soldier's progress shows on his row. */
 const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
+/* one compact plaque: cup, name, a line under it (date when won, progress when not) and a bar */
+function tPlaque(cls,won,name,line,f,tip){ return `<div class="plaque ${cls} ${won?'won':''}" title="${tip||name}">${CUP_SVG}<span class="pt"><b>${name}</b><i>${line}</i>${!won&&f!=null?`<span class="tbar"><span style="width:${Math.round(Math.min(1,f)*100)}%"></span></span>`:''}</span></div>`; }
+const tDate=w=>new Date(w.at||w).toLocaleDateString();
 function buildTrophies(){
-  checkGrand(); checkRogueTrophies(); let T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus(), total=HERO_TYPES.length*TROPHY_COLS.length+FLAWLESS_COLS.length+4+ROGUE_TROPHIES.length;
-  let earned=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0)+FLAWLESS_COLS.filter(c=>T['flawless:'+c.key]).length+(T['grand:corps']?1:0)+(T['grand:swarm']?1:0)+(rs.item.at?1:0)+(rs.egg.at?1:0)+ROGUE_TROPHIES.filter(t=>T[t.id]).length;
+  checkGrand(); checkSwarmTrophies(); checkRogueTrophies(); const T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus();
+  /* the special block: grand trophies, relics and the Rogue story */
+  const RS=ROGUE_TROPHIES.filter(t=>!t.diff), special=[
+    ['grandp corps','grand:corps','Hollow Light','Every role and Flawless trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need,T['grand:corps']],
+    ['grandp swarm','grand:swarm','The Long Hunger','Every Swarm mission on every difficulty',`Hard ${gs.swarm.hard} / ${gs.swarm.need}`,gs.swarm.need?gs.swarm.hard/gs.swarm.need:0,T['grand:swarm']],
+    ['relic','relic:item','Archivist','Every hidden relic of the campaign',`${rs.item.have} / ${rs.item.need} found`,rs.item.have/Math.max(1,rs.item.need),rs.item.at],
+    ['relic','relic:egg','Egg Hunter','Every ancient egg, taken before the Swarm woke it',`${rs.egg.have} / ${rs.egg.need} found`,rs.egg.have/Math.max(1,rs.egg.need),rs.egg.at],
+    ...RS.map(t=>['rogue',t.id,t.name,t.what,'not yet',null,T[t.id]])];
+  const total=HERO_TYPES.length*TROPHY_COLS.length+FLAWLESS_COLS.length+SWARM_TROPHIES.length+ROGUE_TROPHIES.filter(t=>t.diff).length+special.length;
+  const earned=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0)+FLAWLESS_COLS.filter(c=>T['flawless:'+c.key]).length
+    +SWARM_TROPHIES.filter(t=>T[t.id]).length+ROGUE_TROPHIES.filter(t=>t.diff&&T[t.id]).length+special.filter(x=>x[6]).length;
   $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${hero.tp&&hero.tp.void?'<span class="tvoid">Not on a trophy run: this soldier did not start at mission 1.</span>':TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
-  const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}${c.sub?`<i>${c.sub}</i>`:''}</span>`).join('')}</div>`;
-  $('#trophy-wall').innerHTML=head+HERO_TYPES.map(t=>`<div class="trow"><span class="trole"><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</span>${TROPHY_COLS.map(c=>{
-      const list=T[t+':'+c.key]||[], mine=hero&&hero.type===t, p=mine?trophyProgress(hero,c.key):0;
-      const tip=`${UNITS[t].name} · ${c.label}`;
-      if(list.length) return `<div class="plaque won ${c.key}" title="${tip}">${CUP_SVG}<b>${list[0].name}</b><i>${new Date(list[0].at).toLocaleDateString()}${list.length>1?` · +${list.length-1} more`:''}</i></div>`;
-      return `<div class="plaque ${mine&&p?'run':''}" title="${tip}">${CUP_SVG}${mine?`<i>${p} / ${MISSIONS.length}</i><span class="tbar"><span style="width:${Math.round(p/MISSIONS.length*100)}%"></span></span>`:'<i>not yet</i>'}</div>`; }).join('')}</div>`).join('')+
-    /* Flawless: a campaign mission won without losing a soldier, one per difficulty (Hard counts for Normal and Easy too) */
-    `<div class="trow"><span class="trole flawless" title="Win a campaign mission without losing a single soldier">Flawless</span>${FLAWLESS_COLS.map(c=>{ const w=T['flawless:'+c.key], n=flawlessCount(c.key), tip=`Flawless · ${c.label}|Win a Lunar Corps campaign mission on ${c.label} (or harder) without losing a single soldier. ${n} of ${MISSIONS.length} missions done flawless.`;
-      return w?`<div class="plaque won ${c.key}" title="${tip}">${CUP_SVG}<b>${w.mission||'Flawless'}</b><i>${new Date(w.at).toLocaleDateString()} · ${n}/${MISSIONS.length} flawless</i></div>`
-        :`<div class="plaque" title="${tip}">${CUP_SVG}<i>not yet</i></div>`; }).join('')}</div>`+
-    `<div class="trow grand"><span class="trole">Grand</span>${[
-      ['corps','Hollow Light','Every role and Flawless trophy of the Lunar Corps',`${gs.corps.have} / ${gs.corps.need} trophies`,gs.corps.have/gs.corps.need],
-      ['swarm','The Long Hunger','Every Swarm mission on every difficulty',`Easy ${gs.swarm.easy} · Normal ${gs.swarm.normal} · Hard ${gs.swarm.hard} / ${gs.swarm.need}`,gs.swarm.need?(gs.swarm.easy+gs.swarm.normal+gs.swarm.hard)/(3*gs.swarm.need):0]
-    ].map(([k,name,what,prog,f])=>{ const w=T['grand:'+k]; return `<div class="plaque grandp ${k} ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w.at).toLocaleDateString():prog}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(f*100)}%"></span></span>`}</div>`; }).join('')}</div>`+relicRow()+rogueTrophyRow();
+  const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}</span>`).join('')}</div>`;
+  const roles=HERO_TYPES.map(t=>`<div class="trow"><span class="trole"><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</span>${TROPHY_COLS.map(c=>{
+      const list=T[t+':'+c.key]||[], mine=hero&&hero.type===t, p=mine?trophyProgress(hero,c.key):0, tip=`${UNITS[t].name} · ${c.label}`;
+      if(list.length) return tPlaque(c.key,true,list[0].name,`${tDate(list[0])}${list.length>1?` · +${list.length-1}`:''}`,null,tip);
+      return tPlaque(mine&&p?'run':'',false,'',mine?`${p} / ${MISSIONS.length}`:'not yet',mine?p/MISSIONS.length:null,tip); }).join('')}</div>`).join('');
+  /* Flawless: a campaign mission won without losing a soldier, one per difficulty (Hard counts for Normal and Easy too) */
+  const flaw=`<div class="trow"><span class="trole flawless" title="Win a campaign mission without losing a single soldier">Flawless</span>${FLAWLESS_COLS.map(c=>{ const w=T['flawless:'+c.key], n=flawlessCount(c.key), tip=`Flawless · ${c.label}|Win a Lunar Corps campaign mission on ${c.label} (or harder) without losing a single soldier. ${n} of ${MISSIONS.length} missions done flawless.`;
+      return w?tPlaque(c.key,true,w.mission||'Flawless',`${tDate(w)} · ${n}/${MISSIONS.length}`,null,tip):tPlaque('',false,'','not yet',null,tip); }).join('')}</div>`;
+  /* the Swarm and the Rogue crew by difficulty: every mission of the campaign won on it */
+  const diffRow=(label,cls,list,count,N,what)=>`<div class="trow"><span class="trole ${cls}">${label}</span>${list.map(t=>{ const w=T[t.id], n=count(t.diff), tip=`${t.name}|${what} ${DIFFICULTY[t.diff].label} (a win on Hard also counts for the lower ones).`;
+      return tPlaque(cls,!!w,t.name,w?tDate(w):`${n} / ${N}`,N?n/N:0,tip); }).join('')}</div>`;
+  const swarm=diffRow('Swarm','swarm',SWARM_TROPHIES,swarmDiffCount,SWARM_MISSIONS.length,'Win every Swarm mission on');
+  const rogue=diffRow('Rogue','rogue',ROGUE_TROPHIES.filter(t=>t.diff),rogueDiffCount,ROGUE_MISSIONS.length,'Win every Rogue Strain mission on');
+  const spec=`<div class="tspecial">${special.map(([cls,id,name,what,prog,f,w])=>tPlaque(cls,!!w,name,w?tDate(w):(f==null?what:prog),w?null:f,`${name}|${what}`)).join('')}</div>`;
+  $('#trophy-wall').innerHTML=head+roles+flaw+swarm+rogue+spec;
 }
 /* relics on the trophy wall: Archivist (every hidden item) and Egg Hunter (every ancient egg) */
 function relicStatus(){ const F=relicsFound(), part=k=>{ const all=RELICS.filter(r=>r.kind===k), got=all.filter(r=>F[r.id]); return { have:got.length, need:all.length, at:got.length===all.length&&all.length?Math.max(...got.map(r=>F[r.id].at)):null }; };
   return { item:part('item'), egg:part('egg') }; }
-function relicRow(){ const R=relicStatus();
-  return `<div class="trow grand"><span class="trole">Relics</span>${[['item','Archivist','Every hidden relic of the campaign'],['egg','Egg Hunter','Every ancient egg, taken before the Swarm woke it']].map(([k,name,what])=>{ const r=R[k], w=r.at;
-    return `<div class="plaque grandp relic ${w?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i>${what}</i><i>${w?new Date(w).toLocaleDateString():`${r.have} / ${r.need} found`}</i>${w?'':`<span class="tbar"><span style="width:${Math.round(r.have/Math.max(1,r.need)*100)}%"></span></span>`}</div>`; }).join('')}</div>`; }
 /* Intel: a card per unit or structure, numbers straight from UNITS / BUILDINGS, tips from INTEL_NOTES */
 let intelTab='corps';
 const ATTACK_NAME={ bullet:'Gunfire', flame:'Flame, hits a group', acid:'Lobbed acid, splash', plasma:'Plasma bolt', melee:'Melee' };
@@ -296,6 +306,8 @@ function showEnd(){
   if(G.flawless){ const html=`<div class="vsec troph"><span class="lbl">🏆 Flawless</span>${(G.flawlessWon||[]).length?G.flawlessWon.map(k=>`<div>Trophy earned: Flawless · ${DIFFICULTY[k].label}. It hangs on the Trophy wall.</div>`).join(''):''}<div>Not a single soldier lost on ${DIFFICULTY[G.diffKey].label}.</div></div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.grandWon&&G.grandWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Grand trophy</span>${G.grandWon.map(k=>`<div>${k==='corps'?'Hollow Light: every trophy of the Lunar Corps.':'The Long Hunger: every Swarm mission on every difficulty.'} It hangs on the Trophy wall.</div>`).join('')}</div>`;
+    if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
+  if(G.swarmWon&&G.swarmWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${G.swarmWon.map(id=>{ const t=SWARM_TROPHIES.find(x=>x.id===id); return `<div>${t.name}: every Swarm mission won on ${DIFFICULTY[t.diff].label}. It hangs on the Trophy wall.</div>`; }).join('')}</div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.relicsGot&&G.relicsGot.length){ const html=`<div class="vsec troph"><span class="lbl">✦ Relic found</span>${G.relicsGot.map(id=>{ const r=relicDef(id); return r?`<div>${r.name}. Read about it in Intel, tab Relics.</div>`:''; }).join('')}</div>`;   /* kept even if the mission was lost */
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=ev.innerHTML+html; }
