@@ -590,6 +590,7 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .msg.intercept{border-left-color:var(--loyal);} .msg.intercept .who{color:var(--loyal);}
 .plaque.won.rogue{border-color:rgba(226,85,107,.55);color:var(--rogue);background:linear-gradient(#2e1419,#1a0b0e);} .plaque.won.rogue svg{filter:drop-shadow(0 0 6px rgba(226,85,107,.5));}
 .trow.rogue-row{grid-template-columns:110px repeat(5,minmax(0,1fr));}
+.trow.rogue-row.diffs{grid-template-columns:110px repeat(3,minmax(0,1fr));} .trow.rogue-row .trole{flex-direction:column;align-items:flex-start;} .trow.rogue-row .trole i{font-family:var(--f-body,inherit);font-style:normal;font-size:10px;color:#8a8270;letter-spacing:0;}
 @media (max-width:640px){ .camp-side.three{grid-template-columns:1fr;} .crow{grid-template-columns:22px minmax(0,1fr) 60px;} .crow .cs{display:none;} .trow.rogue-row{grid-template-columns:repeat(3,minmax(0,1fr));} }
 
 .icard.f-rogue{border-top-color:var(--rogue);} .ili.f-rogue.on{border-left-color:var(--rogue);background:rgba(226,85,107,.08);}

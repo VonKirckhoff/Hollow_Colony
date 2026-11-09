@@ -83,5 +83,9 @@ const ROGUE_TROPHIES = [
   { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Mother strain' },
   { id:'rogue:ashes',  name:'Ashes',        what:'End the Rogue campaign by burning the heart' },
   { id:'rogue:full',   name:'Full Strain',  what:'One crew member carries all six strains' },
-  { id:'rogue:cold',   name:'Cold Blood',   what:'Win every Rogue mission without a crew member ever going feral' }
+  { id:'rogue:cold',   name:'Cold Blood',   what:'Win every Rogue mission without a crew member ever going feral' },
+  /* one per difficulty, on their own row: every Rogue mission won on it (a win on Hard also counts for Normal and Easy) */
+  { id:'rogue:easy',   name:'Deserter',     what:'Win every Rogue Strain mission on Easy', diff:'easy' },
+  { id:'rogue:normal', name:'Turncoat',     what:'Win every Rogue Strain mission on Normal', diff:'normal' },
+  { id:'rogue:hard',   name:'Apex Strain',  what:'Win every Rogue Strain mission on Hard', diff:'hard' }
 ];

@@ -76,7 +76,10 @@ CASES=[
   const G=start(5); step(1); calm(); for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); ok(G.vars.open,'three chambers gone: the lair opens');
   const m=G.vars.mother; m.invuln=false; damage(m,1e8,null); step(1); const py=crew().find(x=>x.type==='pyro'); py.invuln=true; const h=G.vars.heart; for(let i=0;i<9&&!G.over;i++){ tp(py,Math.floor(h.x/TILE)+1,Math.floor(h.y/TILE)); step(1); }
   ok(G.over&&G.over.win&&rogueStore().ending==='ashes','Ashes'); const W=trophies(); ok(W['rogue:ashes']&&W['rogue:done']&&W['rogue:cold'],'trophies: Ashes, Ghost Crew, Cold Blood'); ok(!W['rogue:ascend'],'not Ascension');
-  goMenu('trophies'); ok(document.querySelectorAll('.plaque.rogue').length===5,'a Rogue row on the Trophy wall');'''),
+  goMenu('trophies'); ok(document.querySelectorAll('.plaque.rogue').length===8,'two Rogue rows on the Trophy wall');
+  ok(!W['rogue:hard']&&W['rogue:normal']&&W['rogue:easy'],'Normal everywhere: Deserter and Turncoat, not Apex Strain');
+  for(const m of ROGUE_MISSIONS.slice(0,5)) recordWin(m.id,'hard',100,false); checkRogueTrophies(); ok(!trophies()['rogue:hard'],'five of six on Hard: not yet');
+  recordWin(ROGUE_MISSIONS[5].id,'hard',100,false); checkRogueTrophies(); ok(trophies()['rogue:hard'],'all six on Hard: Apex Strain');'''),
 ('mothers blood: Dust gets there first','''resetRogue(); const G=start(5); step(1); calm(); const m=G.vars.mother; m.invuln=false; for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); damage(m,1e8,null); step(1); G.timer.end=G.time+0.3; step(1); ok(G.over&&!G.over.win,'no choice in time: lost');'''),
 ('save and load a job','''resetRogue(); const G=start(0); step(2); const u=crew()[3]; u.vet.taint=44; G.rogue.dna.drone=2; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); const G2=__hc.G; step(0.5);
   ok(G2.mission.rogue&&G2.ents.filter(e=>!e.dead&&e.crew).length===7,'the crew is back'); ok(G2.ents.some(e=>e.crew&&Math.round(e.vet.taint)===44),'taint kept'); ok(G2.rogue.dna.drone===2,'samples kept'); ok(typeof G2.api.loyal==='function','the Rogue mission API is there'); localStorage.removeItem('hc-save');'''),
