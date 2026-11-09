@@ -107,6 +107,7 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
         G.barkNext=0; bark(u,'seizure');
         if(!G.saidSeize){ G.saidSeize=true; say('Devreese',`${v.name} is seizing! Too much strain in the blood. A stabilizer dose brings it down: select me and press J.`,'crew'); } } }
     else u.seizeT=null;
+    if(v.taint>=T.warn&&!u.taintWarned) taintWarning(u);
     if(v.taint>=T.feral) goFeral(u); }
   /* samples: walk over them; they rot away after a while */
   for(const c of G.ents){ if(c.dead||!c.rogue||c.heart) continue; c.t-=dt; if(c.t<=0){ c.dead=true; continue; }   /* c.heart: the Brood Mother's heart (job 6), the mission decides */
@@ -254,6 +255,24 @@ function drawTaint(u,now,x,y,w,h,sp){ const t=u.vet.taint||0;
   if(t<15) return; const a=Math.min(1,t/100), p=0.5+0.5*Math.sin(now/(420-a*250)+u.id);
   ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(u.x,u.y-10,2,u.x,u.y-10,14+a*10); g.addColorStop(0,`rgba(130,255,90,${(0.06+0.16*a)*(0.6+0.4*p)})`); g.addColorStop(1,'rgba(130,255,90,0)'); ctx.fillStyle=g; ctx.fillRect(u.x-26,u.y-36,52,52); ctx.globalCompositeOperation='source-over'; }
 function drawTaintVeins(u,x,y,w,h,sp){ const t=u.vet.taint||0; if(t<ROGUE.taint.mend||u.feral>0) return; const z=risenSprite(sp); ctx.globalAlpha=Math.min(0.75,(t-ROGUE.taint.mend)/55); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); ctx.globalAlpha=1; }
+/* about to go feral (ROGUE.taint.warn): once per soldier per mission a ping, a heartbeat and a warning from the Medic (the Captain when it is the Medic herself) */
+function taintWarning(u){ u.taintWarned=true; const v=u.vet; G.pings.push({x:u.x,y:u.y,t:0,col:'#ff5a4f'}); SFX.play('heartbeat');
+  const medic=G.ents.find(e=>!e.dead&&!e.downed&&e.crew&&e.def.heal&&e!==u), who=v.id==='osp-devreese'||!medic?'Capt. Haesaert':'Devreese';
+  const how=G.rogue.stab>0?(medic?`Get a stabilizer into ${pron(v,'him')}, now! Select ${medic.vet.name==='Devreese'?'me':medic.vet.name} and press J.`:`Get ${pron(v,'him')} off the creep, and fast.`):`No doses left. Get ${pron(v,'him')} off the creep and away from the rest of us!`;
+  say(who,`${v.name} is about to snap! ${how}`,'crew alert'); }
+const taintWarn=u=>!!(u&&u.crew&&u.vet&&!(u.feral>0)&&!u.downed&&u.vet.taint>=ROGUE.taint.warn);
+const blinkOn=()=>Math.floor(performance.now()/300)%2===0;
+/* the taint bar under the health bar (crew only): green, orange from seizures, red and blinking when he is about to snap. Also the "!" over him. */
+function drawTaintBar(e,x,y,w,now){ const T=ROGUE.taint, t=e.vet.taint||0; if(e.feral>0) return;
+  const warn=taintWarn(e), col=warn?(blinkOn()?'#ff5a4f':'#b02a20'):t>=T.seizure?'#ff9a3c':'#9dff6a';
+  ctx.fillStyle='#000'; ctx.fillRect(x-1,y+3,w+2,4); ctx.fillStyle='#14200f'; ctx.fillRect(x,y+4,w,2); ctx.fillStyle=col; ctx.fillRect(x,y+4,Math.round(w*Math.min(1,t/T.feral)),2);
+  if(warn){ const p=0.5+0.5*Math.sin(now/110), cx=Math.round(e.x), cy=y-10; ctx.font='16px Silkscreen, monospace'; ctx.textAlign='center';
+    ctx.fillStyle='#000'; ctx.fillText('!',cx+1,cy+1); ctx.fillStyle=`rgba(255,${Math.round(90+80*p)},70,1)`; ctx.fillText('!',cx,cy); } }
+/* the ring at his feet when he is about to snap (drawn under the sprite) */
+function drawTaintRing(u,now){ if(!taintWarn(u)) return; const p=0.5+0.5*Math.sin(now/110);
+  ctx.strokeStyle=`rgba(255,70,60,${0.45+0.4*p})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(u.x,u.y+3,u.r+4+p*3,(u.r+4+p*3)*0.45,0,0,Math.PI*2); ctx.stroke(); ctx.lineWidth=1; }
+/* the selection panel: a red, blinking frame round a soldier who is about to snap */
+const taintWarnCls=e=>taintWarn(e)?(blinkOn()?' taint-warn':' taint-warn dim'):'';
 /* a sample (a pulsing vial of ichor), a stabilizer case or a loot case */
 function drawRogueCrate(c,now){ const bob=Math.sin(now/280+c.seed)*1.5, x=Math.round(c.x), y=Math.round(c.y+bob);
   if(c.heart){ const b=1+0.12*Math.max(0,Math.sin(now/180))**8+0.06*Math.max(0,Math.sin(now/180+0.6))**8, r=10*b;   /* it still beats: a double thump */
@@ -273,7 +292,7 @@ function rogueHud(){ const on=isRogue()&&!!G.rogue, w=$('#r-dna-wrap'), s=$('#r-
 function rogueStats(e){ if(!isRogue()||!e.crew||!e.vet) return ''; const v=e.vet, T=ROGUE.taint, t=Math.round(v.taint);
   const st=(v.strains||[]).filter(k=>STRAINS[k]).map(k=>STRAINS[k].name).join(', ');
   const fx=[t>=T.scent||e.scent?'the hunt passes him by':'', t>=T.mend?'the creep heals him':'', t>=T.seizure?'seizures':''].filter(Boolean).join(', ');
-  return `<span>Taint <b style="color:${t>=T.seizure?'#ff5a4f':t>=T.mend?'#9dff6a':'#cfe8b0'}">${t}%</b></span>${t>0?`<span>Fever <b>+${Math.round(t*T.fever*100)}% dmg</b></span>`:''}${fx?`<span><b style="color:#9dff6a">${fx}</b></span>`:''}${e.feral>0?'<span><b style="color:#ff5a4f">FERAL</b></span>':''}${st?`<span>Strains <b>${st}</b></span>`:''}`; }
+  return `<span>Taint <b style="color:${t>=T.seizure?'#ff5a4f':t>=T.mend?'#9dff6a':'#cfe8b0'}">${t}%</b></span>${t>0?`<span>Fever <b>+${Math.round(t*T.fever*100)}% dmg</b></span>`:''}${fx?`<span><b style="color:#9dff6a">${fx}</b></span>`:''}${e.feral>0?'<span><b style="color:#ff5a4f">FERAL</b></span>':taintWarn(e)?'<span><b style="color:#ff5a4f">About to go feral</b></span>':''}${st?`<span>Strains <b>${st}</b></span>`:''}`; }
 function rogueButtons(units,out){ if(!isRogue()||!units.some(u=>u.crew&&u.def.heal)) return;
   out.push({ row:'Orders', key:'J', glyph:'✚', cost:`${G.rogue.stab}`, off:!(G.rogue.stab>0), tip:`Stabilizer|The Medic injects the most tainted soldier within ${ROGUE.stab.reach} tiles: ${ROGUE.stab.amount} taint less, and a feral one comes back to his senses at once. ${G.rogue.stab} dose${G.rogue.stab===1?'':'s'} left.`, act:rogueStabilize }); }
 

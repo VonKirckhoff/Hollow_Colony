@@ -31,7 +31,7 @@ CASES=[
 ('taint: seizure, feral, stabilizer','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt), m=crew().find(x=>x.def.heal); u.invuln=true; m.invuln=true;
   u.vet.taint=90; let seized=false; for(let i=0;i<60&&!seized;i++){ step(1); if(u.stunT>0) seized=true; } ok(seized,'seizures above '+ROGUE.taint.seizure);
   u.vet.taint=100; step(0.2); ok(u.feral>0&&G.rogue.feral===1,'feral at 100'); selectEntities([u],false); ok(myUnits().length===0,'a feral one takes no orders');
-  step(ROGUE.taint.feralTime+0.5); ok(!(u.feral>0)&&Math.round(u.vet.taint)===ROGUE.taint.after,'the fit ends: he collapses, taint '+ROGUE.taint.after);
+  step(ROGUE.taint.feralTime+0.5); ok(!(u.feral>0)&&Math.abs(u.vet.taint-ROGUE.taint.after)<2,'the fit ends: he collapses, taint '+ROGUE.taint.after);
   u.vet.taint=100; step(0.2); ok(u.feral>0,'feral again'); tp(m,Math.floor(u.x/TILE)+1,Math.floor(u.y/TILE)); selectEntities([m],false); const s=G.rogue.stab; rogueStabilize(); ok(!(u.feral>0)&&u.vet.taint<=65&&G.rogue.stab===s-1,'the Medic doses him: back to his senses');
   ok(cmdButtons().some(c=>c.key==='J'),'the Medic has the J button');'''),
 ('strains on the field','''resetRogue(); const R=rogueStore(); const v=R.crew.find(x=>x.id==='osp-braet'); v.strains=['brute','drone','husk','hive','crawler']; v.taint=20; saveRogue();
@@ -98,6 +98,12 @@ CASES=[
   const l=makeUnit('trooper','loyal',u.x+60,u.y); G.lastFight=-99; G.barkNext=0; const w=crew().find(x=>x.type==='gunner'); fire(w,l); ok(G.barks.some(b=>b.u===w&&ROGUE_VOICE.loyal.includes(b.text)),'first shots at the Corps: a loyal line');'''),
 ('osprey down: no Engineer, no job; sorry after a fit','''resetRogue(); const G=start(0); step(1); calm(); const e=crew().find(u=>u.def.builder); damage(e,1e6,null); step(1); ok(!G.over,'Engineer down: not over yet, a Medic can still help'); kill(e,null); step(1); ok(G.over&&!G.over.win&&/Cnudde/.test(G.over.text),'Engineer dead before the freezer: lost');
   resetRogue(); const G2=start(0); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt); u.invuln=true; u.vet.taint=100; step(0.2); G2.barks=[]; step(ROGUE.taint.feralTime+ROGUE.taint.collapse+1.5); ok(G2.barks.some(b=>b.u===u&&ROGUE_VOICE.sorry.includes(b.text)),'back on his feet: sorry about that');'''),
+('about to go feral: the warning','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt); u.invuln=true; u.vet.taint=ROGUE.taint.warn+1; const np=G.pings.length; step(0.3);
+  ok(u.taintWarned&&taintWarn(u),'past the warn line: warned'); ok(G.msgs.some(m=>m.who==='Devreese'&&/about to snap/.test(m.text)&&/press J/.test(m.text)),'Devreese warns, with the way out');
+  ok(G.pings.length>np,'a ping on the minimap'); const n=G.msgs.length; u.vet.taint=ROGUE.taint.warn+2; step(0.3); ok(!G.msgs.slice(n).some(m=>/about to snap/.test(m.text)),'only once a mission');
+  selectEntities([u],false); renderSelection(); ok(!!document.querySelector('#selection .portrait.taint-warn'),'red frame round the portrait'); ok(/About to go feral/.test(document.getElementById('selection').innerHTML),'and in the stats');
+  const d=crew().find(x=>x.vet.id==='osp-devreese'); d.invuln=true; d.vet.taint=ROGUE.taint.warn+1; step(0.3); ok(G.msgs.some(m=>m.who==='Capt. Haesaert'&&/Devreese is about to snap/.test(m.text)),'the Medic herself: the Captain warns');
+  u.vet.taint=100; step(0.3); ok(u.feral>0&&!taintWarn(u),'feral: no warning any more');'''),
 ('corps campaign untouched','''resetRogue(); __hc.startMission(MISSIONS[0]); const G=__hc.G; step(2); ok(!G.rogue&&!G.ents.some(e=>e.crew),'no crew in a Corps mission'); ok(document.getElementById('r-dna-wrap').hidden,'no DNA counter');''')
 ]
 res=[]

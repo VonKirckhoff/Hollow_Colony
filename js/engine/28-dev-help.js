@@ -69,6 +69,7 @@ const DEV_HELP = {
   'ROGUE|taint.mend':'Rogue: from this much taint the creep heals him (and the veins show).',
   'ROGUE|taint.mendRate':'Rogue: health per second the creep gives back to a crew member above the mend line.',
   'ROGUE|taint.seizure':'Rogue: from this much taint he has seizures now and then.',
+  'ROGUE|taint.warn':'Rogue: from this much taint he is about to go feral: his taint bar turns red and blinks, a ring and "!" show over him, a ping on the minimap, and the Medic warns you (once per soldier per mission).',
   'ROGUE|taint.seizureEvery':'Rogue: shortest time (s) between two seizures.',
   'ROGUE|taint.seizureEvery2':'Rogue: longest time (s) between two seizures.',
   'ROGUE|taint.seizureTime':'Rogue: seconds a seizure keeps him on the ground.',

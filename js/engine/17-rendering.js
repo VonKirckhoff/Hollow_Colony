@@ -70,12 +70,13 @@ function render(now){
   // fog
   paintFog(); ctx.imageSmoothingEnabled=true; ctx.drawImage(fogCanvas,0,0,m.w,m.h,0,0,m.w*TILE,m.h*TILE); ctx.imageSmoothingEnabled=false;
   // bars
-  for(const e of list){ if(e.kind==='crate'||e.kind==='body') continue; const show=G.sel.includes(e)||e.hp<e.maxHp||(e.kind==='building'&&!e.built); if(!show) continue;
+  for(const e of list){ if(e.kind==='crate'||e.kind==='body') continue; const crew=e.crew&&e.vet&&isRogue(), show=G.sel.includes(e)||e.hp<e.maxHp||(e.kind==='building'&&!e.built)||(crew&&e.vet.taint>=15); if(!show) continue;
     const w=e.kind==='building'?e.size*TILE*0.8:24, x=Math.round(e.x-w/2), y=Math.round(e.kind==='building'?e.y-e.size*TILE/2-8:e.y-(SPR[e.def.sprite].h*(e.def.scale||2))-6);
     ctx.fillStyle='#000'; ctx.fillRect(x-1,y-1,w+2,5); ctx.fillStyle='#3a1512'; ctx.fillRect(x,y,w,3);
     const f=clamp(e.hp/e.maxHp,0,1); ctx.fillStyle=e.faction!==G.side?'#ff5a4f':hpColor(f); ctx.fillRect(x,y,Math.round(w*f),3);
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*e.progress),2); }
-    if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); } }
+    if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); }
+    if(crew) drawTaintBar(e,x,y,w,now); }   /* Rogue: the taint bar, and the warning when he is about to snap */
   // status labels of mission objects (generators, charges)
   ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
   for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!==G.side&&!isVisible(e)) continue;
@@ -118,7 +119,7 @@ function drawUnit(u){
   drawShadow(u.x,u.y+3,u.r*0.95,u.r*0.42);
   const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
   const now=performance.now(), risen=u.vet&&u.vet.risen;
-  if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew) drawTaint(u,now);
+  if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew){ drawTaint(u,now); drawTaintRing(u,now); }
   const hov=ui.hover&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)));
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);

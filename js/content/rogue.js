@@ -35,13 +35,14 @@ const STRAIN_ORDER = ['crawler','drone','spitter','brute','husk','hive'];
    taint:   creep = taint per second while he stands on the creep · rest = taint that fades after a won mission
             fallen = taint a fallen crew member comes back with ("the strain stitched him together") · fever = damage bonus per taint point
             scent = from this much taint the hunt ignores him · mend = from this much the creep heals him (mendRate HP/s)
+            warn = from this much he is about to go feral: red taint bar, a ring and "!" over him, a ping, and a warning from the Medic (once a mission)
             seizure = from this much he has seizures (every seizureEvery … seizureEvery2 seconds, seizureTime seconds)
             feral = at this much he snaps: feralTime seconds out of control, then he collapses (collapse s) and drops to after.
    stab:    start = stabilizer doses at the start of every mission · amount = taint one dose takes away · reach = tiles
    dna:     chance per kill that a sample drops (not when it burnt) · hive = samples from a hive killed without fire · life = seconds a sample lies there
    loyal:   the Lunar Corps that hunts the crew: help = tiles within which they come to help each other · hp / dmg per difficulty · xp per kill */
 const ROGUE = {
-  taint:{ creep:1.2, rest:8, fallen:20, fever:0.002, scent:30, mend:60, mendRate:4, seizure:85, seizureEvery:25, seizureEvery2:45, seizureTime:1.6, feral:100, feralTime:10, collapse:3, after:70 },
+  taint:{ creep:1.2, rest:8, fallen:20, fever:0.002, scent:30, mend:60, mendRate:4, seizure:85, warn:92, seizureEvery:25, seizureEvery2:45, seizureTime:1.6, feral:100, feralTime:10, collapse:3, after:70 },
   stab:{ start:1, amount:35, reach:4 },
   dna:{ crawler:0.35, drone:0.3, spitter:0.5, brute:1, husk:1, hive:3, life:90 },
   loyal:{ help:12, hp:{ easy:0.85, normal:1, hard:1.2 }, dmg:{ easy:0.85, normal:1, hard:1.15 }, xp:2 }
