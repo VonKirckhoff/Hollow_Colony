@@ -34,7 +34,9 @@ ROGUE_MISSIONS.push(
           g.loyal('trooper',{x:46,y:8},2,{hold:true});
           g.loyal('trooper','3',3,{ patrol:['3',{x:58,y:30},'1',{x:30,y:30}] });
           g.vars.caches=DA_CACHES.map((c,i)=>{ g.cache(c,{ loot:60, stab:i===1?2:0 }); return G.ents[G.ents.length-1]; });
-          g.marker('st','1','Kappa Station'); } },
+          g.marker('st','1','Kappa Station');
+          /* the station platform and the north ridge tower stay lit for the whole job: the crew can watch from afar what the Swarm has already knocked down */
+          g.reveal({x:46,y:38},9,1e6); g.reveal({x:47,y:5},4,1e6); } },
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Haesaert','Kappa Station. Three caches, two towers, a dozen of ours. They are not ours any more. Quietly, people.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Cnudde','Those relay towers are the problem. If they see us, Kappa calls Tycho, and then the whole Corps knows we are alive. Knock both towers down and the line goes dead.') },
       { when:g=>g.time>16, do:g=>g.crewSay('Braet','Hold fire, Captain? (Q) Let the Swarm do the shooting at Kappa. We just watch.') },
