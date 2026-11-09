@@ -602,10 +602,30 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .plaque b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .plaque i{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .plaque .tbar{width:100%;height:3px;margin-top:2px;}
-.tspecial{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,210,63,.14);}
-.tspecial .plaque b{color:#d8cfb8;} .tspecial .plaque.won b{color:#fff3c9;}
 .plaque.won.relic svg{filter:drop-shadow(0 0 6px rgba(255,210,63,.45));}
 .trole.swarm{color:#a6ff4a;} .trole.rogue{color:var(--rogue);}
-@media (max-width:640px){ .trow{grid-template-columns:repeat(3,minmax(0,1fr));} .tspecial{grid-template-columns:repeat(2,minmax(0,1fr));} .plaque{height:auto;min-height:38px;} }
+@media (max-width:640px){ .trow{grid-template-columns:repeat(3,minmax(0,1fr));} .plaque{height:auto;min-height:38px;} }
 @media (min-width:860px) and (max-width:1099px){ .sheet.troph-sheet{max-width:none;grid-template-columns:minmax(0,0.7fr) minmax(0,1.6fr);gap:18px;align-items:center;}
   .troph-l .troph-hero{flex-direction:column;align-items:flex-start;} .troph-l .troph-hero .tcount{margin-left:0;} #s-trophies .lede{font-size:12px;} .trow{grid-template-columns:78px repeat(3,minmax(0,1fr));} }
+
+/* Trophy wall in tabs (Nov 2026): Lunar Corps, The Swarm, Rogue Strain, Relics */
+.troph-r{display:grid;gap:0;min-width:0;}
+.troph-tabs{border-bottom-color:rgba(255,210,63,.18);}
+.troph-tabs button small{font-family:var(--f-body,inherit);font-size:10px;letter-spacing:0;color:#8a8270;margin-left:4px;}
+.troph-tabs button[aria-selected="true"]{background:#1a1712;border-color:rgba(255,210,63,.18);color:#ffd23f;}
+.troph-tabs button.swarm[aria-selected="true"]{color:var(--swarm);} .troph-tabs button.rogue[aria-selected="true"]{color:var(--rogue);}
+.troph-r .trophies{border-top:0;min-height:clamp(380px,62vh,560px);align-content:start;}
+.plaque.big{display:grid;justify-items:center;align-content:center;gap:3px;height:auto;min-height:92px;padding:10px 12px;text-align:center;}
+.plaque.big svg{width:26px;height:26px;}
+.plaque.big b{font-size:12px;white-space:normal;color:#d8cfb8;} .plaque.big.won b{color:#fff3c9;}
+.plaque.big i{white-space:normal;font-size:11px;} .plaque.big i.what{color:#9a8f7c;} .plaque.big.won i.what{color:#c9b98a;}
+.plaque.big .tbar{width:70%;height:4px;margin-top:3px;}
+.trow .plaque.big{min-height:0;padding:6px 8px;gap:1px;} .trow .plaque.big svg{width:20px;height:20px;} .trow .plaque.big i{font-size:10px;}
+.tgrid{display:grid;gap:8px;margin-top:6px;} .tgrid.one{grid-template-columns:minmax(0,1fr);margin-top:10px;} .tgrid.two{grid-template-columns:repeat(2,minmax(0,1fr));}
+.tgrid.three{grid-template-columns:repeat(3,minmax(0,1fr));} .tgrid.four{grid-template-columns:repeat(4,minmax(0,1fr));}
+.tab-swarm .tgrid .plaque.big,.tab-relics .tgrid .plaque.big{min-height:150px;} .tab-swarm .tgrid .plaque.big svg,.tab-relics .tgrid .plaque.big svg{width:40px;height:40px;}
+.tab-rogue .tgrid .plaque.big{min-height:120px;} .tab-rogue .tgrid .plaque.big svg{width:32px;height:32px;}
+.tsub{font-family:var(--f-display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#b9a575;margin-top:8px;}
+.tsub:first-child{margin-top:0;}
+@media (max-width:640px){ .tgrid.three,.tgrid.four{grid-template-columns:repeat(2,minmax(0,1fr));} }
+.tab-swarm,.tab-relics{align-content:center !important;}

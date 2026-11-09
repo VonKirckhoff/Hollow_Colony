@@ -140,14 +140,13 @@ function flawlessCount(key){ return MISSIONS.filter(m=>{ const r=ui.progress.res
 function checkFlawless(){ const T=trophies(), won=[];
   for(const c of FLAWLESS_COLS){ const k='flawless:'+c.key; if(!T[k]&&flawlessCount(c.key)>0){ T[k]={ at:Date.now(), mission:G.mission.title }; won.push(c.key); } }
   if(won.length) store.set('hc-trophies',T); return won; }
-/* two grand trophies: Lunar Corps = every one of the 15 role trophies and the 3 Flawless trophies; The Swarm = every Swarm mission won on Easy, Normal and Hard
-   (a win on Hard also counts for Normal and Easy). Stored as 'grand:corps' and 'grand:swarm' in hc-trophies. */
+/* the grand trophy Hollow Light = every one of the 15 role trophies and the 3 Flawless trophies ('grand:corps' in hc-trophies).
+   grandStatus().swarm counts the Swarm missions won per difficulty, for the Swarm trophies below (The Long Hunger was dropped, Nov 2026). */
 function grandStatus(){ const T=trophies(), need=HERO_TYPES.length*TROPHY_COLS.length+FLAWLESS_COLS.length, have=HERO_TYPES.reduce((s,t)=>s+TROPHY_COLS.filter(c=>(T[t+':'+c.key]||[]).length).length,0)+FLAWLESS_COLS.filter(c=>T['flawless:'+c.key]).length;
   const sw=k=>SWARM_MISSIONS.filter(m=>{ const r=ui.progress.results[m.id]; return r&&DIFF_RANK[r.diff]>=DIFF_RANK[k]; }).length;
   return { corps:{ have, need }, swarm:{ easy:sw('easy'), normal:sw('normal'), hard:sw('hard'), need:SWARM_MISSIONS.length } }; }
 function checkGrand(){ const T=trophies(), g=grandStatus(), won=[];
   if(!T['grand:corps']&&g.corps.have>=g.corps.need){ T['grand:corps']={ at:Date.now() }; won.push('corps'); }
-  if(!T['grand:swarm']&&g.swarm.need&&g.swarm.hard>=g.swarm.need){ T['grand:swarm']={ at:Date.now() }; won.push('swarm'); }
   if(won.length) store.set('hc-trophies',T); return won; }
 /* the Swarm by difficulty: every Swarm mission won on Easy / Normal / Hard (a win on Hard also counts for the lower ones). 'swarm:easy' … in hc-trophies. */
 const SWARM_TROPHIES=[ { id:'swarm:easy', name:'Hatchling', diff:'easy' }, { id:'swarm:normal', name:'Stalker', diff:'normal' }, { id:'swarm:hard', name:'Devourer', diff:'hard' } ];
