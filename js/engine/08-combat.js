@@ -15,7 +15,7 @@ function fireBlocked(u,t){ const m=G.map, W=m.w, S=membraneTiles(), dx=t.x-u.x, 
   for(let i=1;i<n;i++){ const x=u.x+dx*i/n, y=u.y+dy*i/n, tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), k=ty*W+tx; if(k===k0||k===k1) continue;
     if(own&&tx>=own.tx&&tx<own.tx+own.size&&ty>=own.ty&&ty<own.ty+own.size) continue;   /* the structure you aim at */
     if(FIRE_BLOCK[m.tiles[k]]||(S.has(k)&&t.type!=='membrane')) return true; } return false; }
-function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t); }
+function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t) && !(t.crew&&u.faction==='swarm'&&veiled(t)); }   /* Rogue: the veil (Among Them) */
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 /* the Swarm wants the escort (Dr. Maas) above all: in a fight it picks her over a soldier up to pull tiles closer, and hunters within hunt tiles of her go for her */
@@ -28,6 +28,7 @@ function findTarget(u,rangeTiles,unitsOnly){
     if(deadGen(u,e)) continue;
     if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
+    if(e.crew&&u.faction==='swarm'&&veiled(e)) continue;   /* Rogue: the brood looks right through one of its own (the veil, Among Them) */
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue; if(fireBlocked(u,e)) continue;   /* not through rock or a membrane */
     let score=d + (e.downed ? 90 : 0) + (e.kind==='building' ? 70 : 0) + (e.def.boss ? 80 : 0) + (e.type==='cocoon' ? -40 : 0) + (e.faction==='wild' ? 90 : 0) + (e.def.escort&&u.faction==='swarm' ? -SWARM_VIP.pull*TILE : 0) + (e.scent&&u.faction==='swarm' ? 4*TILE : 0);   /* Hive Scent (Rogue): the brood picks him last */   /* the Swarm goes for an escort (Dr. Maas) first */
     if(score<bs){ bs=score; best=e; } }
@@ -35,6 +36,7 @@ function findTarget(u,rangeTiles,unitsOnly){
 }
 function fire(u,t){
   const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Brood Mother's screech */ const dm=(u.dmgMul||1)*(u.blindT>0?SWARM_LIGHT.dmg:1)*(u.crew?feverOf(u)*(u.feral>0?1.3:1):1);   /* Rogue: taint is fever, feral hits harder */
+  if(u.crew) breakVeil(u);   /* Rogue: a shot tears the veil (Among Them) */
   if(u.type==='trooper'&&hasPerk(u)&&t.kind==='unit') throwGrenade(u,t);
   if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,u.crew&&t.faction==='loyal'?'loyal':'contact'); G.lastFight=G.time; }
   const ang=Math.atan2(t.y-u.y,t.x-u.x); u.angle=ang;

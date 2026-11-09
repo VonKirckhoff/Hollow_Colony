@@ -4,7 +4,7 @@ errs=[]
 HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ const G=__hc.G; for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); },
   crew=()=>__hc.G.ents.filter(e=>!e.dead&&e.crew), tp=(u,x,y)=>{ u.x=(x+.5)*TILE; u.y=(y+.5)*TILE; u.path=null; u.order=null; u.target=null; u.home={x:u.x,y:u.y}; },
   calm=()=>{ for(const e of __hc.G.ents) if(e.faction==='swarm'||e.faction==='loyal') e.invuln=true; },
-  start=i=>{ __hc.startMission(ROGUE_MISSIONS[i]); return __hc.G; }; try{ '''
+  JOBS=['rogue-osprey-down','rogue-dead-air','rogue-cold-harvest','rogue-the-fever','rogue-hunted','rogue-mothers-blood'], start=i=>{ __hc.startMission(ROGUE_MISSIONS.find(m=>m.id===JOBS[i])); return __hc.G; };   /* the six original jobs by their old number (r01b and r05b sit in between) */ try{ '''
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 CASES=[
 ('unlock and splice lab','''resetRogue(); delete ui.progress.results['hollow-colony']; ui.campSide='rogue'; goMenu('campaign'); ok(ui.campSide==='corps'&&document.querySelector('[data-side=rogue]').hidden,'locked until Corps mission 4 is won');
@@ -76,15 +76,15 @@ CASES=[
   const G=start(5); step(1); calm(); for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); ok(G.vars.open,'three chambers gone: the lair opens');
   const m=G.vars.mother; m.invuln=false; damage(m,1e8,null); step(1); const py=crew().find(x=>x.type==='pyro'); py.invuln=true; const h=G.vars.heart; for(let i=0;i<9&&!G.over;i++){ tp(py,Math.floor(h.x/TILE)+1,Math.floor(h.y/TILE)); step(1); }
   ok(G.over&&G.over.win&&rogueStore().ending==='ashes','Ashes'); const W=trophies(); ok(W['rogue:ashes']&&W['rogue:cold']&&!ROGUE_TROPHIES.some(t=>t.id==='rogue:done'),'trophies: Ashes, Cold Blood (Ghost Crew is gone)'); ok(!W['rogue:ascend'],'not Ascension');
-  goMenu('trophies'); trophTab='rogue'; buildTrophies(); ok(document.querySelectorAll('#trophy-wall .plaque.rogue').length===7&&document.querySelectorAll('#trophy-wall .plaque.big .what').length===7,'Rogue tab: three by difficulty and four story plaques, each with its explanation');
+  goMenu('trophies'); trophTab='rogue'; buildTrophies(); ok(document.querySelectorAll('#trophy-wall .plaque.rogue').length===ROGUE_TROPHIES.length&&document.querySelectorAll('#trophy-wall .plaque.big .what').length===ROGUE_TROPHIES.length,'Rogue tab: three by difficulty and '+(ROGUE_TROPHIES.length-3)+' story plaques, each with its explanation');
   { const T=trophies(); for(const t of SWARM_TROPHIES) delete T[t.id]; store.set('hc-trophies',T); for(const m of SWARM_MISSIONS) recordWin(m.id,'normal',100,false); checkSwarmTrophies(); const S=trophies();
     ok(S['swarm:easy']&&S['swarm:normal']&&!S['swarm:hard'],'Swarm on Normal: Hatchling and Stalker, not Devourer'); trophTab='swarm'; buildTrophies(); ok(document.querySelectorAll('#trophy-wall .plaque.swarm').length===3&&document.querySelectorAll('#trophy-wall .plaque.swarm.won').length===2,'Swarm tab: three plaques, two won');
     ok(!document.querySelector('#s-trophies').textContent.includes('The Long Hunger'),'The Long Hunger is gone from the wall');
     for(const t of ['corps','swarm','rogue','relics']){ trophTab=t; buildTrophies(); const r=document.querySelector('#trophy-wall').getBoundingClientRect(); if(r.bottom>innerHeight) ok(false,'tab '+t+' runs off the screen'); } ok(document.querySelectorAll('#troph-tabs [data-ttab]').length===4,'four tabs');
     const wb=document.querySelector('#trophy-wall').getBoundingClientRect(); ok(wb.bottom<=innerHeight&&wb.top>=0,'the whole wall fits on the screen: '+Math.round(wb.top)+'..'+Math.round(wb.bottom)+' of '+innerHeight); }
   ok(!W['rogue:hard']&&W['rogue:normal']&&W['rogue:easy'],'Normal everywhere: Deserter and Turncoat, not Apex Strain');
-  for(const m of ROGUE_MISSIONS.slice(0,5)) recordWin(m.id,'hard',100,false); checkRogueTrophies(); ok(!trophies()['rogue:hard'],'five of six on Hard: not yet');
-  recordWin(ROGUE_MISSIONS[5].id,'hard',100,false); checkRogueTrophies(); ok(trophies()['rogue:hard'],'all six on Hard: Apex Strain');'''),
+  for(const m of ROGUE_MISSIONS.slice(0,-1)) recordWin(m.id,'hard',100,false); checkRogueTrophies(); ok(!trophies()['rogue:hard'],'all but one on Hard: not yet');
+  recordWin(ROGUE_MISSIONS[ROGUE_MISSIONS.length-1].id,'hard',100,false); checkRogueTrophies(); ok(trophies()['rogue:hard'],'all '+ROGUE_MISSIONS.length+' on Hard: Apex Strain');'''),
 ('mothers blood: Dust gets there first','''resetRogue(); const G=start(5); step(1); calm(); const m=G.vars.mother; m.invuln=false; for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); damage(m,1e8,null); step(1); G.timer.end=G.time+0.3; step(1); ok(G.over&&!G.over.win,'no choice in time: lost');'''),
 ('save and load a job','''resetRogue(); const G=start(0); step(2); const u=crew()[3]; u.vet.taint=44; G.rogue.dna.drone=2; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); const G2=__hc.G; step(0.5);
   ok(G2.mission.rogue&&G2.ents.filter(e=>!e.dead&&e.crew).length===7,'the crew is back'); ok(G2.ents.some(e=>e.crew&&Math.round(e.vet.taint)===44),'taint kept'); ok(G2.rogue.dna.drone===2,'samples kept'); ok(typeof G2.api.loyal==='function','the Rogue mission API is there'); localStorage.removeItem('hc-save');'''),

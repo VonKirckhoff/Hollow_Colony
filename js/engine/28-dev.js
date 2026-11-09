@@ -91,6 +91,7 @@ function devRender(){ const el=$('#dev'); if(!el||el.hidden||!G) return;
     h=`<div class="dv-note">${m.title} · <i>${m.id}</i>. Saved changes count for this mission only.</div>`+
       `<details open><summary>Start and Landing Zone</summary>${DEV_MISSION_KEYS.filter(k=>!k.startsWith('swarm.')).map(k=>devRow(K+k,k)).join('')}</details>`+
       (m.swarm?`<details open><summary>Swarm (this mission)</summary>${[...new Set([...DEV_MISSION_KEYS.filter(k=>k.startsWith('swarm.')&&(m.swarm.waves||!k.startsWith('swarm.waves'))),...devLeaves(m.swarm,'swarm')])].map(k=>devRow(K+k,k.slice(6))).join('')}</details>`:'')+
+      (m.job?`<details open><summary>This job (Rogue)</summary>${devLeaves(m.job,'job').map(k=>devRow(K+k,k.slice(4))).join('')}</details>`:'')+   /* Rogue jobs: their own numbers (mission.job) */
       `<div class="dv-note">Empty = the game's default. The waves only grow for growWaves waves; maxAlive is how many roam at once (× difficulty).</div>`; }
   else if(T.id==='units'){ const types=[...Object.keys(UNITS).map(k=>['UNITS',k]),...Object.keys(BUILDINGS).map(k=>['BUILDINGS',k])];
     const [root,k]=types.find(([r,t])=>t===dev.unit)||types[0];

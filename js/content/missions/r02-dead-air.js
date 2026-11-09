@@ -10,7 +10,7 @@ ROGUE_MISSIONS.push(
     id:'rogue-dead-air', title:'Dead Air', map:'canyons', rogue:true,
     summary:'Rob a Corps supply post without letting its radio get a word out.',
     briefing:[
-      'Three weeks in the tunnels. The stabilizer is gone, the food is nearly gone, and Devreese says the strain burns hotter in a body that is starving.',
+      'Three weeks in the tunnels. The cases from Kappa Basin are empty, Devreese can brew only so much from Maas\'s formula, the food is nearly gone, and she says the strain burns hotter in a body that is starving.',
       'Kappa Station is a supply post again: three caches on the station platform, a small garrison, two Sentry Guns, and two Relay Towers, one on the station and one on the northern ridge. Those towers are the danger. The moment anyone at Kappa sees us, they start calling Tycho.',
       'If Tycho hears about us, the whole Corps comes looking and this is over. Stay out of their sight. The Swarm hates Kappa as much as we do: let it wear the garrison down first, and a tower that is already rubble cannot call anyone. If they do see us, both towers go down within thirty seconds, or we are finished. Take all three caches and leave through the old mine shaft in the east wall.'
     ],

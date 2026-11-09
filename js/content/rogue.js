@@ -4,7 +4,7 @@
    They are not dead. They found her samples, they saw what Swarm DNA can do to a body, and they stopped answering the radio.
    You play the crew: seven named soldiers, no base, no dropship, hunted by the Swarm and by the Lunar Corps they left behind.
    Unlocked once the Lunar Corps has won mission 4, The Hollow Colony. The engine lives in js/engine/31-rogue.js. */
-const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-…, in the order of their <script> lines */
+const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-… (with r01b and r05b in between), in the order of their <script> lines */
 
 /* The Osprey crew. Fixed people: they carry their rank, experience, strains and taint from mission to mission
    (kept in hc-rogue, not on the Lunar Corps roster). Haesaert is the Captain: he leads the squad (AURA). */
@@ -39,11 +39,15 @@ const STRAIN_ORDER = ['crawler','drone','spitter','brute','husk','hive'];
             seizure = from this much he has seizures (every seizureEvery … seizureEvery2 seconds, seizureTime seconds)
             feral = at this much he snaps: feralTime seconds out of control, then he collapses (collapse s) and drops to after.
    stab:    start = stabilizer doses at the start of every mission · amount = taint one dose takes away · reach = tiles
+            formula = extra doses at the start of every mission once the crew has Dr. Maas's formula (Needle and Thread)
+   veil:    (missions with veil:true, Among Them) taint = from this much taint the Swarm does not see him (Hive Scent: always)
+            broken = seconds the Swarm sees him after he fires a shot
    dna:     chance per kill that a sample drops (not when it burnt) · hive = samples from a hive killed without fire · life = seconds a sample lies there
    loyal:   the Lunar Corps that hunts the crew: help = tiles within which they come to help each other · hp / dmg per difficulty · xp per kill */
 const ROGUE = {
   taint:{ creep:1.2, rest:8, fallen:20, fever:0.002, scent:30, mend:60, mendRate:4, seizure:85, warn:92, seizureEvery:25, seizureEvery2:45, seizureTime:1.6, feral:100, feralTime:10, collapse:3, after:70 },
-  stab:{ start:1, amount:35, reach:4 },
+  stab:{ start:1, amount:35, reach:4, formula:1 },
+  veil:{ taint:40, broken:8 },
   dna:{ crawler:0.35, drone:0.3, spitter:0.5, brute:1, husk:1, hive:3, life:90 },
   loyal:{ help:12, hp:{ easy:0.85, normal:1, hard:1.2 }, dmg:{ easy:0.85, normal:1, hard:1.15 }, xp:2 }
 };
@@ -83,6 +87,7 @@ const ROGUE_TROPHIES = [
   { id:'rogue:ashes',  name:'Ashes',        what:'End the Rogue campaign by burning the heart' },
   { id:'rogue:full',   name:'Full Strain',  what:'One crew member carries all six strains' },
   { id:'rogue:cold',   name:'Cold Blood',   what:'Win every Rogue mission without a crew member ever going feral' },
+  { id:'rogue:wolf',   name:'Wolf in the Fold', what:'Win Among Them without a veil ever being torn' },
   /* one per difficulty, on their own row: every Rogue mission won on it (a win on Hard also counts for Normal and Easy) */
   { id:'rogue:easy',   name:'Deserter',     what:'Win every Rogue Strain mission on Easy', diff:'easy' },
   { id:'rogue:normal', name:'Turncoat',     what:'Win every Rogue Strain mission on Normal', diff:'normal' },

@@ -138,6 +138,22 @@ const ART = {
   membrane(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(0,1,16,15); x.fillStyle=P.C; x.fillRect(1,2,14,13); x.fillStyle=P.m; x.fillRect(2,4,5,4); x.fillRect(9,8,5,5);
     x.fillStyle=P.p; x.fillRect(3,3,3,1); x.fillRect(10,7,3,1); x.fillStyle=P.e; x.fillRect(7,3,1,9); x.fillRect(4,11,6,1); x.fillRect(12,4,1,4); return c; },
+  /* Rogue, Needle and Thread: the field hospital's records terminal (a Corps console with a green screen) and a hospital tent */
+  terminal(){ const [c,x]=pxCtx(16,18); const P=PALETTE;
+    x.fillStyle=P.k; x.fillRect(2,2,12,10); x.fillStyle=P.G; x.fillRect(3,3,10,8); x.fillStyle='#0d2a1a'; x.fillRect(4,4,8,6);
+    x.fillStyle='#5fe3b0'; x.fillRect(5,5,5,1); x.fillRect(5,7,3,1); x.fillRect(9,7,2,1); x.fillStyle='#2f8f6a'; x.fillRect(5,9,6,1);
+    x.fillStyle=P.k; x.fillRect(6,12,4,3); x.fillRect(1,15,14,3); x.fillStyle=P.A; x.fillRect(2,16,12,1); x.fillStyle=P.r; x.fillRect(12,13,2,2); return c; },
+  medtent(){ const [c,x]=pxCtx(32,30); const P=PALETTE;
+    x.fillStyle=P.k; for(let j=0;j<20;j++){ const h=Math.round(4+j*0.7); x.fillRect(16-h-1,6+j,h*2+2,1); }
+    for(let j=0;j<19;j++){ const h=Math.round(4+j*0.7); x.fillStyle=j<3?'#d8dccf':'#b9bdb0'; x.fillRect(16-h,7+j,h,1); x.fillStyle=j<3?'#c5c9bb':'#9a9e91'; x.fillRect(16,7+j,h,1); }
+    x.fillStyle=P.k; x.fillRect(12,17,8,9); x.fillStyle='#1a1c22'; x.fillRect(13,18,6,8);
+    x.fillStyle=P.w; x.fillRect(5,14,7,7); x.fillStyle=P.r; x.fillRect(7,15,3,5); x.fillRect(6,16,5,3);
+    x.fillStyle=P.G; x.fillRect(15,2,2,6); x.fillStyle=P.k; x.fillRect(3,26,26,2); return c; },
+  /* Rogue, Among Them: a choir pod, a swollen Swarm throat that keeps the brood awake with its song */
+  choirpod(){ const [c,x]=pxCtx(20,24); const P=PALETTE;
+    oval(x,10,20,9,3,P.c); oval(x,10,13,7,9,P.k); oval(x,10,13,6,8,P.C); oval(x,9,11,3,5,P.p);
+    x.fillStyle=P.c; x.fillRect(7,4,6,3); x.fillStyle=P.k; x.fillRect(8,3,4,2); x.fillStyle=P.m; x.fillRect(9,4,2,2);
+    x.fillStyle=P.e; x.fillRect(5,14,1,1); x.fillRect(14,11,1,1); x.fillRect(10,18,1,1); x.fillStyle=P.E; x.fillRect(4,19,3,1); x.fillRect(13,20,3,1); return c; },
   crate(){ const [c,x]=pxCtx(12,10); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(0,0,12,10); x.fillStyle=P.G; x.fillRect(1,1,10,8); x.fillStyle=P.v; x.fillRect(1,4,10,2); x.fillStyle=P.A; x.fillRect(5,1,2,8); return c; }
 };

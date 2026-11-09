@@ -119,12 +119,14 @@ function drawUnit(u){
   drawShadow(u.x,u.y+3,u.r*0.95,u.r*0.42);
   const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
   const now=performance.now(), risen=u.vet&&u.vet.risen;
-  if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew){ drawTaint(u,now); drawTaintRing(u,now); }
+  if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew){ drawTaint(u,now); drawTaintRing(u,now); drawVeil(u,now); }
   const hov=ui.hover&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)));
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);
   if(u.carry){ const a=ARTC[BUILDINGS[u.carry.type].art]; ctx.drawImage(a,Math.round(u.x-u.face*9-9),y+2,18,18); }
+  const vl=u.crew&&veiled(u); if(vl) ctx.globalAlpha=0.68;   /* Rogue: veiled among the brood (Among Them) */
   if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
+  if(vl) ctx.globalAlpha=1;
   if(u.crew) drawTaintVeins(u,x,y,w,h,sp);   /* Rogue: the strain shows through */
   if(hov){ ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.35+0.15*Math.sin(now/120); ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
   if(u.flash>0){ ctx.globalAlpha=(u.def.scale||2)>=3?0.25:0.8; ctx.drawImage(u.face>0?sp.flash:sp.flashFlip,x,y,w,h); ctx.globalAlpha=1; }
@@ -145,6 +147,7 @@ function drawBuilding(b,now){
   if(b.type==='hive'){ const f=b.hp/b.maxHp, hurt=f<0.33?2:f<0.66?1:0;   /* hurt: roots wither, the heart slows */
     ctx.drawImage(hiveFrame((now/1000)*[1,0.75,0.5][hurt]+b.id*0.37,hurt),Math.round(b.x-w/2),Math.round(b.y-h/2-4),w,h); }   /* the root bulb beats on its own (hiveFrame) */
   else if(b.type==='egg'){ drawEgg(b,art,now); }
+  else if(b.type==='choirpod'){ drawChoirPod(b,art,now); }   /* Rogue, Among Them */
   else if(b.type==='cocoon'){ let p=1+Math.sin(now/120)*0.06*(1-b.hatchT/(b.hatchMax||BUILDINGS.cocoon.hatch)+0.3), jx=0;
     if(b.husk){ drawHuskCocoon(b,now); const q=1-b.hatchT/b.hatchMax; p=1+0.05+0.14*(b.beat||0)+0.12*q; if(b.hatchT<1.5) jx=rand(-2,2); }
     const a2=b.husk?ARTC.huskcocoon:art, w2=a2.width*2, h2=a2.height*2;

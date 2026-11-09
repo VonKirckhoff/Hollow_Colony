@@ -27,7 +27,7 @@ const dnaTotal=d=>Object.values(d||{}).reduce((s,n)=>s+n,0);
 /* ---- a mission starts: the crew from hc-rogue takes the field ---- */
 function rogueDeploy(){
   const R=rogueStore(), st=G.mission.start, at=pt(st.crewAt||st.camera||'P'), list=R.crew.filter(v=>!(st.crewOnly&&!st.crewOnly.includes(v.id)));
-  G.rogue={ dna:{}, stab:R.stab+ROGUE.stab.start+(G.mission.stab||0), feral:0, harvested:0, burnt:0, ending:null, out:[], exitOpen:false };
+  G.rogue={ dna:{}, stab:R.stab+ROGUE.stab.start+(G.mission.stab||0)+(R.flags.formula?ROGUE.stab.formula:0), feral:0, harvested:0, burnt:0, ending:null, out:[], exitOpen:false, veilBroken:0 };   /* formula: Maas's formula (Needle and Thread), Devreese brews a dose before every job */
   const spots=freeTilesNear(at.x,at.y,list.length);
   list.forEach((v,i)=>{ const s=spots[i]||at, u=makeUnit(v.type,'corps',(s.x+.5)*TILE+rand(-4,4),(s.y+.5)*TILE+rand(-4,4));
     u.vet={ ...v, strains:[...(v.strains||[])], taint:v.taint||0 }; delete u.vet.fallen; u.crew=true; u.sprite='crew_'+v.type; u.home={x:u.x,y:u.y}; applyRank(u); u.hp=u.maxHp; G.deployedIds.add(v.id); });
@@ -72,6 +72,8 @@ function rogueSettle(){
   for(const [k,n] of Object.entries(G.rogue.dna)) R.dna[k]=(R.dna[k]||0)+n;
   R.stab=Math.max(0,G.rogue.stab);
   if(G.rogue.feral>0) R.flags.feral=true;
+  if(G.rogue.formula&&!R.flags.formula){ R.flags.formula=true; res.formula=true; }
+  if(G.mission.veil&&!G.rogue.veilBroken) R.flags.wolf=true;   /* Among Them won without a veil ever breaking */
   if(G.rogue.ending){ R.ending=G.rogue.ending; if(G.rogue.ending==='ascend') for(const v of R.crew) if(!v.strains.includes('mother')) v.strains.push('mother'); }
   saveRogue(); G.rogueResult=res; G.rogueWon=checkRogueTrophies(); }
 /* ---- trophies of the Rogue campaign (a row on the Trophy wall) ---- */
@@ -80,7 +82,7 @@ function rogueDiffCount(k){ return ROGUE_MISSIONS.filter(m=>{ const r=resultOf(m
 function rogueTrophyHave(id){ const t=ROGUE_TROPHIES.find(x=>x.id===id); if(t&&t.diff) return ROGUE_MISSIONS.length>0&&rogueDiffCount(t.diff)>=ROGUE_MISSIONS.length;
   const R=rogueStore(), all=ROGUE_MISSIONS.length&&ROGUE_MISSIONS.every(m=>isDone(m.id));
   if(id==='rogue:ascend') return R.ending==='ascend'; if(id==='rogue:ashes') return R.ending==='ashes';
-  if(id==='rogue:full') return R.crew.some(v=>STRAIN_ORDER.every(k=>v.strains.includes(k))); if(id==='rogue:cold') return all&&!R.flags.feral; return false; }
+  if(id==='rogue:full') return R.crew.some(v=>STRAIN_ORDER.every(k=>v.strains.includes(k))); if(id==='rogue:cold') return all&&!R.flags.feral; if(id==='rogue:wolf') return !!R.flags.wolf; return false; }
 function checkRogueTrophies(){ const T=trophies(), won=[]; for(const t of ROGUE_TROPHIES){ if(!T[t.id]&&rogueTrophyHave(t.id)){ T[t.id]={ at:Date.now() }; won.push(t.id); } }
   if(won.length) store.set('hc-trophies',T); return won; }
 
@@ -100,6 +102,7 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
     if(u.rogueAcid>0&&acidTick){ u.rogueAcid-=0.25; const fl=u.flash; damage(u,2*0.25*4,u.acidBy&&!u.acidBy.dead?u.acidBy:{faction:'corps',dead:true,def:{}}); u.flash=fl;
       if(!u.dead&&Math.random()<0.5&&animOnScreen(u.x,u.y)) G.fx.push({k:'spark',x:u.x+rand(-5,5),y:u.y-rand(4,14),vx:rand(-10,10),vy:rand(-30,-10),t:0.4,max:0.4,col:'#a6ff4a'}); }
     if(!u.crew||u.dead||!u.vet) continue; const v=u.vet;
+    if(veilOn()) veilTick(u);
     if(u.sorryAt&&G.time>u.sorryAt&&!(u.feral>0)&&!u.downed){ u.sorryAt=null; G.barkNext=0; bark(u,'sorry'); }   /* back to his senses */
     if(u.feral>0){ u.feral-=dt; if(u.feral<=0) endFeral(u,false); continue; }
     if(u.downed) continue;
@@ -119,8 +122,8 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
       if(!G.saidDna){ G.saidDna=true; say('Devreese','Got it, a clean sample. Keep them coming: every strain I can bottle, I can put into one of us between jobs.','crew'); } }
     if(c.stab){ G.rogue.stab+=c.stab; SFX.play('pickup'); G.fx.push({k:'text',x:c.x,y:c.y-10,t:1.2,max:1.2,txt:`+${c.stab} stabilizer`,col:'#7fdfff'}); }
     if(c.loot){ G.salvage+=c.loot; SFX.play('pickup'); G.fx.push({k:'text',x:c.x,y:c.y-10,t:1.2,max:1.2,txt:'+'+c.loot,col:'#ffb347'}); G.stats.crates++; } }
-  exitTick(); loyalAI(dt); }
-function goFeral(u){ const T=ROGUE.taint; if(u.feral>0) return; u.feral=T.feralTime; G.rogue.feral++; u.order=null; u.path=null; u.target=null; u.stance=null;
+  exitTick(); loyalAI(dt); lullTick(); }
+function goFeral(u){ const T=ROGUE.taint; if(u.feral>0) return; if(veilOn()&&veiled(u)) G.rogue.veilBroken++; u.feral=T.feralTime; G.rogue.feral++; u.order=null; u.path=null; u.target=null; u.stance=null;
   u.feralForm=u.formation||null; u.feralSlot=u.slot||null; u.feralSeq=u.formSeq; u.formation=null; u.slot=null;   /* he keeps his place; he takes it again afterwards */
   if(G.sel.includes(u)){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
   applyRank(u); G.barkNext=0; bark(u,'feral'); SFX.play('huskroar',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.6,max:1.6,txt:'FERAL',col:'#ff5a4f'}); G.pings.push({x:u.x,y:u.y,t:0,col:'#ff5a4f'});
@@ -235,8 +238,50 @@ function rogueApi(){ return {
   stabs:()=>G.rogue.stab,
   say:(who,text)=>say(who,text,'script'),
   crewSay:(who,text)=>say(who,text,'crew script'),
-  ending(k){ G.rogue.ending=k; }
+  ending(k){ G.rogue.ending=k; },
+  /* formula(): Maas's formula is in the crew's hands; from the next job on Devreese brews ROGUE.stab.formula doses before every job */
+  formula(){ G.rogue.formula=true; },
+  /* the veil (missions with veil:true): veiled(u) = the Swarm does not see him right now; veilKin(u) = his blood is far enough gone (or Hive Scent) */
+  veiled:u=>veiled(u), veilKin:u=>veilKin(u),
+  /* lull(seconds): the brood sleeps: it attacks nobody and the hunt stops; lulled() = still asleep */
+  lull(sec){ G.rogue.lullUntil=G.time+sec; if(G.rogue.huntWas===undefined){ G.rogue.huntWas=G.swarm.cfg.hunt; G.swarm.cfg.hunt=false; } },
+  lulled:()=>G.time<(G.rogue.lullUntil||0)
 }; }
+
+/* ---- the veil (a mission with veil:true, Among Them): the Swarm does not see one of its own ----
+   A crew member with ROGUE.veil.taint or more (or the Hive Scent strain) walks among the brood unseen: no Swarm unit or hive picks him
+   as a target. Firing a shot (or going feral) tears the veil: for ROGUE.veil.broken seconds they see him like anyone else. */
+function veilOn(){ return isRogue()&&!!G.rogue&&!!G.mission.veil; }
+function veilKin(e){ return !!(e&&e.crew&&e.vet&&!(e.feral>0)&&(e.scent||e.vet.taint>=ROGUE.veil.taint)); }
+function veiled(e){ return veilOn()&&veilKin(e)&&!e.downed&&!(G.time<(e.seenUntil||0)); }
+function breakVeil(u){ if(!veilOn()||!u.crew) return; const was=veiled(u); u.seenUntil=G.time+ROGUE.veil.broken; if(!was) return;
+  G.rogue.veilBroken++; u.veilWas=false; G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.4,max:1.4,txt:'SEEN',col:'#ff5a4f'});
+  for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.target&&dist(e,u)<5*TILE) e.target=u;   /* the ones close by smell the powder at once */
+  if(!G.saidSeen){ G.saidSeen=true; say('Devreese',`${u.vet.name} fired! They smell the powder on ${pron(u.vet,'him')} now. Hold fire (Q) in the nest, or the veil is gone for ${ROGUE.veil.broken} seconds.`,'crew alert'); } }
+function veilTick(u){ const v=veiled(u); if(v===!!u.veilWas) return; u.veilWas=v; if(u.downed) return;
+  if(v){ G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.4,max:1.4,txt:'VEILED',col:'#c38bff'});
+    if(!G.saidVeil){ G.saidVeil=true; say('Devreese',`${u.vet.name} smells like them now. As long as ${pron(u.vet,'he')} does not shoot, the brood looks right through ${pron(u.vet,'him')}.`,'crew'); } }
+  else if(!(G.time<(u.seenUntil||0))&&!(u.feral>0)){ G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.4,max:1.4,txt:'SEEN',col:'#ff5a4f'});
+    if(!G.saidClean){ G.saidClean=true; say('Devreese',`${u.vet.name} is too clean now: under ${ROGUE.veil.taint} the brood sees ${pron(u.vet,'him')} again. Careful with the needle in there.`,'crew alert'); } } }
+/* the lull: while it lasts, every Swarm unit keeps a truce with the crew (they sleep), and the hunt is off */
+function lullTick(){ const R=G.rogue; if(!R.lullUntil) return; const on=G.time<R.lullUntil;
+  for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.faction!=='swarm') continue;
+    if(on){ if(!e.lulled){ e.lulled=true; e.truce='corps'; e.target=null; if(e.order&&e.order.type==='amove') e.order=null; }
+      if(Math.random()<0.004&&animOnScreen(e.x,e.y)) G.fx.push({k:'text',x:e.x+rand(-4,4),y:e.y-18,t:1.6,max:1.6,txt:'z',col:'#c38bff'}); }
+    else if(e.lulled){ e.lulled=false; e.truce=null; } }
+  if(!on){ R.lullUntil=0; if(R.huntWas!==undefined){ G.swarm.cfg.hunt=R.huntWas; delete R.huntWas; } } }
+/* the veil, drawn: a cold purple shimmer and motes rising off him */
+function drawVeil(u,now){ if(!veiled(u)) return; const p=0.5+0.5*Math.sin(now/260+u.id);
+  ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(u.x,u.y-10,2,u.x,u.y-10,22); g.addColorStop(0,`rgba(195,139,255,${0.22+0.14*p})`); g.addColorStop(1,'rgba(195,139,255,0)'); ctx.fillStyle=g; ctx.fillRect(u.x-24,u.y-34,48,48); ctx.globalCompositeOperation='source-over';
+  ctx.strokeStyle=`rgba(195,139,255,${0.35+0.25*p})`; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.ellipse(u.x,u.y+3,u.r+3,(u.r+3)*0.45,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);   /* a broken purple ring at his feet */
+  for(let i=0;i<4;i++){ const q=((now/1400+i/4+u.id*0.13)%1); ctx.fillStyle=`rgba(210,170,255,${0.9*(1-q)})`; ctx.fillRect(Math.round(u.x+Math.sin(i*2.1+now/500)*7),Math.round(u.y-4-q*28),2,2); } }
+/* a choir pod: it swells and sends out rings while it sings; quiet, it hangs grey and still */
+function drawChoirPod(b,art,now){ const w=art.width*2, h=art.height*2, q=b.quiet, k=q?0:0.5+0.5*Math.sin(now/300+b.id), s=1+0.06*k;
+  if(!q){ ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(b.x,b.y-10,2,b.x,b.y-10,34); g.addColorStop(0,`rgba(195,139,255,${0.32+0.2*k})`); g.addColorStop(1,'rgba(195,139,255,0)'); ctx.fillStyle=g; ctx.fillRect(b.x-36,b.y-46,72,72); ctx.globalCompositeOperation='source-over';
+    for(let i=0;i<2;i++){ const r=((now/1600+i/2)%1); ctx.strokeStyle=`rgba(210,170,255,${0.8*(1-r)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(b.x,b.y-2,8+r*40,(8+r*40)*0.45,0,0,Math.PI*2); ctx.stroke(); } }
+  if(q) ctx.globalAlpha=0.55; ctx.drawImage(art,Math.round(b.x-w*s*0.65),Math.round(b.y-h*s*1.3+8),Math.round(w*s*1.3),Math.round(h*s*1.3)); ctx.globalAlpha=1;   /* a bit bigger than a soldier */
+  if(b.quietP>0&&!q){ ctx.fillStyle='#000'; ctx.fillRect(b.x-17,b.y-h*1.3-8,34,5); ctx.fillStyle='#c38bff'; ctx.fillRect(b.x-16,b.y-h*1.3-7,Math.round(32*Math.min(1,b.quietP)),3); } }   /* how quiet it is: over its head, where the soldier does not cover it */
+
 
 /* ---- drawing ---- */
 /* The Osprey crew wears black and dark brown with a red band round the arm; the loyal Corps keeps the normal Corps kit.
@@ -269,6 +314,7 @@ const blinkOn=()=>Math.floor(performance.now()/300)%2===0;
 function drawTaintBar(e,x,y,w,now){ const T=ROGUE.taint, t=e.vet.taint||0; if(e.feral>0) return;
   const warn=taintWarn(e), col=warn?(blinkOn()?'#ff5a4f':'#b02a20'):t>=T.seizure?'#ff9a3c':'#9dff6a';
   ctx.fillStyle='#000'; ctx.fillRect(x-1,y+3,w+2,4); ctx.fillStyle='#14200f'; ctx.fillRect(x,y+4,w,2); ctx.fillStyle=col; ctx.fillRect(x,y+4,Math.round(w*Math.min(1,t/T.feral)),2);
+  if(veilOn()){ ctx.fillStyle='#c38bff'; ctx.fillRect(x+Math.round(w*ROGUE.veil.taint/T.feral),y+3,1,4); }   /* the veil line */
   if(warn){ const p=0.5+0.5*Math.sin(now/110), cx=Math.round(e.x), cy=y-10; ctx.font='16px Silkscreen, monospace'; ctx.textAlign='center';
     ctx.fillStyle='#000'; ctx.fillText('!',cx+1,cy+1); ctx.fillStyle=`rgba(255,${Math.round(90+80*p)},70,1)`; ctx.fillText('!',cx,cy); } }
 /* the ring at his feet when he is about to snap (drawn under the sprite) */
@@ -295,7 +341,7 @@ function rogueHud(){ const on=isRogue()&&!!G.rogue, w=$('#r-dna-wrap'), s=$('#r-
 function rogueStats(e){ if(!isRogue()||!e.crew||!e.vet) return ''; const v=e.vet, T=ROGUE.taint, t=Math.round(v.taint);
   const st=(v.strains||[]).filter(k=>STRAINS[k]).map(k=>STRAINS[k].name).join(', ');
   const fx=[t>=T.scent||e.scent?'the hunt passes him by':'', t>=T.mend?'the creep heals him':'', t>=T.seizure?'seizures':''].filter(Boolean).join(', ');
-  return `<span>Taint <b style="color:${t>=T.seizure?'#ff5a4f':t>=T.mend?'#9dff6a':'#cfe8b0'}">${t}%</b></span>${t>0?`<span>Fever <b>+${Math.round(t*T.fever*100)}% dmg</b></span>`:''}${fx?`<span><b style="color:#9dff6a">${fx}</b></span>`:''}${e.feral>0?'<span><b style="color:#ff5a4f">FERAL</b></span>':taintWarn(e)?'<span><b style="color:#ff5a4f">About to go feral</b></span>':''}${st?`<span>Strains <b>${st}</b></span>`:''}`; }
+  return `<span>Taint <b style="color:${t>=T.seizure?'#ff5a4f':t>=T.mend?'#9dff6a':'#cfe8b0'}">${t}%</b></span>${t>0?`<span>Fever <b>+${Math.round(t*T.fever*100)}% dmg</b></span>`:''}${fx?`<span><b style="color:#9dff6a">${fx}</b></span>`:''}${veilOn()&&veilKin(e)?(veiled(e)?'<span><b style="color:#c38bff">Veiled: the Swarm looks right through him</b></span>':`<span><b style="color:#ff5a4f">Seen ${Math.max(0,Math.ceil((e.seenUntil||0)-G.time))} s</b></span>`):''}${e.feral>0?'<span><b style="color:#ff5a4f">FERAL</b></span>':taintWarn(e)?'<span><b style="color:#ff5a4f">About to go feral</b></span>':''}${st?`<span>Strains <b>${st}</b></span>`:''}`; }
 function rogueButtons(units,out){ if(!isRogue()||!units.some(u=>u.crew&&u.def.heal)) return;
   out.push({ row:'Orders', key:'J', glyph:'✚', cost:`${G.rogue.stab}`, off:!(G.rogue.stab>0), tip:`Stabilizer|The Medic injects the most tainted soldier within ${ROGUE.stab.reach} tiles: ${ROGUE.stab.amount} taint less, and a feral one comes back to his senses at once. ${G.rogue.stab} dose${G.rogue.stab===1?'':'s'} left.`, act:rogueStabilize }); }
 
@@ -320,11 +366,12 @@ $('#hero-card').addEventListener('click',e=>{ if(ui.campSide!=='rogue') return;
     SFX.play('squelch'); buildCrew(); toast(`${v.name} takes the ${STRAINS[k].name} strain.`,true); return; }
   const b=e.target.closest('[data-stabcrew]'); if(b&&!b.disabled){ const err=stabilizeCrew(crewSel); if(err){ toast(err); return; } SFX.play('heal'); buildCrew(); toast('One dose of stabilizer.',true); } });
 /* the briefing of a Rogue mission: who goes, how tainted, what you have in the lab */
-function rogueBriefNote(){ const R=rogueStore(); return `<p class="rdim">The crew: ${R.crew.map(v=>`${crewTitle(v)}${v.taint>=ROGUE.taint.seizure?' <b style="color:#ff5a4f">(taint '+Math.round(v.taint)+'%)</b>':v.taint>0?' ('+Math.round(v.taint)+'%)':''}`).join(', ')}. Stabilizer: ${R.stab+ROGUE.stab.start} dose${R.stab+ROGUE.stab.start===1?'':'s'}.</p>`; }
+function rogueBriefNote(){ const R=rogueStore(); return `<p class="rdim">The crew: ${R.crew.map(v=>`${crewTitle(v)}${v.taint>=ROGUE.taint.seizure?' <b style="color:#ff5a4f">(taint '+Math.round(v.taint)+'%)</b>':v.taint>0?' ('+Math.round(v.taint)+'%)':''}`).join(', ')}. Stabilizer: ${R.stab+ROGUE.stab.start+(R.flags.formula?ROGUE.stab.formula:0)} dose${R.stab+ROGUE.stab.start+(R.flags.formula?ROGUE.stab.formula:0)===1?'':'s'}${R.flags.formula?' (Devreese brews '+ROGUE.stab.formula+' from Maas\'s formula)':''}.</p>`; }
 /* the end screen of a won Rogue mission */
 function rogueEndHtml(){ const r=G.rogueResult; if(!r) return ''; const out=[];
   const got=STRAIN_ORDER.filter(k=>r.dna[k]).map(k=>`${r.dna[k]}× ${STRAINS[k].from}`).join(', ');
   out.push(`<div class="vsec"><span class="lbl">Samples</span><div>${got||'No samples this time.'}${G.rogue.harvested?` · ${G.rogue.harvested} hive${G.rogue.harvested>1?'s':''} harvested`:''}${G.rogue.burnt?` · ${G.rogue.burnt} burnt`:''}. They are in the splice lab on the campaign screen.</div></div>`);
+  if(r.formula) out.push(`<div class="vsec"><span class="lbl">Maas's formula</span><div>Devreese can brew the stabilizer herself now: +${ROGUE.stab.formula} dose before every job.</div></div>`);
   if(r.back.length) out.push(`<div class="vsec fallen"><span class="lbl">Back from the dead</span><div>${r.back.join(', ')}: the strain stitched ${r.back.length>1?'them':pron(rogueStore().crew.find(v=>v.name===r.back[0]),'him')} back together (+${ROGUE.taint.fallen} taint).</div></div>`);
   if(r.promoted.length) out.push(`<div class="vsec"><span class="lbl">Promotions</span><div>${r.promoted.map(p=>`${p.name}: ${RANKS[p.rank].name}`).join(', ')}</div></div>`);
   out.push(`<div class="vsec"><span class="lbl">Taint</span><div>${r.taint.map(x=>`${x.name} ${x.to}%`).join(' · ')}</div></div>`);
@@ -337,13 +384,15 @@ const ART_CACHE={};
 function rogueArt(kind,col){ const k=kind+col; if(ART_CACHE[k]) return ART_CACHE[k]; const c=document.createElement('canvas'); c.width=16; c.height=16; const x=c.getContext('2d');
   if(kind==='vial'){ x.fillStyle='#0a0b10'; x.fillRect(5,1,7,14); x.fillStyle='#cfd8e0'; x.fillRect(6,1,5,2); x.fillStyle=col; x.fillRect(6,5,5,9); x.fillStyle='#e8ffd0'; x.fillRect(7,6,1,4); }
   else if(kind==='case'){ x.fillStyle='#0a0b10'; x.fillRect(1,4,14,10); x.fillStyle='#3a6f86'; x.fillRect(2,5,12,8); x.fillStyle=col; x.fillRect(7,6,2,6); x.fillRect(5,8,6,2); }
+  else if(kind==='eye'){ oval(x,8,8,7,4,'#0a0b10'); oval(x,8,8,6,3,'#2a1030'); disc(x,8,8,2,col); x.fillStyle='#000'; x.fillRect(8,6,1,4); x.fillStyle='#fff'; x.fillRect(6,7,1,1); }
   else if(kind==='shaft'){ x.fillStyle='#0a0b10'; x.fillRect(1,3,14,12); x.fillStyle='#2a2018'; x.fillRect(2,4,12,10); x.fillStyle='#000'; x.fillRect(4,7,8,7); x.fillStyle=col; x.fillRect(4,6,8,1); }
   return ART_CACHE[k]=c.toDataURL(); }
 const ROGUE_INTEL=[
   { id:'dna', name:'DNA samples', role:'Harvest', art:()=>rogueArt('vial','#8dff4a'), text:'Swarm the crew kills can leave a sample: a small vial on the ground. Walk over it. Fire leaves nothing: what burns, or dies in burning ground, is useless. A hive killed without fire leaves several Hive samples. Samples rot away after a while.', note:'The Pyro is your best weapon and your worst harvester. Burn what attacks you, shoot what you want to keep.', stats:()=>[['Crawler',Math.round(ROGUE.dna.crawler*100)+'%'],['Drone',Math.round(ROGUE.dna.drone*100)+'%'],['Spitter',Math.round(ROGUE.dna.spitter*100)+'%'],['Brute',Math.round(ROGUE.dna.brute*100)+'%'],['Husk',Math.round(ROGUE.dna.husk*100)+'%'],['Per hive',ROGUE.dna.hive],['Rots after',ROGUE.dna.life+' s']] },
   { id:'taint', name:'Taint', role:'The price', art:()=>SPR.crew_trooper.url, text:'Every splice, and every second on the creep, puts the strain deeper into a soldier. Taint makes him stronger and stranger.', note:'A feral fit is a temporary punishment: he comes back to his squad afterwards. A crew member who falls in a job you win comes back too, with extra taint.', stats:()=>{ const T=ROGUE.taint; return [['Fever',`+${(T.fever*100).toFixed(1)}% dmg per point`],['Hunt ignores him',T.scent+'%'],['Creep heals him',T.mend+'%'],['Seizures',T.seizure+'%'],['Feral',`${T.feral}% · ${T.feralTime} s`],['On the creep',`+${T.creep}/s`],['After a won job',`−${T.rest}`],['Back from the dead',`+${T.fallen}`]]; } },
-  { id:'stab', name:'Stabilizer', role:'Medicine', art:()=>rogueArt('case','#7fdfff'), text:'Dr. Maas\'s own stabilizer. Select a Medic of the crew and press J: the most tainted soldier near him gets a dose, and a feral one comes back to his senses at once. In the splice lab a dose works too.', note:'Doses you do not use carry over to the next job. Supply caches sometimes hold more.', stats:()=>[['Taint per dose','−'+ROGUE.stab.amount],['Reach',ROGUE.stab.reach+' tiles'],['Free each job',ROGUE.stab.start],['Key','J']] },
+  { id:'stab', name:'Stabilizer', role:'Medicine', art:()=>rogueArt('case','#7fdfff'), text:'Dr. Maas\'s own stabilizer. Select a Medic of the crew and press J: the most tainted soldier near him gets a dose, and a feral one comes back to his senses at once. In the splice lab a dose works too.', note:'Doses you do not use carry over to the next job. Supply caches sometimes hold more. Once the crew has Dr. Maas\'s formula (Needle and Thread), Devreese brews more herself before every job.', stats:()=>[['Taint per dose','−'+ROGUE.stab.amount],['Reach',ROGUE.stab.reach+' tiles'],['Free each job',ROGUE.stab.start+(rogueStore().flags.formula?ROGUE.stab.formula:0)],['Key','J']] },
   { id:'loyal', name:'The loyal Corps', role:'Hostile', art:()=>iconUrl('trooper'), text:'Your old comrades, in the normal Corps kit. They shoot the crew on sight, fight the Swarm too, come to help each other, and some of them hunt you across the map. Their Relay Towers call for more of them.', note:'Hold fire (Q) lets the crew slip past without a shot. A loyal soldier killed leaves a body: the Swarm will make a Husk of it.', stats:()=>[['XP per kill',ROGUE.loyal.xp],['Help radius',ROGUE.loyal.help+' tiles'],['HP Easy/Hard',`${Math.round(ROGUE.loyal.hp.easy*100)}% / ${Math.round(ROGUE.loyal.hp.hard*100)}%`]] },
+  { id:'veil', name:'The veil', role:'Among Them', art:()=>rogueArt('eye','#c38bff'), text:`In a nest where the crew must walk among the brood, the strain becomes a disguise. A crew member with ${ROGUE.veil.taint}% taint or more, or one who carries Hive Scent, is veiled: no Swarm creature and no hive picks him as a target. A purple shimmer shows who is veiled; a line on the taint bar marks ${ROGUE.veil.taint}%.`, note:`Firing a shot, or going feral, tears the veil: for ${ROGUE.veil.broken} seconds the brood sees him like anyone else. Use Hold fire (Q). Careful with the stabilizer: a dose can push him back under the line. Not far enough gone? Stand on the creep until he is.`, stats:()=>[['Veiled from',ROGUE.veil.taint+'% taint'],['Torn for',ROGUE.veil.broken+' s'],['Hive Scent','always veiled']] },
   { id:'exit', name:'The way out', role:'Mine shaft', art:()=>rogueArt('shaft','#e2556b'), text:'Most jobs end down an old mine shaft. Once the job is done, right-click the shaft: whoever reaches it is safe. The job is won when nobody of the crew is left standing on the field.', note:'Before the job is done the shaft stays shut. The Swarm does not use it: their own shafts take over from the hives you destroy.', stats:()=>[] }
 ];
 function buildRogueIntel(){ const R=rogueStore(), items=[...R.crew.map(v=>({crew:v})),...STRAIN_ORDER.map(k=>({strain:k})),...ROGUE_INTEL.map(x=>({info:x}))];

@@ -195,7 +195,7 @@ function hiveBrood(h,target,budget){ let left=budget, guard=0; const out=[], onl
 function hiveWatch(h,dt){
   h.watchT=(h.watchT||0)-dt; if(h.watchT>0) return; h.watchT=0.5;
   const R=hiveOpt(h,'aggro',HIVE_DEFENCE.aggro)*(G.diff.aggro||1)*TILE; if(R<=0||G.time<(h.aggroAt||0)) return;
-  const t=nearestOf(h,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.downed&&!e.scent);   /* Hive Scent (Rogue): the hive does not notice him */ if(!t||dist(h,t)>R) return;
+  const t=nearestOf(h,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort&&!e.downed&&!e.scent&&!veiled(e));   /* Hive Scent (Rogue): the hive does not notice him; nor a veiled one (Among Them) */ if(!t||dist(h,t)>R) return;
   const D=G.diff, rage=hiveOpt(h,'rage',G.swarm.cfg.hiveRage||1);
   h.aggroAt=G.time+hiveOpt(h,'aggroCooldown',HIVE_DEFENCE.aggroCooldown)*D.interval;
   for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&e.homeHive===h.id){ e.target=t; } }
