@@ -636,3 +636,6 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .tsub:first-child{margin-top:0;}
 @media (max-width:640px){ .tgrid.three,.tgrid.four{grid-template-columns:repeat(2,minmax(0,1fr));} }
 .tab-swarm,.tab-relics{align-content:center !important;}
+
+/* dev unlock (² on the campaign screen): the progress line turns amber */
+#s-campaign.dev-open #camp-progress{color:#ffb347;}

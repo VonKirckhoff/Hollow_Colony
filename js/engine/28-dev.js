@@ -162,4 +162,11 @@ function devChange(e){ const t=e.target;
   if(t.dataset.liveSet){ const v=+t.value, S=G.swarm; if(!isFinite(v)) return;
     ({ salvage:()=>{ G.salvage=v; }, biomass:()=>{ S.biomass=v; }, flares:()=>{ G.flares=v; }, nextWave:()=>{ S.nextWave=G.time+v; } })[t.dataset.liveSet](); G.selDirty=true; devRender(); return; }
   if(t.dataset.k){ const v=t.type==='checkbox'?t.checked:(t.value===''?undefined:+t.value); if(v!==undefined&&typeof v==='number'&&!isFinite(v)) return; devSet(t.dataset.k,v); devRender(); } }
-window.addEventListener('keydown',e=>{ if(e.code==='F9'||(e.code==='Backquote'&&!(e.target&&e.target.closest&&e.target.closest('input,textarea,select')))){ if(G&&(ui.mode==='game'||ui.mode==='pause')){ e.preventDefault(); devToggle(); } } });
+/* Dev unlock: the same key (F9 or ²/`) on the campaign screen opens every mission of every campaign (Corps, Swarm, Rogue Strain) so you can play any of them.
+   It only changes what is open, never your progress: press it again and everything is back the way it was. Not saved: a reload turns it off. */
+let devUnlock=false;
+function devUnlockToggle(on){ devUnlock=on===undefined?!devUnlock:!!on; buildCampaign();
+  toast(devUnlock?'DEV: every mission is open. Press ² (or F9) again to lock them back.':'DEV off: missions locked as before.',true); }
+window.addEventListener('keydown',e=>{ if(e.code==='F9'||(e.code==='Backquote'&&!(e.target&&e.target.closest&&e.target.closest('input,textarea,select')))){
+  if(G&&(ui.mode==='game'||ui.mode==='pause')){ e.preventDefault(); devToggle(); }
+  else if(!$('#s-campaign').hidden){ e.preventDefault(); devUnlockToggle(); } } });

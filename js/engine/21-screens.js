@@ -26,7 +26,7 @@ function campList(){ return ui.campSide==='swarm'?SWARM_MISSIONS:ui.campSide==='
 /* the campaign a mission belongs to: 'corps', 'swarm' or 'rogue' (Rogue Strain, 31-rogue.js) */
 const sideOf=m=>m.side==='swarm'?'swarm':m.rogue?'rogue':'corps';
 const listOf=m=>sideOf(m)==='swarm'?SWARM_MISSIONS:sideOf(m)==='rogue'?ROGUE_MISSIONS:MISSIONS;
-function isUnlocked(i){ const L=campList(); return i===0 || isDone(L[i-1].id); }
+function isUnlocked(i){ const L=campList(); return i===0 || devUnlock || isDone(L[i-1].id); }   /* devUnlock: ² on the campaign screen (28-dev.js) */
 function buildCampaign(){
   /* the Rogue side is always shown; its jobs open once the whole Corps campaign is won on Normal or Hard (until then: locked, no splice lab) */
   const sw=ui.campSide==='swarm', rg=ui.campSide==='rogue', rOpen=rogueUnlocked(), rLock=rg&&!rOpen, L=campList(); $('#s-campaign').classList.toggle('swarm',sw); $('#s-campaign').classList.toggle('rogue',rg); $('#s-campaign').classList.toggle('rogue-locked',rLock);
@@ -38,6 +38,7 @@ function buildCampaign(){
   if(rLock) buildRogueLock(); else if(rg) buildCrew(); else buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
   const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=rLock?`Playable after the Corps campaign · ${L.length} jobs`:`${doneN} of ${L.length} missions complete`;
+  if(devUnlock) $('#camp-progress').textContent+=' · DEV: all missions open'; $('#s-campaign').classList.toggle('dev-open',devUnlock);
   const trs=rg?[]:trainingsOf(sw?'swarm':'corps');
   $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=!rLock&&isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':rLock?`aria-disabled="true" data-rlock="1" title="Playable after the Corps campaign"`:`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
