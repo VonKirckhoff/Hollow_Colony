@@ -16,10 +16,10 @@ function updateBuilding(b,dt){
   if(d.capture){
     const R1=2.5*TILE, R2=3.5*TILE;
     const ours=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&dist(e,b)<R1);
-    const theirs=G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&dist(e,b)<R2);
+    const theirs=G.ents.some(e=>!e.dead&&e.kind==='unit'&&(e.faction==='swarm'||(e.faction==='osprey'&&!e.ospBroke))&&dist(e,b)<R2);   /* the Osprey crew can take a beacon from you too (Kill Order) */
     b.state = ours&&theirs ? 'contested' : ours ? 'ours' : theirs ? 'theirs' : 'idle';
     if(b.state==='ours'){ b.cap=Math.min(1,(b.cap||0)+dt/d.captureTime); if(b.cap>=1 && !b.owned){ b.owned=true; SFX.play('complete'); say('Uplink',`${b.label||'Beacon'} secured.`,'sys'); G.pings.push({x:b.x,y:b.y,t:0,col:'#5fe3b0'}); } }
-    if(b.state==='theirs'){ b.cap=Math.max(0,(b.cap||0)-dt/d.loseTime); if(b.cap<=0 && b.owned){ b.owned=false; SFX.play('alarm'); say('Alert',`${b.label||'Beacon'} lost to the Swarm!`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); } }
+    if(b.state==='theirs'){ b.cap=Math.max(0,(b.cap||0)-dt/d.loseTime); if(b.cap<=0 && b.owned){ b.owned=false; SFX.play('alarm'); say('Alert',`${b.label||'Beacon'} lost to ${G.ents.some(e=>!e.dead&&e.osprey&&!e.ospBroke&&dist(e,b)<R2)?'the Osprey crew':'the Swarm'}!`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); } }
   }
   if(d.reinforce) updateShip(b,dt);
   if(d.reinforce && b.flight){ b.flight.t-=dt; if(b.flight.ang===undefined) b.flight.ang=rand(-2.7,-0.45);

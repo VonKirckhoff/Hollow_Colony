@@ -15,7 +15,7 @@ function fireBlocked(u,t){ const m=G.map, W=m.w, S=membraneTiles(), dx=t.x-u.x, 
   for(let i=1;i<n;i++){ const x=u.x+dx*i/n, y=u.y+dy*i/n, tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), k=ty*W+tx; if(k===k0||k===k1) continue;
     if(own&&tx>=own.tx&&tx<own.tx+own.size&&ty>=own.ty&&ty<own.ty+own.size) continue;   /* the structure you aim at */
     if(FIRE_BLOCK[m.tiles[k]]||(S.has(k)&&t.type!=='membrane')) return true; } return false; }
-function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t) && !(t.crew&&u.faction==='swarm'&&veiled(t)); }   /* Rogue: the veil (Among Them) */
+function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(u.spare&&t===u.spare) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t) && !(t.crew&&u.faction==='swarm'&&veiled(t)); }   /* Rogue: the veil (Among Them) */
 /* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 /* the Swarm wants the escort (Dr. Maas) above all: in a fight it picks her over a soldier up to pull tiles closer, and hunters within hunt tiles of her go for her */
@@ -52,7 +52,7 @@ function fire(u,t){
   } else if(d.attack==='flame'){ if(Math.random()<0.4) muzzleLight(mx,my);
     for(let i=0;i<3;i++){ const a=ang+rand(-0.25,0.25), sp=rand(140,200)*(1+(u.rangeBonus||0)/(d.range||1)*0.8); G.fx.push({k:'flame',x:mx,y:my,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0.38,max:0.38}); }
     const R=(d.splash||1)*TILE;
-    for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)&&e!==t) continue; if(dist(e,t)<=R+e.r*0.5){ damage(e,d.damage*dm*((d.bonus&&d.bonus[e.type])||1),u); } }
+    for(const e of G.ents){ if(e.dead||e.kind==='crate'||(!hostile(u.faction,e.faction)||(u.truce&&e.faction===u.truce))&&e!==t) continue; if(dist(e,t)<=R+e.r*0.5){ damage(e,d.damage*dm*((d.bonus&&d.bonus[e.type])||1),u); } }
     if(u.faction==='corps') for(const b of G.ents){ if(!b.dead&&b.kind==='body'&&dist(b,t)<=R+TILE*0.5) burnBody(b); }
     if(u.faction==='corps') groundFire(t.x+rand(-6,6),t.y+rand(-4,4),u);   /* the ground keeps burning where the flame lands (FIRE) */
   } else if(d.attack==='plasma'){
@@ -86,6 +86,7 @@ function damage(t,amt,src){
   if(t.kind==='unit'&&t.faction==='swarm'&&t.def.bio!==false&&!(t.splatT>G.time)){ t.splatT=G.time+0.12; hitSplat(t,src); }   /* green ichor */
   if(t.faction===G.side&&!t.def.ground) hurtNote(t,amt,src);   /* heavy damage: the screen edge glows red */
   const was=t.hp; t.hp-=amt; if((t.def.noDestroy||t.noDestroy)&&t.hp<1) t.hp=1; t.flash=0.07;
+  if(t.osprey&&!t.ospBroke&&t.hp<t.maxHp*OSPREY.breakAt){ ospreyBreak(t,src); return; }   /* the Osprey crew never dies in a Corps mission: he breaks off and runs (32-osprey.js) */
   /* a drill soldier (training): inside his zone he gets up again at once; outside it he falls like anyone (or, with t.drill.noBody(), dies without leaving a body) */
   if(t.drill&&t.hp<1){ const z=t.drill; if(!z.r||Math.hypot(t.x-z.x,t.y-z.y)<=z.r){ t.hp=t.maxHp*z.rise; z.held=(z.held||0)+1; G.fx.push({k:'text',x:t.x,y:t.y-24,t:1,max:1,txt:'HOLDS',col:'#ffb347'}); }
     else if(z.noBody&&z.noBody()){ t.noBody=true; kill(t,src); return; } }
@@ -94,7 +95,7 @@ function damage(t,amt,src){
   if(t.kind==='building') t.hitBy=src;
   if(t.kind==='unit' && src && !src.dead){
     if(t.def.passive){ const a=Math.atan2(t.y-src.y,t.x-src.x); t.order={type:'move',x:t.x+Math.cos(a)*120,y:t.y+Math.sin(a)*120}; setPath(t,t.order.x,t.order.y); }
-    else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction)) t.target=src;
+    else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction) && !(t.truce&&src.faction===t.truce) && !(src.truce&&src.truce===t.faction)) t.target=src;
   }
   if(t.type==='hive' && src) hiveAlarm(t,src);
   if(t.hp<=0 && canGoDown(t,src)){ goDown(t,src); if(src&&src.type==='husk'&&!src.dead) huskScream(src); return; }   /* a Husk screams when it brings one down, too */   /* a soldier first goes down; a Medic can still patch him up */

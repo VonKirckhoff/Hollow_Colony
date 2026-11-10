@@ -24,8 +24,12 @@ function saveRogue(){ store.set(ROGUE_KEY,rogueStore()); }
 function resetRogue(){ ui.rogue=null; try{ localStorage.removeItem(ROGUE_KEY); }catch(e){} rogueStore(); saveRogue(); }
 /* the Rogue side opens once the whole Lunar Corps campaign is won on Normal or Hard (Easy does not count): only then is the Osprey story told */
 const ROGUE_UNLOCK_DIFF='normal';
+/* Nov 2026 the Corps campaign grew from 8 to 11 missions (Night Shift, Kill Order, Mother's Heart). Whoever had already won the
+   8 old ones on Normal or Hard keeps the Rogue campaign open; a new player only reaches the old missions through the new ones. */
+const ROGUE_LEGACY=['dust-landing','hold-kappa','burn-the-brood','hollow-colony','blackout','dead-signal','brood-mother','high-ground'];
+const wonFor=id=>{ const r=resultOf(id); return !!r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; };
 function rogueUnlocked(){ if(typeof devUnlock!=='undefined'&&devUnlock) return true;   /* dev unlock (28-dev.js) */
-  return MISSIONS.length>0&&MISSIONS.every(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; }); }
+  return MISSIONS.length>0&&(MISSIONS.every(m=>wonFor(m.id))||ROGUE_LEGACY.every(wonFor)); }
 /* how far the Corps is on the way there, for the hint on the campaign screen */
 function rogueUnlockCount(){ return MISSIONS.filter(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; }).length; }
 /* the Rogue side of the campaign screen before it opens: what it takes, and how far the Corps campaign is (in place of the splice lab) */

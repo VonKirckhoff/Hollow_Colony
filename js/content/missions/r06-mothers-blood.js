@@ -2,7 +2,8 @@
 /* Rogue 6: Mother's Blood
    The Maw Depths, days before the Corps comes down for the Brood Mother. The crew gets there first.
    The lair membrane opens when its three egg chambers die, or for one of the crew whose blood is tainted enough (60+):
-   it knows him and lets him through. Kill the Brood Mother, then decide what happens to her heart:
+   it knows him and lets him through. Bleed the Brood Mother until she tears free and flees into the deep (she lives: the Corps
+   goes after her in Brood Mother), leaving one of her hearts behind. Then decide what happens to it:
    one of the crew takes it into his blood (Ascension), or Mortier's flamer turns it to ash (Ashes). Dust is coming down. */
 ROGUE_MISSIONS.push(
   {
@@ -11,7 +12,7 @@ ROGUE_MISSIONS.push(
     briefing:[
       'Devreese has found it in Maas\'s notes: every strain we carry comes from one source. Under Tycho Maw, in a lair sealed with living membrane, the Brood Mother lays the eggs of the whole Swarm.',
       'The membrane dies when its three egg chambers die. But it is alive, and it knows its own: one of us with enough taint in the blood (60 or more) can stand against it and it will open for him. The Corps will come down here within days. We go now.',
-      'Kill her. Then her heart is ours, and there are two things we can do with it. Devreese can put it into one of us, and through him into all of us, and we stop being Corps for good. Or Mortier burns it, and every sample we ever took with it, and whatever we are now ends with us. The crew will follow your call.'
+      'Bleed her. Something that size has more than one heart, and when she is hurt badly enough she tears one loose and runs. That heart is ours, and there are two things we can do with it. Devreese can put it into one of us, and through him into all of us, and we stop being Corps for good. Or Mortier burns it, and every sample we ever took with it, and whatever we are now ends with us. The crew will follow your call.'
     ],
     stab:2,
     start:{ salvage:0, camera:'P', crewAt:'P',
@@ -22,10 +23,10 @@ ROGUE_MISSIONS.push(
       hunt:{ every:40, afterEvery:20, budget:45, afterBudget:60, grow:0.15, growMax:8 } },
     objectives:[
       { id:'lair',   text:'Open the lair: burn the three egg chambers (0/3), or let a crew member with 60+ taint stand at the membrane' },
-      { id:'mother', text:'Kill the Brood Mother' }
+      { id:'mother', text:'Bleed the Brood Mother until she tears free' }
     ],
     triggers:[
-      { when:g=>g.time>0.3, do:g=>{ g.wall('8',2.3,'lair'); g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.boss(g.vars.mother,'Brood Mother');
+      { when:g=>g.time>0.3, do:g=>{ g.wall('8',2.3,'lair'); g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.vars.mother.noDestroy=true; g.boss(g.vars.mother,'Brood Mother');   /* she does not die here: at the end of her health she tears free (below) */
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); g.marker('mem','8','Lair membrane'); g.vars.mem=0; g.vars.mt=g.time; } },
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','The Maw Depths. Last job, people. Whatever happens down here, it is ours to decide.') },
       { when:g=>g.time>10, do:g=>g.crewSay('Devreese','The membrane at the lair: if one of us is far enough gone, sixty or more, stand him against it. It will open for its own.') },
@@ -41,13 +42,17 @@ ROGUE_MISSIONS.push(
             g.crewSay(n>=3?'Capt. Kerckhoffs':'Devreese',n>=3?'The membrane is rotting away. She is in there. Everyone, on me.':'It opened for him. God help us, it opened for him. She is in there.'); } } },
       { when:g=>g.vars.mother&&g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.crewSay('Braet','Look at the size of her.'); } },
       { when:g=>g.vars.mother&&g.vars.mother.bossState&&g.vars.mother.bossState.lairs>=1, do:g=>g.crewSay('Devreese','She is crawling back to heal! Go in after her!') },
-      /* she dies: her heart, and the choice */
+      /* bled out: she tears one heart loose and burrows into the deep. She lives; the Corps goes after her in Brood Mother (Corps 10) */
+      { when:g=>g.vars.mother&&!g.vars.mother.dead&&g.vars.mother.hp<=1.5, do:g=>{ const m=g.vars.mother; m.dead=true; m.hp=0; G.boss=null;
+          dustPuff(m.x,m.y,40); SFX.play('huskroar',m.x,m.y); G.shake=Math.max(G.shake||0,0.6); addDecal(m.x,m.y,30,'rgba(60,20,70,.6)');
+          G.fx.push({k:'text',x:m.x,y:m.y-70,t:2,max:2,txt:'SHE TEARS FREE',col:'#c38bff'}); g.crewSay('Braet','She is going into the ground! She tore something loose... it is still beating.'); } },
+      /* her heart, and the choice */
       { when:g=>g.vars.mother&&g.vars.mother.dead, do:g=>{ const m=g.vars.mother; g.complete('mother'); G.boss=null;
           const h={ id:NEXT_ID++, kind:'crate', rogue:true, heart:true, x:m.x, y:m.y, r:12, faction:'none', t:1e9, seed:1 }; G.ents.push(h); g.vars.heart=h; g.vars.asc=0; g.vars.ash=0; g.vars.ht=g.time;
           g.marker('heart',{x:Math.floor(m.x/TILE),y:Math.floor(m.y/TILE)},'Her heart');
           g.addObjective('ascend','Ascension: one of the crew takes the heart into his blood (stand on it, 8 s)'); g.addObjective('ashes','Ashes: Mortier burns the heart (Pyro next to it, 6 s)');
-          g.crewSay('Devreese','Her heart is still beating. Captain... your call. Stand someone on it and I put it in our blood. Or let Mortier burn it, and everything with it.');
-          g.say('Cmdr. Varga','All Dust elements, seismic picked up a massive die-off under the Maw. Something got there first. Kestrel, take Dust down now.'); g.setTimer(150,'Dust in the Maw'); } },
+          g.crewSay('Devreese','She left one of her hearts behind, and it is still beating. Captain... your call. Stand someone on it and I put it in our blood. Or let Mortier burn it, and everything with it.');
+          g.say('Cmdr. Varga','All Dust elements, seismic picked up a scream under the Maw. Something hurt the Brood Mother, badly. Kestrel, take Dust down now.'); g.setTimer(150,'Dust in the Maw'); } },
       { repeat:true, when:g=>g.vars.heart&&!g.vars.chosen, do:g=>{ const h=g.vars.heart, dt=g.time-g.vars.ht; g.vars.ht=g.time;
           const near=(r,f)=>g.crew().some(u=>!u.downed&&f(u)&&Math.hypot(u.x-h.x,u.y-h.y)<r*TILE);
           if(near(1.6,u=>u.def.attack!=='flame')) g.vars.asc=Math.min(8,g.vars.asc+dt); else g.vars.asc=Math.max(0,g.vars.asc-dt);
@@ -57,7 +62,7 @@ ROGUE_MISSIONS.push(
           else if(g.vars.ash>=6){ g.vars.chosen='ashes'; g.complete('ashes'); g.fail('ascend'); }
           if(g.vars.chosen){ g.unmark('heart'); h.dead=true; g.ending(g.vars.chosen); g.clearTimer();
             g.win(g.vars.chosen==='ascend'
-              ?'The heart goes into Devreese\'s needle, and the needle goes into all of them. When Dust reaches the lair it finds a dead queen and seven sets of Corps armour, empty. Somewhere under Tycho Maw, seven heartbeats slow to the rhythm of something much older. The Osprey crew is not missing any more. It is becoming.'
+              ?'The heart goes into Devreese\'s needle, and the needle goes into all of them. When Dust reaches the lair it finds a blood trail into the deep and seven sets of Corps armour, empty. Somewhere under Tycho Maw, seven heartbeats slow to the rhythm of something much older. The Osprey crew is not missing any more. It is becoming.'
               :'Mortier\'s flame turns the heart to ash, and Devreese feeds every sample they ever took into the fire after it. Seven soldiers walk out of the Maw with nothing but the strain already in their blood. When Dust comes down, there is nothing left to find. Whatever the Osprey crew is now, it ends with them.'); } } },
       { when:g=>g.vars.heart&&!g.vars.chosen&&g.timerLeft()<=50&&!g.vars.dustLand, do:g=>{ g.vars.dustLand=true; const sq=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1)]; g.hunt(sq);
           g.say('Sgt. Kessler','Dust is in the Maw. Whoever is down here: we are coming for that lair.'); g.crewSay('Capt. Kerckhoffs','Dust. Make the call, now!'); } },

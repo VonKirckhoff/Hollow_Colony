@@ -40,7 +40,7 @@ function rankFor(xp,hero){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp&&(!k.hero
 function nextRank(v){ const k=RANKS[v.rank+1]; return k&&(!k.heroOnly||v.hero)?k:null; }
 function hasPerk(u){ return !!(u&&u.vet&&RANKS[u.vet.rank].perk); }
 function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp, z=u.vet.risen;
-  u.maxHp=u.def.hp*k.hp*(z?RISEN.hp:1); u.hp=u.maxHp*f; u.dmgMul=k.dmg; u.rateMul=k.rate; u.speedMul=z?RISEN.speed:1;
+  u.maxHp=u.def.hp*k.hp*(z?RISEN.hp:1)*(u.hpMul||1); u.hp=u.maxHp*f;   /* u.hpMul: a tougher named soldier (Kessler in Kill Order) */ u.dmgMul=k.dmg; u.rateMul=k.rate; u.speedMul=z?RISEN.speed:1;
   u.rangeBonus=(hasPerk(u)&&PERKS[u.type]&&PERKS[u.type].range)||0; u.leader=!!k.aura; if(u.crew) rogueStrainApply(u); }   /* a Rogue crew member: his strains on top (31-rogue.js) */
 function gainXP(u,amount){
   if(!u||u.dead||!u.vet||amount<=0) return; u.vet.xp+=amount;
@@ -70,7 +70,7 @@ function fromReserve(u){
 /* After a won campaign mission: survivors with experience go into the roster, fallen veterans into the memorial. */
 function settleRoster(){
   if(!isCampaign()) return; const R=ui.roster, alive=new Map();
-  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet) continue; alive.set(u.vet.id,u); }
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.vet||u.npc) continue; alive.set(u.vet.id,u); }   /* u.npc: a named soldier the mission lends you (Kessler in Kill Order), not one of your roster */
   const res={ joined:[], fallen:[] };
   const P=G.promoted||{};
   const FV=G.fallenVets||{}, ids=new Set(R.active.map(v=>v.id));

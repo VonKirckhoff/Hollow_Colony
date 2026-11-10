@@ -39,7 +39,7 @@ with sync_playwright() as p:
     ok(J(pg,"()=>{ const m=MISSIONS[3]; return __said.filter(s=>s.text).every(s=>!/[<>]/.test(s.text)) && __said.some(s=>s.text&&m.briefing[0].replace(/<[^>]+>/g,'').startsWith(s.text.slice(0,20))); }"),'it reads the briefing, without the markup')
     ok(J(pg,"()=>__said.filter(s=>s.text).every(s=>s.pitch===INTERCOM.pitch&&s.rate===INTERCOM.rate&&s.voice==='Google UK English Male')"),'in the intercom voice (a British man, lower and slower)')
     pg.wait_for_timeout(3000)
-    J(pg,"()=>{ BRIEF_VOICE.stop(); __said.length=0; openBriefing(4); }"); pg.wait_for_timeout(4000)
+    J(pg,"()=>{ BRIEF_VOICE.stop(); __said.length=0; openBriefing(MISSIONS.findIndex(m=>m.id==='blackout')); }"); pg.wait_for_timeout(4000)
     ok(J(pg,"()=>__said.some(s=>s.text&&/^The data core Doctor Maas carried out holds/.test(s.text))&&!__said.some(s=>s.text&&/Dr\\./.test(s.text))"),'Blackout: The data core Doctor Maas carried out, in one sentence')
     ok(J(pg,"()=>spokenText('The data core Dr. Maas left. Capt. Kerckhoffs and Sgt. Kessler.')==='The data core Doctor Maas left. Captain Kerckhoffs and Sergeant Kessler.'"),'titles written out')
     pg.wait_for_timeout(3000)

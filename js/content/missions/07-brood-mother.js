@@ -5,7 +5,7 @@ MISSIONS.push(
     id:'brood-mother', title:'Brood Mother', map:'depths',
     summary:'Descend beneath Tycho Maw, burn three egg chambers and kill the Brood Mother.',
     briefing:[
-      'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs.',
+      'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs. The Brood Mother lived through what the Osprey crew did to her: she crawled back to her lair, sealed it again, and lays faster than ever.',
       'Three egg chambers feed a sealed lair in the north-east. Living membrane closes the only tunnel into the lair, and it will not die while its chambers live.',
       'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Brood Mother. Do not let her get away to heal.'
     ],

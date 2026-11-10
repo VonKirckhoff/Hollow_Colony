@@ -5,12 +5,12 @@
    Hover a name to see what it does. Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
    loads; ↺ puts one value back, "Reset all" puts everything back. "Export" lists every change so you can copy it.
    Unit stats count for units that appear after the change; health is also adjusted on the units already on the map. */
-const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, SWARM_LIGHT, SWARM_SCORCH, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, INTERCOM, ROGUE, UNITS, BUILDINGS };
+const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, SWARM_LIGHT, SWARM_SCORCH, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, INTERCOM, ROGUE, OSPREY, UNITS, BUILDINGS };
 const DEV_TABS = [
   { id:'live', name:'Live' }, { id:'mission', name:'Mission' },
   { id:'diff', name:'Difficulty', roots:['DIFFICULTY','SWARM_DIFF'] },
   { id:'swarm', name:'Swarm', roots:['WAVES','PACK','HIVE_DEFENCE','TACTICS','CREEP','HUSK','EGG','MOLT','HIVE_DEATH','SWARM_PLAY','HIVE_SENSE','SWARM_LIGHT','SWARM_SCORCH','FIRST_HUNGER','BROOD_TACTICS','DEMO','AVATAR','BROOD_SURGE'] },
-  { id:'squad', name:'Squad', roots:['SQUAD','FORMATION','REPAIR_SIDE','AURA','RISEN','VET_XP'] },
+  { id:'squad', name:'Squad', roots:['SQUAD','FORMATION','REPAIR_SIDE','AURA','RISEN','VET_XP','OSPREY'] },
   { id:'fx', name:'Effects', roots:['FIRE','ANIM','SHOWCASE','INTERCOM'] },
   { id:'rogue', name:'Rogue', roots:['ROGUE'] },
   { id:'units', name:'Units' } ];
@@ -91,7 +91,7 @@ function devRender(){ const el=$('#dev'); if(!el||el.hidden||!G) return;
     h=`<div class="dv-note">${m.title} · <i>${m.id}</i>. Saved changes count for this mission only.</div>`+
       `<details open><summary>Start and Landing Zone</summary>${DEV_MISSION_KEYS.filter(k=>!k.startsWith('swarm.')).map(k=>devRow(K+k,k)).join('')}</details>`+
       (m.swarm?`<details open><summary>Swarm (this mission)</summary>${[...new Set([...DEV_MISSION_KEYS.filter(k=>k.startsWith('swarm.')&&(m.swarm.waves||!k.startsWith('swarm.waves'))),...devLeaves(m.swarm,'swarm')])].map(k=>devRow(K+k,k.slice(6))).join('')}</details>`:'')+
-      (m.job?`<details open><summary>This job (Rogue)</summary>${devLeaves(m.job,'job').map(k=>devRow(K+k,k.slice(4))).join('')}</details>`:'')+   /* Rogue jobs: their own numbers (mission.job) */
+      (m.job?`<details open><summary>${m.rogue?'This job (Rogue)':'This mission'}</summary>${devLeaves(m.job,'job').map(k=>devRow(K+k,k.slice(4))).join('')}</details>`:'')+   /* Rogue jobs: their own numbers (mission.job) */
       `<div class="dv-note">Empty = the game's default. The waves only grow for growWaves waves; maxAlive is how many roam at once (× difficulty).</div>`; }
   else if(T.id==='units'){ const types=[...Object.keys(UNITS).map(k=>['UNITS',k]),...Object.keys(BUILDINGS).map(k=>['BUILDINGS',k])];
     const [root,k]=types.find(([r,t])=>t===dev.unit)||types[0];

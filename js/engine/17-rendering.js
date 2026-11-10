@@ -76,7 +76,7 @@ function render(now){
     const f=clamp(e.hp/e.maxHp,0,1); ctx.fillStyle=e.faction!==G.side?'#ff5a4f':hpColor(f); ctx.fillRect(x,y,Math.round(w*f),3);
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*e.progress),2); }
     if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); }
-    if(crew) drawTaintBar(e,x,y,w,now); }   /* Rogue: the taint bar, and the warning when he is about to snap */
+    if(crew) drawTaintBar(e,x,y,w,now); if(e.osprey) ospreyBarMark(e,x,y,w); }   /* Rogue: the taint bar, and the warning when he is about to snap */
   // status labels of mission objects (generators, charges)
   ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
   for(const e of G.ents){ if(e.dead||!e.status||!inView(e)) continue; if(e.faction!==G.side&&!isVisible(e)) continue;
@@ -203,7 +203,7 @@ function renderMinimap(){
   mctx.imageSmoothingEnabled=false; mctx.drawImage(m.mini,0,0,mm.width,mm.height);
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||e.kind==='body') continue;
     if(e.faction!==G.side){ if(e.kind==='unit'&&!isVisible(e)) continue; if(e.kind==='building'&&!G.seen[Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE)]) continue; }
-    mctx.fillStyle=e.def.capture?(e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffffff'):e.faction==='corps'?(e.def.escort?'#ffffff':'#ffb347'):e.faction==='swarm'?'#a6ff4a':e.faction==='loyal'?'#7fb2ff':e.faction==='grey'?'#7ff6ff':'#d3c3a6';
+    mctx.fillStyle=e.def.capture?(e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffffff'):e.faction==='corps'?(e.def.escort?'#ffffff':'#ffb347'):e.faction==='swarm'?'#a6ff4a':e.faction==='loyal'?'#7fb2ff':e.faction==='osprey'?'#e2556b':e.faction==='grey'?'#7ff6ff':'#d3c3a6';
     const sz=e.kind==='building'?Math.max(3,e.size*s):Math.max(2,s*0.9);
     mctx.fillRect(Math.round(e.x/TILE*s-sz/2),Math.round(e.y/TILE*s-sz/2),Math.ceil(sz),Math.ceil(sz)); }
   mctx.imageSmoothingEnabled=true; mctx.drawImage(fogCanvas||m.mini,0,0,mm.width,mm.height); mctx.imageSmoothingEnabled=false;
