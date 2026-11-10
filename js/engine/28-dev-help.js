@@ -110,6 +110,8 @@ const DEV_HELP = {
   'OSPREY|help':'Osprey crew (Corps missions): tiles within which they come to help one of their own who is hit.', 'OSPREY|run':'Osprey crew (Corps missions): speed × this once one breaks off.',
   'OSPREY|hiveHeal':'Osprey crew (Night Shift): health per second one of them heals at a hive after breaking off.', 'OSPREY|healTo':'Osprey crew (Night Shift): share of health at which one healing at a hive is back on his feet.',
   'OSPREY|spacing':'Osprey crew: tiles between two of them in their wedge on the march.', 'OSPREY|contact':'Osprey crew: tiles; Dust this close to a marching squad and it breaks formation to fight.', 'OSPREY|calm':'Osprey crew: seconds without contact before a squad closes up and marches on.',
+  'OSPREY|danger':'Osprey crew: tiles; a way back that runs this close to a soldier or Sentry Gun counts as running through the camp.', 'OSPREY|dangerCost':'Osprey crew: tiles of detour one of them takes to stay clear of one such tile on his way back.',
+  'OSPREY|tunnel':'Osprey crew (Night Shift): seconds underground, from the shaft he took to the hive where he comes up again.', 'OSPREY|tunnelCost':'Osprey crew (Night Shift): tiles a shaft must win before he takes it instead of the open way to a hive.',
   'OSPREY|vanish':'Osprey crew (Corps missions): seconds after breaking off before he slips away, even if he did not reach a way out.', 'OSPREY|xp':'Osprey crew (Corps missions): XP for the soldier who breaks one off.',
   'ROGUE|loyal.help':'Rogue: tiles within which the loyal Corps comes to help one of their own who is hit.',
   'ROGUE|loyal.hp.easy':'Rogue: health of the loyal Corps on Easy (× normal).',

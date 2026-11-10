@@ -12,6 +12,10 @@
    - g.ospreyHeal(true) (Night Shift): one who breaks off runs to the nearest living hive instead, still out of reach, and the hive
      heals him (OSPREY.hiveHeal). Healed (OSPREY.healTo) he waits there, guarding it, until the mission sends them in again
      (g.ospreyReady()). Burn the hives and they have nowhere to heal: then they run for a way out and are gone.
+   - The way back never goes through Dust: every route (to a hive, or to a way out) costs extra for each tile it runs within
+     OSPREY.danger tiles of a soldier, a Sentry Gun or a zone the mission marks (g.ospreyAvoid). When the way to a hive runs
+     through the camp, he takes the shaft behind him instead; underground (OSPREY.tunnel seconds) he comes up again next to the
+     hive with the fewest soldiers round it, and heals there.
    - Squads (g.ospreySquad, and g.ospreyOrder with two or more): they march in a wedge (Pyro at the tip, Medic and Engineer at the
      back) at the pace of the slowest, break formation to fight when Dust is close, close up again and march on. At the goal they
      hold it and go for Dust only within a leash round it.
@@ -31,10 +35,14 @@ const OSPREY = {
   healTo:0.9,                                   /* share of health at which one healing at a hive is back on his feet */
   spacing:1.1,                                  /* tiles between two of them in the wedge */
   contact:7,                                    /* tiles: Dust this close to a marching squad, and it breaks formation to fight */
-  calm:3                                        /* seconds without contact before a squad closes up again */
+  calm:3,                                       /* seconds without contact before a squad closes up again */
+  danger:4,                                     /* tiles: a way back that runs this close to a soldier or a Sentry Gun counts as through the camp */
+  dangerCost:25,                                /* how many tiles of detour he takes to stay clear of one such tile */
+  tunnel:8,                                     /* seconds underground, from a shaft to a hive (Night Shift) */
+  tunnelCost:6                                  /* tiles: a shaft must be this much shorter or safer before he takes it instead of the open way to a hive */
 };
 const ospreyUnits=()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.osprey);
-function ospreyState(){ return G.osprey||(G.osprey={ exits:[], broken:0, gone:0, barkAt:-99, back:0, queue:[], squads:[], heal:false, healed:0 }); }
+function ospreyState(){ return G.osprey||(G.osprey={ exits:[], broken:0, gone:0, barkAt:-99, back:0, queue:[], squads:[], heal:false, healed:0, avoid:[] }); }
 const ospreyHives=()=>G.ents.filter(e=>!e.dead&&e.type==='hive');
 function ospreyMake(type,at,n,opt={}){ const k=G.diffKey||'normal', us=spawnAt(type,'osprey',at,n);
   for(const u of us){ u.osprey=true; u.truce='swarm'; u.sprite='crew_'+type; u.noBody=true;
@@ -50,11 +58,36 @@ function ospreyBreak(u,src,out){ if(u.ospBroke) return; const S=ospreyState(); i
   G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'BREAKS OFF',col:'#e2556b'}); SFX.play('boom',u.x,u.y);
   if(src&&src.faction==='corps'&&src.vet&&!src.dead) gainXP(src,OSPREY.xp);
   if(G.time-S.barkAt>9){ S.barkAt=G.time; say(G.mission.ospreyVoice||'Osprey crew',pick(['I am hit. Falling back!','Smoke out! I am gone.','Breaking off. Do not wait for me.','Hit bad. Going to ground.']),'crew'); }
-  ospreyLeave(u); if(S.heal&&!u.ospOut&&ospreyToHive(u)) return; ospreyFlee(u); }
-/* Night Shift: back to the nearest living hive to heal (true), or false when there is none */
-function ospreyToHive(u){ let h=null, hd=Infinity; for(const e of ospreyHives()){ const d=Math.hypot(e.x-u.x,e.y-u.y); if(d<hd){ hd=d; h=e; } } if(!h) return false;
-  const c={x:Math.floor(h.x/TILE),y:Math.floor(h.y/TILE)}, f=pick(freeTilesNear(c.x,c.y,10).filter(t=>Math.hypot(t.x-c.x,t.y-c.y)>=1.5&&Math.hypot(t.x-c.x,t.y-c.y)<=3))||freeTilesNear(c.x,c.y,1)[0]||c;
-  u.ospHeal=h; u.ospTo={x:(f.x+.5)*TILE,y:(f.y+.5)*TILE}; u.order={type:'move',x:u.ospTo.x,y:u.ospTo.y}; setPath(u,u.ospTo.x,u.ospTo.y); return true; }
+  ospreyLeave(u); ospreyRoute(u); }
+/* a spot 1.5 to 3 tiles from a hive, where one of them heals */
+function hiveSpot(h){ const c={x:Math.floor(h.x/TILE),y:Math.floor(h.y/TILE)}, f=pick(freeTilesNear(c.x,c.y,10).filter(t=>Math.hypot(t.x-c.x,t.y-c.y)>=1.5&&Math.hypot(t.x-c.x,t.y-c.y)<=3))||freeTilesNear(c.x,c.y,1)[0]||c;
+  return {x:(f.x+.5)*TILE,y:(f.y+.5)*TILE}; }
+/* what a way back costs: its length in tiles, plus OSPREY.dangerCost for every tile that runs close to Dust (or through a zone the
+   mission marks). The first two tiles do not count: that is where he stands now, in the middle of the fight. */
+function routeCost(u,to,foes){ const S=ospreyState(), path=findPath(u.x,u.y,to.x,to.y,true); if(!path||!path.length) return Infinity;
+  let len=0, bad=0, px=u.x, py=u.y; const D=OSPREY.danger*TILE;
+  for(const p of path){ const L=Math.hypot(p.x-px,p.y-py), n=Math.max(1,Math.round(L/TILE));
+    for(let k=1;k<=n;k++){ const x=px+(p.x-px)*k/n, y=py+(p.y-py)*k/n; len++; if(len<=2) continue;
+      if(foes.some(f=>Math.hypot(f.x-x,f.y-y)<D)||S.avoid.some(a=>Math.hypot(a.x-x,a.y-y)<a.r)) bad++; }
+    px=p.x; py=p.y; }
+  return len+bad*OSPREY.dangerCost; }
+/* the way back after breaking off: straight to a hive if that way is clear, else the shaft behind him (and underground to a hive) */
+function ospreyRoute(u){ const S=ospreyState(), heal=S.heal&&!u.ospOut;
+  const foes=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&((e.kind==='unit'&&!e.def.escort&&!e.downed)||(e.kind==='building'&&e.def.damage)));
+  let best=null, bc=Infinity;
+  if(heal) for(const h of ospreyHives()){ const sp=hiveSpot(h), c=routeCost(u,sp,foes); if(c<bc){ bc=c; best={h,sp}; } }
+  if(heal&&!ospreyHives().length){ ospreyFlee(u); return; }   /* nowhere to heal: out, and gone */
+  for(const a of S.exits){ const p=ptWorld(a); if(!p) continue; const c=routeCost(u,p,foes)+(heal?OSPREY.tunnelCost:0); if(c<bc){ bc=c; best={p}; } }
+  if(!best){ ospreyVanish(u); return; }
+  if(best.h){ u.ospHeal=best.h; u.ospTo=best.sp; u.order={type:'move',x:best.sp.x,y:best.sp.y}; setPath(u,best.sp.x,best.sp.y); return; }
+  u.ospHeal=null; u.ospViaShaft=heal; u.ospTo=best.p; u.order={type:'move',x:best.p.x,y:best.p.y}; setPath(u,best.p.x,best.p.y); }
+/* into the shaft: underground to the hive with the fewest soldiers round it, up again there, and heal */
+function ospreyUnder(u){ u.ospTunnel=G.time+OSPREY.tunnel; u.ospViaShaft=false; u.order=null; u.path=null; u.target=null; dustPuff(u.x,u.y,10);
+  G.fx.push({k:'text',x:u.x,y:u.y-24,t:1.2,max:1.2,txt:'INTO THE SHAFT',col:'#e2556b'}); }
+function ospreyResurface(u){ u.ospTunnel=null; const hs=ospreyHives(); if(!hs.length){ ospreyVanish(u); return; }
+  const near=h=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-h.x,e.y-h.y)<8*TILE).length;
+  const h=hs.reduce((a,b)=>near(a)<=near(b)?a:b), sp=hiveSpot(h); u.x=sp.x; u.y=sp.y; u.ospHeal=h; u.ospTo=sp; u.order=null; u.path=null;
+  dustPuff(u.x,u.y,12); G.fx.push({k:'text',x:u.x,y:u.y-28,t:1.4,max:1.4,txt:'RESURFACES',col:'#c38bff'}); }
 /* healed at the hive: he is back in the fight, and waits there for the next push */
 function ospreyHealed(u){ const S=ospreyState(); u.ospBroke=null; u.ospHeal=null; u.invuln=false; u.speedMul=(u.speedMul||1)/OSPREY.run; u.ospReady=true; S.healed++;
   u.order={type:'hold'}; u.home={x:u.x,y:u.y}; G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.4,max:1.4,txt:'BACK ON HIS FEET',col:'#c38bff'}); }
@@ -71,14 +104,15 @@ function ospreyTick(dt){ const S=G.osprey; if(!S) return;
   const list=ospreyUnits(); if(!list.length) return;
   for(const u of list){
     if(u.ospBroke&&u.ospHeal){ u.target=null;   /* on his way to a hive, or healing at it */
-      if(u.ospHeal.dead){ u.ospHeal=null; if(!(S.heal&&!u.ospOut&&ospreyToHive(u))) ospreyFlee(u); continue; }
+      if(u.ospHeal.dead){ u.ospHeal=null; ospreyRoute(u); continue; }
       const h=u.ospHeal, at=Math.hypot(u.x-h.x,u.y-h.y)<3.4*TILE||Math.hypot(u.x-u.ospTo.x,u.y-u.ospTo.y)<1.2*TILE;
-      if(at){ u.hp=Math.min(u.maxHp,u.hp+OSPREY.hiveHeal*dt); if(Math.random()<dt*4) G.fx.push({k:'spark',x:u.x+rand(-6,6),y:u.y-8,vx:rand(-8,8),vy:rand(-30,-10),t:0.6,max:0.6,col:'#c38bff'});
+      if(at){ u.stunT=0.3; u.order=null; u.hp=Math.min(u.maxHp,u.hp+OSPREY.hiveHeal*dt); if(Math.random()<dt*4) G.fx.push({k:'spark',x:u.x+rand(-6,6),y:u.y-8,vx:rand(-8,8),vy:rand(-30,-10),t:0.6,max:0.6,col:'#c38bff'});
         if(u.hp>=u.maxHp*OSPREY.healTo) ospreyHealed(u); }
       else if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:u.ospTo.x,y:u.ospTo.y}; setPath(u,u.ospTo.x,u.ospTo.y); }
       continue; }
+    if(u.ospTunnel){ u.stunT=0.3; u.target=null; if(G.time>=u.ospTunnel) ospreyResurface(u); continue; }   /* underground, on his way to a hive */
     if(u.ospBroke){ u.target=null; const p=u.ospTo;
-      if(!p||G.time-u.ospBroke>OSPREY.vanish||Math.hypot(u.x-p.x,u.y-p.y)<1.4*TILE){ ospreyVanish(u); continue; }
+      if(!p||G.time-u.ospBroke>OSPREY.vanish||Math.hypot(u.x-p.x,u.y-p.y)<1.4*TILE){ if(u.ospViaShaft&&S.heal&&!u.ospOut&&ospreyHives().length) ospreyUnder(u); else ospreyVanish(u); continue; }
       if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:p.x,y:p.y}; setPath(u,p.x,p.y); }
       if(Math.random()<dt*3) G.fx.push({k:'dust',x:u.x,y:u.y,vx:rand(-10,10),vy:rand(-20,-5),t:1.2,max:1.2,r:rand(4,7)});
       continue; }
@@ -150,7 +184,10 @@ function ospreyApi(){ return {
       u.order={type:mode,x:p.x+rand(-20,20),y:p.y+rand(-20,20)}; setPath(u,u.order.x,u.order.y); } },
   ospreyHunt(list){ for(const u of list||[]) if(!u.dead&&!u.ospBroke){ ospreyLeave(u); u.ospHunt=true; u.ospPatrol=null; if(u.order&&u.order.type==='hold') u.order=null; } },
   /* ospreyWithdraw(list?): they all pull out, out of reach, to the ways out (the end of a mission) */
-  ospreyWithdraw(list){ const S=ospreyState(); if(!list){ S.back=0; S.queue=[]; S.heal=false; } for(const u of (list||ospreyUnits())){ if(u.dead) continue; u.ospOut=true; if(!u.ospBroke) ospreyBreak(u,null,true); else if(u.ospHeal){ u.ospHeal=null; ospreyFlee(u); } } },
+  ospreyWithdraw(list){ const S=ospreyState(); if(!list){ S.back=0; S.queue=[]; S.heal=false; } for(const u of (list||ospreyUnits())){ if(u.dead) continue; u.ospOut=true;
+      if(u.ospTunnel){ ospreyVanish(u); continue; } if(!u.ospBroke) ospreyBreak(u,null,true); else { u.ospHeal=null; u.ospViaShaft=false; ospreyFlee(u); } } },
+  /* ospreyAvoid([{ at, r }]): zones (r in tiles) their way back keeps clear of, e.g. the hospital */
+  ospreyAvoid(list){ ospreyState().avoid=(list||[]).map(z=>{ const p=ptWorld(z.at); return p?{x:p.x,y:p.y,r:z.r*TILE}:null; }).filter(Boolean); },
   /* ospreySquad(list, at, { leash }): march there as one squad in a wedge, then hold it */
   ospreySquad:(list,at,opt)=>ospreySquad(list,at,opt),
   ospreyLeave:u=>ospreyLeave(u),

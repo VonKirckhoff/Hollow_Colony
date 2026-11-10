@@ -5,7 +5,8 @@
    Raiders in Corps armour without IFF come in from the south-west in a wedge and dig in at the edge of the plating, while three of
    them climb out of the old shaft in the north wall: their Medic goes for the records terminal, two others for the stabilizer cases.
    They are the Osprey crew (the end screen says so), an elite team. They never die: one who breaks off runs to the nearest hive,
-   out of reach, and the hive heals him (g.ospreyHeal). Healed, they wait at the hive and come back together with the next Swarm
+   out of reach, and the hive heals him (g.ospreyHeal); never through the hospital (g.ospreyAvoid): if the way runs through it, he
+   takes the shaft behind him and comes up again at a hive. Healed, they wait at the hive and come back together with the next Swarm
    wave (every job.nsEvery seconds). Burn the hives and they have nowhere left to heal. At dawn they pull out.
    Optional: keep the files, keep the three cases. job: the numbers of this mission (dev panel, "This mission"). */
 const NS_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of the three hospital tents (as in Needle and Thread) */
@@ -40,7 +41,7 @@ MISSIONS.push(
           for(const t of NS_TENTS) makeBuilding('medtent','none',t.x,t.y,true);
           g.vars.term=makeBuilding('terminal','none',20,18,true);
           g.vars.cases=NS_CASES.map(c=>{ const p=g.where(c); const e={ id:NEXT_ID++, kind:'crate', rogue:true, stab:1, x:p.x, y:p.y, r:8, faction:'none', t:1e9, seed:Math.random()*9, grab:0 }; G.ents.push(e); return e; });
-          g.ospreyExits([{x:17,y:3},{x:2,y:35}]); g.ospreyHeal(true); g.vars.dl=0; g.vars.dlT=g.time; g.vars.push=0;
+          g.ospreyExits([{x:17,y:3},{x:2,y:35}]); g.ospreyHeal(true); g.ospreyAvoid([{at:{x:20,y:20},r:7}]);   /* their way back never runs through the hospital */ g.vars.dl=0; g.vars.dlT=g.time; g.vars.push=0;
           g.setTimer(J.nsHold,'Dawn'); g.marker('term',{x:20,y:18},'Records terminal'); g.reveal({x:20,y:20},6,1e6); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, you have the hospital until the convoy comes at dawn. Maas\'s cases and her files stay where they are. Quiet night, people.') },
       { when:g=>g.time>9,  do:g=>g.say('Sgt. Kessler','Engineer: two Sentry Guns, cover the tents and the terminal. Everyone else, round the plating. Nobody sleeps.') },
