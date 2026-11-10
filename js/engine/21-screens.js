@@ -179,7 +179,7 @@ function intelUnit(t){ const d=UNITS[t]; if(!d) return ''; const st=[], tags=[];
   if(d.unlock) tags.push(`Appears after ${Math.floor(d.unlock/60)}:${String(d.unlock%60).padStart(2,'0')}`);
   if(d.cloak) tags.push('Cloaked'); if(d.boss) tags.push('Boss'); if(d.escort) tags.push('Escort'); if(d.regen) tags.push(`Regenerates ${d.regen} HP/s`);
   const perk=PERKS[t]?`<span class="perk">Lieutenant: ${PERKS[t].name}, ${PERKS[t].text.toLowerCase()}</span>`:'';
-  return intelCard(iconUrl(t),d.name,d.role,d.faction,d.desc,INTEL_NOTES[t],st,tags,perk); }
+  return intelCard(iconUrl(t),d.name,d.role,d.faction,d.desc,INTEL_NOTES[t],st,tags,perk,t); }
 function intelBuilding(t){ const d=BUILDINGS[t]; if(!d) return ''; const st=[], tags=[];
   if(d.hp>1) st.push(intelStat('HP',d.hp));
   if(d.damage) st.push(intelStat('Damage/s',fmt1(d.damage/d.cooldown)));
@@ -191,33 +191,41 @@ function intelBuilding(t){ const d=BUILDINGS[t]; if(!d) return ''; const st=[], 
   if(d.hatch) st.push(intelStat('Hatches in',d.hatch+' s'));
   if(d.fuse) st.push(intelStat('Fuse',d.fuse+' s'));
   if(d.key&&d.cost) tags.push(`Build: ${d.key}`); if(d.portable) tags.push('Portable'); if(d.regen) tags.push(`Regrows ${d.regen} HP/s`); if(d.needsSite) tags.push('Relay pad only');
-  return intelCard(iconUrl(t),d.name,`${d.size}×${d.size} structure`,d.faction,d.desc,INTEL_NOTES[t],st,tags,''); }
-function intelCard(img,name,role,fac,desc,note,st,tags,perk){
-  return `<article class="icard f-${fac}"><div class="pic"><img alt="" src="${img}"></div><h3>${name}</h3><div class="role">${role||''}</div>
+  return intelCard(iconUrl(t),d.name,`${d.size}×${d.size} structure`,d.faction,d.desc,INTEL_NOTES[t],st,tags,'',t); }
+/* an entry that is no unit or building of its own (INTEL_EXTRA in js/content/intel.js) */
+const intelExtraDef=id=>{ const x=INTEL_EXTRA[id]; return typeof x==='function'?x():x; };
+function intelExtra(id){ const x=intelExtraDef(id); if(!x) return ''; const st=(typeof x.stats==='function'?x.stats():x.stats||[]).map(([k,v])=>intelStat(k,v));
+  return intelCard('',x.name,x.role,x.faction,x.desc,x.note,st,x.tags||[],'',id); }
+/* anim: the key of the little moving scene in the picture (21b-intel-anim.js); without one the picture stands still */
+function intelCard(img,name,role,fac,desc,note,st,tags,perk,anim){
+  return `<article class="icard f-${fac}"><div class="pic"${anim?` data-anim="${anim}"`:''}>${img?`<img alt="" src="${img}">`:''}</div><h3>${name}</h3><div class="role">${role||''}</div>
     <p>${desc||''}</p>${note?`<p class="note">${note}</p>`:''}<dl>${st.join('')}</dl><div class="tags">${tags.filter(Boolean).map(x=>`<span>${x}</span>`).join('')}${perk}</div></article>`; }
 function buildIntel(){
   const TABS=INTEL_TABS; if(!TABS.some(t=>t.id===intelTab)) intelTab=TABS[0].id;   /* every tab always, Rogue Strain too (with a lock until the campaign opens) */
   $('#intel-tabs').innerHTML=TABS.map(t=>`<button type="button" role="tab" class="${t.id==='swarm'?'swarm':t.rogue?'rogue':''}" data-itab="${t.id}" aria-selected="${t.id===intelTab}"${t.rogue&&!rogueUnlocked()?' title="Playable after the Corps campaign"':''}>${t.rogue&&!rogueUnlocked()?'🔒 ':''}${t.name}</button>`).join('');
   const T=TABS.find(t=>t.id===intelTab)||TABS[0];
-  if(T.relics){ buildRelicIntel(); return; }
-  if(T.rogue){ buildRogueIntel(); return; }
+  if(T.relics){ buildRelicIntel(); intelFit(); intelAnimMount(); return; }
+  if(T.rogue){ buildRogueIntel(); intelFit(); intelAnimMount(); return; }
   /* list on the left, the full card of the selected entry on the right: no scrolling, however many entries a tab has */
-  const items=[...(T.units||[]).map(id=>({id,u:true})),...(T.buildings||[]).map(id=>({id,u:false}))].filter(x=>x.u?UNITS[x.id]:BUILDINGS[x.id]);
+  const items=[...(T.units||[]).map(id=>({id,u:true})),...(T.buildings||[]).map(id=>({id,u:false})),...(T.extras||[]).map(id=>({id,x:true}))].filter(x=>x.x?INTEL_EXTRA[x.id]:x.u?UNITS[x.id]:BUILDINGS[x.id]);
   const sel=Math.min(intelSel[T.id]||0,items.length-1);
-  $('#intel-list').innerHTML=items.map((x,i)=>{ const d=x.u?UNITS[x.id]:BUILDINGS[x.id];
-    return `<button type="button" role="option" class="ili f-${d.faction} ${i===sel?'on':''}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic"><img alt="" src="${iconUrl(x.id)}"></span><span><b>${d.name}</b><small>${x.u?(d.role||''):`${d.size}×${d.size} structure`}</small></span></button>`; }).join('');
-  const it=items[sel]; $('#intel-grid').innerHTML=it?(it.u?intelUnit(it.id):intelBuilding(it.id)):'';
+  $('#intel-list').innerHTML=items.map((x,i)=>{ const d=x.x?intelExtraDef(x.id):x.u?UNITS[x.id]:BUILDINGS[x.id], img=x.x?'':iconUrl(x.id);
+    return `<button type="button" role="option" class="ili f-${d.faction} ${i===sel?'on':''}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic" data-anim="${x.id}">${img?`<img alt="" src="${img}">`:''}</span><span><b>${d.name}</b><small>${x.x||x.u?(d.role||''):`${d.size}×${d.size} structure`}</small></span></button>`; }).join('');
+  const it=items[sel]; $('#intel-grid').innerHTML=it?(it.x?intelExtra(it.id):it.u?intelUnit(it.id):intelBuilding(it.id)):'';
+  intelFit(); intelAnimMount();
 }
 const intelSel={};
+/* a long list goes into two columns, so a tab never has to scroll */
+function intelFit(){ const L=$('#intel-list'), dense=L.children.length>12; L.classList.toggle('dense',dense); L.parentElement.classList.toggle('dense',dense); }
 /* the Relics tab: what you have found, and a hint for what you have not */
 function buildRelicIntel(){ const F=relicsFound(), sel=Math.min(intelSel.relics||0,RELICS.length-1), mt=id=>(MISSIONS.find(m=>m.id===id)||{}).title||id;
   $('#intel-list').innerHTML=RELICS.map((r,i)=>{ const f=!!F[r.id];
-    return `<button type="button" role="option" class="ili f-none ${i===sel?'on':''} ${f?'':'rel-un'}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic"><img alt="" src="${ARTURL[relicArt(r)]}" style="${f?'':'filter:brightness(.25)'}"></span><span><b>${f?r.name:'???'}</b><small>${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}</small></span></button>`; }).join('');
+    return `<button type="button" role="option" class="ili f-none ${i===sel?'on':''} ${f?'':'rel-un'}" data-isel="${i}" aria-selected="${i===sel}"><span class="pic"${f?` data-anim="art:${relicArt(r)}"`:''}><img alt="" src="${ARTURL[relicArt(r)]}" style="${f?'':'filter:brightness(.25)'}"></span><span><b>${f?r.name:'???'}</b><small>${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}</small></span></button>`; }).join('');
   const r=RELICS[sel], f=r&&F[r.id], n=Object.keys(F).filter(k=>RELICS.some(x=>x.id===k)).length;
   const img=ARTURL[relicArt(r)];
   $('#intel-grid').innerHTML=r?intelCard(img,f?r.name:'Not found yet',`${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}`,'none',
     f?r.text:(r.kind==='egg'?'Somewhere on this map lies an ancient egg. Hold it with a soldier and keep the Swarm off it: if they hold it, it wakes and grows into a new hive.':'Somewhere on this map, off the beaten track, something is waiting to be found. Walk a soldier over it.'),
-    `${n} of ${RELICS.length} relics found.`,[],[f?`Found ${new Date(f.at).toLocaleDateString()}`:'Not found'],''):''; }
+    `${n} of ${RELICS.length} relics found.`,[],[f?`Found ${new Date(f.at).toLocaleDateString()}`:'Not found'],'',f?'art:'+relicArt(r):''):''; }
 $('#intel-list').addEventListener('click',e=>{ const b=e.target.closest('[data-isel]'); if(!b) return; intelSel[intelTab]=+b.dataset.isel; buildIntel(); const nb=$(`[data-isel="${b.dataset.isel}"]`); if(nb) nb.focus({preventScroll:true}); });
 $('#intel-list').addEventListener('keydown',e=>{ if(e.key!=='ArrowDown'&&e.key!=='ArrowUp') return; e.preventDefault(); const n=$('#intel-list').children.length, i=(intelSel[intelTab]||0)+(e.key==='ArrowDown'?1:-1);
   intelSel[intelTab]=(i+n)%n; buildIntel(); const nb=$(`[data-isel="${intelSel[intelTab]}"]`); if(nb) nb.focus({preventScroll:true}); });
