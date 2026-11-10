@@ -9,7 +9,7 @@ const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-…
 /* The Osprey crew. Fixed people: they carry their rank, experience, strains and taint from mission to mission
    (kept in hc-rogue, not on the Lunar Corps roster). Kerckhoffs is the Captain: he leads the squad (AURA). */
 const ROGUE_CREW = [
-  { id:'osp-kerckhoffs',    name:'Kerckhoffs',      type:'trooper',  rank:5, xp:62, capt:true, bio:'Captain of the Osprey. Twenty years in the Corps, and the one who decided they would stay dead.' },
+  { id:'osp-kerckhoffs',    name:'Kerckhoffs',      type:'trooper',  rank:5, xp:62, capt:true, bio:'Captain of the Osprey. Twenty years in the Corps, and the one who decided they would stay dead. His grandmother swore the family rode with the Bokkerijders, the goat riders of old Limburg.' },
   { id:'osp-dehandschutter', name:'Dehandschutter', type:'gunner', rank:2, xp:11, bio:'Door gunner. Talks to his rotary gun. Pulled two of the others out of the burning wreck.' },
   { id:'osp-mortier',     name:'Mortier',       type:'pyro',     rank:1, xp:5,  bio:'Loves his flamer more than he trusts the plan. Fire leaves nothing to harvest, and he knows it.' },
   { id:'osp-devreese',    name:'Devreese',      type:'medic',    rank:1, xp:6,  sex:'f', bio:'Flight medic. She read Maas\'s notes first, and she is the one holding the needle.' },
