@@ -640,3 +640,22 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 
 /* dev unlock (² on the campaign screen): the progress line turns amber */
 #s-campaign.dev-open #camp-progress{color:#ffb347;}
+
+/* Field Manual in tabs (Nov 2026): Controls, Field notes, Factions, Veterans, Campaigns, Start fresh; every tab fits on one screen
+   (the tab names the page, so the panels carry no big heading; the bottom keeps clear of the music bar) */
+#s-manual{padding-top:24px;padding-bottom:40px;}
+.manual-sheet{max-width:1240px;gap:12px;margin-block:0 auto;margin-left:clamp(0px,4vw,64px);}
+.manual-tabs{margin:2px 0 0;}
+.manual-tabs button.danger[aria-selected="true"]{color:var(--danger);}
+.mpanel>h2.h{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+.mpanel .mgroups{display:block;columns:3 300px;column-gap:10px;}
+.mpanel .mgroup{break-inside:avoid;margin-bottom:10px;}
+.mpanel .notes{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));align-items:start;}
+.mpanel .notes+.notes,.mpanel .factions+.notes,.mpanel .ranks+.notes{margin-top:10px;}
+.mpanel .factions{grid-template-columns:repeat(3,minmax(0,1fr));}
+.mpanel .faction.rogue{grid-column:3;grid-row:1 / span 2;}
+.mpanel .fnotes{grid-column:1 / span 2;grid-row:2;grid-template-columns:repeat(2,minmax(0,1fr));}
+@media (max-width:860px){ .mpanel .factions{grid-template-columns:1fr;} .mpanel .faction.rogue,.mpanel .fnotes{grid-column:auto;grid-row:auto;} .mpanel .fnotes{grid-template-columns:1fr;} }
+.faction.rogue{border-top:2px solid var(--rogue);}
+.faction .ftag{margin-left:8px;}
+.note.rogue{border-left-color:var(--rogue);} .note.rogue b{color:var(--rogue);}

@@ -306,6 +306,16 @@ function startMission(m,opts){
 function pause(on){ if(!G||G.over) return; if(on) uiUsed('pause'); else uiUsed('resume'); G.paused=on; ui.mode=on?'pause':'game'; if(on){ $('#p-title').textContent=G.mission.title; const ps=$('#p-save'); if(ps) ps.hidden=!(typeof canSave==='function'&&canSave()); pauseLabels(); show('pause'); $('#p-resume').focus({preventScroll:true}); } else show(null); }
 $('#p-resume').addEventListener('click',()=>pause(false));
 $('#p-manual').addEventListener('click',()=>goMenu('manual'));
+/* the Field Manual in tabs: one subject per tab, so nothing needs scrolling. It reopens on the tab you left it on. */
+let manualTab='controls';
+function setManualTab(id,focus){ manualTab=id;
+  document.querySelectorAll('#manual-tabs [data-mtab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.mtab===id)));
+  document.querySelectorAll('#s-manual [data-mpanel]').forEach(p=>{ p.hidden=p.dataset.mpanel!==id; });
+  if(focus) $(`#manual-tabs [data-mtab="${id}"]`).focus(); }
+$('#manual-tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-mtab]'); if(b) setManualTab(b.dataset.mtab,true); });
+$('#manual-tabs').addEventListener('keydown',e=>{ if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
+  const ids=[...document.querySelectorAll('#manual-tabs [data-mtab]')].map(b=>b.dataset.mtab), i=ids.indexOf(manualTab), n=ids.length;
+  setManualTab(ids[(i+(e.key==='ArrowRight'?1:n-1))%n],true); e.preventDefault(); });
 $('#manual-back').addEventListener('click',()=>{ if(ui.manualFrom==='pause'&&G&&!G.over&&ui.mode==='pause'){ show('pause'); $('#p-resume').focus({preventScroll:true}); } else goMenu('menu'); });
 /* Start fresh: wipe everything the game saved in this browser (hc-… keys), optionally also the custom maps, and reload */
 let freshArm=null;

@@ -139,8 +139,17 @@
 
 <!-- MANUAL -->
 <section class="screen" id="s-manual" hidden>
-  <div class="sheet" style="max-width:860px">
+  <div class="sheet manual-sheet">
     <div class="eyebrow">FIELD MANUAL</div>
+    <div class="intel-tabs manual-tabs" role="tablist" id="manual-tabs">
+      <button type="button" role="tab" data-mtab="controls" aria-selected="true">Controls</button>
+      <button type="button" role="tab" data-mtab="notes" aria-selected="false">Field notes</button>
+      <button type="button" role="tab" data-mtab="factions" aria-selected="false">Factions</button>
+      <button type="button" role="tab" data-mtab="veterans" aria-selected="false">Veterans</button>
+      <button type="button" role="tab" data-mtab="campaigns" aria-selected="false">Campaigns</button>
+      <button type="button" role="tab" class="danger" data-mtab="fresh" aria-selected="false">Start fresh</button>
+    </div>
+    <div class="mpanel" role="tabpanel" data-mpanel="controls">
     <h2 class="h">Controls</h2>
     <div class="mgroups">
       <div class="mgroup"><h3>Select</h3><dl class="manual">
@@ -172,7 +181,9 @@
         <dt>P / Esc</dt><dd>Pause. Esc also cancels a pending click.</dd>
       </dl></div>
     </div>
+    </div>
 
+    <div class="mpanel" role="tabpanel" data-mpanel="notes" hidden>
     <h2 class="h">Field notes</h2>
     <div class="notes">
       <div class="note"><b>Firing on the move</b>Soldiers keep walking but shoot back at anything in range, a bit slower than standing still. Engineers do the same while they build or repair.</div>
@@ -192,7 +203,9 @@
       <div class="note"><b>Landing pads</b>Order replacements from the pad. Never more than the squad you started with.</div>
       <div class="note"><b>Intel</b>Every soldier, structure and enemy with its numbers: see Intel in the main menu.</div>
     </div>
+    </div>
 
+    <div class="mpanel" role="tabpanel" data-mpanel="factions" hidden>
     <h2 class="h">Factions</h2>
     <div class="factions">
       <div class="faction"><b style="color:var(--corps)">Lunar Corps</b><span class="ftag">You</span>
@@ -202,9 +215,22 @@
       <div class="faction"><b style="color:var(--swarm)">The Swarm</b><span class="ftag">Enemy</span>
         <ul><li>Grows from hives and comes in waves that get bigger.</li>
             <li>Crawlers and Drones rush, Spitters lob acid from range, Brutes break walls.</li>
-            <li>Everything living it kills becomes a cocoon: new Swarm.</li></ul></div>
-          </div>
+            <li>Everything living it kills becomes a cocoon: new Swarm.</li>
+            <li>In its own campaign you are the Swarm: hatch, hunt and bring the fallen home.</li></ul></div>
+      <div class="faction rogue"><b style="color:var(--rogue)">Rogue Strain</b><span class="ftag">Third campaign</span>
+        <ul><li>The seven survivors of the Osprey, written off as killed in action. They found Dr. Maas's samples and stopped answering the radio.</li>
+            <li>No base, no dropship, no replacements: the same seven people from job to job, led by their Captain.</li>
+            <li>They splice Swarm DNA into their own blood. Strains make them faster, tougher or deadlier; taint makes them stranger, up to a feral fit.</li>
+            <li>Black and dark brown uniforms with a red armband.</li>
+            <li>Hunted by both sides: the Swarm, and the loyal Corps in the normal Corps kit, who shoot on sight.</li></ul></div>
+      <div class="notes fnotes">
+      <div class="note rogue"><b>The loyal Corps</b>In Rogue Strain the Lunar Corps is the enemy. Its soldiers fight the Swarm and the crew alike: they hold a post, patrol or hunt you, and come running when one of them is hit. Their Relay Towers, Sentry Guns and Barricades are theirs too.</div>
+      <div class="note rogue"><b>Playable after the Corps campaign</b>Rogue Strain opens once every Lunar Corps campaign mission is won on Normal or Hard. Its campaign screen and Intel tab can be read before that.</div>
+      </div>
+    </div>
+    </div>
 
+    <div class="mpanel" role="tabpanel" data-mpanel="veterans" hidden>
     <h2 class="h">Veterans</h2>
     <div class="ranks" id="manual-ranks"></div>
     <div class="notes">
@@ -213,17 +239,28 @@
       <div class="note"><b>Your own soldier</b>Enlist him on the campaign screen. He goes on every mission and only he can become Captain: soldiers near him fire faster and take less damage.</div>
       <div class="note"><b>The roster</b>Survivors with XP carry over to the next campaign mission and replace starting soldiers of their type.</div>
       <div class="note"><b>Cenotaph</b>The fallen are cut into stone. In zombie mode you can raise them once.</div>
+    </div>
+    </div>
+
+    <div class="mpanel" role="tabpanel" data-mpanel="campaigns" hidden>
+    <h2 class="h">Campaigns</h2>
+    <div class="notes">
       <div class="note"><b>Training</b>Both campaigns start with a training (00) that walks you through every button. Press N to skip a step.</div>
       <div class="note"><b>Playing the Swarm</b>Pick The Swarm on the campaign screen. Q W E R hatch, right-click sets the gathering point (or moves the swarm units you selected), A + click attacks, H brings the fallen home, B + click burrows up a small brood. Ctrl + a number keeps a group: flank or lure with two groups of your own.</div>
-      <div class="note"><b>Rogue Strain</b>Opens once the Lunar Corps has won The Hollow Colony. You play the seven survivors of the Osprey. Swarm you kill without fire can leave DNA samples: walk over them. Between jobs, splice them into the crew on the campaign screen. Taint makes them stronger and stranger: from 85% seizures, at 100% a feral fit. A crew Medic with a stabilizer dose fixes that (J). The crew wears black and dark brown with a red armband; soldiers in the normal Corps kit are the loyal Corps, and they shoot you on sight.</div>
+      <div class="note rogue"><b>Rogue Strain</b>Opens once every Lunar Corps campaign mission is won on Normal or Hard. You play the seven survivors of the Osprey. Swarm you kill without fire can leave DNA samples: walk over them. Between jobs, splice them into the crew on the campaign screen. Taint makes them stronger and stranger: from 85% seizures, at 100% a feral fit. A crew Medic with a stabilizer dose fixes that (J). The crew wears black and dark brown with a red armband; soldiers in the normal Corps kit are the loyal Corps, and they shoot you on sight.</div>
       <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty. Flawless: win a mission without losing a soldier, one per difficulty. Two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</div>
     </div>
+    </div>
+
+    <div class="mpanel" role="tabpanel" data-mpanel="fresh" hidden>
+    <h2 class="h">Start fresh</h2>
     <div class="fresh" id="fresh-box">
       <div><div class="lbl">Start fresh</div>
         <p>Erase everything this game keeps in your browser: campaign progress, veterans, your own soldier, the Cenotaph, difficulty, the defeat choice, zombie mode, and all music, sound and voice settings. The game starts as if you opened it for the first time.</p>
         <label class="fresh-maps"><input type="checkbox" id="fresh-maps"> Also delete the maps I made in the map editor</label>
         <label class="fresh-maps"><input type="checkbox" id="fresh-troph" checked> Keep my trophy wall</label></div>
       <button class="btn danger" type="button" id="btn-fresh">Start fresh</button>
+    </div>
     </div>
     <div class="row"><button class="btn" type="button" id="manual-back">Back</button><button class="btn" type="button" data-go="intel">Intel</button></div>
   </div>
