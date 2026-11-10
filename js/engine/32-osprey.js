@@ -16,6 +16,11 @@
      OSPREY.danger tiles of a soldier, a Sentry Gun or a zone the mission marks (g.ospreyAvoid). When the way to a hive runs
      through the camp, he takes the shaft behind him instead; underground (OSPREY.tunnel seconds) he comes up again next to the
      hive with the fewest soldiers round it, and heals there.
+   - g.ospreyEmerge(list, at, seconds): they go underground (the hive tunnels) and come up again at `at`: a push from another side.
+   - Their Captain throws a grenade at a group of OSPREY.nadeMin soldiers or more standing close together (OSPREY.nade…).
+   - Their Engineer blows up your defences: he goes for the nearest Barricade, Sentry Gun or Relay Tower within OSPREY.demoSeek
+     tiles, kneels at it for OSPREY.demoPlant seconds (break him off and the charge is never set) and then the charge blinks for
+     OSPREY.demoFuse seconds and goes off (OSPREY.demoDmg on the structure, demoSplashDmg on soldiers next to it).
    - Squads (g.ospreySquad, and g.ospreyOrder with two or more): they march in a wedge (Pyro at the tip, Medic and Engineer at the
      back) at the pace of the slowest, break formation to fight when Dust is close, close up again and march on. At the goal they
      hold it and go for Dust only within a leash round it.
@@ -39,10 +44,22 @@ const OSPREY = {
   danger:4,                                     /* tiles: a way back that runs this close to a soldier or a Sentry Gun counts as through the camp */
   dangerCost:25,                                /* how many tiles of detour he takes to stay clear of one such tile */
   tunnel:8,                                     /* seconds underground, from a shaft to a hive (Night Shift) */
-  tunnelCost:6                                  /* tiles: a shaft must be this much shorter or safer before he takes it instead of the open way to a hive */
+  tunnelCost:6,                                 /* tiles: a shaft must be this much shorter or safer before he takes it instead of the open way to a hive */
+  nadeEvery:14,                                 /* seconds between two grenades of their Captain */
+  nadeMin:3,                                    /* soldiers standing within nadeRadius of each other before he throws one */
+  nadeRadius:1.6,                               /* tiles: the blast of his grenade */
+  nadeRange:6,                                  /* tiles: how far he throws it */
+  nadeDmg:35,                                   /* damage of his grenade (× his damage) */
+  demoSeek:8,                                   /* tiles: how far their Engineer looks for a Barricade, Sentry Gun or Relay Tower to blow up */
+  demoPlant:3,                                  /* seconds he kneels at it to set the charge */
+  demoFuse:4,                                   /* seconds the charge blinks before it goes off */
+  demoDmg:600,                                  /* damage to the structure */
+  demoSplash:1.6,                               /* tiles: the blast round it */
+  demoSplashDmg:30,                             /* damage to soldiers in the blast */
+  demoEvery:25                                  /* seconds before he goes for the next one */
 };
 const ospreyUnits=()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.osprey);
-function ospreyState(){ return G.osprey||(G.osprey={ exits:[], broken:0, gone:0, barkAt:-99, back:0, queue:[], squads:[], heal:false, healed:0, avoid:[] }); }
+function ospreyState(){ return G.osprey||(G.osprey={ exits:[], broken:0, gone:0, barkAt:-99, back:0, queue:[], squads:[], heal:false, healed:0, avoid:[], charges:[] }); }
 const ospreyHives=()=>G.ents.filter(e=>!e.dead&&e.type==='hive');
 function ospreyMake(type,at,n,opt={}){ const k=G.diffKey||'normal', us=spawnAt(type,'osprey',at,n);
   for(const u of us){ u.osprey=true; u.truce='swarm'; u.sprite='crew_'+type; u.noBody=true;
@@ -52,7 +69,7 @@ function ospreyMake(type,at,n,opt={}){ const k=G.diffKey||'normal', us=spawnAt(t
     if(opt.capt) u.ospCapt=true; }
   return us; }
 /* he breaks off: smoke, out of reach, off to the nearest way out */
-function ospreyBreak(u,src,out){ if(u.ospBroke) return; const S=ospreyState(); if(out) u.ospOut=true; u.ospBroke=G.time; u.hp=Math.max(u.hp,1); u.invuln=true; u.target=null; u.order=null; u.path=null; u.ospHunt=false; u.ospPatrol=null;
+function ospreyBreak(u,src,out){ if(u.ospBroke) return; const S=ospreyState(); if(out) u.ospOut=true; if(u.demo){ u.demo=null; if(!S.saidDemo){ S.saidDemo=true; say('Sgt. Kessler','Got him before he set it. Watch their Engineer, he goes for the guns.'); } } u.ospBroke=G.time; u.hp=Math.max(u.hp,1); u.invuln=true; u.target=null; u.order=null; u.path=null; u.ospHunt=false; u.ospPatrol=null;
   u.speedMul=(u.speedMul||1)*OSPREY.run; S.broken++;
   dustPuff(u.x,u.y,16); for(let i=0;i<10;i++) G.fx.push({k:'dust',x:u.x+rand(-10,10),y:u.y+rand(-10,6),vx:rand(-25,25),vy:rand(-30,-5),t:rand(1.2,2.2),max:2.2,r:rand(5,10)});
   G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'BREAKS OFF',col:'#e2556b'}); SFX.play('boom',u.x,u.y);
@@ -84,6 +101,42 @@ function ospreyRoute(u){ const S=ospreyState(), heal=S.heal&&!u.ospOut;
 /* into the shaft: underground to the hive with the fewest soldiers round it, up again there, and heal */
 function ospreyUnder(u){ u.ospTunnel=G.time+OSPREY.tunnel; u.ospViaShaft=false; u.order=null; u.path=null; u.target=null; dustPuff(u.x,u.y,10);
   G.fx.push({k:'text',x:u.x,y:u.y-24,t:1.2,max:1.2,txt:'INTO THE SHAFT',col:'#e2556b'}); }
+/* g.ospreyEmerge: up again at the point the mission chose, spread round it, back in the fight */
+function ospreyPopUp(u){ const p=u.ospUp, c={x:Math.floor(p.x/TILE),y:Math.floor(p.y/TILE)}, f=pick(freeTilesNear(c.x,c.y,8))||c;
+  u.ospTunnel=null; u.ospUp=null; u.x=(f.x+.5)*TILE; u.y=(f.y+.5)*TILE; u.order={type:'hold'}; u.home={x:u.x,y:u.y}; u.path=null; if(!u.ospBroke) u.invuln=false;
+  dustPuff(u.x,u.y,12); G.fx.push({k:'text',x:u.x,y:u.y-28,t:1.2,max:1.2,txt:'UP',col:'#e2556b'}); }
+/* their Captain: a grenade at the thickest group of soldiers in reach */
+function ospreyGrenade(u){ if(G.time<(u.nadeAt||0)) return; const R=OSPREY.nadeRadius*TILE;
+  const dust=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&!e.def.escort&&dist(e,u)<OSPREY.nadeRange*TILE);
+  let best=null, bn=0; for(const e of dust){ const n=dust.filter(o=>Math.hypot(o.x-e.x,o.y-e.y)<R).length; if(n>bn){ bn=n; best=e; } }
+  if(!best||bn<OSPREY.nadeMin) return; u.nadeAt=G.time+OSPREY.nadeEvery; const d=dist(u,best);
+  G.shots.push({k:'grenade',sx:u.x,sy:u.y-10,tx:best.x,ty:best.y,t:0,dur:d/260+0.25,src:u,dmg:OSPREY.nadeDmg*(u.dmgMul||1),splash:R,faction:u.faction});
+  const S=ospreyState(); if(G.time-(S.nadeSaid||-99)>20){ S.nadeSaid=G.time; say(G.mission.ospreyVoice||'Osprey crew',pick(['Grenade out!','Bunched up. Frag out!','Spread them out for me.']),'crew'); } }
+/* ---- their Engineer: charges on your defences ---- */
+const OSP_DEMO=['barricade','sentry','relay'];
+function ospreyDemoPick(u){ if(G.time<(u.demoAt||0)||u.demo) return; let best=null, bd=OSPREY.demoSeek*TILE;
+  for(const e of G.ents){ if(e.dead||e.kind!=='building'||e.faction!=='corps'||!OSP_DEMO.includes(e.type)) continue; const d=dist(e,u); if(d<bd&&!ospreyState().charges.some(c=>c.on===e.id)){ bd=d; best=e; } }
+  if(!best) return; ospreyLeave(u); u.ospHunt=false; u.ospReady=false; u.target=null; u.demo={ on:best.id, t:0 };
+  const a=Math.atan2(u.y-best.y,u.x-best.x), r=(best.def.size||1)*TILE*0.5+TILE*0.6, x=best.x+Math.cos(a)*r, y=best.y+Math.sin(a)*r; u.demo.x=x; u.demo.y=y; u.order={type:'move',x,y}; setPath(u,x,y); }
+function ospreyDemoTick(u,dt){ const D=u.demo, b=G.ents.find(e=>e.id===D.on&&!e.dead); if(!b){ u.demo=null; u.order=null; return; }
+  if(Math.hypot(u.x-D.x,u.y-D.y)>0.8*TILE){ if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:D.x,y:D.y}; setPath(u,D.x,D.y); } return; }
+  u.order=null; u.target=null; u.stunT=0.2; u.face=b.x>=u.x?1:-1; if(!D.t){ G.pings.push({x:b.x,y:b.y,t:0,col:'#e2556b'}); say('Alert',`Someone is at the ${b.def.name}: a charge! Stop him!`,'alert'); }
+  D.t+=dt; if(Math.random()<dt*8) G.fx.push({k:'spark',x:(u.x+b.x)/2+rand(-4,4),y:(u.y+b.y)/2-6,vx:rand(-20,20),vy:rand(-30,-5),t:0.3,max:0.3,col:'#ffb347'});
+  if(D.t>=OSPREY.demoPlant){ const S=ospreyState(); S.charges.push({ on:b.id, x:(u.x+b.x*2)/3, y:(u.y+b.y*2)/3+4, at:G.time+OSPREY.demoFuse, by:u.id, name:b.def.name }); SFX.play('click',b.x,b.y);
+    say('Alert',`Charge on the ${b.def.name}! Clear the area!`,'alert'); u.demo=null; u.demoAt=G.time+OSPREY.demoEvery; u.stunT=0;
+    const a=Math.atan2(u.y-b.y,u.x-b.x), x=u.x+Math.cos(a)*4*TILE, y=u.y+Math.sin(a)*4*TILE; if(walkableP(x,y)){ u.order={type:'move',x,y}; setPath(u,x,y); } } }
+function ospreyCharges(){ const S=G.osprey; if(!S||!S.charges||!S.charges.length) return;
+  for(const c of [...S.charges]){ if(G.time<c.at) continue; S.charges.splice(S.charges.indexOf(c),1); const b=G.ents.find(e=>e.id===c.on&&!e.dead), src=G.ents.find(e=>e.id===c.by)||{faction:'osprey',dead:true};
+    if(b) damage(b,OSPREY.demoDmg,src);
+    for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-c.x,e.y-c.y)<OSPREY.demoSplash*TILE) damage(e,OSPREY.demoSplashDmg,src);
+    SFX.play('boom',c.x,c.y); G.fx.push({k:'boom',x:c.x,y:c.y,t:0.5,max:0.5,r:OSPREY.demoSplash*TILE}); addDecal(c.x,c.y,OSPREY.demoSplash*TILE*0.6,'rgba(10,10,12,.6)'); G.shake=Math.max(G.shake||0,0.4);
+    debrisBurst(c.x,c.y,18,['#8a7a6a','#5a4632','#b3a58f','#ffd23f']); for(let i=0;i<16;i++) G.fx.push({k:'ember',x:c.x,y:c.y,vx:rand(-160,160),vy:rand(-180,10),t:rand(.3,.8),max:.8,col:pick(['#ff8a2a','#ffd23f','#ffffff'])}); } }
+/* a set charge: a little block with a red light that blinks faster and faster, and a ring that runs out */
+function ospreyDrawCharges(){ const S=G.osprey; if(!S||!S.charges) return;
+  for(const c of S.charges){ if(!isVisible(c)&&!G.seen[Math.floor(c.y/TILE)*G.map.w+Math.floor(c.x/TILE)]) continue; const left=Math.max(0,c.at-G.time), p=left/OSPREY.demoFuse;
+    ctx.fillStyle='#1a1b20'; ctx.fillRect(Math.round(c.x-4),Math.round(c.y-5),9,6); ctx.fillStyle='#c8401f'; ctx.fillRect(Math.round(c.x-3),Math.round(c.y-4),7,4);
+    if(Math.sin(G.time*(8+(1-p)*30))>0){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(c.x),Math.round(c.y-7),2,2); }
+    ctx.strokeStyle='#ffb347'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(c.x,c.y-2,9,-Math.PI/2,-Math.PI/2+p*Math.PI*2); ctx.stroke(); ctx.lineWidth=1; } }
 function ospreyResurface(u){ u.ospTunnel=null; const hs=ospreyHives(); if(!hs.length){ ospreyVanish(u); return; }
   const near=h=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-h.x,e.y-h.y)<8*TILE).length;
   const h=hs.reduce((a,b)=>near(a)<=near(b)?a:b), sp=hiveSpot(h); u.x=sp.x; u.y=sp.y; u.ospHeal=h; u.ospTo=sp; u.order=null; u.path=null;
@@ -101,6 +154,7 @@ function ospreyTick(dt){ const S=G.osprey; if(!S) return;
   if(S.queue&&S.queue.length&&S.back>0) for(const q of [...S.queue]){ if(G.time<q.at) continue; S.queue.splice(S.queue.indexOf(q),1); const a=pick(S.exits); if(!a) continue;
     const u=ospreyMake(q.type,a,1,{ capt:q.capt, spare:q.spare })[0]; if(!u) continue; u.ospBack=true; u.ospHunt=true; dustPuff(u.x,u.y,10); G.fx.push({k:'text',x:u.x,y:u.y-28,t:1.4,max:1.4,txt:'BACK ON HIS FEET',col:'#e2556b'});
     G.pings.push({x:u.x,y:u.y,t:0,col:'#e2556b'}); if(!S.saidBack){ S.saidBack=true; say('Sgt. Kessler','That one went down a minute ago, and he is back on his feet. Whatever is in their blood, it does not let them stay down.'); } }
+  ospreyCharges();
   const list=ospreyUnits(); if(!list.length) return;
   for(const u of list){
     if(u.ospBroke&&u.ospHeal){ u.target=null;   /* on his way to a hive, or healing at it */
@@ -110,18 +164,22 @@ function ospreyTick(dt){ const S=G.osprey; if(!S) return;
         if(u.hp>=u.maxHp*OSPREY.healTo) ospreyHealed(u); }
       else if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:u.ospTo.x,y:u.ospTo.y}; setPath(u,u.ospTo.x,u.ospTo.y); }
       continue; }
-    if(u.ospTunnel){ u.stunT=0.3; u.target=null; if(G.time>=u.ospTunnel) ospreyResurface(u); continue; }   /* underground, on his way to a hive */
+    if(u.ospTunnel){ u.stunT=0.3; u.target=null; if(G.time>=u.ospTunnel){ if(u.ospUp) ospreyPopUp(u); else ospreyResurface(u); } continue; }   /* underground, on his way to a hive */
     if(u.ospBroke){ u.target=null; const p=u.ospTo;
       if(!p||G.time-u.ospBroke>OSPREY.vanish||Math.hypot(u.x-p.x,u.y-p.y)<1.4*TILE){ if(u.ospViaShaft&&S.heal&&!u.ospOut&&ospreyHives().length) ospreyUnder(u); else ospreyVanish(u); continue; }
       if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:p.x,y:p.y}; setPath(u,p.x,p.y); }
       if(Math.random()<dt*3) G.fx.push({k:'dust',x:u.x,y:u.y,vx:rand(-10,10),vy:rand(-20,-5),t:1.2,max:1.2,r:rand(4,7)});
       continue; }
     if(u.hp<u.maxHp&&creepAt(u.x,u.y)>0.3) u.hp=Math.min(u.maxHp,u.hp+OSPREY.creepHeal*dt);
+    if(u.demo) ospreyDemoTick(u,dt);
     if(u.spare&&u.target===u.spare) u.target=null; }
   S.sqT=(S.sqT||0)-dt; if(S.sqT<=0){ S.sqT=0.25; squadsTick(); }
   S.aiT=(S.aiT||0)-dt; if(S.aiT>0) return; S.aiT=0.5;
   const hit=list.filter(e=>!e.ospBroke&&e.hitAt!=null&&G.time-e.hitAt<3);
-  for(const u of list){ if(u.ospBroke||u.dead) continue;
+  for(const u of list){ if(u.ospBroke||u.dead||u.ospTunnel) continue;
+    if(u.ospCapt) ospreyGrenade(u);
+    if(u.type==='engineer'&&!u.ospReady) ospreyDemoPick(u);
+    if(u.demo) continue;   /* busy with a charge */
     if(u.ospSquad) continue;   /* a squad looks after its own (squadsTick) */
     if(hit.length&&!u.target&&u.def.damage&&!(u.order&&u.order.type==='move')){ const h=hit.find(e=>e!==u&&dist(e,u)<OSPREY.help*TILE);
       if(h){ const foe=nearestOf(h,e=>e.kind==='unit'&&!e.dead&&!e.downed&&e.faction==='corps'&&e!==u.spare&&dist(e,h)<9*TILE); if(foe) u.target=foe; } }
@@ -191,6 +249,10 @@ function ospreyApi(){ return {
   /* ospreySquad(list, at, { leash }): march there as one squad in a wedge, then hold it */
   ospreySquad:(list,at,opt)=>ospreySquad(list,at,opt),
   ospreyLeave:u=>ospreyLeave(u),
+  /* ospreyEmerge(list, at, seconds): underground, and up again round `at` after that many seconds (out of reach meanwhile) */
+  ospreyEmerge(list,at,sec=5){ const p=ptWorld(at); if(!p) return; for(const u of list||[]){ if(u.dead||u.ospBroke) continue; ospreyLeave(u); u.ospReady=false; u.invuln=true; u.target=null; u.order=null; u.path=null;
+      u.ospTunnel=G.time+sec; u.ospUp=p; dustPuff(u.x,u.y,10); G.fx.push({k:'text',x:u.x,y:u.y-24,t:1,max:1,txt:'DOWN',col:'#e2556b'}); } },
+  ospreyUnder:()=>ospreyUnits().filter(u=>u.ospTunnel).length,
   /* ospreyHeal(on): those who break off heal at the nearest hive instead of leaving; ospreyReady() = healed and waiting there */
   ospreyHeal(on){ ospreyState().heal=!!on; },
   ospreyReady:()=>ospreyUnits().filter(u=>!u.ospBroke&&u.ospReady),

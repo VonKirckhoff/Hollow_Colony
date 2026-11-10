@@ -60,7 +60,7 @@ function render(now){
     if(s.k==='grenade'){ drawGrenade(s,t); continue; }   /* it spins; its shadow shows where it lands */
     if(s.k==='egglob'||s.k==='broodlob'){ const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*70; ctx.drawImage(ARTC.egg,Math.round(x)-6,Math.round(y)-7,12,14); continue; }
     const x=s.sx+(s.tx-s.sx)*t, y=s.sy+(s.ty-s.sy)*t-Math.sin(t*Math.PI)*40; ctx.fillStyle='#4fae22'; ctx.fillRect(Math.round(x)-3,Math.round(y)-3,6,6); ctx.fillStyle='#a6ff4a'; ctx.fillRect(Math.round(x)-2,Math.round(y)-2,3,3); }
-  drawFx(); drawLamps(); drawFlares(now); if(G.side==='swarm'){ drawSwarmOrders(now); drawScorch(now); }
+  ospreyDrawCharges(); drawFx(); drawLamps(); drawFlares(now); if(G.side==='swarm'){ drawSwarmOrders(now); drawScorch(now); }
   // light from running generators
   ctx.globalCompositeOperation='lighter';
   for(const e of G.ents){ if(e.dead||!e.def||!e.def.generator||!e.powered) continue; const R=e.def.light*TILE*0.9, fl=0.9+0.1*Math.sin(now/90+e.id);

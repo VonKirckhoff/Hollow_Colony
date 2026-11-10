@@ -7,11 +7,17 @@
    They are the Osprey crew (the end screen says so), an elite team. They never die: one who breaks off runs to the nearest hive,
    out of reach, and the hive heals him (g.ospreyHeal); never through the hospital (g.ospreyAvoid): if the way runs through it, he
    takes the shaft behind him and comes up again at a hive. Healed, they wait at the hive and come back together with the next Swarm
-   wave (every job.nsEvery seconds). Burn the hives and they have nowhere left to heal. At dawn they pull out.
+   wave (every job.nsEvery seconds), each time from another side (they go down the hive tunnels and come up there, NS_SIDES), while
+   the brood comes up out of the ground at another side (g.waveAt), with Spitters and from push nsBrute on a Brute. Their Captain
+   throws grenades at soldiers who stand bunched up. Burn the hives and they have nowhere left to heal. At dawn they pull out.
    Optional: keep the files, keep the three cases. job: the numbers of this mission (dev panel, "This mission"). */
 const NS_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of the three hospital tents (as in Needle and Thread) */
 const NS_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NS_TERM={x:20,y:19};                                  /* where their Medic stands at the records terminal */
+/* the four sides a push can come from: where they come up out of the tunnels, and where they hit the hospital */
+const NS_SIDES={ sw:{ name:'south-west', stage:{x:11,y:28}, hit:{x:17,y:24} }, n:{ name:'north', stage:{x:20,y:8}, hit:{x:20,y:15} },
+                 e:{ name:'east', stage:{x:34,y:20}, hit:{x:25,y:20} }, s:{ name:'south', stage:{x:21,y:33}, hit:{x:21,y:27} } };
+const NS_PAIRS=[ ['sw','e'], ['n','s'], ['e','sw'], ['s','n'], ['sw','n'], ['e','s'] ];   /* [the raiders' side, the brood's side]; never the same raiders' side twice in a row */
 MISSIONS.push(
   {
     id:'night-shift', title:'Night Shift', map:'kappa', ospreyVoice:'Unknown voice',
@@ -21,7 +27,7 @@ MISSIONS.push(
       'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Kestrel can fly replacements to the pad just south of the tents; claim the relay pads to pay for them.',
       'Kappa medical has a dozen wounded in those tents. Nobody gets near them.'
     ],
-    job:{ nsHold:600, nsArrive:40, nsSneak:25, nsFirst:120, nsEvery:60, nsDownload:60, nsGrab:2.5, nsWave:65, nsWaveGrow:15 },
+    job:{ nsHold:600, nsArrive:40, nsSneak:25, nsFirst:120, nsEvery:60, nsDownload:60, nsGrab:2.5, nsWave:65, nsWaveGrow:15, nsUnder:5, nsBrute:3 },
     start:{ salvage:200, camera:'Q',
       units:[ ['trooper','Q',4], ['gunner','Q',1], ['pyro','Q',1], ['medic','Q',1], ['engineer','Q',1] ],
       buildings:[], hives:['a','b','c'],
@@ -86,15 +92,21 @@ MISSIONS.push(
       { when:g=>g.vars.came&&g.hives()===0, do:g=>g.say('Sgt. Kessler','That was the last hive. Next one we put down stays down.') },
       /* the sirens wake the basin */
       { when:g=>g.vars.came&&g.time>g.vars.came+60, do:g=>{ g.wave(G.mission.job.nsWave,{x:20,y:20}); g.say('Kappa medical','The sirens... the basin is waking up. Swarm moving from the hives!'); } },
-      /* the push: every nsEvery seconds whoever is back on his feet comes in again, together with a wave from the hives */
+      /* the push: every nsEvery seconds whoever is back on his feet comes in again, each time from another side: they go down into the
+         hive tunnels and come up at that side's staging point (NS_SIDES). The brood comes up out of the ground at another side at the
+         same time (NS_PAIRS), with Spitters from the first push and a Brute from push nsBrute on. */
       { repeat:true, when:g=>g.vars.came&&!g.vars.out&&g.time>g.vars.came+G.mission.job.nsFirst+g.vars.push*G.mission.job.nsEvery&&g.timerLeft()>45, do:g=>{ const J=G.mission.job, n=++g.vars.push;
-          const free=g.ospreys().filter(u=>u!==g.vars.doc&&(u.ospReady||!u.ospSquad)&&!(u.order&&u.order.type==='move'));
+          const pairs=NS_PAIRS.filter(p=>p[0]!==g.vars.side), pr=pick(pairs), side=NS_SIDES[pr[0]], sw=NS_SIDES[pr[1]]; g.vars.side=pr[0];
           const doc=g.vars.doc&&!g.vars.doc.dead&&!g.vars.doc.ospBroke&&!g.vars.dlDone?g.vars.doc:null;
-          if(doc&&doc.ospReady){ g.vars.docGo=true; const esc=free.filter(u=>u.ospCapt||u.type==='engineer'); if(esc.length) g.ospreySquad(esc,{x:21,y:17},{leash:5}); }
-          const rest=free.filter(u=>!u.ospSquad||u.ospReady); if(rest.length) g.ospreySquad(rest,{x:19,y:23},{leash:9});
-          g.wave(J.nsWave+J.nsWaveGrow*n,{x:20,y:20});
-          if(rest.length||(doc&&g.vars.docGo)) g.say('Kappa medical',n===1?'They are coming back... the same ones, they are back on their feet! And the brood is with them!':'Here they come again! Raiders and brood, together!');
-          else g.say('Kappa medical','Swarm moving on the hospital!'); } },
+          const free=g.ospreys().filter(u=>!u.ospTunnel&&(u.ospReady||!u.ospSquad)&&!(u.order&&u.order.type==='move'&&u!==doc)&&(u!==doc||u.ospReady));
+          if(free.length){ g.ospreyEmerge(free,side.stage,J.nsUnder); g.vars.up={ at:g.time+J.nsUnder+0.5, list:free, hit:side.hit }; if(doc&&free.includes(doc)) g.vars.docGo=true; }
+          const types=['drone','crawler','spitter'].concat(n>=J.nsBrute?['brute']:[]), first=['spitter'].concat(n>=J.nsBrute?(n>=J.nsBrute+2?['brute','brute']:['brute']):[]);   /* a Spitter in every wave */
+          g.waveAt(J.nsWave+J.nsWaveGrow*n,sw.stage,{x:20,y:20},types,first);
+          g.say('Kappa medical',free.length?`Raiders coming in from the ${side.name}! And the brood is digging up ${sw.name} of the tents!`:`The brood is digging up ${sw.name} of the tents!`);
+          if(n===J.nsBrute) g.say('Sgt. Kessler','Brute in that wave! It will go straight through the barricades. Focus fire!'); } },
+      /* up out of the tunnels: as one squad onto the hospital from that side */
+      { repeat:true, when:g=>g.vars.up&&g.time>g.vars.up.at&&!g.vars.out, do:g=>{ const U=g.vars.up; g.vars.up=null;
+          const L=U.list.filter(u=>!u.dead&&!u.ospBroke&&!u.ospTunnel&&u!==g.vars.doc); if(L.length) g.ospreySquad(L,U.hit,{leash:9}); } },
       { when:g=>g.timerLeft()<=60&&g.timerLeft()>0, do:g=>g.say('Cmdr. Varga','One minute to dawn, Dust. The convoy is in the air. Hold on.') },
       /* dawn: they pull out, and the convoy comes */
       { when:g=>g.vars.came&&g.timerLeft()<=0&&!g.vars.out, do:g=>{ g.vars.out=g.time; g.clearTimer(); g.complete('dawn'); if(!g.vars.dlDone) g.complete('records'); if(!g.vars.lostCase) g.complete('stab'); g.unmark('term');

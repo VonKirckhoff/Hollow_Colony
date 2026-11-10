@@ -69,6 +69,16 @@ function burrowSpot(aim){
     best={x,y}; break; }
   return best;
 }
+/* a wave that comes up out of the ground at a chosen spot (Night Shift: the brood from the side you do not expect).
+   only: the types it may hold; first: types that are certainly in it (a Brute). It bulges and climbs out like a burrowing wave. */
+function launchWaveAt(budget,from,aim,only,first){ const room=swarmCap()-roamCount(), types=[]; let left=budget, guard=0;
+  for(const ty of first||[]) if(UNITS[ty]&&types.length<room){ types.push(ty); left-=UNITS[ty].biomass; }
+  while(left>=15&&guard++<80&&types.length<room){ const ty=pickSwarmType(left,only); if(!ty) break; left-=UNITS[ty].biomass; types.push(ty); }
+  const tiles=freeTilesNear(from.x,from.y,types.length), out=[];
+  if(ANIM.emerge>0&&types.length) G.fx.push({k:'bulge',x:(from.x+.5)*TILE,y:(from.y+.5)*TILE,r:TILE*(1+Math.sqrt(types.length)*0.5),t:ANIM.emerge,max:ANIM.emerge,seed:Math.random()*99});
+  types.forEach((ty,i)=>{ const s=tiles[i]; if(!s) return; const u=makeUnit(ty,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u); emergeStart(u); });
+  for(const u of out){ u.order={type:'amove',x:aim.x+rand(-30,30),y:aim.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); }
+  addDecal((from.x+.5)*TILE,(from.y+.5)*TILE,22,'rgba(30,26,22,.6)'); makePacks(out); return out; }
 function launchWave(budget,aim){
   let hs=spawners(); const out=[]; let left=budget, guard=0;
   if(!hs.length&&shafts().length){   /* mine shafts: the wave comes up out of one (the nearest to its goal, not one your troops stand on) */

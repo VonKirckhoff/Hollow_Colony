@@ -82,6 +82,7 @@ function makeApi(){
     boss(u,title){ G.boss=u; G.bossTitle=title||u.def.name; },
     where:at=>ptWorld(at),
     wave:(budget,aim)=>launchWave(budget*G.diff.budget, typeof aim==='string'||(aim&&!aim.kind)?ptWorld(aim):aim),   // aim: map point, tile {x,y} or a unit
+    waveAt:(budget,from,aim,only,first)=>launchWaveAt(budget*G.diff.budget, pt(from), ptWorld(aim), only, first),   // a wave out of the ground at `from` (tile), to `aim`; only: allowed types, first: types it certainly holds
     clearTimer(){ G.timer=null; },
     setTimer(seconds,label){ G.timer={end:G.time+seconds,label}; },
     timerLeft:()=>G.timer?Math.max(0,G.timer.end-G.time):Infinity,
