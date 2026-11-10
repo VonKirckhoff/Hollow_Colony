@@ -163,7 +163,7 @@ function voiceSample(sex){ if(!window.speechSynthesis||SFX.muted||!ui.voices) re
 /* ---------- the briefing, read over the intercom ----------
    Opening a briefing plays a PA chime; then a voice reads the title and the briefing over a mains hum, line hiss and a crackle now and then
    (SFX.bedStart), and the music sinks (MUSIC.duck). Browsers do not let speech run through Web Audio, so the radio feel comes from
-   the voice's pitch and pace and the noise bed under it. Follows Sound and Voices; the Read aloud / Stop button on the briefing screen;
+   the voice's pitch and pace and the noise bed under it. Follows Sound only: the Voices button (soldiers' lines in a mission) leaves it alone; the Read aloud / Stop button on the briefing screen;
    it stops when you leave the briefing (show() in 21-screens.js). */
 const INTERCOM = { auto:true, pitch:0.78, rate:0.92, volume:3, delay:1.5, gap:0.3, humHz:50, hum:0.03, hiss:0.045, crackle:0.35, crackleVol:0.16, musicDuck:0.35 };
 /* titles written out, so the voice does not say "drive Maas" and a sentence does not end at "Dr." */
@@ -177,7 +177,7 @@ const BRIEF_VOICE=(()=>{ let run=0, on=false, cur=null, screen=null;
   function voice(){ const M=VOICES_M.length?VOICES_M:VOICES_EN; return M.find(v=>/en[-_]GB/i.test(v.lang))||M[0]||null; }
   function btn(){ for(const b of document.querySelectorAll('[data-voice-btn]')){ b.textContent=on?'Stop voice':'Read aloud'; b.setAttribute('aria-pressed',on); } }   /* the briefing and the Cenotaph */
   function stop(){ run++; if(!on) return; on=false; cur=null; try{ speechSynthesis.cancel(); }catch(e){} SFX.bedStop(); SFX.play('paOff'); if(typeof MUSIC!=='undefined') MUSIC.duck(false); btn(); }
-  function play(intro,paras,scr='brief'){ stop(); screen=scr; if(!window.speechSynthesis||SFX.muted||!ui.voices) return false;
+  function play(intro,paras,scr='brief'){ stop(); screen=scr; if(!window.speechSynthesis||SFX.muted) return false;   /* not tied to ui.voices: switching soldier voices off in a mission keeps the briefing voice */
     const lines=sentences(intro,paras); if(!lines.length) return false;
     const my=++run; on=true; btn(); SFX.init(); SFX.play('pa'); if(typeof MUSIC!=='undefined') MUSIC.duck(true);
     try{ speechSynthesis.cancel(); }catch(e){}
@@ -202,7 +202,7 @@ function memorialLines(){ const R=ui.roster, L=[];
   if(!corps.length&&!ospreyOnStone()) L.push('There are no names on the stone. Keep it that way.');
   else L.push('Their names are cut in stone. They are not forgotten. Tycho out.');
   return L; }
-function toggleVoices(){ uiUsed('voices'); ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices){ BRIEF_VOICE.stop(); if(window.speechSynthesis) speechSynthesis.cancel(); } toast(ui.voices?'Voices on.':'Voices off.',true); }
+function toggleVoices(){ uiUsed('voices'); ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices&&!BRIEF_VOICE.on&&window.speechSynthesis) speechSynthesis.cancel();   /* soldiers fall silent; the intercom (briefing, Cenotaph) keeps going */ toast(ui.voices?'Voices on.':'Voices off.',true); }
 const voicesLabel=()=>{ const b=$('#btn-voices'); if(b) b.textContent=ui.voices?'Voices on':'Voices off'; };
 function updateBarks(dt){ for(const b of G.barks) b.t-=dt; G.barks=G.barks.filter(b=>b.t>0&&!b.u.dead); }
 function drawBarks(){

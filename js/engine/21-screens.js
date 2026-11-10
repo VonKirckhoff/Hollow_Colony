@@ -97,7 +97,7 @@ function buildCenotaph(){
     +(ospreyOnStone()?`<div class="cap osprey">THE OSPREY · LOST WITH ALL HANDS</div><div class="names">${ospreyLost().map(o=>`<div class="name osprey"><b>${o.title}</b><i>${o.role} · Osprey crew<br>lost at Hollow Colony</i></div>`).join('')}</div>`:'');
 }
 $('#s-cenotaph').addEventListener('click',e=>{
-  if(e.target.closest('#ceno-voice')){ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; } if(SFX.muted){ toast('Sound is off.',true); return; } if(!ui.voices){ toast('Voices are off (Voices button in the top bar).',true); return; }
+  if(e.target.closest('#ceno-voice')){ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; } if(SFX.muted){ toast('Sound is off.',true); return; }
     const L=memorialLines(); BRIEF_VOICE.play(L[0],L.slice(1),'cenotaph'); return; }
   if(e.target.closest('#btn-zombie')){ setZombie(!ui.zombie); buildCenotaph(); toast(ui.zombie?'Zombie mode on. The dead are restless.':'Zombie mode off.',true); return; }
   const b=e.target.closest('[data-raise]'); if(!b) return; const rec=ui.roster.fallen[+b.dataset.raise]; const err=raiseFallen(+b.dataset.raise); if(err){ toast(err); return; }
@@ -268,7 +268,7 @@ function briefIntro(m,i){ const N=n=>['zero','one','two','three','four','five','
   if(m.rogue) return `Osprey crew, this is Kerckhoffs. Job ${N(i+1)}: ${m.title}.`;   /* the Captain on the crew's own channel: they are dead to the Corps */
   return `Lunar Corps, Squad Dust. Mission ${N(i+1)}: ${m.title}.`; }
 $('#b-voice').addEventListener('click',()=>{ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; }
-  if(SFX.muted){ toast('Sound is off.',true); return; } if(!ui.voices){ toast('Voices are off (Voices button in the top bar).',true); return; }
+  if(SFX.muted){ toast('Sound is off.',true); return; }
   const m=briefMission(briefIdx); BRIEF_VOICE.play(briefIntro(m,briefIdx),m.briefing); });
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
 $('#b-watch').addEventListener('click',()=>startMission(briefMission(briefIdx),{demo:true}));
