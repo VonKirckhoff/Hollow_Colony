@@ -6,6 +6,7 @@ HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{
   osp=()=>__hc.G.ents.filter(e=>!e.dead&&e.osprey), dust=()=>__hc.G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'),
   tp=(u,x,y)=>{ u.x=(x+.5)*TILE; u.y=(y+.5)*TILE; u.path=null; u.order=null; u.target=null; u.home={x:u.x,y:u.y}; },
   calm=()=>{ for(const e of __hc.G.ents) if(e.faction==='swarm') e.invuln=true; },
+  hives=()=>__hc.G.ents.filter(e=>!e.dead&&e.type==='hive'),
   obj=id=>(__hc.G.objectives.find(o=>o.id===id)||{}).state,
   start=id=>{ __hc.startMission(MISSIONS.find(m=>m.id===id)); return __hc.G; }; try{ '''
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
@@ -15,7 +16,7 @@ CASES=[
   for(const m of MISSIONS) recordWin(m.id,'normal',500,false); ok(rogueUnlocked(),'all eleven won: Rogue open');
   const P=ui.progress; for(const id of ['night-shift','kill-order','mothers-heart']) delete (P.results||P)[id]; ok(rogueUnlocked(),'the eight old ones won before Nov 2026: Rogue stays open');
   for(const id of ['brood-mother']) delete (P.results||P)[id]; ok(!rogueUnlocked()||devUnlock,'one old one missing and the new ones not won: locked'); for(const m of MISSIONS) recordWin(m.id,'normal',500,false);'''),
-('the crew: truce, breaking off, never dying','''const G=start('night-shift'); step(0.5); calm(); const u=G.api.osprey('trooper',{x:20,y:30},1)[0]; G.api.ospreyExits([{x:2,y:35}]);
+('the crew: truce, breaking off, never dying','''const G=start('night-shift'); step(0.5); calm(); G.api.ospreyHeal(false); const u=G.api.osprey('trooper',{x:20,y:30},1)[0]; G.api.ospreyExits([{x:2,y:35}]);
   ok(u.sprite==='crew_trooper'&&u.faction==='osprey','crew kit, faction osprey'); ok(u.maxHp>UNITS.trooper.hp*1.2,'tougher than a trooper ('+Math.round(u.maxHp)+')');
   const d=makeUnit('drone','swarm',u.x+30,u.y); ok(!validTarget(d,u)&&!validTarget(u,d),'the Swarm and the crew leave each other alone'); d.dead=true;
   const s=dust()[0]; tp(s,21,30); step(0.4); ok(validTarget(s,u),'Dust may shoot them'); const xp=s.vet.xp; damage(u,u.maxHp*0.5,s); ok(!u.ospBroke,'half health: still fighting');
@@ -23,12 +24,18 @@ CASES=[
   const x0=Math.hypot(u.x-G.api.where({x:2,y:35}).x,u.y-G.api.where({x:2,y:35}).y); step(3); ok(Math.hypot(u.x-G.api.where({x:2,y:35}).x,u.y-G.api.where({x:2,y:35}).y)<x0,'he runs for the way out');
   step(OSPREY.vanish); ok(u.dead&&G.osprey.gone>=1,'and is gone'); ok(!G.ents.some(e=>e.kind==='body'&&e.faction==='osprey'),'no body left behind');
   for(const x of dust()) x.quiet=true; const c=G.api.osprey('trooper',{x:20,y:30},1)[0]; c.quiet=true; c.hp=c.maxHp*0.5; G.creep[30*G.map.w+20]=1; step(2); ok(c.hp>c.maxHp*0.5,'the creep heals them');'''),
-('night shift: the raid','''const G=start('night-shift'); step(1); ok(G.ents.filter(e=>!e.dead&&e.type==='medtent').length===3&&G.vars.term,'three tents and a terminal'); ok(G.vars.cases.length===3,'three cases of stabilizer');
-  ok(osp().length===0,'quiet at first'); calm(); for(const s of dust()) s.invuln=true; step(G.mission.job.nsArrive); ok(osp().length===4,'four raiders from the south-west'); ok(G.msgs.some(m=>m.who==='Kappa medical'),'Kappa medical sees them'); step(G.mission.job.nsSneak+0.5); ok(osp().length===7&&G.vars.doc,'and three out of the old shaft: seven'); ok(G.mission.dark,'a night mission');
-  for(const s of dust()) s.quiet=true; const doc=G.vars.doc; doc.invuln=true; tp(doc,20,19); step(3); ok(G.vars.dl>0.02,'their Medic at the terminal: the download runs ('+Math.round(G.vars.dl*100)+'%)');
-  const g1=G.vars.grabbers[0]; g1.invuln=true; const c=G.vars.cases[0]; tp(g1,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); step(G.mission.job.nsGrab+1); ok(c.dead&&obj('stab')==='failed','a case is taken: optional failed');
-  doc.invuln=false; g1.invuln=false; const s=dust()[0]; s.invuln=false; for(const u of osp().slice(0,G.mission.job.nsBreak)) damage(u,1e8,s); step(1); ok(G.vars.out,'six broke off: the rest pull out');
-  ok(osp().every(u=>u.ospBroke),'every one of them runs'); for(let i=0;i<40&&!G.over;i++) step(1); ok(G.over&&G.over.win,'all gone: won'); ok(obj('drive')==='done'&&obj('records')==='done','driven out, and the files kept'); ok(/Containment Order 9/.test(G.over.text),'the end tells who they were');'''),
+('night shift: the raid','''const G=start('night-shift'); step(1); const J=G.mission.job; ok(G.ents.filter(e=>!e.dead&&e.type==='medtent').length===3&&G.vars.term,'three tents and a terminal'); ok(G.vars.cases.length===3,'three cases of stabilizer');
+  ok(G.timer&&G.timer.label==='Dawn'&&Math.round(G.timer.end-G.time)>=J.nsHold-2,'hold until dawn: '+J.nsHold+' s'); ok(G.mission.dark,'a night mission'); ok(G.ents.some(e=>!e.dead&&e.type==='lz'),'a Landing Zone for replacements');
+  ok(osp().length===0,'quiet at first'); calm(); for(const s of dust()){ s.invuln=true; s.quiet=true; } step(J.nsArrive); ok(osp().length===4,'four raiders from the south-west'); ok(G.msgs.some(m=>m.who==='Kappa medical'),'Kappa medical sees them');
+  const q=osp()[0].ospSquad; ok(q&&osp().every(u=>u.ospSquad===q)&&osp()[0].type==='pyro','one squad, the Pyro at the tip'); step(4); const L=q.members[0]; const sp=q.members.slice(1).map(u=>Math.hypot(u.x-L.x,u.y-L.y)/TILE); ok(sp.every(d=>d<4),'they march together ('+sp.map(d=>d.toFixed(1)).join(', ')+' tiles from the tip)');
+  step(J.nsSneak); ok(osp().length===7&&G.vars.doc,'and three out of the old shaft: seven');
+  for(const s of dust()) s.quiet=true; const doc=G.vars.doc; doc.invuln=true; tp(doc,20,19); step(3); ok(G.vars.dl>0.02,'their Medic at the terminal: the download runs ('+Math.round(G.vars.dl*100)+'%)'); doc.invuln=false; damage(doc,1e8,dust()[0]); const dl0=G.vars.dl; step(2); ok(G.vars.dl===dl0&&!G.vars.docGo,'she breaks off: the download stops and keeps its place');
+  const c=G.vars.cases[0], g1=osp().find(u=>u.type==='trooper'&&!u.ospCapt); g1.invuln=true; g1.quiet=true; tp(g1,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); step(J.nsGrab+1); ok(c.dead&&obj('stab')==='failed','a case is taken: optional failed '+JSON.stringify({dead:g1.dead,broke:g1.ospBroke,d:Math.hypot(g1.x-c.x,g1.y-c.y)/TILE,grab:c.grab,order:g1.order&&g1.order.type,sq:!!g1.ospSquad}));
+  g1.invuln=false; const s=dust()[0]; damage(g1,1e8,s); ok(g1.ospBroke&&g1.ospHeal&&g1.ospHeal.type==='hive'&&g1.invuln,'broken: he runs for a hive, out of reach'); ok(!g1.dead,'he does not vanish');
+  const h=g1.ospHeal; tp(g1,Math.floor(h.x/TILE)+2,Math.floor(h.y/TILE)); g1.ospTo={x:g1.x,y:g1.y}; step(1); const hp0=g1.hp; step(3); ok(g1.hp>hp0,'the hive heals him'); step(g1.maxHp/OSPREY.hiveHeal+1); ok(!g1.ospBroke&&!g1.invuln&&g1.ospReady,'healed: back on his feet, waiting at the hive');
+  G.vars.push=0; G.vars.came=G.time-J.nsFirst-0.5; step(1); ok(g1.ospSquad&&!g1.ospReady&&g1.ospSquad.goal.y<25*TILE,'the next push takes him back to the hospital'); ok(G.vars.push===1,'with a Swarm wave');
+  const g2=osp().find(u=>u!==doc&&u!==g1); for(const x of hives()){ x.invuln=false; kill(x,null); } step(0.5); damage(g2,1e8,s); ok(g2.ospBroke&&!g2.ospHeal,'no hive left: he runs for a way out'); step(OSPREY.vanish+1); ok(g2.dead,'and is gone for good');
+  G.timer.end=G.time+0.2; step(1); ok(G.over&&G.over.win&&obj('dawn')==='done','dawn: won'); ok(obj('records')==='done','the files kept'); ok(osp().every(u=>u.ospBroke&&u.ospOut),'they all pull out'); ok(/Containment Order 9/.test(G.over.text),'the end tells who they were');'''),
 ('night shift: they get the files','''const G=start('night-shift'); step(1); calm(); for(const s of dust()){ s.invuln=true; s.quiet=true; } step(G.mission.job.nsArrive+G.mission.job.nsSneak+0.5); const doc=G.vars.doc; doc.invuln=true;
   for(let i=0;i<G.mission.job.nsDownload+5&&!G.vars.dlDone;i++){ tp(doc,20,19); step(1); } ok(G.vars.dlDone&&obj('records')==='failed','the download finishes: optional failed');'''),
 ('kill order: Kessler, beacons, the hauler','''const G=start('kill-order'); step(1); const k=G.vars.kessler; ok(k&&k.npc&&k.vet.name==='Kessler'&&k.vet.rank===2,'Sgt. Kessler in the squad'); ok(osp().length===7,'seven of them');
@@ -56,7 +63,7 @@ CASES=[
   ok(/lived through/.test(MISSIONS.find(x=>x.id==='brood-mother').briefing[0]),'Brood Mother: she lived through it');'''),
 ('save and load, dev panel','''let G=start('night-shift'); step(1); calm(); step(G.mission.job.nsArrive+G.mission.job.nsSneak+1); G.vars.dl=0.3; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); G=__hc.G; step(0.5);
   ok(osp().length===7&&osp().every(u=>u.truce==='swarm'&&u.sprite==='crew_'+u.type),'the raiders come back as they were'); ok(G.vars.dl>=0.29&&G.vars.term,'and the download'); goMenu('menu');
-  for(const k of ['OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload','M|job.koShip','M|job.mhTap.normal','M|job.mhBurn']) ok(!!devHelp(k),'dev help: '+k);''')
+  for(const k of ['OSPREY|hiveHeal','OSPREY|healTo','OSPREY|spacing','OSPREY|contact','OSPREY|calm','M|job.nsHold','M|job.nsEvery','OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload','M|job.koShip','M|job.mhTap.normal','M|job.mhBurn']) ok(!!devHelp(k),'dev help: '+k);''')
 ]
 res=[]
 with sync_playwright() as p:
