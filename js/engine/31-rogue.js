@@ -24,6 +24,12 @@ const ROGUE_UNLOCK_DIFF='normal';
 function rogueUnlocked(){ return MISSIONS.length>0&&MISSIONS.every(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; }); }
 /* how far the Corps is on the way there, for the hint on the campaign screen */
 function rogueUnlockCount(){ return MISSIONS.filter(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; }).length; }
+/* the Rogue side of the campaign screen before it opens: what it takes, and how far the Corps campaign is (in place of the splice lab) */
+function buildRogueLock(el=$('#hero-card')){ const n=rogueUnlockCount(), N=MISSIONS.length, D=DIFFICULTY[ROGUE_UNLOCK_DIFF].label;
+  el.innerHTML=`<div class="lbl">🔒 Playable after the Corps campaign</div>
+    <p class="lede" style="margin:0">Win every Lunar Corps mission on ${D} or Hard and the Osprey crew answers. A mission won only on Easy does not count. The splice lab opens with the campaign.</p>
+    <div class="rlock-bar" title="${n} of ${N} Corps missions won on ${D} or Hard"><span style="width:${Math.round(n/Math.max(1,N)*100)}%"></span></div>
+    <p class="rdim" style="margin:0;font-size:12px">Lunar Corps: ${n} / ${N} missions won on ${D} or Hard.</p>`; }
 const crewDef=id=>ROGUE_CREW.find(c=>c.id===id)||{};
 const crewTitle=v=>`${RANKS[v.rank].abbr} ${v.name}`;
 const dnaTotal=d=>Object.values(d||{}).reduce((s,n)=>s+n,0);

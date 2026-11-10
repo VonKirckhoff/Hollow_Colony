@@ -17,18 +17,18 @@ with sync_playwright() as p:
     pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(500); pg.keyboard.press('Enter'); pg.wait_for_timeout(200)
     J(pg,"()=>{ loadVoices(); ui.voices=true; if(SFX.muted) SFX.toggle(); INTERCOM.delay=0.1; INTERCOM.gap=0.01; ui.progress={results:{}}; ui.campSide='corps'; goMenu('campaign'); }")
     # the unlock
-    ok(J(pg,"()=>!rogueUnlocked()&&document.querySelector('[data-side=rogue]').hidden"),'Rogue Strain locked at the start')
+    ok(J(pg,"()=>!rogueUnlocked()&&!document.querySelector('[data-side=rogue]').hidden&&document.querySelector('[data-side=rogue]').classList.contains('locked')"),'Rogue Strain locked at the start')
     J(pg,"()=>{ recordWin('hollow-colony','hard',500,false); goMenu('campaign'); }")
-    ok(J(pg,"()=>document.querySelector('[data-side=rogue]').hidden"),'Corps mission 4 alone does not open it')
+    ok(J(pg,"()=>document.querySelector('[data-side=rogue]').classList.contains('locked')"),'Corps mission 4 alone does not open it')
     J(pg,"()=>{ for(const m of MISSIONS) recordWin(m.id,'easy',500,false); goMenu('campaign'); }")
-    ok(J(pg,"()=>document.querySelector('[data-side=rogue]').hidden"),'the whole campaign on Easy does not open it')
+    ok(J(pg,"()=>document.querySelector('[data-side=rogue]').classList.contains('locked')"),'the whole campaign on Easy does not open it')
     # win the last Corps mission on Normal through endGame: the end screen tells you
     J(pg,"()=>{ for(const m of MISSIONS.slice(0,-1)) recordWin(m.id,'normal',500,false); ui.diff='normal'; startMission(MISSIONS[MISSIONS.length-1]); __hc.update(1/30); endGame(true,'Done.'); }")
     pg.wait_for_timeout(2500)
     ok(J(pg,"()=>!!__hc.G.rogueOpened&&rogueUnlocked()"),'winning the last mission on Normal opens Rogue Strain')
     ok('Rogue Strain' in J(pg,"()=>{ showEnd(); return $('#e-text').textContent; }"),'the end screen says a new campaign is open')
     J(pg,"()=>goMenu('campaign')")
-    ok(J(pg,"()=>!document.querySelector('[data-side=rogue]').hidden"),'the Osprey crew button shows')
+    ok(J(pg,"()=>!document.querySelector('[data-side=rogue]').hidden&&!document.querySelector('[data-side=rogue]').classList.contains('locked')"),'the Osprey crew button shows')
     # the intercom
     J(pg,"()=>{ __said.length=0; openBriefing(3); }")
     pg.wait_for_timeout(150)

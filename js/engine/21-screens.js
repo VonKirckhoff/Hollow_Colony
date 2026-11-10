@@ -28,18 +28,19 @@ const sideOf=m=>m.side==='swarm'?'swarm':m.rogue?'rogue':'corps';
 const listOf=m=>sideOf(m)==='swarm'?SWARM_MISSIONS:sideOf(m)==='rogue'?ROGUE_MISSIONS:MISSIONS;
 function isUnlocked(i){ const L=campList(); return i===0 || isDone(L[i-1].id); }
 function buildCampaign(){
-  if(ui.campSide==='rogue'&&!rogueUnlocked()) ui.campSide='corps';   /* the Rogue side opens once the whole Corps campaign is won on Normal or Hard */
-  const sw=ui.campSide==='swarm', rg=ui.campSide==='rogue', L=campList(); $('#s-campaign').classList.toggle('swarm',sw); $('#s-campaign').classList.toggle('rogue',rg);
-  const rb=$('[data-side="rogue"]'); if(rb) rb.hidden=!rogueUnlocked(); $('#camp-side').classList.toggle('three',rogueUnlocked());
+  /* the Rogue side is always shown; its jobs open once the whole Corps campaign is won on Normal or Hard (until then: locked, no splice lab) */
+  const sw=ui.campSide==='swarm', rg=ui.campSide==='rogue', rOpen=rogueUnlocked(), rLock=rg&&!rOpen, L=campList(); $('#s-campaign').classList.toggle('swarm',sw); $('#s-campaign').classList.toggle('rogue',rg); $('#s-campaign').classList.toggle('rogue-locked',rLock);
+  const rb=$('[data-side="rogue"]'); if(rb){ rb.hidden=false; rb.classList.toggle('locked',!rOpen); } $('#camp-side').classList.add('three');
   document.querySelectorAll('[data-side]').forEach(b=>{ const on=b.dataset.side===ui.campSide; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
   $('#camp-eyebrow').textContent=sw?'CAMPAIGN · THE SWARM':rg?'CAMPAIGN · THE OSPREY CREW':'CAMPAIGN · LUNAR CORPS'; $('#camp-title').textContent=sw?'The Long Hunger':rg?'Rogue Strain':'Operation Hollow Light';
   for(const [k,LL] of [['corps',MISSIONS],['swarm',SWARM_MISSIONS],['rogue',ROGUE_MISSIONS]]){ const el=$('#cs-p-'+k); if(el) el.textContent=`${LL.filter(m=>isDone(m.id)).length} / ${LL.length} missions`; }   /* progress on the side buttons */
-  if(rg) buildCrew(); else buildHero();
+  if(!rOpen) $('#cs-p-rogue').textContent='🔒 Playable after the Corps campaign';
+  if(rLock) buildRogueLock(); else if(rg) buildCrew(); else buildHero();
   $('#btn-vets').textContent=`Veterans (${ui.roster.active.length})`; $('#btn-ceno').textContent=`Cenotaph (${ui.roster.fallen.length})`;
-  const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=`${doneN} of ${L.length} missions complete`;
+  const doneN=L.filter(m=>isDone(m.id)).length; $('#camp-progress').textContent=rLock?`Playable after the Corps campaign · ${L.length} jobs`:`${doneN} of ${L.length} missions complete`;
   const trs=rg?[]:trainingsOf(sw?'swarm':'corps');
-  $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=isUnlocked(i);
-    return `<button class="mission" type="button" data-mission="${i}" ${un?'':`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
+  $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=!rLock&&isUnlocked(i);
+    return `<button class="mission" type="button" data-mission="${i}" ${un?'':rLock?`aria-disabled="true" data-rlock="1" title="Playable after the Corps campaign"`:`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
 /* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
 let heroEdit=false, heroType=null, heroSex=null;
@@ -63,6 +64,7 @@ $('#hero-card').addEventListener('click',e=>{ if(ui.campSide==='rogue') return; 
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return;
+  if(b.dataset.rlock){ toast(`Playable after the Corps campaign: win all ${MISSIONS.length} Lunar Corps missions on Normal or Hard.`,true); return; }
   if(b.getAttribute('aria-disabled')==='true'){
     if(!e.shiftKey){ toast('Finish the previous mission first. Shift-click to play it anyway.',true); return; } }
   openBriefing(+b.dataset.mission); });
@@ -256,7 +258,7 @@ $('#b-voice').addEventListener('click',()=>{ if(BRIEF_VOICE.on){ BRIEF_VOICE.sto
   const m=briefMission(briefIdx); BRIEF_VOICE.play(briefIntro(m,briefIdx),m.briefing); });
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
 $('#b-watch').addEventListener('click',()=>startMission(briefMission(briefIdx),{demo:true}));
-$('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; if(b.dataset.side==='rogue'&&!rogueUnlocked()) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
+$('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
 function syncDiff(){ document.querySelectorAll('.diff-seg').forEach(seg=>{ seg.innerHTML=Object.entries(DIFFICULTY).map(([k,d])=>`<button type="button" data-diff="${k}" class="${k===ui.diff?'on':''}">${d.label}</button>`).join(''); }); }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-diff]'); if(!b) return; ui.diff=b.dataset.diff; store.set('hc-diff',ui.diff); syncDiff(); });
 function buildSkirmish(){
