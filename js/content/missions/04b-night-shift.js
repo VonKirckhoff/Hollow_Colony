@@ -21,7 +21,7 @@ MISSIONS.push(
       'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Kestrel can fly replacements to the pad just south of the tents; claim the relay pads to pay for them.',
       'Kappa medical has a dozen wounded in those tents. Nobody gets near them.'
     ],
-    job:{ nsHold:600, nsArrive:40, nsSneak:25, nsFirst:120, nsEvery:90, nsDownload:60, nsGrab:2.5, nsWave:45, nsWaveGrow:15 },
+    job:{ nsHold:600, nsArrive:40, nsSneak:25, nsFirst:120, nsEvery:60, nsDownload:60, nsGrab:2.5, nsWave:65, nsWaveGrow:15 },
     start:{ salvage:200, camera:'Q',
       units:[ ['trooper','Q',4], ['gunner','Q',1], ['pyro','Q',1], ['medic','Q',1], ['engineer','Q',1] ],
       buildings:[], hives:['a','b','c'],
@@ -30,7 +30,7 @@ MISSIONS.push(
     landingZone:{ tx:21, ty:26, max:10, delay:25 },   // a pad just south of the tents: replacements, never more than 10 on the ground
     dark:{ sight:0.5 },                 // night: sight × 0.5, the hospital itself is lit
     noTraining:true,
-    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:150, brute:9999 } },
+    swarm:{ biomass:150, rate:0.3, guardMax:4, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:150, brute:9999 } },
     objectives:[
       { id:'dawn',    text:'Hold the hospital until dawn' },
       { id:'records', text:'Keep them off the records terminal', optional:true },
