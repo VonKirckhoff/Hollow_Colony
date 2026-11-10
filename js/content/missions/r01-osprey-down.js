@@ -8,7 +8,7 @@ ROGUE_MISSIONS.push(
     summary:'Crawl out of the wreck, take what Dr. Maas kept, and disappear.',
     briefing:[
       'The Osprey came in hot over Hollow Colony with orders to bring out Dr. Elin Maas. It never touched the pad. The pilot is dead; the seven in the back are not.',
-      'Captain Haesaert has heard the radio: Command thinks the Osprey went down with all hands, and Squad Dust is already on its way. The lab is a hundred metres from the wreck. Maas is behind a locked door, and her sample freezer is not.',
+      'Captain Kerckhoffs has heard the radio: Command thinks the Osprey went down with all hands, and Squad Dust is already on its way. The lab is a hundred metres from the wreck. Maas is behind a locked door, and her sample freezer is not.',
       'Get Cnudde to the freezer. Kill Swarm with lead, not fire: whatever Mortier burns is useless, but what a bullet leaves behind, Devreese can bottle. Then go where nobody follows: the Swarm tunnel in the south wall.'
     ],
     start:{ salvage:0, camera:{x:41,y:13}, crewAt:{x:41,y:13},
@@ -27,15 +27,15 @@ ROGUE_MISSIONS.push(
           makeBuilding('wreck','none',41,9,true); const d=makeBuilding('door','none',53,4,true); d.tag='maasdoor';
           for(const u of g.crew()) u.hp=u.maxHp*rand(0.5,0.85);   /* nobody walks away from a crash unhurt */
           g.marker('fz','1','Sample freezer'); g.vars.fz=0; g.vars.fzT=g.time; } },
-      { when:g=>g.time>1.5, do:g=>g.crewSay('Capt. Haesaert','Sound off. ...Six. Seven. Good. Pilot\'s gone. Everyone else on your feet, we are not staying in this wreck.') },
+      { when:g=>g.time>1.5, do:g=>g.crewSay('Capt. Kerckhoffs','Sound off. ...Six. Seven. Good. Pilot\'s gone. Everyone else on your feet, we are not staying in this wreck.') },
       { when:g=>g.time>7, do:g=>g.say('Cmdr. Varga','Osprey, Osprey, this is Tycho Command. Do you copy? ...Osprey, respond.') },
-      { when:g=>g.time>12, do:g=>g.crewSay('Capt. Haesaert','Leave it, Braet. Radio stays off. Cnudde, the lab is north-east. Find me that freezer.') },
+      { when:g=>g.time>12, do:g=>g.crewSay('Capt. Kerckhoffs','Leave it, Braet. Radio stays off. Cnudde, the lab is north-east. Find me that freezer.') },
       { when:g=>g.time>20, do:g=>g.crewSay('Devreese','Captain. Before we left I read what Maas sent Command. She was splicing their blood into lab rats. The rats healed. Whatever we kill here, shoot it, do not burn it. I want samples.') },
       { when:g=>g.time>34, do:g=>g.crewSay('Mortier','No fire. Wonderful. I will just carry this thing around then.') },
       /* Maas behind her door: she will not open it */
       { when:g=>g.crewNear({x:53,y:5},4)>0, do:g=>{ g.say('Dr. Maas (intercom)','Who is out there? ...You are not Corps. Corps would have come in by now. Go away!');
           g.vars.maasT=g.time; } },
-      { when:g=>g.vars.maasT&&g.time>g.vars.maasT+6, do:g=>g.crewSay('Capt. Haesaert','Osprey, doctor. We came for you.') },
+      { when:g=>g.vars.maasT&&g.time>g.vars.maasT+6, do:g=>g.crewSay('Capt. Kerckhoffs','Osprey, doctor. We came for you.') },
       { when:g=>g.vars.maasT&&g.time>g.vars.maasT+11, do:g=>g.say('Dr. Maas (intercom)','The Osprey burned. I watched it from the window. ...Take what you want from my freezer. But this door stays shut.') },
       /* the freezer: an Engineer of the crew works it open */
       { repeat:true, when:g=>g.vars.fzT!=null&&!g.vars.fzDone, do:g=>{ const dt=g.time-g.vars.fzT; g.vars.fzT=g.time; const p=g.where('1');
@@ -48,7 +48,7 @@ ROGUE_MISSIONS.push(
             g.vars.radioT=g.time+5; } } },
       { when:g=>g.vars.radioT&&g.time>g.vars.radioT, do:g=>{ g.say('Cmdr. Varga','All stations, Tycho Command. The Osprey is confirmed lost with all hands. Squad Dust, you are go for Hollow Colony. Bring Dr. Maas home.');
           g.setTimer(240,'Dust lands'); g.vars.dustDue=true; } },
-      { when:g=>g.vars.dustDue&&g.time>g.vars.radioT+9, do:g=>g.crewSay('Capt. Haesaert','Lost with all hands. ...Fine by me. Nobody hunts a dead man. Finish the job and get underground before Dust sees us.') },
+      { when:g=>g.vars.dustDue&&g.time>g.vars.radioT+9, do:g=>g.crewSay('Capt. Kerckhoffs','Lost with all hands. ...Fine by me. Nobody hunts a dead man. Finish the job and get underground before Dust sees us.') },
       { repeat:true, when:g=>!g.vars.dnaDone, do:g=>{ const n=g.dna(); g.setText('dna',`Bottle Swarm DNA (${Math.min(6,n)}/6)`); if(n>=6){ g.vars.dnaDone=true; g.complete('dna'); } } },
       /* both done: out through the Swarm tunnel in the south wall */
       { when:g=>g.isDone('freezer')&&g.vars.dnaDone, do:g=>{ g.addObjective('escape','Everyone into the Swarm tunnel in the south wall (right-click it)'); g.exitMark('exit'); g.openExit();
@@ -61,7 +61,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.dustAt&&g.time>g.vars.dustAt, do:g=>{
           const squad=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1),...g.loyal('medic','P',1)];
           g.hunt(squad.filter(u=>!u.def.heal)); g.say('Sgt. Kessler','Dust on the ground. Spread out, the lab is north-east. Watch for the... Contact! Corps armour, no IFF! Who the hell are you?');
-          g.crewSay('Capt. Haesaert','That is Dust. Do not let them pin us, get to the tunnel!'); } },
+          g.crewSay('Capt. Kerckhoffs','That is Dust. Do not let them pin us, get to the tunnel!'); } },
       /* the freezer needs an Engineer: if the crew has none left (dead, not just down), the job cannot be done */
       { when:g=>g.time>2&&!g.vars.fzDone&&!g.crew().some(u=>u.def.builder), do:g=>{ g.fail('freezer'); g.lose('Cnudde is dead, and nobody else in the crew can open Dr. Maas\'s freezer. Without her samples there is nothing to run with.'); } },
       { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The Osprey crew dies in Hollow Colony after all. This time the report is true.') }

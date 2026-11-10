@@ -27,7 +27,7 @@ ROGUE_MISSIONS.push(
     triggers:[
       { when:g=>g.time>0.3, do:g=>{ g.wall('8',2.3,'lair'); g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.boss(g.vars.mother,'Brood Mother');
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); g.marker('mem','8','Lair membrane'); g.vars.mem=0; g.vars.mt=g.time; } },
-      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Haesaert','The Maw Depths. Last job, people. Whatever happens down here, it is ours to decide.') },
+      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','The Maw Depths. Last job, people. Whatever happens down here, it is ours to decide.') },
       { when:g=>g.time>10, do:g=>g.crewSay('Devreese','The membrane at the lair: if one of us is far enough gone, sixty or more, stand him against it. It will open for its own.') },
       { when:g=>g.time>22, do:g=>g.crewSay('Mortier','And if not, I burn three egg chambers. Finally something I am allowed to burn.') },
       { repeat:true, when:g=>g.vars.mt!=null&&!g.vars.open, do:g=>{ let n=0; for(const k of ['a','b','c']){ if(!g.hiveAt(k)){ n++; g.unmark('ch'+k); } }
@@ -38,7 +38,7 @@ ROGUE_MISSIONS.push(
           else g.vars.mem=Math.max(0,g.vars.mem-dt*0.5);
           g.setText('lair',`Open the lair: burn the three egg chambers (${n}/3), or let a crew member with 60+ taint stand at the membrane${g.vars.mem>0?` (${Math.floor(g.vars.mem)}/6)`:''}`);
           if(n>=3||g.vars.mem>=6){ g.vars.open=true; g.complete('lair'); g.openWall('lair'); g.unmark('mem'); for(const k of ['a','b','c']) g.unmark('ch'+k); g.marker('queen','9','Brood Mother');
-            g.crewSay(n>=3?'Capt. Haesaert':'Devreese',n>=3?'The membrane is rotting away. She is in there. Everyone, on me.':'It opened for him. God help us, it opened for him. She is in there.'); } } },
+            g.crewSay(n>=3?'Capt. Kerckhoffs':'Devreese',n>=3?'The membrane is rotting away. She is in there. Everyone, on me.':'It opened for him. God help us, it opened for him. She is in there.'); } } },
       { when:g=>g.vars.mother&&g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.crewSay('Braet','Look at the size of her.'); } },
       { when:g=>g.vars.mother&&g.vars.mother.bossState&&g.vars.mother.bossState.lairs>=1, do:g=>g.crewSay('Devreese','She is crawling back to heal! Go in after her!') },
       /* she dies: her heart, and the choice */
@@ -60,7 +60,7 @@ ROGUE_MISSIONS.push(
               ?'The heart goes into Devreese\'s needle, and the needle goes into all of them. When Dust reaches the lair it finds a dead queen and seven sets of Corps armour, empty. Somewhere under Tycho Maw, seven heartbeats slow to the rhythm of something much older. The Osprey crew is not missing any more. It is becoming.'
               :'Mortier\'s flame turns the heart to ash, and Devreese feeds every sample they ever took into the fire after it. Seven soldiers walk out of the Maw with nothing but the strain already in their blood. When Dust comes down, there is nothing left to find. Whatever the Osprey crew is now, it ends with them.'); } } },
       { when:g=>g.vars.heart&&!g.vars.chosen&&g.timerLeft()<=50&&!g.vars.dustLand, do:g=>{ g.vars.dustLand=true; const sq=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1)]; g.hunt(sq);
-          g.say('Sgt. Kessler','Dust is in the Maw. Whoever is down here: we are coming for that lair.'); g.crewSay('Capt. Haesaert','Dust. Make the call, now!'); } },
+          g.say('Sgt. Kessler','Dust is in the Maw. Whoever is down here: we are coming for that lair.'); g.crewSay('Capt. Kerckhoffs','Dust. Make the call, now!'); } },
       { when:g=>g.vars.heart&&!g.vars.chosen&&g.timerLeft()===0, do:g=>g.lose('Dust reaches the lair first. The heart goes to Tycho in a sealed case, and the Osprey crew goes with it.') },
       { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The crew dies in the Maw Depths. The Brood Mother keeps laying.') }
     ]

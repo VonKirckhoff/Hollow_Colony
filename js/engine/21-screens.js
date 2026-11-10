@@ -247,10 +247,10 @@ function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swar
   $('#b-voice').hidden=!window.speechSynthesis; if(INTERCOM.auto) BRIEF_VOICE.play(briefIntro(m,i),m.briefing); else BRIEF_VOICE.btn(); }
 /* the first line the intercom says: who is addressed, and which mission */
 function briefIntro(m,i){ const N=n=>['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);
-  if(m.training) return m.side==='swarm'?`${m.title}.`:`Attention, recruits. Training exercise: ${m.title}.`;
+  if(m.training) return m.side==='swarm'?`${m.title}.`:`Lunar Corps, Squad Dust recruits. Training exercise: ${m.title}.`;
   if(m.side==='swarm') return `${m.title}.`;
-  if(m.rogue) return `Osprey crew, listen up. Job ${N(i+1)}: ${m.title}.`;
-  return `Attention, all personnel. Mission ${N(i+1)}: ${m.title}.`; }
+  if(m.rogue) return `Osprey crew, this is Kerckhoffs. Job ${N(i+1)}: ${m.title}.`;   /* the Captain on the crew's own channel: they are dead to the Corps */
+  return `Lunar Corps, Squad Dust. Mission ${N(i+1)}: ${m.title}.`; }
 $('#b-voice').addEventListener('click',()=>{ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; }
   if(SFX.muted){ toast('Sound is off.',true); return; } if(!ui.voices){ toast('Voices are off (Voices button in the top bar).',true); return; }
   const m=briefMission(briefIdx); BRIEF_VOICE.play(briefIntro(m,briefIdx),m.briefing); });

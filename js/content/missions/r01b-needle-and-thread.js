@@ -40,7 +40,7 @@ ROGUE_MISSIONS.push(
           g.pad('2','relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
           g.marker('term',{x:20,y:18},'Records terminal');
           g.reveal({x:20,y:20},6,1e6); } },   /* the hospital is lit all night: the crew can watch it from afar */
-      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Haesaert','Kappa Basin. Last time I was here we were holding it for Dust. Now it is a hospital full of our own. Shoot what shoots back, nothing else.') },
+      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','Kappa Basin. Last time I was here we were holding it for Dust. Now it is a hospital full of our own. Shoot what shoots back, nothing else.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','The terminal in the middle of the tents. Get me there and keep them off me. It takes time to find her files, and they will hear me looking.') },
       { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','That pad in the north-east is a relief pad. Once the hospital shouts for help, that is where Tycho lands its people.') },
       { when:g=>g.time>27, do:g=>g.crewSay('Braet','Hold fire (Q) till we are close, Captain. The longer they do not see us, the longer before the first dropship.') },
@@ -74,7 +74,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.wave(45,{x:20,y:18}); g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
       /* both done: out through the north shaft */
       { when:g=>g.vars.dlDone&&g.vars.stabDone, do:g=>{ g.vars.escape=true; g.addObjective('escape','Everyone into the old shaft in the north wall (right-click it)'); g.exitMark('exit'); g.openExit();
-          g.crewSay('Capt. Haesaert','That is what we came for. North wall, the old shaft. Nobody stays behind.'); } },
+          g.crewSay('Capt. Kerckhoffs','That is what we came for. North wall, the old shaft. Nobody stays behind.'); } },
       { repeat:true, when:g=>g.vars.escape&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old shaft in the north wall, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
       { when:g=>g.vars.escape&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); g.clearTimer();
           g.win(g.vars.sent?'Kappa\'s field hospital counts three empty cases and a wiped terminal. Okafor\'s report says raiders in Corps armour. Devreese says nothing; she is already mixing the first dose in the dark.'
@@ -88,6 +88,6 @@ ROGUE_MISSIONS.push(
 /* the alarm: the hospital calls Tycho, and the relief squads start coming */
 function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.say('Kappa medical',line);
   g.ping('2'); g.setTimer(G.mission.job.firstWave,'Relief squad');
-  g.crewSay('Capt. Haesaert','That is the alarm. Tycho will be dropping people on that pad. Get Devreese her files and get the cases, fast.'); }
+  g.crewSay('Capt. Kerckhoffs','That is the alarm. Tycho will be dropping people on that pad. Get Devreese her files and get the cases, fast.'); }
 /* when the next relief squad is due */
 function ntDue(g){ const J=G.mission.job; return g.vars.alarm+J.firstWave+g.vars.sent*J.waveEvery; }

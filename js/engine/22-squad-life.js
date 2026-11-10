@@ -166,9 +166,12 @@ function voiceSample(sex){ if(!window.speechSynthesis||SFX.muted||!ui.voices) re
    the voice's pitch and pace and the noise bed under it. Follows Sound and Voices; the Read aloud / Stop button on the briefing screen;
    it stops when you leave the briefing (show() in 21-screens.js). */
 const INTERCOM = { auto:true, pitch:0.78, rate:0.92, volume:3, delay:1.5, gap:0.3, humHz:50, hum:0.03, hiss:0.045, crackle:0.35, crackleVol:0.16, musicDuck:0.35 };
+/* titles written out, so the voice does not say "drive Maas" and a sentence does not end at "Dr." */
+const SPOKEN_TITLES = { 'Dr.':'Doctor', 'Capt.':'Captain', 'Sgt.':'Sergeant', 'Cpl.':'Corporal', 'Pvt.':'Private', 'Lt.':'Lieutenant', 'Cmdr.':'Commander', 'Col.':'Colonel', 'Maj.':'Major', 'Gen.':'General', 'Spc.':'Specialist' };
+function spokenText(t){ return String(t).replace(/\b(Dr|Capt|Sgt|Cpl|Pvt|Lt|Cmdr|Col|Maj|Gen|Spc)\.(?=\s)/g,m=>SPOKEN_TITLES[m]||m); }
 const BRIEF_VOICE=(()=>{ let run=0, on=false, cur=null;
   /* the briefing as sentences: one utterance each, because long utterances stall in some browsers */
-  function sentences(intro,paras){ const txt=[intro].concat(paras||[]).map(p=>String(p).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&[a-z#0-9]+;/gi,'')).join(' ').replace(/\.\.\./g,',').replace(/[—–]/g,', ').replace(/\s+/g,' ');
+  function sentences(intro,paras){ const txt=spokenText([intro].concat(paras||[]).map(p=>String(p).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&[a-z#0-9]+;/gi,'')).join(' ')).replace(/\.\.\./g,',').replace(/[—–]/g,', ').replace(/\s+/g,' ');
     return (txt.match(/[^.!?]+[.!?]+["'’”)\]]*|[^.!?]+$/g)||[]).map(s=>s.trim()).filter(Boolean); }
   /* a steady man's voice, British English if the browser has one */
   function voice(){ const M=VOICES_M.length?VOICES_M:VOICES_EN; return M.find(v=>/en[-_]GB/i.test(v.lang))||M[0]||null; }

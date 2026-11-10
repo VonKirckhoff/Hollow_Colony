@@ -55,7 +55,7 @@ ROGUE_MISSIONS.push(
           const sq=[...g.loyal('trooper','9',2),...g.loyal('gunner','9',1),...g.loyal('pyro','9',1),...g.loyal('medic','9',1),...g.loyal('engineer','9',1)];
           for(const u of sq){ u.sweep=true; u.home=null; } g.vars.sweepI=0; g.vars.sweepAt=g.time+25; } },
       { when:g=>g.time>1, do:g=>g.crewSay('Devreese',`${g.vars.pt.vet.name} is at ${Math.round(g.vars.pt.vet.taint)} and climbing. The doses only buy a minute. We need a living hive, Captain. Any hive.`) },
-      { when:g=>g.time>9, do:g=>g.crewSay('Capt. Haesaert','Closest nest is north-east of the landing. Everyone around him. And keep that flamer cold.') },
+      { when:g=>g.time>9, do:g=>g.crewSay('Capt. Kerckhoffs','Closest nest is north-east of the landing. Everyone around him. And keep that flamer cold.') },
       { when:g=>g.time>28, do:g=>g.say('Lt. Okafor','Sweep team, Okafor. First nest is the south-east one. Burn it and move on, we have five to do before dark.') },
       { when:g=>g.time>34, do:g=>g.crewSay('Cnudde','They are burning the hives! If they get them all, we have nothing.') },
       /* the fever: his taint keeps climbing until a hive has quieted it */

@@ -25,9 +25,9 @@ ROGUE_MISSIONS.push(
     ],
     triggers:[
       { when:g=>g.time>0.3, do:g=>{ g.marker('u1','1','Uplink'); g.marker('u2','2','Uplink'); g.marker('u3','3','Uplink'); g.pad('P','kpad'); g.landShip('kpad',12,false); g.vars.kAt=g.time+12.2; } },
-      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Haesaert','Open ground and a dropship coming in. Get to a beacon. Any beacon.') },
-      { when:g=>g.time>6, do:g=>g.say('Sgt. Kessler','Haesaert. I know you can hear me. It is Kessler. Put the guns down and walk out, all seven of you, and I will see you get a fair hearing.') },
-      { when:g=>g.time>12, do:g=>g.crewSay('Capt. Haesaert','He means it, too. Doesn\'t matter. A fair hearing ends with Devreese\'s samples in a furnace and us in a lab. Move.') },
+      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','Open ground and a dropship coming in. Get to a beacon. Any beacon.') },
+      { when:g=>g.time>6, do:g=>g.say('Sgt. Kessler','Kerckhoffs. I know you can hear me. It is Kessler. Put the guns down and walk out, all seven of you, and I will see you get a fair hearing.') },
+      { when:g=>g.time>12, do:g=>g.crewSay('Capt. Kerckhoffs','He means it, too. Doesn\'t matter. A fair hearing ends with Devreese\'s samples in a furnace and us in a lab. Move.') },
       /* Kessler's squad lands and hunts */
       { when:g=>g.vars.kAt&&g.time>g.vars.kAt, do:g=>{
           const k=g.loyal('trooper','P',1,{ tough:3, name:'Sgt. Kessler' })[0]; k.kessler=true; k.awake=true; g.boss(k,'Sgt. Kessler'); g.vars.kessler=k;
@@ -36,7 +36,7 @@ ROGUE_MISSIONS.push(
       /* Kessler pulls back once he is badly hurt */
       { repeat:true, when:g=>{ const k=g.vars.kessler; return !!k&&!k.dead&&!g.vars.kOut&&k.hp<k.maxHp*0.3; }, do:g=>{ const k=g.vars.kessler, p=g.where('P'); g.vars.kOut=true;
           k.hunter=false; k.target=null; k.invuln=true; k.order={type:'move',x:p.x,y:p.y}; setPath(k,p.x,p.y); G.boss=null;
-          g.say('Sgt. Kessler','I am hit... Dust, I am pulling back. Keep after them.'); g.crewSay('Capt. Haesaert','Let him go! Nobody shoots Kessler.'); g.vars.kGone=g.time+20; } },
+          g.say('Sgt. Kessler','I am hit... Dust, I am pulling back. Keep after them.'); g.crewSay('Capt. Kerckhoffs','Let him go! Nobody shoots Kessler.'); g.vars.kGone=g.time+20; } },
       { when:g=>g.vars.kOut&&g.vars.kessler&&!g.vars.kessler.dead&&(g.time>g.vars.kGone||Math.hypot(g.vars.kessler.x-g.where('P').x,g.vars.kessler.y-g.where('P').y)<2*TILE), do:g=>{ const k=g.vars.kessler; k.dead=true; dustPuff(k.x,k.y,12); g.complete('kessler'); } },
       { when:g=>g.vars.kessler&&g.vars.kessler.dead&&!g.vars.kOut, do:g=>{ g.fail('kessler'); G.boss=null; g.crewSay('Braet','...That was Kessler. I am putting him on the list.'); } },
       /* a second fire team at four minutes */

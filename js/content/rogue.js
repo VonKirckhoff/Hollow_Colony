@@ -7,9 +7,9 @@
 const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-… (with r01b and r05b in between), in the order of their <script> lines */
 
 /* The Osprey crew. Fixed people: they carry their rank, experience, strains and taint from mission to mission
-   (kept in hc-rogue, not on the Lunar Corps roster). Haesaert is the Captain: he leads the squad (AURA). */
+   (kept in hc-rogue, not on the Lunar Corps roster). Kerckhoffs is the Captain: he leads the squad (AURA). */
 const ROGUE_CREW = [
-  { id:'osp-haesaert',    name:'Haesaert',      type:'trooper',  rank:5, xp:62, capt:true, bio:'Captain of the Osprey. Twenty years in the Corps, and the one who decided they would stay dead.' },
+  { id:'osp-kerckhoffs',    name:'Kerckhoffs',      type:'trooper',  rank:5, xp:62, capt:true, bio:'Captain of the Osprey. Twenty years in the Corps, and the one who decided they would stay dead.' },
   { id:'osp-dehandschutter', name:'Dehandschutter', type:'gunner', rank:2, xp:11, bio:'Door gunner. Talks to his rotary gun. Pulled two of the others out of the burning wreck.' },
   { id:'osp-mortier',     name:'Mortier',       type:'pyro',     rank:1, xp:5,  bio:'Loves his flamer more than he trusts the plan. Fire leaves nothing to harvest, and he knows it.' },
   { id:'osp-devreese',    name:'Devreese',      type:'medic',    rank:1, xp:6,  sex:'f', bio:'Flight medic. She read Maas\'s notes first, and she is the one holding the needle.' },
@@ -80,7 +80,7 @@ const ROGUE_VOICE = {
 /* how the crew sounds: pitch and rate for the browser's speech voice. taint 0 → base, taint 100 → base − drop. feral: pitch/rate below. */
 const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDrop:0.25, feralPitch:0.1, feralRate:0.62, taintChance:0.3 };
 /* in a Rogue job, the engine's own warnings (hives, husks, the hunt) come from the crew instead of these advisors */
-const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Haesaert' };
+const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Kerckhoffs' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [
   { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Mother strain' },

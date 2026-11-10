@@ -13,7 +13,7 @@ CASES=[
   for(const m of MISSIONS.slice(0,-1)) recordWin(m.id,'normal',500,false); ok(!rogueUnlocked()&&rogueUnlockCount()===MISSIONS.length-1,'one Easy mission left keeps it locked');
   recordWin(MISSIONS[MISSIONS.length-1].id,'hard',500,false); goMenu('campaign'); ok(!document.querySelector('[data-side=rogue]').hidden,'unlocked once every Corps mission is won on Normal or Hard');
   ui.campSide='rogue'; goMenu('campaign'); ok(document.querySelectorAll('.crow').length===7,'seven crew in the splice lab'); ok(/Rogue Strain/.test(document.getElementById('camp-title').textContent),'campaign title');
-  const R=rogueStore(); ok(R.crew.find(v=>v.capt).rank===5,'Haesaert is the Captain'); ok(splice('osp-braet','drone')!==null,'no samples: no splice');
+  const R=rogueStore(); ok(R.crew.find(v=>v.capt).rank===5,'Kerckhoffs is the Captain'); ok(splice('osp-braet','drone')!==null,'no samples: no splice');
   R.dna.drone=3; ok(splice('osp-braet','drone')===null&&R.crew.find(v=>v.id==='osp-braet').taint===10&&R.dna.drone===0,'splice: strain in, taint up, samples spent');
   ok(splice('osp-braet','drone')!==null,'a strain only once'); R.crew[2].taint=90; R.dna.hive=3; ok(/taint/.test(splice(R.crew[2].id,'hive')||''),'no splice past '+SPLICE_MAX);
   R.stab=1; ok(stabilizeCrew(R.crew[2].id)===null&&R.crew[2].taint===55&&R.stab===0,'a dose in the lab: -35'); resetRogue();'''),
@@ -101,7 +101,7 @@ CASES=[
   const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt), f=u.formation; ok(!!f,'in a formation'); u.vet.taint=100; step(0.2); ok(u.feral>0&&!u.formation,'feral: out of the line');
   step(ROGUE.taint.feralTime+ROGUE.taint.collapse+6); const p=formationSpot(u); ok(u.formation===f,'back in his formation'); ok(p&&Math.hypot(u.x-p.x,u.y-p.y)<TILE*1.5,'and back in his place');
   const w=crew().find(x=>x.type==='gunner'); w.formation=null; w.slot=null; w.vet.taint=100; step(0.2); tp(w,Math.floor(w.x/TILE)+0,Math.floor(w.y/TILE)); step(ROGUE.taint.feralTime+ROGUE.taint.collapse+8); const m=nearestOf(w,e=>e!==w&&e.crew&&!e.dead); ok(dist(w,m)<3*TILE,'no formation: he walks back to the crew');'''),
-('intel tab','''goMenu('intel'); ok([...document.querySelectorAll('[data-itab]')].some(b=>b.dataset.itab==='rogue'),'Rogue Strain tab'); intelTab='rogue'; buildIntel(); ok(document.querySelectorAll('#intel-list .ili').length===7+6+ROGUE_INTEL.length,'crew, strains, rules'); ok(/Haesaert/.test(document.getElementById('intel-grid').innerHTML),'first card: the Captain'); goMenu('menu');'''),
+('intel tab','''goMenu('intel'); ok([...document.querySelectorAll('[data-itab]')].some(b=>b.dataset.itab==='rogue'),'Rogue Strain tab'); intelTab='rogue'; buildIntel(); ok(document.querySelectorAll('#intel-list .ili').length===7+6+ROGUE_INTEL.length,'crew, strains, rules'); ok(/Kerckhoffs/.test(document.getElementById('intel-grid').innerHTML),'first card: the Captain'); goMenu('menu');'''),
 ('the crew sounds different','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt), d=crew().find(x=>x.vet.id==='osp-devreese');
   G.barkNext=0; bark(u,'move'); ok(G.barks.some(b=>b.u===u&&ROGUE_VOICE.move.includes(b.text)),'a crew line, not a Corps line');
   u.vet.taint=0; const t0=crewTone(u,false); u.vet.taint=100; const t1=crewTone(u,false); ok(t1.pitch<t0.pitch*0.6&&t1.rate<t0.rate,'the taint drags the voice down');
@@ -113,7 +113,7 @@ CASES=[
   ok(u.taintWarned&&taintWarn(u),'past the warn line: warned'); ok(G.msgs.some(m=>m.who==='Devreese'&&/about to snap/.test(m.text)&&/press J/.test(m.text)),'Devreese warns, with the way out');
   ok(G.pings.length>np,'a ping on the minimap'); const n=G.msgs.length; u.vet.taint=ROGUE.taint.warn+2; step(0.3); ok(!G.msgs.slice(n).some(m=>/about to snap/.test(m.text)),'only once a mission');
   selectEntities([u],false); renderSelection(); ok(!!document.querySelector('#selection .portrait.taint-warn'),'red frame round the portrait'); ok(/About to go feral/.test(document.getElementById('selection').innerHTML),'and in the stats');
-  const d=crew().find(x=>x.vet.id==='osp-devreese'); d.invuln=true; d.vet.taint=ROGUE.taint.warn+1; step(0.3); ok(G.msgs.some(m=>m.who==='Capt. Haesaert'&&/Devreese is about to snap/.test(m.text)),'the Medic herself: the Captain warns');
+  const d=crew().find(x=>x.vet.id==='osp-devreese'); d.invuln=true; d.vet.taint=ROGUE.taint.warn+1; step(0.3); ok(G.msgs.some(m=>m.who==='Capt. Kerckhoffs'&&/Devreese is about to snap/.test(m.text)),'the Medic herself: the Captain warns');
   u.vet.taint=100; step(0.3); ok(u.feral>0&&!taintWarn(u),'feral: no warning any more');'''),
 ('corps campaign untouched','''resetRogue(); __hc.startMission(MISSIONS[0]); const G=__hc.G; step(2); ok(!G.rogue&&!G.ents.some(e=>e.crew),'no crew in a Corps mission'); ok(document.getElementById('r-dna-wrap').hidden,'no DNA counter');''')
 ]

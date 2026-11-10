@@ -35,7 +35,7 @@ ROGUE_MISSIONS.push(
           g.vars.pt=g.time; const ex=G.ents.find(e=>e.exit); if(ex){ const s=exitSpot(ex); g.marker('down',{x:Math.floor(s.x/TILE),y:Math.floor(s.y/TILE)},'The way down'); }
           g.marker('burrow',{x:17,y:44},'Old burrow (creep)'); } },
       { when:g=>g.time>1, do:g=>g.say('Magpie','That is as close as I go. Tycho Maw, no charge, no names. Whatever you are walking into down there, I never saw it.') },
-      { when:g=>g.time>6, do:g=>g.crewSay('Capt. Haesaert','Listen to that. The whole plain is singing. Devreese, tell them.') },
+      { when:g=>g.time>6, do:g=>g.crewSay('Capt. Kerckhoffs','Listen to that. The whole plain is singing. Devreese, tell them.') },
       { when:g=>g.time>12, do:g=>{ const kin=g.crew().filter(u=>g.veilKin(u)).map(u=>u.vet.name);
           g.crewSay('Devreese',kin.length?`${kin.join(', ')}: you are far enough gone. They will not see you, as long as you do not shoot. Hold fire (Q) before you set one foot in there.`
             :'None of us is far enough gone yet. Forty, at least. The old burrow west of the ridge still has creep on it. Stand in it until the strain is high enough. I am sorry.'); } },
@@ -55,7 +55,7 @@ ROGUE_MISSIONS.push(
               if(n<3){ const k=Math.max(1,Math.round((J.burrow+n-1)*G.diff.budget)), up=[...g.spawn('drone',{x:17,y:44},k,{order:'hunt'}),...g.spawn(n>1?'spitter':'crawler',{x:17,y:44},1,{order:'hunt'})];   /* the old burrow by the ridge wakes too */
                 for(const u of up){ emergeStart(u); u.order={type:'amove',x:aim.x,y:aim.y}; setPath(u,aim.x,aim.y); }
                 if(!g.vars.burrowSaid){ g.vars.burrowSaid=true; g.crewSay('Mortier','The old burrow! They are coming up right next to us! West side, west side!'); } }
-              g.crewSay(['Capt. Haesaert','Braet','Devreese'][n-1]||'Capt. Haesaert',[
+              g.crewSay(['Capt. Kerckhoffs','Braet','Devreese'][n-1]||'Capt. Kerckhoffs',[
                 'One pod is quiet. Hear that? Half the plain just turned its head. Ridge, they are coming for you!',
                 'Second one is down. Here they come again. Keep the line, keep the line!',
                 'The last one... it is so quiet. They are lying down. All of them. Everyone, now, through the nest!'][n-1]||''); } });

@@ -12,6 +12,7 @@ const ROGUE_KEY='hc-rogue';
 const isRogue=()=>!!(G&&G.mission&&G.mission.rogue);
 function freshCrew(c){ return { id:c.id, name:c.name, type:c.type, rank:c.rank, xp:c.xp, kills:0, missions:0, healed:0, repaired:0, sex:c.sex||undefined, capt:c.capt||undefined, strains:[], taint:0 }; }
 function loadRogue(){ const r=store.get(ROGUE_KEY,null)||{}; r.crew=Array.isArray(r.crew)?r.crew:[];
+  for(const v of r.crew) if(v.id==='osp-haesaert'){ v.id='osp-kerckhoffs'; v.name='Kerckhoffs'; }   /* the Captain was Haesaert before Nov 2026: keep his strains and taint */
   for(const c of ROGUE_CREW) if(!r.crew.some(v=>v.id===c.id)) r.crew.push(freshCrew(c));
   r.crew=r.crew.filter(v=>ROGUE_CREW.some(c=>c.id===v.id)); for(const v of r.crew){ v.strains=v.strains||[]; v.taint=v.taint||0; }
   r.dna=r.dna||{}; r.flags=r.flags||{}; r.stab=r.stab||0; return r; }
@@ -130,7 +131,7 @@ function goFeral(u){ const T=ROGUE.taint; if(u.feral>0) return; if(veilOn()&&vei
   u.feralForm=u.formation||null; u.feralSlot=u.slot||null; u.feralSeq=u.formSeq; u.formation=null; u.slot=null;   /* he keeps his place; he takes it again afterwards */
   if(G.sel.includes(u)){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
   applyRank(u); G.barkNext=0; bark(u,'feral'); SFX.play('huskroar',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-34,t:1.6,max:1.6,txt:'FERAL',col:'#ff5a4f'}); G.pings.push({x:u.x,y:u.y,t:0,col:'#ff5a4f'});
-  say(u.vet.type==='medic'?'Capt. Haesaert':'Devreese',`${u.vet.name} has gone feral! Stay clear of ${pron(u.vet,'him')}, it passes. Or get a stabilizer into ${pron(u.vet,'him')}.`,'crew alert'); }
+  say(u.vet.type==='medic'?'Capt. Kerckhoffs':'Devreese',`${u.vet.name} has gone feral! Stay clear of ${pron(u.vet,'him')}, it passes. Or get a stabilizer into ${pron(u.vet,'him')}.`,'crew alert'); }
 function endFeral(u,dosed){ const T=ROGUE.taint; u.feral=0; applyRank(u); u.target=null; u.order=null;
   if(!dosed){ u.stunT=T.collapse; u.vet.taint=T.after; G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.4,max:1.4,txt:'COLLAPSES',col:'#9dff6a'}); }
   else u.stunT=0.8;
@@ -185,7 +186,7 @@ function dropSample(x,y,dna,spread){ let px=x, py=y;
 function rogueKill(e,src){ if(!isRogue()||!G.rogue) return;
   if(e.kind==='unit'&&e.faction==='loyal'&&src&&src.faction==='corps'&&src.vet&&!src.dead){ src.vet.kills++; gainXP(src,ROGUE.loyal.xp); G.stats.loyal=(G.stats.loyal||0)+1; }
   if(e.kind==='unit'&&e.crew){ const f=(G.fallenVets||{})[e.vet.id]; if(f) f.taint=e.vet.taint; if(e.feral>0) e.feral=0;
-    const v=e.vet, doc=e.def.heal?'Capt. Haesaert':'Devreese';
+    const v=e.vet, doc=e.def.heal?'Capt. Kerckhoffs':'Devreese';
     if(!G.saidCrewDown){ G.saidCrewDown=true; setTimeout(()=>{ if(G&&!G.over) say(doc,doc==='Devreese'?`We lost ${v.name}... no. Wait. The strain is still moving in ${pron(v,'him')}. Win this, and I can bring ${pron(v,'him')} back. ${pron(v,'He')} will not come back clean.`:`Devreese is down... but look at her hand, it is still twitching. The strain will not let her go. Win this and we carry her out.`,'crew'); },1500); }
     else say('Crew',`${crewTitle(v)} is down. Win the job and the strain brings ${pron(v,'him')} back, tainted.`,'alert');
     return; }
@@ -308,7 +309,7 @@ function drawTaint(u,now,x,y,w,h,sp){ const t=u.vet.taint||0;
 function drawTaintVeins(u,x,y,w,h,sp){ const t=u.vet.taint||0; if(t<ROGUE.taint.mend||u.feral>0) return; const z=risenSprite(sp); ctx.globalAlpha=Math.min(0.75,(t-ROGUE.taint.mend)/55); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); ctx.globalAlpha=1; }
 /* about to go feral (ROGUE.taint.warn): once per soldier per mission a ping, a heartbeat and a warning from the Medic (the Captain when it is the Medic herself) */
 function taintWarning(u){ u.taintWarned=true; const v=u.vet; G.pings.push({x:u.x,y:u.y,t:0,col:'#ff5a4f'}); SFX.play('heartbeat');
-  const medic=G.ents.find(e=>!e.dead&&!e.downed&&e.crew&&e.def.heal&&e!==u), who=v.id==='osp-devreese'||!medic?'Capt. Haesaert':'Devreese';
+  const medic=G.ents.find(e=>!e.dead&&!e.downed&&e.crew&&e.def.heal&&e!==u), who=v.id==='osp-devreese'||!medic?'Capt. Kerckhoffs':'Devreese';
   const how=G.rogue.stab>0?(medic?`Get a stabilizer into ${pron(v,'him')}, now! Select ${medic.vet.name==='Devreese'?'me':medic.vet.name} and press J.`:`Get ${pron(v,'him')} off the creep, and fast.`):`No doses left. Get ${pron(v,'him')} off the creep and away from the rest of us!`;
   say(who,`${v.name} is about to snap! ${how}`,'crew alert'); }
 const taintWarn=u=>!!(u&&u.crew&&u.vet&&!(u.feral>0)&&!u.downed&&u.vet.taint>=ROGUE.taint.warn);
