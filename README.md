@@ -827,7 +827,7 @@ In triggers krijg je een object `g` mee:
 | `g.hiveAt(punt)` | Of er bij dat punt nog een hive staat |
 | `g.online()`, `g.generatorAt(punt)` | Aantal generatoren dat nu draait; de generator op dat punt (bv. om `label` te zetten) |
 | `g.chargeSite(punt, tag)`, `g.charge(tag)`, `g.chargeFuse(tag)` | Seismische ladingplek maken; toestand `'site'`, `'arming'`, `'armed'` of `'blown'`; seconden tot de ontploffing |
-| `g.pad(punt, tag)`, `g.landShip(tag, seconden)` | Extra landingsplatform zonder bestellingen; een dropship laat daar landen en laten wachten (pickup) |
+| `g.pad(punt, tag)`, `g.landShip(tag, seconden, blijft)` | Extra landingsplatform zonder bestellingen; een dropship laat daar landen en laten wachten (pickup). Met `blijft=false` is het een drop: het schip landt, lost en stijgt weer op (de missie zet zelf de soldaten neer, bv. de relief squads in Needle and Thread) |
 | `g.supplyDrop(type, tag, seconden)`, `g.supplies(type)` | Het dropship vliegt een ingeklapt gebouw (bv. `'sentry'`) naar het platform met die tag (zonder tag: de Landing Zone); een Engineer raapt het op. `supplies` telt hoeveel je er overal hebt (in het veld, gedragen, op een platform, onderweg) |
 | `g.bury(punt, straal, tag)` | Instorting: hives bij het punt sterven, puin op de grond, afgesneden soldaten worden uitgegraven |
 | `g.uplinks()`, `g.uplinkOwned(punt)` | Aantal veroverde bakens; of het baken bij dat punt van jou is |

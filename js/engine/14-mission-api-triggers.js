@@ -57,9 +57,10 @@ function makeApi(){
         const m=makeBuilding('rubble','none',x,y,true); m.tag=tag; m.invuln=true; }
       for(let i=0;i<40;i++) G.fx.push({k:'ember',x:w.x+rand(-60,60),y:w.y+rand(-50,50),vx:rand(-90,90),vy:rand(-120,0),t:rand(.6,1.2),max:1.2,col:pick(['#8a8f9c','#5d6170','#3a3b44'])});
       digOut(pt('P')); },
-    /* pad(at, tag): an extra landing pad (no orders), e.g. for a pickup. landShip(tag, seconds): a dropship lands there and waits. */
+    /* pad(at, tag): an extra landing pad (no orders), e.g. for a pickup. landShip(tag, seconds): a dropship lands there and waits.
+       landShip(tag, seconds, false): a drop, not a pickup; it sets down, unloads and lifts off again (the mission spawns the men). */
     pad(at,tag){ const p=pt(at); if(!p) return; const b=makeBuilding('lz','corps',p.x-1,p.y-1,true); b.flight=null; b.invuln=true; b.r=TILE*1.5; b.noOrders=true; b.tag=tag; G.stats.built--; return b; },
-    landShip(tag,seconds=60){ const b=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&e.tag===tag); if(b) b.flight={ t:seconds, total:seconds, cargo:[], pickup:true }; },
+    landShip(tag,seconds=60,stay=true){ const b=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&e.tag===tag); if(b) b.flight={ t:seconds, total:seconds, cargo:[], pickup:!!stay }; },
     /* supplyDrop(type, tag, seconds): the dropship flies a folded-up structure (e.g. 'sentry') to a pad (g.pad tag, or the mission's
        Landing Zone without a tag). It is set down on the pad; an Engineer picks it up by walking onto it.
        supplies(type): how many the Corps has anywhere (standing, carried, on a pad or on the way). */

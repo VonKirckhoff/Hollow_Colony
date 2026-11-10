@@ -57,7 +57,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.escape&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');
           g.win('The Osprey crew drops into the Swarm\'s own tunnels. Behind them Squad Dust kicks in the lab door and finds Dr. Maas, and a clue nobody can explain. Nobody looks for the dead.'); } },
       /* Dust lands: if the crew is still here, they will be found */
-      { when:g=>g.vars.dustDue&&g.timerLeft()===0, do:g=>{ g.clearTimer(); g.pad('P','dust'); g.landShip('dust',3); g.vars.dustAt=g.time+3.2; } },
+      { when:g=>g.vars.dustDue&&g.timerLeft()===0, do:g=>{ g.clearTimer(); g.pad('P','dust'); g.landShip('dust',3,false); g.vars.dustAt=g.time+3.2; } },
       { when:g=>g.vars.dustAt&&g.time>g.vars.dustAt, do:g=>{
           const squad=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1),...g.loyal('medic','P',1)];
           g.hunt(squad.filter(u=>!u.def.heal)); g.say('Sgt. Kessler','Dust on the ground. Spread out, the lab is north-east. Watch for the... Contact! Corps armour, no IFF! Who the hell are you?');

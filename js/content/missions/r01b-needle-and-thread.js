@@ -61,7 +61,7 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>!!g.vars.cases&&!g.vars.stabDone, do:g=>{ const n=g.vars.cases.filter(c=>c.dead).length; g.setText('stab',`Take the stabilizer from the three hospital tents (${n}/3)`);
           if(n>=3){ g.vars.stabDone=true; g.complete('stab'); g.crewSay('Mortier','Three cases. Cold as ice. Somebody at Tycho is going to have a very bad morning.'); } } },
       /* Tycho's relief squads: they land on the pad and come straight for the crew */
-      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&!g.vars.landAt&&g.time>=ntDue(g)-3.2, do:g=>{ g.landShip('relief',3); g.vars.landAt=g.time+3.2; } },
+      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&!g.vars.landAt&&g.time>=ntDue(g)-3.2, do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; const J=G.mission.job, n=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), k=g.vars.sent++;
           const sq=[...g.loyal('trooper','2',n-1),...g.loyal(k===1?'pyro':'gunner','2',1)]; if(k===2) sq.push(...g.loyal('medic','2',1));
           g.hunt(sq);

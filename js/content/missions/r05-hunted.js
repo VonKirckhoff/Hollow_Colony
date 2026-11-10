@@ -24,7 +24,7 @@ ROGUE_MISSIONS.push(
       { id:'kessler', text:'Leave Sgt. Kessler alive', optional:true }
     ],
     triggers:[
-      { when:g=>g.time>0.3, do:g=>{ g.marker('u1','1','Uplink'); g.marker('u2','2','Uplink'); g.marker('u3','3','Uplink'); g.pad('P','kpad'); g.landShip('kpad',12); g.vars.kAt=g.time+12.2; } },
+      { when:g=>g.time>0.3, do:g=>{ g.marker('u1','1','Uplink'); g.marker('u2','2','Uplink'); g.marker('u3','3','Uplink'); g.pad('P','kpad'); g.landShip('kpad',12,false); g.vars.kAt=g.time+12.2; } },
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Haesaert','Open ground and a dropship coming in. Get to a beacon. Any beacon.') },
       { when:g=>g.time>6, do:g=>g.say('Sgt. Kessler','Haesaert. I know you can hear me. It is Kessler. Put the guns down and walk out, all seven of you, and I will see you get a fair hearing.') },
       { when:g=>g.time>12, do:g=>g.crewSay('Capt. Haesaert','He means it, too. Doesn\'t matter. A fair hearing ends with Devreese\'s samples in a furnace and us in a lab. Move.') },
