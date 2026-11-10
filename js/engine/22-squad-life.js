@@ -167,17 +167,17 @@ function voiceSample(sex){ if(!window.speechSynthesis||SFX.muted||!ui.voices) re
    it stops when you leave the briefing (show() in 21-screens.js). */
 const INTERCOM = { auto:true, pitch:0.78, rate:0.92, volume:3, delay:1.5, gap:0.3, humHz:50, hum:0.03, hiss:0.045, crackle:0.35, crackleVol:0.16, musicDuck:0.35 };
 /* titles written out, so the voice does not say "drive Maas" and a sentence does not end at "Dr." */
-const SPOKEN_TITLES = { 'Dr.':'Doctor', 'Capt.':'Captain', 'Sgt.':'Sergeant', 'Cpl.':'Corporal', 'Pvt.':'Private', 'Lt.':'Lieutenant', 'Cmdr.':'Commander', 'Col.':'Colonel', 'Maj.':'Major', 'Gen.':'General', 'Spc.':'Specialist' };
-function spokenText(t){ return String(t).replace(/\b(Dr|Capt|Sgt|Cpl|Pvt|Lt|Cmdr|Col|Maj|Gen|Spc)\.(?=\s)/g,m=>SPOKEN_TITLES[m]||m); }
-const BRIEF_VOICE=(()=>{ let run=0, on=false, cur=null;
+const SPOKEN_TITLES = { 'Dr.':'Doctor', 'Capt.':'Captain', 'Sgt.':'Sergeant', 'Cpl.':'Corporal', 'Pvt.':'Private', 'Lt.':'Lieutenant', 'Cmdr.':'Commander', 'Vet.':'Veteran', 'Col.':'Colonel', 'Maj.':'Major', 'Gen.':'General', 'Spc.':'Specialist' };
+function spokenText(t){ return String(t).replace(/\b(Dr|Capt|Sgt|Cpl|Pvt|Vet|Lt|Cmdr|Col|Maj|Gen|Spc)\.(?=\s)/g,m=>SPOKEN_TITLES[m]||m); }
+const BRIEF_VOICE=(()=>{ let run=0, on=false, cur=null, screen=null;
   /* the briefing as sentences: one utterance each, because long utterances stall in some browsers */
   function sentences(intro,paras){ const txt=spokenText([intro].concat(paras||[]).map(p=>String(p).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&[a-z#0-9]+;/gi,'')).join(' ')).replace(/\.\.\./g,',').replace(/[—–]/g,', ').replace(/\s+/g,' ');
     return (txt.match(/[^.!?]+[.!?]+["'’”)\]]*|[^.!?]+$/g)||[]).map(s=>s.trim()).filter(Boolean); }
   /* a steady man's voice, British English if the browser has one */
   function voice(){ const M=VOICES_M.length?VOICES_M:VOICES_EN; return M.find(v=>/en[-_]GB/i.test(v.lang))||M[0]||null; }
-  function btn(){ const b=document.getElementById('b-voice'); if(b){ b.textContent=on?'Stop voice':'Read aloud'; b.setAttribute('aria-pressed',on); } }
+  function btn(){ for(const b of document.querySelectorAll('[data-voice-btn]')){ b.textContent=on?'Stop voice':'Read aloud'; b.setAttribute('aria-pressed',on); } }   /* the briefing and the Cenotaph */
   function stop(){ run++; if(!on) return; on=false; cur=null; try{ speechSynthesis.cancel(); }catch(e){} SFX.bedStop(); SFX.play('paOff'); if(typeof MUSIC!=='undefined') MUSIC.duck(false); btn(); }
-  function play(intro,paras){ stop(); if(!window.speechSynthesis||SFX.muted||!ui.voices) return false;
+  function play(intro,paras,scr='brief'){ stop(); screen=scr; if(!window.speechSynthesis||SFX.muted||!ui.voices) return false;
     const lines=sentences(intro,paras); if(!lines.length) return false;
     const my=++run; on=true; btn(); SFX.init(); SFX.play('pa'); if(typeof MUSIC!=='undefined') MUSIC.duck(true);
     try{ speechSynthesis.cancel(); }catch(e){}
@@ -188,8 +188,20 @@ const BRIEF_VOICE=(()=>{ let run=0, on=false, cur=null;
       ut.onend=fin; ut.onerror=fin; cur=ut; try{ speechSynthesis.speak(ut); }catch(e){ stop(); } };
     setTimeout(()=>{ if(my!==run) return; SFX.bedStart(INTERCOM); next(); },INTERCOM.delay*1000);
     return true; }
-  return { play, stop, btn, get on(){ return on; }, get lines(){ return sentences; } };
+  return { play, stop, btn, get on(){ return on; }, get screen(){ return screen; }, get lines(){ return sentences; } };
 })();
+/* ---------- the Cenotaph: a moment of silence over the intercom ----------
+   Opening the Cenotaph, the same intercom voice holds a short wake and reads every name on the stone, the Osprey crew last. */
+function memorialLines(){ const R=ui.roster, L=[];
+  L.push('Tycho Memorial. All stations, a moment of silence.');
+  const corps=R.fallen;
+  if(corps.length){ L.push('We remember the soldiers of the Lunar Corps who did not come home.');
+    for(const v of corps.slice().reverse()) L.push(`${(RANKS[v.rank]||RANKS[0]).abbr} ${v.name}, ${UNITS[v.type]?UNITS[v.type].name:'soldier'}. Fell in ${v.mission}.`); }
+  if(ospreyOnStone()){ L.push('And the crew of the Osprey, lost with all hands at Hollow Colony.');
+    L.push(ospreyLost().map(o=>o.role==='Pilot'?`${o.title}, the pilot`:o.title).join('. ')+'.'); }
+  if(!corps.length&&!ospreyOnStone()) L.push('There are no names on the stone. Keep it that way.');
+  else L.push('Their names are cut in stone. They are not forgotten. Tycho out.');
+  return L; }
 function toggleVoices(){ uiUsed('voices'); ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices){ BRIEF_VOICE.stop(); if(window.speechSynthesis) speechSynthesis.cancel(); } toast(ui.voices?'Voices on.':'Voices off.',true); }
 const voicesLabel=()=>{ const b=$('#btn-voices'); if(b) b.textContent=ui.voices?'Voices on':'Voices off'; };
 function updateBarks(dt){ for(const b of G.barks) b.t-=dt; G.barks=G.barks.filter(b=>b.t>0&&!b.u.dead); }

@@ -30,7 +30,7 @@ MISSIONS.push(
           g.marker('lab',{x:53,y:5},'Research lab'); g.showcase('osprey',{x:42,y:10},'Crashed Osprey','#ff8a5c'); g.reveal('1',3,5); G.shaftWarned=true; } },   /* (our own line about the wall tunnels, below) */
       { when:g=>g.near('corps',{x:40,y:3},5)>0 || g.near('corps',{x:60,y:21},5)>0 || g.near('corps',{x:38,y:40},5)>0, do:g=>g.say('Sgt. Kessler','Look at the wall. They chewed a tunnel straight through the rock, and that purple muck is growing round it.') },
       { when:g=>g.vars.rescueT && g.hives()===0, do:g=>g.say('Dr. Maas','Burning the nests is not enough. They come out of the walls: the whole colony is riddled with their tunnels. Keep moving!','alert') },
-      { when:g=>g.near('corps',{x:42,y:10},6)>0, do:g=>{ g.unmark('osprey'); g.say('Sgt. Kessler','That is the Osprey. The first bird they sent for her. Still burning... nobody walked away from that.'); } },
+      { when:g=>g.near('corps',{x:42,y:10},6)>0, do:g=>{ g.unmark('osprey'); if(!G.demo) markOspreyLost(); g.say('Sgt. Kessler','That is the Osprey. The first bird they sent for her. Still burning... nobody walked away from that.'); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, the colony is a maze of ruins. Stay together. The lab is in the north-east block.') },
       { when:g=>g.time>10, do:g=>g.say('Sgt. Kessler','Our Engineer is hauling our one Sentry Gun. Press D to set it up, U to pack it again. We cannot build another out here.') },
       /* the sentry is gone (destroyed, or lost with the Engineer carrying it): Kestrel flies a new one to the landing pad */

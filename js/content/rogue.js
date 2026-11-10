@@ -9,7 +9,8 @@ const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-…
 /* The Osprey crew. Fixed people: they carry their rank, experience, strains and taint from mission to mission
    (kept in hc-rogue, not on the Lunar Corps roster). Kerckhoffs is the Captain: he leads the squad (AURA). */
 const ROGUE_CREW = [
-  { id:'osp-kerckhoffs',    name:'Kerckhoffs',      type:'trooper',  rank:5, xp:62, capt:true, bio:'Captain of the Osprey. Twenty years in the Corps, and the one who decided they would stay dead. His grandmother swore the family rode with the Bokkerijders, the goat riders of old Limburg.' },
+  { id:'osp-kerckhoffs',    name:'Kerckhoffs',      type:'trooper',  rank:5, xp:62, capt:true, bio:'Captain of the Osprey. Twenty years in the Corps, and the one who decided they would stay dead. His grandmother swore the family rode with the Bokkerijders, the goat riders of old Limburg.',
+    intel:'Captain of the Osprey. Twenty years in the Corps, the last six flying the rescue runs nobody else would take. When Command wrote the Osprey off as lost with all hands, he was the one who said: then let them think so.<br><br>His grandmother swore the family came from the Bokkerijders, the night riders of old Limburg: smugglers and thieves who, the story went, made a pact with the Devil and rode their goats through the air. Their leader, so the court in Herzogenrath said, was the town surgeon, Heinrich Joseph Kerckhoffs, who died in 1772. He used to laugh at that story. Now he leads a crew of ghosts who answer to no one, and he laughs a little less.' },
   { id:'osp-dehandschutter', name:'Dehandschutter', type:'gunner', rank:2, xp:11, bio:'Door gunner. Talks to his rotary gun. Pulled two of the others out of the burning wreck.' },
   { id:'osp-mortier',     name:'Mortier',       type:'pyro',     rank:1, xp:5,  bio:'Loves his flamer more than he trusts the plan. Fire leaves nothing to harvest, and he knows it.' },
   { id:'osp-devreese',    name:'Devreese',      type:'medic',    rank:1, xp:6,  sex:'f', bio:'Flight medic. She read Maas\'s notes first, and she is the one holding the needle.' },
@@ -80,6 +81,11 @@ const ROGUE_VOICE = {
 /* how the crew sounds: pitch and rate for the browser's speech voice. taint 0 → base, taint 100 → base − drop. feral: pitch/rate below. */
 const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDrop:0.25, feralPitch:0.1, feralRate:0.62, taintChance:0.3 };
 /* in a Rogue job, the engine's own warnings (hives, husks, the hunt) come from the crew instead of these advisors */
+/* the Osprey's pilot: died in the crash ("Pilot's gone", Osprey Down). Not crew you play, but his name is on the Cenotaph with theirs. */
+const OSPREY_PILOT = { name:'Van Haviksburg', rank:4, role:'Pilot' };
+/* everyone the Corps lists as lost with the Osprey, in the order of the stone: the Captain, the pilot, then the crew */
+const ospreyLost=()=>[{ title:crewTitle(ROGUE_CREW[0]), role:UNITS[ROGUE_CREW[0].type].name }, { title:`${RANKS[OSPREY_PILOT.rank].abbr} ${OSPREY_PILOT.name}`, role:OSPREY_PILOT.role },
+  ...ROGUE_CREW.slice(1).map(c=>({ title:crewTitle(c), role:UNITS[c.type].name }))];
 const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Kerckhoffs' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [

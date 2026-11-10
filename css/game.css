@@ -247,6 +247,7 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .cenotaph .name b .star{color:#6b4a00;}
 .cenotaph .name i{font-style:normal;font-size:12px;color:#17181c;line-height:1.4;text-shadow:0 1px 0 rgba(255,255,255,.12);}
 .cenotaph .name .gone{font-family:var(--f-display);font-size:9px;letter-spacing:.12em;color:#26282e;}
+.cenotaph .cap.osprey{margin-top:30px;}
 .cenotaph .empty{text-align:center;color:#22242a;text-shadow:0 1px 0 rgba(255,255,255,.12);font-size:13px;}
 .btn-raise{margin-top:4px;background:#132a12;border:1px solid #4fae22;color:#9dff6a;font-family:var(--f-display);font-size:10px;letter-spacing:.1em;padding:4px 10px;cursor:pointer;}
 .btn-raise:hover,.btn-raise:focus-visible{background:#1d4119;outline:none;box-shadow:0 0 12px rgba(157,255,106,.45);}

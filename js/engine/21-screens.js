@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
 const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel','trophies'];
-function show(name){ if(name!=='brief'&&typeof BRIEF_VOICE!=='undefined') BRIEF_VOICE.stop();   /* the intercom stops when you leave the briefing */
+function show(name){ if(typeof BRIEF_VOICE!=='undefined'&&name!==BRIEF_VOICE.screen) BRIEF_VOICE.stop();   /* the intercom stops when you leave its screen (briefing, Cenotaph) */
   for(const s of SCREENS) $('#s-'+s).hidden = s!==name; if(name==='menu'&&typeof refreshContinue==='function') refreshContinue();
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
   if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission||(!name&&G&&ui.mode==='game')?'game':name);   /* menu screens have music; a mission only if you switch it on (top-bar Music) */
@@ -18,6 +18,7 @@ function goMenu(name){
   if(name==='trophies') buildTrophies();
   if(name==='intel'){ const cur=SCREENS.find(x=>!$('#s-'+x).hidden); if(cur&&cur!=='intel') ui.intelFrom=cur; buildIntel(); }
   show(name); syncDiff();
+  if(name==='cenotaph'&&INTERCOM.auto){ const L=memorialLines(); BRIEF_VOICE.play(L[0],L.slice(1),'cenotaph'); }   /* a wake over the intercom */
   const first=$('#s-'+name+' button'); if(first) first.focus({preventScroll:true});
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(b) goMenu(b.dataset.go); });
@@ -91,9 +92,13 @@ function buildCenotaph(){
   $('#cenotaph').innerHTML=`<div class="cap">THEY DID NOT COME HOME</div>`+(R.fallen.length?`<div class="names">${R.fallen.map((v,i)=>`<div class="name"><b>${v.hero?'<span class="star">★</span> ':''}${(RANKS[v.rank]||RANKS[0]).abbr} ${v.name}</b>
       <i>${UNITS[v.type]?UNITS[v.type].name:''} · fell in ${v.mission}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}${v.at?`<br>${new Date(v.at).toLocaleDateString()}`:''}</i>
       ${v.risen?'<span class="gone">FELL TWICE · AT REST</span>':z&&UNITS[v.type]?`<button class="btn-raise" type="button" data-raise="${i}">☠ Raise</button>`:''}</div>`).join('')}</div>`
-    :'<p class="empty">No names yet. Keep it that way.</p>');
+    :ospreyOnStone()?'':'<p class="empty">No names yet. Keep it that way.</p>')
+    /* the Osprey crew, lost with all hands as far as the Corps knows: no Raise, they are not the Corps' to raise */
+    +(ospreyOnStone()?`<div class="cap osprey">THE OSPREY · LOST WITH ALL HANDS</div><div class="names">${ospreyLost().map(o=>`<div class="name osprey"><b>${o.title}</b><i>${o.role} · Osprey crew<br>lost at Hollow Colony</i></div>`).join('')}</div>`:'');
 }
 $('#s-cenotaph').addEventListener('click',e=>{
+  if(e.target.closest('#ceno-voice')){ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; } if(SFX.muted){ toast('Sound is off.',true); return; } if(!ui.voices){ toast('Voices are off (Voices button in the top bar).',true); return; }
+    const L=memorialLines(); BRIEF_VOICE.play(L[0],L.slice(1),'cenotaph'); return; }
   if(e.target.closest('#btn-zombie')){ setZombie(!ui.zombie); buildCenotaph(); toast(ui.zombie?'Zombie mode on. The dead are restless.':'Zombie mode off.',true); return; }
   const b=e.target.closest('[data-raise]'); if(!b) return; const rec=ui.roster.fallen[+b.dataset.raise]; const err=raiseFallen(+b.dataset.raise); if(err){ toast(err); return; }
   SFX.play('squelch'); buildCenotaph(); toast(`${rec.name} rises from the stone and rejoins the roster.`,true);
