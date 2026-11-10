@@ -466,7 +466,9 @@ const MUSIC=(()=>{
   function stop(fade=1.6){ if(!S) return; const s=S; S=null; clearInterval(timer); timer=null;
     const now=ac.currentTime; s.out.gain.cancelScheduledValues(now); s.out.gain.setValueAtTime(Math.max(0.0001,s.out.gain.value),now); s.out.gain.exponentialRampToValueAtTime(0.0001,now+fade);
     setTimeout(()=>{ try{ s.out.disconnect(); }catch(e){} },fade*1000+4000); refreshPanel(); }
-  const level=()=>Math.max(0.0001,vol*0.6*((S&&S.track&&S.track.gain)||1)*(scene==='game'?GAME_MUSIC_LEVEL:1));
+  let duckK=1;   /* the music sinks while the briefing is read over the intercom (BRIEF_VOICE, 22-squad-life.js) */
+  function duck(on){ duckK=on?(typeof INTERCOM!=='undefined'?INTERCOM.musicDuck:0.35):1; if(S&&ac) S.out.gain.setTargetAtTime(level(),ac.currentTime,0.3); }
+  const level=()=>Math.max(0.0001,vol*0.6*duckK*((S&&S.track&&S.track.gain)||1)*(scene==='game'?GAME_MUSIC_LEVEL:1));
   const MOODS={ menu:'menu', campaign:'menu', skirmish:'menu', manual:'menu', veterans:'menu', intel:'menu', trophies:'menu', brief:'brief', cenotaph:'requiem', end:'end', game:'game' };
   let scene='menu', armed=false;                 /* browsers only allow sound after the first click or key press */
   function sceneTrack(){ let m=MOODS[scene]; if(!m) return null; if(m==='end') m=(G&&G.over&&G.over.win===false)?'requiem':'menu'; if(m==='game'){ if(!gameOn) return null; m='menu'; }   /* victory: your menu music; defeat: the Cenotaph piece */
@@ -560,7 +562,7 @@ const MUSIC=(()=>{
   async function renderOffline(sec,id){ const keep={ac,noiseBuf,irBuf,S}, trk=TRACK[id]||TRACK.hollow;
     prep(new OfflineAudioContext(2,Math.ceil(44100*sec),44100)); setTempo(trk); S=buildSession(trk); S.track=trk; S.queue=[]; S.bar=0; S.cycle=0; S.next=0.05; S.out.gain.value=level();
     scheduleUntil(sec); const buf=await ac.startRendering(); ({ac,noiseBuf,irBuf,S}=keep); return buf; }
-  return { renderOffline, setScene, setGameOn, gameLabel, get gameOn(){ return gameOn; }, setOn, setVol, initUI, playPreview, stopPreview, setMenuTrack, tracks:TRACKS.map(t=>t.id),
+  return { renderOffline, duck, setScene, setGameOn, gameLabel, get gameOn(){ return gameOn; }, setOn, setVol, initUI, playPreview, stopPreview, setMenuTrack, tracks:TRACKS.map(t=>t.id),
     get on(){ return on; }, get playing(){ return !!S; }, get track(){ return S&&S.track.id; }, get mood(){ return S&&S.track.id; } };
 })();
 MUSIC.initUI(); MUSIC.setScene('menu');

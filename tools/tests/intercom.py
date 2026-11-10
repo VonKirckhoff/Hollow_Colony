@@ -1,0 +1,65 @@
+# The briefing intercom (BRIEF_VOICE in 22-squad-life.js) and the Rogue Strain unlock (whole Corps campaign on Normal or Hard).
+# Speech is replaced by a fake that records what would be said. Must end with ALL OK.
+from playwright.sync_api import sync_playwright
+errs=[]; res=[]
+FAKE='''(()=>{ const said=[]; window.__said=said; let speaking=false;
+  const S={ get speaking(){ return speaking; }, pending:false, paused:false, getVoices:()=>[{name:'Google UK English Male',lang:'en-GB'},{name:'Samantha',lang:'en-US'}],
+    speak(u){ said.push({text:u.text,pitch:u.pitch,rate:u.rate,voice:u.voice&&u.voice.name}); speaking=true; setTimeout(()=>{ speaking=false; u.onend&&u.onend(); },20); },
+    cancel(){ speaking=false; said.push({cancel:true}); }, onvoiceschanged:null, addEventListener(){} };
+  Object.defineProperty(window,'speechSynthesis',{value:S,configurable:true});
+  window.SpeechSynthesisUtterance=function(t){ this.text=t; }; })();'''
+def J(pg,js): return pg.evaluate(js)
+def ok(c,m): res.append(('OK   ' if c else 'FAIL ')+m)
+with sync_playwright() as p:
+    b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
+    pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text else None)
+    pg.add_init_script(FAKE)
+    pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(500); pg.keyboard.press('Enter'); pg.wait_for_timeout(200)
+    J(pg,"()=>{ loadVoices(); ui.voices=true; if(SFX.muted) SFX.toggle(); INTERCOM.delay=0.1; INTERCOM.gap=0.01; ui.progress={results:{}}; ui.campSide='corps'; goMenu('campaign'); }")
+    # the unlock
+    ok(J(pg,"()=>!rogueUnlocked()&&document.querySelector('[data-side=rogue]').hidden"),'Rogue Strain locked at the start')
+    J(pg,"()=>{ recordWin('hollow-colony','hard',500,false); goMenu('campaign'); }")
+    ok(J(pg,"()=>document.querySelector('[data-side=rogue]').hidden"),'Corps mission 4 alone does not open it')
+    J(pg,"()=>{ for(const m of MISSIONS) recordWin(m.id,'easy',500,false); goMenu('campaign'); }")
+    ok(J(pg,"()=>document.querySelector('[data-side=rogue]').hidden"),'the whole campaign on Easy does not open it')
+    # win the last Corps mission on Normal through endGame: the end screen tells you
+    J(pg,"()=>{ for(const m of MISSIONS.slice(0,-1)) recordWin(m.id,'normal',500,false); ui.diff='normal'; startMission(MISSIONS[MISSIONS.length-1]); __hc.update(1/30); endGame(true,'Done.'); }")
+    pg.wait_for_timeout(2500)
+    ok(J(pg,"()=>!!__hc.G.rogueOpened&&rogueUnlocked()"),'winning the last mission on Normal opens Rogue Strain')
+    ok('Rogue Strain' in J(pg,"()=>{ showEnd(); return $('#e-text').textContent; }"),'the end screen says a new campaign is open')
+    J(pg,"()=>goMenu('campaign')")
+    ok(J(pg,"()=>!document.querySelector('[data-side=rogue]').hidden"),'the Osprey crew button shows')
+    # the intercom
+    J(pg,"()=>{ __said.length=0; openBriefing(3); }")
+    pg.wait_for_timeout(150)
+    ok(J(pg,"()=>BRIEF_VOICE.on&&SFX.bed"),'opening a briefing starts the intercom (chime, then the line hum)')
+    pg.wait_for_timeout(2500)
+    said=J(pg,"()=>__said.filter(s=>s.text).map(s=>s.text)")
+    ok(len(said)>3 and ' '.join(said[:2]).startswith('Attention, all personnel. Mission four: The Hollow Colony'),'it opens with the mission: '+' '.join(said[:2]))
+    ok(J(pg,"()=>{ const m=MISSIONS[3]; return __said.filter(s=>s.text).every(s=>!/[<>]/.test(s.text)) && __said.some(s=>s.text&&m.briefing[0].replace(/<[^>]+>/g,'').startsWith(s.text.slice(0,20))); }"),'it reads the briefing, without the markup')
+    ok(J(pg,"()=>__said.filter(s=>s.text).every(s=>s.pitch===INTERCOM.pitch&&s.rate===INTERCOM.rate&&s.voice==='Google UK English Male')"),'in the intercom voice (a British man, lower and slower)')
+    pg.wait_for_timeout(3000)
+    ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed&&$('#b-voice').textContent==='Read aloud'"),'at the end the line closes and the button says Read aloud')
+    J(pg,"()=>{ __said.length=0; $('#b-voice').click(); }"); pg.wait_for_timeout(300)
+    ok(J(pg,"()=>BRIEF_VOICE.on&&$('#b-voice').textContent==='Stop voice'&&__said.some(s=>s.text)"),'Read aloud plays it again')
+    J(pg,"()=>$('#b-voice').click()"); pg.wait_for_timeout(100)
+    ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed&&__said.some(s=>s.cancel)"),'Stop voice stops it')
+    J(pg,"()=>{ openBriefing(0); }"); pg.wait_for_timeout(250)
+    J(pg,"()=>document.querySelector('#s-brief [data-go=campaign]').click()"); pg.wait_for_timeout(100)
+    ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed"),'Back stops it')
+    J(pg,"()=>{ openBriefing(0); }"); pg.wait_for_timeout(250)
+    J(pg,"()=>$('#b-start').click()"); pg.wait_for_timeout(100)
+    ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed&&ui.mode==='game'"),'Deploy stops it')
+    J(pg,"()=>{ goMenu('campaign'); ui.voices=false; __said.length=0; openBriefing(1); }"); pg.wait_for_timeout(400)
+    ok(J(pg,"()=>!BRIEF_VOICE.on&&!__said.some(s=>s.text)"),'Voices off: silent')
+    J(pg,"()=>{ ui.voices=true; ui.campSide='rogue'; buildCampaign(); __said.length=0; openBriefing(0); }"); pg.wait_for_timeout(400)
+    ok(J(pg,"()=>__said.filter(s=>s.text).slice(0,2).map(s=>s.text).join(' ').startsWith('Osprey crew, listen up. Job one')"),'a Rogue job is read to the Osprey crew')
+    J(pg,"()=>{ BRIEF_VOICE.stop(); ui.campSide='swarm'; buildCampaign(); __said.length=0; openBriefing(0); }"); pg.wait_for_timeout(400)
+    ok(J(pg,"()=>{ const t=(__said.find(s=>s.text)||{}).text; return t&&!/Attention/.test(t); }"),'a Swarm mission starts with its title only')
+    J(pg,"()=>{ BRIEF_VOICE.stop(); INTERCOM.auto=false; __said.length=0; openBriefing(1); }"); pg.wait_for_timeout(400)
+    ok(J(pg,"()=>!BRIEF_VOICE.on&&!__said.some(s=>s.text)"),'INTERCOM.auto off: only on the button')
+    J(pg,"()=>{ INTERCOM.auto=true; ui.campSide='corps'; buildCampaign(); openBriefing(2); }"); pg.wait_for_timeout(1200)
+    pg.screenshot(path='/home/claude/intercom.png')
+    b.close()
+print('\n'.join(res)); allok=all(r.startswith('OK') for r in res) and not errs
+print('errors',errs[:5]); print('ALL OK' if allok else 'SOME FAILED')

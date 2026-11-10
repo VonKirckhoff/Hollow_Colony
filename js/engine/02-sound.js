@@ -58,6 +58,9 @@ const SFX=(()=>{
     flare:   [0.4, ()=>{ noise(0.5,2200,'highpass',0.5,0.12,0.15,6000); tone(220,180,0.08,'triangle',0.08); }],
     engine:  [3,   v=>{ noise(2.6,220,'lowpass',0.8,0.35*v,0,420); tone(70,95,2.6,'sawtooth',0.05*v); }],
     land:    [1,   v=>{ noise(0.9,700,'lowpass',0.6,0.4*v,0,120); tone(120,60,0.5,'triangle',0.15*v); }],
+    /* the briefing intercom (BRIEF_VOICE in 22-squad-life.js): a three-tone PA chime, and the click when the line closes */
+    pa:      [1,   ()=>{ [[784,0],[659,0.42],[523,0.84]].forEach(([f,d])=>{ tone(f,f,1.1,'sine',0.16,d); tone(f*2,f*2,0.5,'sine',0.03,d); }); noise(0.06,2500,'bandpass',2,0.08); }],
+    paOff:   [0.3, ()=>{ noise(0.05,3000,'bandpass',1.5,0.18); tone(1100,260,0.07,'square',0.035); }],
     radio:   [0.3, ()=>{ noise(0.08,2500,'bandpass',3,0.1); tone(1200,1200,0.03,'sine',0.05,0.08); }],
     win:     [1,   ()=>[523,659,784,1047].forEach((f,i)=>tone(f,f,0.25,'triangle',0.2,i*0.14))],
     lose:    [1,   ()=>[392,330,262,196].forEach((f,i)=>tone(f,f*0.98,0.35,'triangle',0.2,i*0.2))]
@@ -69,8 +72,16 @@ const SFX=(()=>{
     if(x!==undefined && G){ const cx=G.cam.x+ui.vw/2, cy=G.cam.y+(ui.vh-ui.hudH)/2, R=Math.max(ui.vw,ui.vh)*0.9, d=Math.hypot(x-cx,y-cy); if(d>R) return; v=clamp(1-d/R,0.12,1); }
     last[name]=now; try{ fn(v); }catch(e){}
   }
+  /* the intercom line under the briefing voice: mains hum, line hiss and a crackle now and then (o = INTERCOM) */
+  let bed=null;
+  function bedStart(o){ init(); if(!ac||bed) return; const t=ac.currentTime, out=ac.createGain(); out.gain.setValueAtTime(0.0001,t); out.gain.exponentialRampToValueAtTime(1,t+0.3); out.connect(master);
+    const hum=ac.createOscillator(), hf=ac.createBiquadFilter(), hg=ac.createGain(); hum.type='sawtooth'; hum.frequency.value=o.humHz; hf.type='lowpass'; hf.frequency.value=320; hg.gain.value=o.hum; hum.connect(hf).connect(hg).connect(out); hum.start();
+    const hs=ac.createBufferSource(), bf=ac.createBiquadFilter(), sg=ac.createGain(); hs.buffer=noiseBuf; hs.loop=true; bf.type='bandpass'; bf.frequency.value=2300; bf.Q.value=0.8; sg.gain.value=o.hiss; hs.connect(bf).connect(sg).connect(out); hs.start();
+    const timer=setInterval(()=>{ if(muted||Math.random()>o.crackle) return; for(let i=0,n=1+(Math.random()*3|0);i<n;i++) noise(0.01+Math.random()*0.02,2500+Math.random()*3500,'highpass',1,o.crackleVol*(0.4+Math.random()*0.6),i*0.03+Math.random()*0.02); },150);
+    bed={out,hum,hs,timer}; }
+  function bedStop(){ if(!bed) return; const b=bed; bed=null; clearInterval(b.timer); const t=ac.currentTime; b.out.gain.setTargetAtTime(0.0001,t,0.06); try{ b.hum.stop(t+0.6); b.hs.stop(t+0.6); }catch(e){} }
   function toggle(){ muted=!muted; store.set('hc-mute',muted); if(master) master.gain.value=muted?0:0.45; return muted; }
-  return { init, play, toggle, get muted(){ return muted; } };
+  return { init, play, toggle, bedStart, bedStop, get bed(){ return !!bed; }, get muted(){ return muted; } };
 })();
 document.addEventListener('pointerdown',()=>SFX.init(),{capture:true});
 document.addEventListener('keydown',()=>SFX.init(),{capture:true});

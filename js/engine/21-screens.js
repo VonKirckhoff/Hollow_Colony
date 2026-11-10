@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- 2t. screens ---------- */
 const SCREENS=['menu','campaign','brief','skirmish','manual','pause','end','veterans','cenotaph','intel','trophies'];
-function show(name){ for(const s of SCREENS) $('#s-'+s).hidden = s!==name; if(name==='menu'&&typeof refreshContinue==='function') refreshContinue();
+function show(name){ if(name!=='brief'&&typeof BRIEF_VOICE!=='undefined') BRIEF_VOICE.stop();   /* the intercom stops when you leave the briefing */
+  for(const s of SCREENS) $('#s-'+s).hidden = s!==name; if(name==='menu'&&typeof refreshContinue==='function') refreshContinue();
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
   if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission||(!name&&G&&ui.mode==='game')?'game':name);   /* menu screens have music; a mission only if you switch it on (top-bar Music) */
   const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission;
@@ -27,7 +28,7 @@ const sideOf=m=>m.side==='swarm'?'swarm':m.rogue?'rogue':'corps';
 const listOf=m=>sideOf(m)==='swarm'?SWARM_MISSIONS:sideOf(m)==='rogue'?ROGUE_MISSIONS:MISSIONS;
 function isUnlocked(i){ const L=campList(); return i===0 || isDone(L[i-1].id); }
 function buildCampaign(){
-  if(ui.campSide==='rogue'&&!rogueUnlocked()) ui.campSide='corps';   /* the Rogue side opens after Corps mission 4 */
+  if(ui.campSide==='rogue'&&!rogueUnlocked()) ui.campSide='corps';   /* the Rogue side opens once the whole Corps campaign is won on Normal or Hard */
   const sw=ui.campSide==='swarm', rg=ui.campSide==='rogue', L=campList(); $('#s-campaign').classList.toggle('swarm',sw); $('#s-campaign').classList.toggle('rogue',rg);
   const rb=$('[data-side="rogue"]'); if(rb) rb.hidden=!rogueUnlocked(); $('#camp-side').classList.toggle('three',rogueUnlocked());
   document.querySelectorAll('[data-side]').forEach(b=>{ const on=b.dataset.side===ui.campSide; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
@@ -241,7 +242,18 @@ function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swar
   else if(!m.training&&!rg){ const r=resultOf(m.id); if(r&&r.flawless) $('#b-text').innerHTML+=`<p class="rdim">Done flawless (no soldier lost) on ${DIFFICULTY[r.flawless].label}.</p>`; }
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
   $('#b-watch').hidden=!m.demo;
-  show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true}); }
+  const lab=$('#b-lab'); lab.hidden=!rg; if(rg) buildCrew(lab); else lab.innerHTML='';   /* Rogue: splice and stabilize before going dark */
+  show('brief'); syncDiff(); $('#b-start').focus({preventScroll:true});
+  $('#b-voice').hidden=!window.speechSynthesis; if(INTERCOM.auto) BRIEF_VOICE.play(briefIntro(m,i),m.briefing); else BRIEF_VOICE.btn(); }
+/* the first line the intercom says: who is addressed, and which mission */
+function briefIntro(m,i){ const N=n=>['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);
+  if(m.training) return m.side==='swarm'?`${m.title}.`:`Attention, recruits. Training exercise: ${m.title}.`;
+  if(m.side==='swarm') return `${m.title}.`;
+  if(m.rogue) return `Osprey crew, listen up. Job ${N(i+1)}: ${m.title}.`;
+  return `Attention, all personnel. Mission ${N(i+1)}: ${m.title}.`; }
+$('#b-voice').addEventListener('click',()=>{ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; }
+  if(SFX.muted){ toast('Sound is off.',true); return; } if(!ui.voices){ toast('Voices are off (Voices button in the top bar).',true); return; }
+  const m=briefMission(briefIdx); BRIEF_VOICE.play(briefIntro(m,briefIdx),m.briefing); });
 $('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
 $('#b-watch').addEventListener('click',()=>startMission(briefMission(briefIdx),{demo:true}));
 $('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; if(b.dataset.side==='rogue'&&!rogueUnlocked()) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
@@ -303,7 +315,8 @@ function showEnd(){
   const t=$('#e-title'); t.textContent=o.win?'Victory':'Defeat'; t.className='h '+(o.win?'win':'lose');
   $('#e-text').textContent=o.text;
   if(o.win && m.id!=='skirmish'){ const r=resultOf(m.id), pb=G.prevBest, up=pb&&DIFF_RANK[G.diffKey]>DIFF_RANK[pb.diff];
-    $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; }
+    $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; 
+    if(G.rogueOpened) $('#e-text').textContent+=' A new campaign is open: Rogue Strain. The Osprey was never lost.'; }
   const ev=$('#e-vets'); const rr=G.rosterResult, promoted=(rr&&rr.promoted)||[], hero=heroOf();
   const fallenAll=(rr&&(rr.fallenAll||rr.fallen))||[];
   if(o.win && m.rogue){ ev.hidden=false; ev.innerHTML=rogueEndHtml(); }
@@ -331,7 +344,7 @@ function showEnd(){
   if(!o.win && m.rogue){ ev.hidden=false; ev.innerHTML=`<div class="vsec"><span class="lbl">Retry</span><div>Nothing is lost: the crew, their taint and the splice lab are as they were before this job.</div></div>`; }
   const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Soldiers lost',S.soldiers!=null?S.soldiers:S.lost],['Assets lost',S.assets||0],...(m.rogue?[['Hives burned',S.hives],['Corps shot',S.loyal||0],['Samples',dnaTotal(G.rogue&&G.rogue.dna)]]:[['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]])]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
   const LM=listOf(m), idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=sideOf(m);
-  if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">Next mission</button>`;
+  if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">${m.rogue?'Next job':'Next mission'}</button>`;
   btns+=`<button class="btn ${o.win&&(m.training||idx>=0)&&idx<LM.length-1?'':'primary'}" type="button" id="e-retry">${o.win?'Play again':'Retry'}</button><button class="btn" type="button" id="e-menu">Main menu</button>`;
   if(!o.win) btns+=`<button class="btn" type="button" id="e-watch" data-tip="Watch the field|Hide this report and watch the battle play on. Drag, the arrow keys or the minimap move the camera.">Watch the field</button>`;
   $('#e-buttons').innerHTML=btns;

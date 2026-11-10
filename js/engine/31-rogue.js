@@ -18,8 +18,11 @@ function loadRogue(){ const r=store.get(ROGUE_KEY,null)||{}; r.crew=Array.isArra
 function rogueStore(){ if(!ui.rogue) ui.rogue=loadRogue(); return ui.rogue; }
 function saveRogue(){ store.set(ROGUE_KEY,rogueStore()); }
 function resetRogue(){ ui.rogue=null; try{ localStorage.removeItem(ROGUE_KEY); }catch(e){} rogueStore(); saveRogue(); }
-/* the Rogue side opens once the Lunar Corps has won The Hollow Colony (Corps mission 4): that is where the Osprey went down */
-function rogueUnlocked(){ return isDone('hollow-colony'); }
+/* the Rogue side opens once the whole Lunar Corps campaign is won on Normal or Hard (Easy does not count): only then is the Osprey story told */
+const ROGUE_UNLOCK_DIFF='normal';
+function rogueUnlocked(){ return MISSIONS.length>0&&MISSIONS.every(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; }); }
+/* how far the Corps is on the way there, for the hint on the campaign screen */
+function rogueUnlockCount(){ return MISSIONS.filter(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; }).length; }
 const crewDef=id=>ROGUE_CREW.find(c=>c.id===id)||{};
 const crewTitle=v=>`${RANKS[v.rank].abbr} ${v.name}`;
 const dnaTotal=d=>Object.values(d||{}).reduce((s,n)=>s+n,0);
@@ -349,10 +352,10 @@ function rogueButtons(units,out){ if(!isRogue()||!units.some(u=>u.crew&&u.def.he
 let crewSel=null;
 function taintBar(t){ const T=ROGUE.taint, col=t>=T.seizure?'#ff5a4f':t>=T.mend?'#9dff6a':t>=T.scent?'#c9f07a':'#7d8a6e';
   return `<span class="tbar2" title="Taint ${Math.round(t)}%"><span style="width:${Math.min(100,t)}%;background:${col}"></span><i style="left:${T.scent}%"></i><i style="left:${T.mend}%"></i><i style="left:${T.seizure}%"></i></span>`; }
-function buildCrew(){ const R=rogueStore(), el=$('#hero-card'); if(!crewSel||!R.crew.some(v=>v.id===crewSel)) crewSel=R.crew[0].id;
+function buildCrew(el=$('#hero-card')){ const R=rogueStore(); if(!crewSel||!R.crew.some(v=>v.id===crewSel)) crewSel=R.crew[0].id;
   const v=R.crew.find(x=>x.id===crewSel), T=ROGUE.taint, d=crewDef(v.id);
   const dna=STRAIN_ORDER.map(k=>`<span class="dchip ${R.dna[k]?'':'zero'}" title="${STRAINS[k].from} samples">${STRAINS[k].glyph} ${STRAINS[k].from} <b>${R.dna[k]||0}</b></span>`).join('');
-  el.innerHTML=`<div class="lbl">The Osprey crew · splice lab</div>
+  el.innerHTML=`<div class="lbl">The Osprey crew · splice lab${el.id==='b-lab'?' · before you go dark':''}</div>
     <div class="dna-row">${dna}<span class="dchip stab" title="Stabilizer doses: take one into the next mission, or use one here">✚ Stabilizer <b>${R.stab}</b></span></div>
     <div class="crew-list">${R.crew.map(c=>`<button type="button" class="crow ${c.id===crewSel?'on':''}" data-crew="${c.id}"><img alt="" src="${SPR['crew_'+c.type].url}"><span class="cn">${c.capt?'✪ ':''}${crewTitle(c)}<small>${UNITS[c.type].name}${c.missions?` · ${c.missions} job${c.missions>1?'s':''}`:''}</small></span>${taintBar(c.taint)}<span class="cs">${c.strains.map(k=>k==='mother'?'<b title="Mother strain" class="ms">♛</b>':`<b title="${STRAINS[k]?STRAINS[k].name:k}">${STRAINS[k]?STRAINS[k].glyph:'?'}</b>`).join('')}</span></button>`).join('')}</div>
     <div class="crew-detail"><p class="lede" style="margin:0"><b>${crewTitle(v)}</b>, ${UNITS[v.type].name}${v.sex==='f'?' (she)':''}. ${d.bio||''} Taint <b>${Math.round(v.taint)}%</b>${v.taint>=T.seizure?': seizures, close to going feral.':v.taint>=T.mend?': the creep heals '+pron(v,'him')+'.':v.taint>=T.scent?': the hunt passes '+pron(v,'him')+' by.':'.'}</p>
@@ -360,13 +363,16 @@ function buildCrew(){ const R=rogueStore(), el=$('#hero-card'); if(!crewSel||!R.
         return `<button type="button" class="splice ${has?'has':''}" data-splice="${k}" ${has||err?'disabled':''} title="${S.name}: ${S.text}${err&&!has?' · '+err:''}"><span class="g">${S.glyph}</span><b>${S.name}</b><small>${has?'carries it':`${S.cost} ${S.from} · +${S.taint} taint`}</small></button>`; }).join('')}
         <button type="button" class="splice stabb" data-stabcrew="1" ${R.stab<1||v.taint<1?'disabled':''} title="A stabilizer dose: −${ROGUE.stab.amount} taint"><span class="g">✚</span><b>Stabilize</b><small>1 dose · −${ROGUE.stab.amount} taint</small></button></div>
       <p class="rdim" style="margin:0;font-size:12px">Taint: from ${T.scent}% the hunt passes ${pron(v,'him')} by, from ${T.mend}% the creep heals ${pron(v,'him')}, from ${T.seizure}% seizures, at ${T.feral}% ${pron(v,'he')} goes feral for ${T.feralTime} s. Every point of taint adds ${(T.fever*100).toFixed(1)}% damage. After every won job ${T.rest} taint fades. A fallen crew member comes back with +${T.fallen}.</p></div>`; }
-$('#hero-card').addEventListener('click',e=>{ if(ui.campSide!=='rogue') return;
-  const c=e.target.closest('[data-crew]'); if(c){ crewSel=c.dataset.crew; buildCrew(); return; }
+/* the same lab on the campaign screen (Rogue side) and in the briefing of a Rogue job */
+function labClick(e,el,after){
+  const c=e.target.closest('[data-crew]'); if(c){ crewSel=c.dataset.crew; buildCrew(el); return; }
   const s=e.target.closest('[data-splice]'); if(s&&!s.disabled){ const v=rogueStore().crew.find(x=>x.id===crewSel), k=s.dataset.splice, err=splice(crewSel,k); if(err){ toast(err); return; }
-    SFX.play('squelch'); buildCrew(); toast(`${v.name} takes the ${STRAINS[k].name} strain.`,true); return; }
-  const b=e.target.closest('[data-stabcrew]'); if(b&&!b.disabled){ const err=stabilizeCrew(crewSel); if(err){ toast(err); return; } SFX.play('heal'); buildCrew(); toast('One dose of stabilizer.',true); } });
+    SFX.play('squelch'); buildCrew(el); after(); toast(`${v.name} takes the ${STRAINS[k].name} strain.`,true); return; }
+  const b=e.target.closest('[data-stabcrew]'); if(b&&!b.disabled){ const err=stabilizeCrew(crewSel); if(err){ toast(err); return; } SFX.play('heal'); buildCrew(el); after(); toast('One dose of stabilizer.',true); } }
+$('#hero-card').addEventListener('click',e=>{ if(ui.campSide!=='rogue') return; labClick(e,$('#hero-card'),()=>{}); });
+$('#b-lab').addEventListener('click',e=>{ if($('#b-lab').hidden) return; labClick(e,$('#b-lab'),()=>{ const n=$('#b-crewnote'); if(n) n.outerHTML=rogueBriefNote(); }); });
 /* the briefing of a Rogue mission: who goes, how tainted, what you have in the lab */
-function rogueBriefNote(){ const R=rogueStore(); return `<p class="rdim">The crew: ${R.crew.map(v=>`${crewTitle(v)}${v.taint>=ROGUE.taint.seizure?' <b style="color:#ff5a4f">(taint '+Math.round(v.taint)+'%)</b>':v.taint>0?' ('+Math.round(v.taint)+'%)':''}`).join(', ')}. Stabilizer: ${R.stab+ROGUE.stab.start+(R.flags.formula?ROGUE.stab.formula:0)} dose${R.stab+ROGUE.stab.start+(R.flags.formula?ROGUE.stab.formula:0)===1?'':'s'}${R.flags.formula?' (Devreese brews '+ROGUE.stab.formula+' from Maas\'s formula)':''}.</p>`; }
+function rogueBriefNote(){ const R=rogueStore(); return `<p class="rdim" id="b-crewnote">The crew: ${R.crew.map(v=>`${crewTitle(v)}${v.taint>=ROGUE.taint.seizure?' <b style="color:#ff5a4f">(taint '+Math.round(v.taint)+'%)</b>':v.taint>0?' ('+Math.round(v.taint)+'%)':''}`).join(', ')}. Stabilizer: ${R.stab+ROGUE.stab.start+(R.flags.formula?ROGUE.stab.formula:0)} dose${R.stab+ROGUE.stab.start+(R.flags.formula?ROGUE.stab.formula:0)===1?'':'s'}${R.flags.formula?' (Devreese brews '+ROGUE.stab.formula+' from Maas\'s formula)':''}.</p>`; }
 /* the end screen of a won Rogue mission */
 function rogueEndHtml(){ const r=G.rogueResult; if(!r) return ''; const out=[];
   const got=STRAIN_ORDER.filter(k=>r.dna[k]).map(k=>`${r.dna[k]}× ${STRAINS[k].from}`).join(', ');

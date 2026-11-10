@@ -3,7 +3,7 @@
    The crew of the Osprey, the first rescue ship that crashed outside Dr. Maas's lab, is listed as killed in action.
    They are not dead. They found her samples, they saw what Swarm DNA can do to a body, and they stopped answering the radio.
    You play the crew: seven named soldiers, no base, no dropship, hunted by the Swarm and by the Lunar Corps they left behind.
-   Unlocked once the Lunar Corps has won mission 4, The Hollow Colony. The engine lives in js/engine/31-rogue.js. */
+   Unlocked once every Lunar Corps campaign mission is won on Normal or Hard. The engine lives in js/engine/31-rogue.js. */
 const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-… (with r01b and r05b in between), in the order of their <script> lines */
 
 /* The Osprey crew. Fixed people: they carry their rank, experience, strains and taint from mission to mission

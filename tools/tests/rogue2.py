@@ -71,7 +71,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
     pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text else None)
     pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(500); pg.keyboard.press('Enter'); pg.wait_for_timeout(200)
-    pg.evaluate("()=>recordWin('hollow-colony','normal',500,false)")
+    pg.evaluate("()=>{ for(const m of MISSIONS) recordWin(m.id,'normal',500,false); }")
     for name,body in CASES:
         r=pg.evaluate(HEAD+body+TAIL); print('--',name); print(r); res.append(r)
     b.close()

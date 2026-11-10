@@ -7,8 +7,11 @@ HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{
   JOBS=['rogue-osprey-down','rogue-dead-air','rogue-cold-harvest','rogue-the-fever','rogue-hunted','rogue-mothers-blood'], start=i=>{ __hc.startMission(ROGUE_MISSIONS.find(m=>m.id===JOBS[i])); return __hc.G; };   /* the six original jobs by their old number (r01b and r05b sit in between) */ try{ '''
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 CASES=[
-('unlock and splice lab','''resetRogue(); delete ui.progress.results['hollow-colony']; ui.campSide='rogue'; goMenu('campaign'); ok(ui.campSide==='corps'&&document.querySelector('[data-side=rogue]').hidden,'locked until Corps mission 4 is won');
-  recordWin('hollow-colony','normal',500,false); goMenu('campaign'); ok(!document.querySelector('[data-side=rogue]').hidden,'unlocked after The Hollow Colony');
+('unlock and splice lab','''resetRogue(); for(const m of MISSIONS) delete ui.progress.results[m.id]; ui.campSide='rogue'; goMenu('campaign'); ok(ui.campSide==='corps'&&document.querySelector('[data-side=rogue]').hidden,'locked with no Corps wins');
+  recordWin('hollow-colony','normal',500,false); goMenu('campaign'); ok(document.querySelector('[data-side=rogue]').hidden,'still locked after Corps mission 4 alone');
+  for(const m of MISSIONS) recordWin(m.id,'easy',500,false); goMenu('campaign'); ok(document.querySelector('[data-side=rogue]').hidden&&!rogueUnlocked(),'still locked with the campaign done on Easy');
+  for(const m of MISSIONS.slice(0,-1)) recordWin(m.id,'normal',500,false); ok(!rogueUnlocked()&&rogueUnlockCount()===MISSIONS.length-1,'one Easy mission left keeps it locked');
+  recordWin(MISSIONS[MISSIONS.length-1].id,'hard',500,false); goMenu('campaign'); ok(!document.querySelector('[data-side=rogue]').hidden,'unlocked once every Corps mission is won on Normal or Hard');
   ui.campSide='rogue'; goMenu('campaign'); ok(document.querySelectorAll('.crow').length===7,'seven crew in the splice lab'); ok(/Rogue Strain/.test(document.getElementById('camp-title').textContent),'campaign title');
   const R=rogueStore(); ok(R.crew.find(v=>v.capt).rank===5,'Haesaert is the Captain'); ok(splice('osp-braet','drone')!==null,'no samples: no splice');
   R.dna.drone=3; ok(splice('osp-braet','drone')===null&&R.crew.find(v=>v.id==='osp-braet').taint===10&&R.dna.drone===0,'splice: strain in, taint up, samples spent');
@@ -119,7 +122,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
     pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text else None)
     pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(500); pg.keyboard.press('Enter'); pg.wait_for_timeout(200)
-    pg.evaluate("()=>recordWin('hollow-colony','normal',500,false)")
+    pg.evaluate("()=>{ for(const m of MISSIONS) recordWin(m.id,'normal',500,false); }")
     for name,body in CASES:
         r=pg.evaluate(HEAD+body+TAIL); print('--',name); print(r); res.append(r)
     b.close()

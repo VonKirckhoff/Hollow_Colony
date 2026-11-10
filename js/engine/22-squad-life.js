@@ -160,7 +160,34 @@ function voiceSample(sex){ if(!window.speechSynthesis||SFX.muted||!ui.voices) re
   try{ speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance(pick(['Reporting for duty.','Ready when you are.','Point me at them.']));
     const pool=(sex==='f'?VOICES_F:VOICES_M).length?(sex==='f'?VOICES_F:VOICES_M):VOICES_EN; if(pool.length) ut.voice=pool[0];
     ut.pitch=sex==='f'?(VOICES_F.length?1.05:1.5):0.8; ut.rate=1.05; ut.volume=clamp(ui.voiceVol,0,1); speechSynthesis.speak(ut); }catch(e){} }
-function toggleVoices(){ uiUsed('voices'); ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices&&window.speechSynthesis) speechSynthesis.cancel(); toast(ui.voices?'Voices on.':'Voices off.',true); }
+/* ---------- the briefing, read over the intercom ----------
+   Opening a briefing plays a PA chime; then a voice reads the title and the briefing over a mains hum, line hiss and a crackle now and then
+   (SFX.bedStart), and the music sinks (MUSIC.duck). Browsers do not let speech run through Web Audio, so the radio feel comes from
+   the voice's pitch and pace and the noise bed under it. Follows Sound and Voices; the Read aloud / Stop button on the briefing screen;
+   it stops when you leave the briefing (show() in 21-screens.js). */
+const INTERCOM = { auto:true, pitch:0.78, rate:0.92, volume:3, delay:1.5, gap:0.3, humHz:50, hum:0.03, hiss:0.045, crackle:0.35, crackleVol:0.16, musicDuck:0.35 };
+const BRIEF_VOICE=(()=>{ let run=0, on=false, cur=null;
+  /* the briefing as sentences: one utterance each, because long utterances stall in some browsers */
+  function sentences(intro,paras){ const txt=[intro].concat(paras||[]).map(p=>String(p).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&[a-z#0-9]+;/gi,'')).join(' ').replace(/\.\.\./g,',').replace(/[—–]/g,', ').replace(/\s+/g,' ');
+    return (txt.match(/[^.!?]+[.!?]+["'’”)\]]*|[^.!?]+$/g)||[]).map(s=>s.trim()).filter(Boolean); }
+  /* a steady man's voice, British English if the browser has one */
+  function voice(){ const M=VOICES_M.length?VOICES_M:VOICES_EN; return M.find(v=>/en[-_]GB/i.test(v.lang))||M[0]||null; }
+  function btn(){ const b=document.getElementById('b-voice'); if(b){ b.textContent=on?'Stop voice':'Read aloud'; b.setAttribute('aria-pressed',on); } }
+  function stop(){ run++; if(!on) return; on=false; cur=null; try{ speechSynthesis.cancel(); }catch(e){} SFX.bedStop(); SFX.play('paOff'); if(typeof MUSIC!=='undefined') MUSIC.duck(false); btn(); }
+  function play(intro,paras){ stop(); if(!window.speechSynthesis||SFX.muted||!ui.voices) return false;
+    const lines=sentences(intro,paras); if(!lines.length) return false;
+    const my=++run; on=true; btn(); SFX.init(); SFX.play('pa'); if(typeof MUSIC!=='undefined') MUSIC.duck(true);
+    try{ speechSynthesis.cancel(); }catch(e){}
+    let i=0; const next=()=>{ if(my!==run) return; if(i>=lines.length){ stop(); return; }
+      const ut=new SpeechSynthesisUtterance(lines[i++]), v=voice(); if(v) ut.voice=v;
+      ut.pitch=INTERCOM.pitch; ut.rate=INTERCOM.rate; ut.volume=clamp(ui.voiceVol*INTERCOM.volume,0,1);
+      let done=false; const fin=()=>{ if(done) return; done=true; setTimeout(next,INTERCOM.gap*1000); };
+      ut.onend=fin; ut.onerror=fin; cur=ut; try{ speechSynthesis.speak(ut); }catch(e){ stop(); } };
+    setTimeout(()=>{ if(my!==run) return; SFX.bedStart(INTERCOM); next(); },INTERCOM.delay*1000);
+    return true; }
+  return { play, stop, btn, get on(){ return on; }, get lines(){ return sentences; } };
+})();
+function toggleVoices(){ uiUsed('voices'); ui.voices=!ui.voices; store.set('hc-voices',ui.voices); voicesLabel(); if(!ui.voices){ BRIEF_VOICE.stop(); if(window.speechSynthesis) speechSynthesis.cancel(); } toast(ui.voices?'Voices on.':'Voices off.',true); }
 const voicesLabel=()=>{ const b=$('#btn-voices'); if(b) b.textContent=ui.voices?'Voices on':'Voices off'; };
 function updateBarks(dt){ for(const b of G.barks) b.t-=dt; G.barks=G.barks.filter(b=>b.t>0&&!b.u.dead); }
 function drawBarks(){

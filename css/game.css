@@ -565,7 +565,7 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 #s-campaign.rogue .eyebrow,#s-brief.rogue .eyebrow{color:var(--rogue);}
 #s-campaign.rogue .h,#s-brief.rogue .h{color:#ffd9de;text-shadow:0 0 18px rgba(226,85,107,.35);}
 #s-campaign.rogue .mission .num{color:var(--rogue);} #s-campaign.rogue .mission:hover{border-color:var(--rogue);}
-#s-campaign.rogue .hero-card{border-left-color:var(--rogue);gap:8px;}
+#s-campaign.rogue .hero-card,#s-brief .rogue-lab{border-left-color:var(--rogue);gap:8px;}
 .dna-row{display:flex;flex-wrap:wrap;gap:5px;}
 .dchip{font-size:11px;padding:3px 7px;border:1px solid rgba(157,255,106,.35);color:#cfe8b0;background:rgba(20,30,14,.6);white-space:nowrap;}
 .dchip b{color:var(--taint);font-weight:600;} .dchip.zero{opacity:.45;} .dchip.stab{border-color:rgba(127,223,255,.4);color:#bfeaff;} .dchip.stab b{color:#7fdfff;}
@@ -577,6 +577,10 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .tbar2{position:relative;display:block;height:7px;background:#0b0c11;border:1px solid #2c3326;}
 .tbar2>span{display:block;height:100%;} .tbar2 i{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.25);}
 .crew-detail{display:grid;gap:7px;}
+/* the briefing of a Rogue job: the splice lab beside the briefing, so the crew can be changed before going dark */
+#s-brief.rogue .sheet{max-width:1240px;grid-template-columns:minmax(0,640px) minmax(0,540px);column-gap:32px;}
+#s-brief.rogue .sheet>*{grid-column:1;} #s-brief.rogue .sheet>#b-lab{grid-column:2;grid-row:1 / span 6;align-self:start;}
+@media (max-width:1100px){ #s-brief.rogue .sheet{grid-template-columns:minmax(0,1fr);} #s-brief.rogue .sheet>#b-lab{grid-column:1;grid-row:auto;} }
 .splice-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:5px;}
 .splice{display:grid;justify-items:start;gap:1px;padding:5px 7px;background:#141a10;border:1px solid rgba(157,255,106,.3);color:#d8f0c4;font:inherit;text-align:left;cursor:pointer;}
 .splice .g{font-size:15px;color:var(--taint);line-height:1;} .splice b{font-size:12px;font-weight:600;} .splice small{font-size:10px;color:#93a582;}

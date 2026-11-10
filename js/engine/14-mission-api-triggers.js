@@ -113,7 +113,7 @@ function endGame(win,text){
   if(G.over) return; G.over={win,text,at:performance.now()}; SFX.play(win?'win':'lose');
   if(win){ settleRoster(); if(G.mission.rogue) rogueSettle(); }   /* Rogue: the crew, its samples and its taint (31-rogue.js) */
   if(win && G.mission.id!=='skirmish' && !G.demo){   /* a training you only watched does not count */ G.prevBest=resultOf(G.mission.id)?{...resultOf(G.mission.id)}:null;
-    G.flawless=flawlessRun(); recordWin(G.mission.id,G.diffKey,Math.round(G.time),G.flawless); G.flawlessWon=G.flawless?checkFlawless():[]; G.grandWon=checkGrand(); G.swarmWon=G.mission.side==='swarm'?checkSwarmTrophies():[];
+    const rogueWas=typeof rogueUnlocked==='function'&&rogueUnlocked(); G.flawless=flawlessRun(); recordWin(G.mission.id,G.diffKey,Math.round(G.time),G.flawless); G.flawlessWon=G.flawless?checkFlawless():[]; G.grandWon=checkGrand(); G.swarmWon=G.mission.side==='swarm'?checkSwarmTrophies():[]; G.rogueOpened=!rogueWas&&typeof rogueUnlocked==='function'&&rogueUnlocked();   /* the last Corps mission on Normal+ opens Rogue Strain */
     if(G.mission.rogue) G.rogueWon=(G.rogueWon||[]).concat(checkRogueTrophies()); }   /* the difficulty trophies need this win recorded first */
   ui.placing=null; ui.amove=false;
   setTimeout(()=>{ if(G&&G.over) showEnd(); },1800);

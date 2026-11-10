@@ -82,7 +82,7 @@ $('#selection').addEventListener('pointerover',e=>{ if(!G) return; const o=e.tar
 $('#selection').addEventListener('pointerleave',()=>{ ui.hover=null; });
 $('#btn-menu').addEventListener('click',()=>pause(true));
 const soundLabel=()=>{ $('#btn-sound').textContent=SFX.muted?'Sound off':'Sound on'; };
-$('#btn-sound').addEventListener('click',()=>{ uiUsed('sound'); SFX.toggle(); soundLabel(); if(SFX.muted&&window.speechSynthesis) speechSynthesis.cancel(); }); soundLabel();
+$('#btn-sound').addEventListener('click',()=>{ uiUsed('sound'); SFX.toggle(); soundLabel(); if(SFX.muted){ BRIEF_VOICE.stop(); if(window.speechSynthesis) speechSynthesis.cancel(); } }); soundLabel();
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
 function toggleFollow(){ uiUsed('follow'); ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
 $('#btn-follow').addEventListener('click',toggleFollow); followLabel();
