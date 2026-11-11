@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 errs=[]; res=[]
 FAKE='''(()=>{ const said=[]; window.__said=said; let speaking=false;
   const S={ get speaking(){ return speaking; }, pending:false, paused:false, getVoices:()=>[{name:'Google UK English Male',lang:'en-GB'},{name:'Samantha',lang:'en-US'}],
-    speak(u){ said.push({text:u.text,pitch:u.pitch,rate:u.rate,voice:u.voice&&u.voice.name}); speaking=true; setTimeout(()=>{ speaking=false; u.onend&&u.onend(); },20); },
+    speak(u){ said.push({text:u.text,pitch:u.pitch,rate:u.rate,voice:u.voice&&u.voice.name}); speaking=true; setTimeout(()=>{ speaking=false; u.onend&&u.onend(); },window.__speakMs||20); },
     cancel(){ speaking=false; said.push({cancel:true}); }, onvoiceschanged:null, addEventListener(){} };
   Object.defineProperty(window,'speechSynthesis',{value:S,configurable:true});
   window.SpeechSynthesisUtterance=function(t){ this.text=t; }; })();'''
@@ -54,10 +54,11 @@ with sync_playwright() as p:
     J(pg,"()=>{ openBriefing(0); }"); pg.wait_for_timeout(250)
     J(pg,"()=>$('#b-start').click()"); pg.wait_for_timeout(100)
     ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed&&ui.mode==='game'"),'Deploy stops it')
-    J(pg,"()=>{ goMenu('campaign'); ui.voices=false; __said.length=0; openBriefing(1); }"); pg.wait_for_timeout(400)
+    J(pg,"()=>{ goMenu('campaign'); ui.voices=false; __said.length=0; window.__speakMs=600; openBriefing(1); }"); pg.wait_for_timeout(400)   # slower fake speech: the briefing must still be running when the button is pressed
     ok(J(pg,"()=>BRIEF_VOICE.on&&__said.some(s=>s.text)"),'Voices off (soldiers) still reads the briefing')
     J(pg,"()=>{ toggleVoices(); toggleVoices(); }"); pg.wait_for_timeout(50)
     ok(J(pg,"()=>BRIEF_VOICE.on&&ui.voices===false"),'the Voices button does not stop the briefing voice')
+    J(pg,"()=>{ window.__speakMs=20; }")
     J(pg,"()=>{ BRIEF_VOICE.stop(); SFX.toggle(); __said.length=0; openBriefing(1); }"); pg.wait_for_timeout(400)
     ok(J(pg,"()=>!BRIEF_VOICE.on&&!__said.some(s=>s.text)"),'Sound off: silent')
     J(pg,"()=>{ if(SFX.muted) SFX.toggle(); }")
