@@ -44,7 +44,7 @@ function renderSelection(){
     if(e.def.generator) stats+=`<span>Status <b>${e.powered?'Online':'Offline: repair to 100%'}</b></span>`;
     if(e.def.fuse) stats+=`<span>Detonates in <b>${Math.ceil(e.fuse)}s</b></span>`;
     if(e.def.armTime) stats+=`<span>Armed <b>${Math.floor((e.arm||0)*100)}%</b></span>`;
-    if(e.def.capture) stats+=`<span>Status <b>${e.owned?'Secured':'Not secured'}</b></span><span>Control <b>${Math.round((e.cap||0)*100)}%</b></span><span>Now <b>${({ours:'capturing',theirs:'Swarm taking it',contested:'contested',idle:'quiet'})[e.state||'idle']}</b></span>`;
+    if(e.def.capture) stats+=`<span>Status <b>${e.owned?'Secured':'Not secured'}</b></span><span>Control <b>${Math.round((e.cap||0)*100)}%</b></span><span>Now <b>${({ours:'capturing',theirs:'Brood taking it',contested:'contested',idle:'quiet'})[e.state||'idle']}</b></span>`;
     if(e.def.reinforce){ const fl=e.flight; stats+= fl ? `<span>Dropship <b>${fl.cargo.length} aboard, ${Math.ceil(fl.t)}s</b></span>` : `<span>Dropship <b>standing by</b></span>`; if(troopCap()<Infinity) stats+=`<span>Troops <b>${troopCount()}/${troopCap()}</b></span>`; }
     if(e.def.reinforce && e.flight){ stats+='<div class="queue">'+e.flight.cargo.map(t=>`<div class="qslot" data-tip="${UNITS[t].name}|On the dropship."><img alt="" src="${iconUrl(t)}"><i style="width:${Math.floor((1-e.flight.t/e.flight.total)*100)}%"></i></div>`).join('')+'</div>'; }
     if(e.def.trains && G.mission.noTraining) stats+=`<span><b>Reinforcements come in through the Landing Zone.</b></span>`;

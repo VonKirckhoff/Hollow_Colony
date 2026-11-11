@@ -11,11 +11,11 @@ const AT_PODS=[ { at:{x:61,y:27}, label:'East choir pod' }, { at:{x:60,y:5}, lab
 ROGUE_MISSIONS.push(
   {
     id:'rogue-among-them', title:'Among Them', map:'maw', rogue:true, veil:true,
-    summary:'Walk through the Swarm\'s own nest. The ones with enough strain in their blood go first.',
+    summary:'Walk through the Brood\'s own nest. The ones with enough strain in their blood go first.',
     briefing:[
-      'The Magpie can take us as far as Tycho Maw and no further. The way into the Depths is an old mine shaft in the north wall, and the Swarm has built its biggest nest right on top of it. Five hives on that plain. We cannot fight our way through that.',
+      'The Magpie can take us as far as Tycho Maw and no further. The way into the Depths is an old mine shaft in the north wall, and the Brood has built its biggest nest right on top of it. Five hives on that plain. We cannot fight our way through that.',
       'Devreese has a different idea. The brood smells its own. Anyone with enough strain in the blood, forty or more, or the Hive Scent in him, can walk among them and they look right through him. As long as he does not fire a shot.',
-      'Three choir pods by the nests keep the brood awake: they sing to it. Our tainted ones go in and stand at the pods until they go quiet; the clean ones hold the landing ridge, because every pod that goes quiet sends the brood looking for warm bodies. When all three are quiet the nest sleeps, and we all walk through it. Not far enough gone? The old burrow by the ridge has creep. Stand in it.'
+      'Three choir pods by the nests keep the brood awake: they sing to it. Our tainted ones go in and stand at the pods until they go quiet; the clean ones hold the landing ridge, because every pod that goes quiet sends the brood looking for warm bodies. When all three are quiet the nest sleeps, and we all walk through it. Not far enough gone? The old burrow by the ridge has mycel. Stand in it.'
     ],
     stab:1,
     job:{ pod:12, lull:90, stir:65, burrow:3 },
@@ -33,14 +33,14 @@ ROGUE_MISSIONS.push(
     triggers:[
       { when:g=>g.time>0.2, do:g=>{ g.vars.pods=AT_PODS.map((p,i)=>{ const b=makeBuilding('choirpod','none',p.at.x,p.at.y,true); b.invuln=true; b.quietP=0; b.label=p.label; g.marker('pod'+i,p.at,'Choir pod'); return b; });
           g.vars.pt=g.time; const ex=G.ents.find(e=>e.exit); if(ex){ const s=exitSpot(ex); g.marker('down',{x:Math.floor(s.x/TILE),y:Math.floor(s.y/TILE)},'The way down'); }
-          g.marker('burrow',{x:17,y:44},'Old burrow (creep)'); } },
+          g.marker('burrow',{x:17,y:44},'Old burrow (mycel)'); } },
       { when:g=>g.time>1, do:g=>g.say('Magpie','That is as close as I go. Tycho Maw, no charge, no names. Whatever you are walking into down there, I never saw it.') },
       { when:g=>g.time>6, do:g=>g.crewSay('Capt. Kerckhoffs','Listen to that. The whole plain is singing. Devreese, tell them.') },
       { when:g=>g.time>12, do:g=>{ const kin=g.crew().filter(u=>g.veilKin(u)).map(u=>u.vet.name);
           g.crewSay('Devreese',kin.length?`${kin.join(', ')}: you are far enough gone. They will not see you, as long as you do not shoot. Hold fire (Q) before you set one foot in there.`
-            :'None of us is far enough gone yet. Forty, at least. The old burrow west of the ridge still has creep on it. Stand in it until the strain is high enough. I am sorry.'); } },
+            :'None of us is far enough gone yet. Forty, at least. The old burrow west of the ridge still has mycel on it. Stand in it until the strain is high enough. I am sorry.'); } },
       { when:g=>g.time>22, do:g=>g.crewSay('Mortier','And the rest of us stand on this ridge and wait for them to come. Wonderful. At least out here I can burn something.') },
-      { when:g=>g.time>34, do:g=>g.crewSay('Cnudde','Mind the creep in there. It pushes the strain up the longer you stand on it, and those pods sit right on it.') },
+      { when:g=>g.time>34, do:g=>g.crewSay('Cnudde','Mind the mycel in there. It pushes the strain up the longer you stand on it, and those pods sit right on it.') },
       /* the pods: a veiled crew member at a pod quiets it; it slips back if he leaves */
       { repeat:true, when:g=>!!g.vars.pods&&!g.vars.podsDone, do:g=>{ const dt=g.time-g.vars.pt; g.vars.pt=g.time; const J=G.mission.job; let n=0;
           g.vars.pods.forEach((b,i)=>{ if(b.quiet){ n++; g.unmark('pod'+i); return; }
@@ -69,8 +69,8 @@ ROGUE_MISSIONS.push(
       /* feral in the nest */
       { repeat:true, when:g=>!g.vars.ferSaid&&G.rogue.feral>0, do:g=>{ g.vars.ferSaid=true; g.fail('calm'); } },
       { when:g=>g.vars.podsDone&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('down'); g.clearTimer(); if(!G.rogue.feral) g.complete('calm');
-          g.win(G.rogue.veilBroken?'The Osprey crew goes down into the Maw Depths through the middle of the Swarm\'s biggest nest. Behind them the plain wakes up screaming. Below them, something much older is laying eggs.'
-            :'Not one shot in the nest. The Osprey crew walks through the Swarm\'s biggest nest like seven more of its children, and goes down into the Depths. The brood never knew they were there. Devreese is not sure that is good news.'); } },
+          g.win(G.rogue.veilBroken?'The Osprey crew goes down into the Maw Depths through the middle of the Brood\'s biggest nest. Behind them the plain wakes up screaming. Below them, something much older is laying eggs.'
+            :'Not one shot in the nest. The Osprey crew walks through the Brood\'s biggest nest like seven more of its children, and goes down into the Depths. The brood never knew they were there. Devreese is not sure that is good news.'); } },
       { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The crew dies on Tycho Maw. The brood drags them home, and the choir sings over them.') }
     ]
   }

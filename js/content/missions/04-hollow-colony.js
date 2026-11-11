@@ -5,8 +5,8 @@ MISSIONS.push(
     id:'hollow-colony', title:'The Hollow Colony', map:'hollow',
     summary:'Rescue the last survivor from the colony where it all began.',
     briefing:[
-      'A faint distress beacon is transmitting from Hollow Colony, the first settlement on the moon and the place where the Swarm first appeared.',
-      'The signal belongs to Dr. Elin Maas, the biologist who studied the Swarm before the colony fell. She is holed up in the research lab with a data core that could explain how the Swarm breeds.',
+      'A faint distress beacon is transmitting from Hollow Colony, the first settlement on the moon and the place where the Brood first appeared.',
+      'The signal belongs to Dr. Elin Maas, the biologist who studied the Brood before the colony fell. She is holed up in the research lab with a data core that could explain how the Brood breeds.',
       'Find her and bring her and the core to the extraction pad in the south-east. Your Engineer carries a folded Sentry Gun, the only one we could spare. Lose it and Kestrel can fly a new one to your landing pad, but your Engineer will have to walk back for it.'
     ],
     start:{ salvage:0, camera:'P',
@@ -38,7 +38,7 @@ MISSIONS.push(
           g.supplyDrop('sentry','home',t);
           g.say('Cmdr. Varga',n===1?`We lost the Sentry Gun. Kestrel is flying a replacement to your landing pad, ${t} seconds out. Your Engineer has to go and get it.`:`Another sentry down. One more on its way to the landing pad, ${t} seconds. Make this one count.`); } },
       { when:g=>g.near('corps','3',5)>0 || g.near('corps','5',4)>0, do:g=>{
-          g.say('Sgt. Kessler','Swarm bodies here. Shot clean through, skulls taken. That was not us.'); g.vars.clue=true; } },
+          g.say('Sgt. Kessler','Brood bodies here. Shot clean through, skulls taken. That was not us.'); g.vars.clue=true; } },
       /* the door of her back room opens, and she steps out to the squad */
       { when:g=>g.near('corps',{x:53,y:5},3.5)>0||g.near('corps','1',2)>0, do:g=>{ g.vars.doorAt=g.time; g.openWall('maasdoor'); SFX.play('ready');
           g.say('Dr. Maas','Corps? Is that the Corps? Wait, wait, I am opening the door!'); } },

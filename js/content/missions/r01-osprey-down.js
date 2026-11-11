@@ -9,7 +9,7 @@ ROGUE_MISSIONS.push(
     briefing:[
       'The Osprey came in hot over Hollow Colony with orders to bring out Dr. Elin Maas. It never touched the pad. The pilot is dead; the seven in the back are not.',
       'Captain Kerckhoffs has heard the radio: Command thinks the Osprey went down with all hands, and Squad Dust is already on its way. The lab is a hundred metres from the wreck. Maas is behind a locked door, and her sample freezer is not.',
-      'Get Cnudde to the freezer. Kill Swarm with lead, not fire: whatever Mortier burns is useless, but what a bullet leaves behind, Devreese can bottle. Then go where nobody follows: the Swarm tunnel in the south wall.'
+      'Get Cnudde to the freezer. Kill Brood with lead, not fire: whatever Mortier burns is useless, but what a bullet leaves behind, Devreese can bottle. Then go where nobody follows: the Brood tunnel in the south wall.'
     ],
     start:{ salvage:0, camera:{x:41,y:13}, crewAt:{x:41,y:13},
       units:[], buildings:[], hives:['a','b','c'],
@@ -20,7 +20,7 @@ ROGUE_MISSIONS.push(
       hunt:{ every:35, afterEvery:20, budget:45, afterBudget:70, grow:0.2, growMax:10 } },
     objectives:[
       { id:'freezer', text:'Crack Dr. Maas\'s sample freezer in the lab (an Engineer)' },
-      { id:'dna',     text:'Bottle Swarm DNA (0/6)' }
+      { id:'dna',     text:'Bottle Brood DNA (0/6)' }
     ],
     triggers:[
       { when:g=>g.time>0.2, do:g=>{
@@ -49,13 +49,13 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.radioT&&g.time>g.vars.radioT, do:g=>{ g.say('Cmdr. Varga','All stations, Tycho Command. The Osprey is confirmed lost with all hands. Squad Dust, you are go for Hollow Colony. Bring Dr. Maas home.');
           g.setTimer(240,'Dust lands'); g.vars.dustDue=true; } },
       { when:g=>g.vars.dustDue&&g.time>g.vars.radioT+9, do:g=>g.crewSay('Capt. Kerckhoffs','Lost with all hands. ...Fine by me. Nobody hunts a dead man. Finish the job and get underground before Dust sees us.') },
-      { repeat:true, when:g=>!g.vars.dnaDone, do:g=>{ const n=g.dna(); g.setText('dna',`Bottle Swarm DNA (${Math.min(6,n)}/6)`); if(n>=6){ g.vars.dnaDone=true; g.complete('dna'); } } },
+      { repeat:true, when:g=>!g.vars.dnaDone, do:g=>{ const n=g.dna(); g.setText('dna',`Bottle Brood DNA (${Math.min(6,n)}/6)`); if(n>=6){ g.vars.dnaDone=true; g.complete('dna'); } } },
       /* both done: out through the Swarm tunnel in the south wall */
-      { when:g=>g.isDone('freezer')&&g.vars.dnaDone, do:g=>{ g.addObjective('escape','Everyone into the Swarm tunnel in the south wall (right-click it)'); g.exitMark('exit'); g.openExit();
+      { when:g=>g.isDone('freezer')&&g.vars.dnaDone, do:g=>{ g.addObjective('escape','Everyone into the Brood tunnel in the south wall (right-click it)'); g.exitMark('exit'); g.openExit();
           g.crewSay('Devreese','That is enough to start with. The tunnel in the south wall, Captain. They dug it; it goes deep.'); g.vars.escape=true; } },
-      { repeat:true, when:g=>g.vars.escape&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the Swarm tunnel in the south wall, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
+      { repeat:true, when:g=>g.vars.escape&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the Brood tunnel in the south wall, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
       { when:g=>g.vars.escape&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');
-          g.win('The Osprey crew drops into the Swarm\'s own tunnels. Behind them Squad Dust kicks in the lab door and finds Dr. Maas, and a clue nobody can explain. Nobody looks for the dead.'); } },
+          g.win('The Osprey crew drops into the Brood\'s own tunnels. Behind them Squad Dust kicks in the lab door and finds Dr. Maas, and a clue nobody can explain. Nobody looks for the dead.'); } },
       /* Dust lands: if the crew is still here, they will be found */
       { when:g=>g.vars.dustDue&&g.timerLeft()===0, do:g=>{ g.clearTimer(); g.pad('P','dust'); g.landShip('dust',3,false); g.vars.dustAt=g.time+3.2; } },
       { when:g=>g.vars.dustAt&&g.time>g.vars.dustAt, do:g=>{

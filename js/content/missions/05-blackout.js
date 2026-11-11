@@ -7,11 +7,11 @@
 MISSIONS.push(
   {
     id:'blackout', title:'Blackout', map:'mare',
-    summary:'Restore power to a dark mining town while the Swarm hunts the light.',
+    summary:'Restore power to a dark mining town while the Brood hunts the light.',
     briefing:[
       'The data core Dr. Maas carried out holds years of seismic readings. To make sense of them she needs the survey array in Mare Colony, and Mare Colony has been dark for a week.',
       'The town has four generators, one in each corner. All four must run at the same time to wake the array. Your Engineers can repair them, but in the dark your troops see half as far as usual.',
-      'A running generator lights its streets, and the Swarm is drawn to light. Get one running and they will come for it. Hold the Command Post in the square; its own small generator keeps the camp lit. The landing pad beside it brings in replacements for anyone you lose.'
+      'A running generator lights its streets, and the Brood is drawn to light. Get one running and they will come for it. Hold the Command Post in the square; its own small generator keeps the camp lit. The landing pad beside it brings in replacements for anyone you lose.'
     ],
     dark:{ sight:0.5 },                 // darkness: sight × 0.5, explored ground fades to black
     limits:{ sentry:4 },

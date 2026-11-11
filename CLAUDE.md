@@ -19,6 +19,9 @@ Read this first in every new session. The README holds the full design (in Dutch
    - publish with `root=/home/claude/hollow_colony` and `files` = every changed js/css file (same path as published);
    - a publish is refused for files changed since the last read: compare the sha256 with `git show origin/main:<file>`, read those files (action read, `paths`, an `out_dir` in the scratchpad), then publish again.
 
+## Names (Nov 2026)
+Player-facing names changed, code ids did not: Scuttler = type `drone`, Sporebag = `bloater`, The Matron = `broodmother`, mycel = `creep` (G.creep, CREEP), the Brood = faction `swarm`. Write game text with the new names; keep the ids.
+
 ## Code map
 - Plain `<script>` files, no build step, everything global. Load order is the order in index.html.
 - `js/content/`: data. `units.js` (UNITS, BUILDINGS), `difficulty.js`, `veterans.js`, `intel.js`, `relics.js`, `sprites.js`, `maps/*.js` (ASCII maps, legend in `_maps.js`), `missions/*.js` (campaign 01–08 plus 04b Night Shift, 06b Kill Order, 06c Mother's Heart = 11 missions, Swarm s01/s01b/s02/s04–s08, trainings t-*: Corps training, The First Hunger, Brood Tactics). `_missions.js` holds the mission API docs and the tutorial engine.

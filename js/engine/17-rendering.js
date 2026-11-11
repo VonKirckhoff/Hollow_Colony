@@ -166,6 +166,8 @@ function drawFx(){
   for(const f of G.fx){ const a=Math.max(0,f.t/f.max);
     switch(f.k){
       case 'tracer': ctx.strokeStyle=`rgba(255,226,168,${a})`; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(f.x1,f.y1); ctx.lineTo(f.x2,f.y2); ctx.stroke(); break;
+      case 'tendril': { const g=1-a, x=f.x+(f.tx-f.x)*Math.min(1,g*1.6), y=f.y+(f.ty-f.y)*Math.min(1,g*1.6); ctx.strokeStyle=`rgba(150,100,180,${Math.min(1,a*1.8)})`; ctx.lineWidth=1;   /* a mycel thread creeping to a healing creature's feet */
+        ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.quadraticCurveTo((f.x+x)/2+Math.sin(f.seed+g*6)*5,(f.y+y)/2+Math.cos(f.seed)*4,x,y); ctx.stroke(); ctx.fillStyle=`rgba(166,255,74,${a})`; ctx.fillRect(Math.round(x)-1,Math.round(y)-1,2,2); break; }
       case 'flash': ctx.fillStyle='#fff3c4'; ctx.fillRect(Math.round(f.x)-3,Math.round(f.y)-3,6,6); break;
       case 'spark': case 'ember': ctx.fillStyle=f.col; ctx.globalAlpha=a; ctx.fillRect(Math.round(f.x),Math.round(f.y),2,2); ctx.globalAlpha=1; break;
       case 'flame': { const sz=Math.round(4+(1-a)*8); ctx.fillStyle=a>0.6?'#ffe08a':a>0.3?'#ff8a2a':'rgba(120,50,20,.6)'; ctx.fillRect(Math.round(f.x-sz/2),Math.round(f.y-sz/2),sz,sz); break; }

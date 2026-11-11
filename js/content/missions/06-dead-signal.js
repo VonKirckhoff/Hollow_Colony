@@ -9,10 +9,10 @@ const DS_SITES = [ { tag:'s1', at:{x:32,y:3},  nest:'b', name:'North nest' },
 MISSIONS.push(
   {
     id:'dead-signal', title:'Dead Signal', map:'convoy',
-    summary:'Arm three seismic charges deep in Swarm ground, keep them alive, and get out.',
+    summary:'Arm three seismic charges deep in Brood ground, keep them alive, and get out.',
     briefing:[
       'The Mare Colony array found it: the brood is fed through tunnels under Ridgeback Canyon. Three nests sit on top of the main shafts.',
-      'Arm a seismic charge beside each nest. An Engineer has to stand still on the marked site for twenty seconds, and then the charge needs seventy-five more before it blows. The Swarm will feel it and come for it.',
+      'Arm a seismic charge beside each nest. An Engineer has to stand still on the marked site for twenty seconds, and then the charge needs seventy-five more before it blows. The Brood will feel it and come for it.',
       'Each blast collapses a nest, and its echo maps the caves below. After the third, run for the launch pad in the east. There is no base on this one and you only have two Engineers, but the landing pad where you start can bring in replacements.'
     ],
     landingZone:{ tx:8, ty:18, max:11, delay:25 },   // landing pad at the start: order replacements, up to the 11 you start with

@@ -23,6 +23,21 @@ De inhoud staat in losse bestanden: elke kaart en elke missie heeft een eigen be
 
 ---
 
+## Namen (nov 2026)
+Om niet op bekende spellen en films te lijken kregen enkele dingen in het spel een nieuwe naam. Alleen de tekst die de speler ziet veranderde; in de code heten ze nog zoals vroeger (type, sprite, factie, variabelen), dus oude opslagen en kaarten blijven werken.
+
+| Vroeger | Nu in het spel | In de code |
+|---|---|---|
+| Drone | **Scuttler** | `drone` |
+| Bloater | **Sporebag** | `bloater` |
+| Brood Mother (*Queen of the Swarm*) | **The Matron** (*Mother of the Brood*) | `broodmother` |
+| creep | **mycel** | `creep`, `G.creep`, `CREEP` |
+| The Swarm | **The Brood** (de teller bovenaan heet *Creatures*) | `swarm` (factie), `SWARM_…` |
+
+Crawler, Spitter, Brute en Husk bleven. In deze README staan op veel plaatsen nog de oude namen: lees *Swarm* als *Brood*, *creep* als *mycel* enzovoort.
+
+**Nieuwe sprites (nov 2026):** Scuttler (een rechtopstaande bidsprinkhaan met twee beenzeisen), Spitter (mortierkever met gloeiende zuurblaas), Brute (pantserram met beenbanden en gekrulde hoorn), The Matron (Wortelhart: een kloppend hart van vlees met rode aders en een gloeiende kern, op een kluwen wortels). De 3D-modellen volgen dezelfde ontwerpen. De Crawler hield zijn sprite.
+
 ## Het spel
 
 De terraformingkolonies op de maan zijn stilgevallen. Onder de regolith is iets wakker geworden.
@@ -442,6 +457,21 @@ Met **F3** of de knop **2D / 3D** bovenaan schakel je tijdens een missie tussen 
 - **Besturing** zoals in 2D: klikken, slepen voor een selectiekader, rechtsklikken en rechts slepen voor de kijkrichting, minimap en camera volgen. In 3D kan de camera tot aan de rand van de kaart kijken.
 - **Prototype:** draait op elke computer met WebGL; op een trage computer kan je in het dev-paneel de schaduwen (`VIEW3D.shadows`) of de grondanimaties (`VIEW3D.groundAnims`) uitzetten.
 - Code: js/engine/33-view3d.js (THREE.js in js/vendor/three.min.js, MIT-licentie). De instelbare waarden staan in `VIEW3D` (dev-paneel, tab *Effects*): camera, hoogtes van het terrein, licht, grootte van de modellen, sterkte van de xray.
+
+### Dropship: aanvliegen, landen en opstijgen (nov 2026)
+- **Aanvliegen:** het schip komt in een bocht binnen en helt over; twee landingslichten vegen over de grond voor de neus uit; de schaduw groeit en wordt scherper.
+- **Motoren:** in de vlucht duwen ze naar achter (een lange vlam achter de gondels). Vlak bij het platform draaien ze naar beneden: je ziet de straalpijp van boven, een ronde gloed, en een ring hete lucht op de grond. De poten klappen uit.
+- **Op de grond:** poten uit, laadklep omlaag zolang het uitlaadt (of wacht om op te pikken), motoren stationair.
+- **Opstijgen:** het schip komt los op zijn motoren, klapt de poten in, steentjes en stof vliegen weg; dan gaat de neus omhoog, het draait weg en versnelt.
+- **In 3D** is er nu ook een dropship: hetzelfde verloop, met draaiende motorgondels, vlammen, poten, laadklep, navigatielichten, schaduw en licht op de grond.
+- Code: `shipPoses` in js/engine/22-squad-life.js geeft de stand van elk schip (positie, hoogte, richting, motoren, neus, lichten, poten, klep); `drawShip` tekent hem in 2D, `v3Ships` in 3D. Instelbaar in `SHIP` (bocht, hoogte bij het opstijgen, reikwijdte van de lichten).
+
+### Mycel (vroeger creep) in detail (nov 2026)
+- Uit elke nest groeit een **netwerk van aders** (vertakt, telkens hetzelfde voor dezelfde nest); **groene pulsen** lopen erdoor naar buiten. Aan de groeiende rand voelen ranken hun weg vooruit, stervend mycel wordt grijs en stuift weg.
+- **Sporen:** alles wat over het mycel loopt, drukt er een donkere afdruk in die na enkele seconden weer dichtgroeit.
+- **Genezen zichtbaar:** een wezen dat op het mycel geneest, krijgt dunne draadjes die naar zijn poten kruipen.
+- **In 3D** ligt het mycel wat bol op de grond, met een natte glans; aders, pulsen en sporen staan erop.
+- Instelbaar in `MYCEL` (dev-paneel, tab *Swarm*). Code: `mycelVeins`, `drawMycel` in js/engine/25-hive-life.js.
 
 ### Instellingen: licht en geluid (Menu → Settings)
 Zowel in het hoofdmenu als in het pauzemenu staat **Settings**. Alles wordt in de browser onthouden (`hc-light`, en de bestaande sleutels voor geluid). Opent je het vanuit een missie, dan zie je het effect meteen achter het menu.

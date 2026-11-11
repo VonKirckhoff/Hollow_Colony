@@ -8,9 +8,9 @@
 ROGUE_MISSIONS.push(
   {
     id:'rogue-mothers-blood', title:'Mother\'s Blood', map:'depths', rogue:true,
-    summary:'Reach the Brood Mother before the Corps does, and decide what to do with her heart.',
+    summary:'Reach the Matron before the Corps does, and decide what to do with her heart.',
     briefing:[
-      'Devreese has found it in Maas\'s notes: every strain we carry comes from one source. Under Tycho Maw, in a lair sealed with living membrane, the Brood Mother lays the eggs of the whole Swarm.',
+      'Devreese has found it in Maas\'s notes: every strain we carry comes from one source. Under Tycho Maw, in a lair sealed with living membrane, the Matron lays the eggs of the whole Brood.',
       'The membrane dies when its three egg chambers die. But it is alive, and it knows its own: one of us with enough taint in the blood (60 or more) can stand against it and it will open for him. The Corps will come down here within days. We go now.',
       'Bleed her. Something that size has more than one heart, and when she is hurt badly enough she tears one loose and runs. That heart is ours, and there are two things we can do with it. Devreese can put it into one of us, and through him into all of us, and we stop being Corps for good. Or Mortier burns it, and every sample we ever took with it, and whatever we are now ends with us. The crew will follow your call.'
     ],
@@ -23,10 +23,10 @@ ROGUE_MISSIONS.push(
       hunt:{ every:40, afterEvery:20, budget:45, afterBudget:60, grow:0.15, growMax:8 } },
     objectives:[
       { id:'lair',   text:'Open the lair: burn the three egg chambers (0/3), or let a crew member with 60+ taint stand at the membrane' },
-      { id:'mother', text:'Bleed the Brood Mother until she tears free' }
+      { id:'mother', text:'Bleed the Matron until she tears free' }
     ],
     triggers:[
-      { when:g=>g.time>0.3, do:g=>{ g.wall('8',2.3,'lair'); g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.vars.mother.noDestroy=true; g.boss(g.vars.mother,'Brood Mother');   /* she does not die here: at the end of her health she tears free (below) */
+      { when:g=>g.time>0.3, do:g=>{ g.wall('8',2.3,'lair'); g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.vars.mother.noDestroy=true; g.boss(g.vars.mother,'The Matron');   /* she does not die here: at the end of her health she tears free (below) */
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); g.marker('mem','8','Lair membrane'); g.vars.mem=0; g.vars.mt=g.time; } },
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','The Maw Depths. Last job, people. Whatever happens down here, it is ours to decide.') },
       { when:g=>g.time>10, do:g=>g.crewSay('Devreese','The membrane at the lair: if one of us is far enough gone, sixty or more, stand him against it. It will open for its own.') },
@@ -38,7 +38,7 @@ ROGUE_MISSIONS.push(
             if(!g.vars.kinSaid){ g.vars.kinSaid=true; g.crewSay('Devreese',`It is moving... it knows ${kin.vet.name}. Stay there, do not shoot it!`); } }
           else g.vars.mem=Math.max(0,g.vars.mem-dt*0.5);
           g.setText('lair',`Open the lair: burn the three egg chambers (${n}/3), or let a crew member with 60+ taint stand at the membrane${g.vars.mem>0?` (${Math.floor(g.vars.mem)}/6)`:''}`);
-          if(n>=3||g.vars.mem>=6){ g.vars.open=true; g.complete('lair'); g.openWall('lair'); g.unmark('mem'); for(const k of ['a','b','c']) g.unmark('ch'+k); g.marker('queen','9','Brood Mother');
+          if(n>=3||g.vars.mem>=6){ g.vars.open=true; g.complete('lair'); g.openWall('lair'); g.unmark('mem'); for(const k of ['a','b','c']) g.unmark('ch'+k); g.marker('queen','9','The Matron');
             g.crewSay(n>=3?'Capt. Kerckhoffs':'Devreese',n>=3?'The membrane is rotting away. She is in there. Everyone, on me.':'It opened for him. God help us, it opened for him. She is in there.'); } } },
       { when:g=>g.vars.mother&&g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.crewSay('Braet','Look at the size of her.'); } },
       { when:g=>g.vars.mother&&g.vars.mother.bossState&&g.vars.mother.bossState.lairs>=1, do:g=>g.crewSay('Devreese','She is crawling back to heal! Go in after her!') },
@@ -52,7 +52,7 @@ ROGUE_MISSIONS.push(
           g.marker('heart',{x:Math.floor(m.x/TILE),y:Math.floor(m.y/TILE)},'Her heart');
           g.addObjective('ascend','Ascension: one of the crew takes the heart into his blood (stand on it, 8 s)'); g.addObjective('ashes','Ashes: Mortier burns the heart (Pyro next to it, 6 s)');
           g.crewSay('Devreese','She left one of her hearts behind, and it is still beating. Captain... your call. Stand someone on it and I put it in our blood. Or let Mortier burn it, and everything with it.');
-          g.say('Cmdr. Varga','All Dust elements, seismic picked up a scream under the Maw. Something hurt the Brood Mother, badly. Kestrel, take Dust down now.'); g.setTimer(150,'Dust in the Maw'); } },
+          g.say('Cmdr. Varga','All Dust elements, seismic picked up a scream under the Maw. Something hurt the Matron, badly. Kestrel, take Dust down now.'); g.setTimer(150,'Dust in the Maw'); } },
       { repeat:true, when:g=>g.vars.heart&&!g.vars.chosen, do:g=>{ const h=g.vars.heart, dt=g.time-g.vars.ht; g.vars.ht=g.time;
           const near=(r,f)=>g.crew().some(u=>!u.downed&&f(u)&&Math.hypot(u.x-h.x,u.y-h.y)<r*TILE);
           if(near(1.6,u=>u.def.attack!=='flame')) g.vars.asc=Math.min(8,g.vars.asc+dt); else g.vars.asc=Math.max(0,g.vars.asc-dt);
@@ -67,7 +67,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.heart&&!g.vars.chosen&&g.timerLeft()<=50&&!g.vars.dustLand, do:g=>{ g.vars.dustLand=true; const sq=[...g.loyal('trooper','P',4),...g.loyal('gunner','P',1),...g.loyal('pyro','P',1)]; g.hunt(sq);
           g.say('Sgt. Kessler','Dust is in the Maw. Whoever is down here: we are coming for that lair.'); g.crewSay('Capt. Kerckhoffs','Dust. Make the call, now!'); } },
       { when:g=>g.vars.heart&&!g.vars.chosen&&g.timerLeft()===0, do:g=>g.lose('Dust reaches the lair first. The heart goes to Tycho in a sealed case, and the Osprey crew goes with it.') },
-      { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The crew dies in the Maw Depths. The Brood Mother keeps laying.') }
+      { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('The crew dies in the Maw Depths. The Matron keeps laying.') }
     ]
   }
 );

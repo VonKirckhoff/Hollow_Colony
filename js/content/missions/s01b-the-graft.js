@@ -10,7 +10,7 @@ SWARM_MISSIONS.push(
     summary:'Be the seed. From egg to Husk, and root a nest of your own.',
     briefing:[
       'The station is quiet, but not empty. More soft ones came down after Dust, and they guard the platform and walk the tunnel.',
-      'One of Dust was dragged home to the western nest. An egg on the creep is opening. <i>That is you.</i>',
+      'One of Dust was dragged home to the western nest. An egg on the mycel is opening. <i>That is you.</i>',
       'You steer one creature through its whole life. <b>Right-click</b> to move it. As a Grafter, latch onto the body. As a <b>Twitcher</b>, feed: kill grazers or soldiers. As a <b>Shambler</b>, hide: stay far from every soldier until you change. As a <b>Husk</b>, find a quiet place and press <b>F</b> to take root.',
       'If the creature dies, the seed is lost. The nest can hatch a little brood to help (Q, W), but the hunger is yours.'
     ],

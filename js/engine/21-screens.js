@@ -114,9 +114,9 @@ const tDate=w=>new Date(w.at||w).toLocaleDateString();
 let trophTab='corps';
 const TROPH_TABS=[
   { id:'corps', name:'Lunar Corps', text:'One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Hollow Light, the grand trophy, takes every one of them. A win on Hard also counts for Normal and Easy.' },
-  { id:'swarm', name:'The Swarm', text:'Three trophies for the Swarm campaign, one per difficulty: win every Swarm mission on it. A win on Hard also counts for Normal and Easy, so each mission only needs its hardest win.' },
+  { id:'swarm', name:'The Brood', text:'Three trophies for the Brood campaign, one per difficulty: win every Brood mission on it. A win on Hard also counts for Normal and Easy, so each mission only needs its hardest win.' },
   { id:'rogue', name:'Rogue Strain', text:'The Osprey crew went rogue. Three trophies for winning every Rogue job on a difficulty (a win on Hard also counts for Normal and Easy), two for the ways the story can end, two for how far you take the strain, and one for walking among them unseen.' },
-  { id:'relics', name:'Relics', text:'Hidden in the Lunar Corps campaign: relics of the old colony and ancient eggs. Take every relic, and every egg before the Swarm wakes it. Read what you found in Intel, tab Relics.' } ];
+  { id:'relics', name:'Relics', text:'Hidden in the Lunar Corps campaign: relics of the old colony and ancient eggs. Take every relic, and every egg before the Brood wakes it. Read what you found in Intel, tab Relics.' } ];
 function trophyTabs(){ const T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus(), out={};
   const has=(list,k)=>list.filter(c=>T[k(c)]&&(!Array.isArray(T[k(c)])||T[k(c)].length)).length;
   /* Lunar Corps: the role grid, Flawless and Hollow Light */
@@ -133,12 +133,12 @@ function trophyTabs(){ const T=trophies(), hero=heroOf(), gs=grandStatus(), rs=r
   /* the Swarm and the Rogue crew by difficulty */
   const diffs=(list,count,N,camp,cls)=>`<div class="tgrid three">${list.map(t=>{ const w=T[t.id], n=count(t.diff);
       return tBig(cls,!!w,t.name,`Win every ${camp} mission on ${DIFFICULTY[t.diff].label}`,w?tDate(w):`${n} / ${N} missions`,N?n/N:0); }).join('')}</div>`;
-  out.swarm={ html:diffs(SWARM_TROPHIES,swarmDiffCount,SWARM_MISSIONS.length,'Swarm','swarm'), have:has(SWARM_TROPHIES,t=>t.id), need:SWARM_TROPHIES.length };
+  out.swarm={ html:diffs(SWARM_TROPHIES,swarmDiffCount,SWARM_MISSIONS.length,'Brood','swarm'), have:has(SWARM_TROPHIES,t=>t.id), need:SWARM_TROPHIES.length };
   const RD=ROGUE_TROPHIES.filter(t=>t.diff), RS=ROGUE_TROPHIES.filter(t=>!t.diff);
   out.rogue={ html:`<div class="tsub">By difficulty</div>`+diffs(RD,rogueDiffCount,ROGUE_MISSIONS.length,'Rogue Strain','rogue')
       +`<div class="tsub">The story</div><div class="tgrid four">${RS.map(t=>{ const w=T[t.id]; return tBig('rogue',!!w,t.name,t.what,w?tDate(w):'not yet',null); }).join('')}</div>`,
     have:has(ROGUE_TROPHIES,t=>t.id), need:ROGUE_TROPHIES.length };
-  out.relics={ html:`<div class="tgrid two">${[['item','Archivist','Every hidden relic of the campaign'],['egg','Egg Hunter','Every ancient egg, taken before the Swarm woke it']].map(([k,name,what])=>{ const r=rs[k];
+  out.relics={ html:`<div class="tgrid two">${[['item','Archivist','Every hidden relic of the campaign'],['egg','Egg Hunter','Every ancient egg, taken before the Brood woke it']].map(([k,name,what])=>{ const r=rs[k];
       return tBig('relic',!!r.at,name,what,r.at?tDate(r.at):`${r.have} / ${r.need} found`,r.have/Math.max(1,r.need)); }).join('')}</div>`,
     have:(rs.item.at?1:0)+(rs.egg.at?1:0), need:2 };
   return out; }
@@ -224,7 +224,7 @@ function buildRelicIntel(){ const F=relicsFound(), sel=Math.min(intelSel.relics|
   const r=RELICS[sel], f=r&&F[r.id], n=Object.keys(F).filter(k=>RELICS.some(x=>x.id===k)).length;
   const img=ARTURL[relicArt(r)];
   $('#intel-grid').innerHTML=r?intelCard(img,f?r.name:'Not found yet',`${r.kind==='egg'?'Ancient egg':'Relic'} · ${mt(r.mission)}`,'none',
-    f?r.text:(r.kind==='egg'?'Somewhere on this map lies an ancient egg. Hold it with a soldier and keep the Swarm off it: if they hold it, it wakes and grows into a new hive.':'Somewhere on this map, off the beaten track, something is waiting to be found. Walk a soldier over it.'),
+    f?r.text:(r.kind==='egg'?'Somewhere on this map lies an ancient egg. Hold it with a soldier and keep the Brood off it: if they hold it, it wakes and grows into a new hive.':'Somewhere on this map, off the beaten track, something is waiting to be found. Walk a soldier over it.'),
     `${n} of ${RELICS.length} relics found.`,[],[f?`Found ${new Date(f.at).toLocaleDateString()}`:'Not found'],'',f?'art:'+relicArt(r):''):''; }
 $('#intel-list').addEventListener('click',e=>{ const b=e.target.closest('[data-isel]'); if(!b) return; intelSel[intelTab]=+b.dataset.isel; buildIntel(); const nb=$(`[data-isel="${b.dataset.isel}"]`); if(nb) nb.focus({preventScroll:true}); });
 $('#intel-list').addEventListener('keydown',e=>{ if(e.key!=='ArrowDown'&&e.key!=='ArrowUp') return; e.preventDefault(); const n=$('#intel-list').children.length, i=(intelSel[intelTab]||0)+(e.key==='ArrowDown'?1:-1);
@@ -363,12 +363,12 @@ function showEnd(){
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.grandWon&&G.grandWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Grand trophy</span>${G.grandWon.map(()=>`<div>Hollow Light: every trophy of the Lunar Corps. It hangs on the Trophy wall.</div>`).join('')}</div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
-  if(G.swarmWon&&G.swarmWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${G.swarmWon.map(id=>{ const t=SWARM_TROPHIES.find(x=>x.id===id); return `<div>${t.name}: every Swarm mission won on ${DIFFICULTY[t.diff].label}. It hangs on the Trophy wall.</div>`; }).join('')}</div>`;
+  if(G.swarmWon&&G.swarmWon.length){ const html=`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${G.swarmWon.map(id=>{ const t=SWARM_TROPHIES.find(x=>x.id===id); return `<div>${t.name}: every Brood mission won on ${DIFFICULTY[t.diff].label}. It hangs on the Trophy wall.</div>`; }).join('')}</div>`;
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=html+ev.innerHTML; }
   if(G.relicsGot&&G.relicsGot.length){ const html=`<div class="vsec troph"><span class="lbl">✦ Relic found</span>${G.relicsGot.map(id=>{ const r=relicDef(id); return r?`<div>${r.name}. Read about it in Intel, tab Relics.</div>`:''; }).join('')}</div>`;   /* kept even if the mission was lost */
     if(ev.hidden){ ev.hidden=false; ev.innerHTML=html; } else ev.innerHTML=ev.innerHTML+html; }
   if(!o.win && m.rogue){ ev.hidden=false; ev.innerHTML=`<div class="vsec"><span class="lbl">Retry</span><div>Nothing is lost: the crew, their taint and the splice lab are as they were before this job.</div></div>`; }
-  const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Swarm killed',S.kills],['Soldiers lost',S.soldiers!=null?S.soldiers:S.lost],['Assets lost',S.assets||0],...(m.rogue?[['Hives burned',S.hives],['Corps shot',S.loyal||0],['Samples',dnaTotal(G.rogue&&G.rogue.dna)]]:[['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]])]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
+  const S=G.stats; $('#e-stats').innerHTML=(G.side==='swarm'?[['Time',fmtTime(G.time)],['Soldiers killed',S.kills],['Brood lost',S.lost],['Hives lost',S.hives],['Bodies brought home',S.fed||0],['Cocoons',S.cocoons]]:[['Time',fmtTime(G.time)],['Brood killed',S.kills],['Soldiers lost',S.soldiers!=null?S.soldiers:S.lost],['Assets lost',S.assets||0],...(m.rogue?[['Hives burned',S.hives],['Corps shot',S.loyal||0],['Samples',dnaTotal(G.rogue&&G.rogue.dna)]]:[['Hives burned',S.hives],['Salvage crates',S.crates],['Reinforcements',S.trained]])]).map(([a,b])=>`<div><span class="lbl">${a}</span><b>${b}</b></div>`).join('');
   const LM=listOf(m), idx=m.training?-1:LM.indexOf(m); let btns=''; if(idx>=0||m.training) ui.campSide=sideOf(m);
   if(o.win && (m.training||idx>=0) && idx<LM.length-1) btns+=`<button class="btn primary" type="button" id="e-next">${m.rogue?'Next job':'Next mission'}</button>`;
   btns+=`<button class="btn ${o.win&&(m.training||idx>=0)&&idx<LM.length-1?'':'primary'}" type="button" id="e-retry">${o.win?'Play again':'Retry'}</button><button class="btn" type="button" id="e-menu">Main menu</button>`;
@@ -388,6 +388,6 @@ $('#e-report').addEventListener('click',()=>{ $('#s-end').classList.remove('watc
 
 /* top bar: the mission's title, and its mode: which campaign and number (or training / skirmish) and the difficulty */
 function missionTag(){ const m=G.mission, sw=m.side==='swarm', L=listOf(m), i=L.indexOf(m);
-  const mode=m.training?(sw?'Swarm training':'Corps training'):m.id==='skirmish'?'Skirmish':i>=0?`${sw?'Swarm':m.rogue?'Rogue':'Corps'} ${i+1}`:'Mission';
+  const mode=m.training?(sw?'Brood training':'Corps training'):m.id==='skirmish'?'Skirmish':i>=0?`${sw?'Brood':m.rogue?'Rogue':'Corps'} ${i+1}`:'Mission';
   const diff=(sw?SWARM_DIFF:DIFFICULTY)[G.diffKey], d=diff&&diff.label?diff.label:G.diffKey;
   $('#r-mode').textContent=`${mode} · ${d}`; $('#r-mtitle').textContent=m.title; $('#r-mission').dataset.tip=`${m.title}|${mode.replace(/^(Corps|Swarm|Rogue) (\d)/,'$1 campaign, mission $2')}, ${d}.`; }

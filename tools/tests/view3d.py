@@ -56,7 +56,7 @@ with sync_playwright() as p:
     p1=J(pg,"()=>{ const u=window._pu, s=v3Screen(u.x,u.y,0); return [s.x,s.y]; }")
     check('arrow right moves the view right (the world slides left)', p1[0]<p0[0]-40 and abs(p1[1]-p0[1])<40, [p0,p1])
     J(pg,"()=>{ const u=window._pu; bark(u,'move'); G.fx.push({k:'casing',x:u.x,y:u.y,t:2,max:2,vx:0,vy:0}); u.burnT=1; }") if False else J(pg,"()=>{ const u=window._pu; try{ bark(u,'move'); }catch(e){} u.burnT=1; render(performance.now()); }")
-    pg.keyboard.press('Home'); pg.wait_for_timeout(1200)
+    pg.keyboard.press('Home'); pg.wait_for_timeout(3000)
     check('Home sets it straight', abs(J(pg,"()=>V3.yawR"))<0.05, J(pg,"()=>[V3.yaw,V3.yawR,ui.mode]"))
     # dark mission lights, a building being placed, then back to 2D
     J(pg,"()=>{ render(performance.now()); }")

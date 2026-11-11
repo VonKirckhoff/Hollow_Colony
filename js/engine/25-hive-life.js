@@ -7,6 +7,9 @@
           (keeps `hide` tiles from your troops), and the finished Husk is a warrior that hunts. Only the creature you steer in The Graft
           can take root (`root` seconds) and become a young hive with `hiveHp` of a normal hive's health and `guardMax` guards. */
 const CREEP = { start:2, max:8, grow:150, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
+/* how the mycel looks (Nov 2026): a network of veins from every nest with green pulses running out through them, tracks where something
+   walked over it, and thin threads that creep to the feet of a creature healing on it */
+const MYCEL = { veins:true, branches:7, pulseSpeed:0.45, tracks:true, trackLife:6, healThreads:true };
 const HUSK  = { root:18, hiveHp:0.55, guardMax:2, hide:11, reach:34, skipShambler:true };   /* hide: tiles a withdrawing Shambler keeps from your troops · skipShambler: a Husk of the Swarm molts from Twitcher straight into a Husk (the creature you steer in The Graft still goes through all three) */
 
 /* ---- creep ---- */
@@ -35,17 +38,41 @@ function updateCreep(dt){
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='swarm'||u.def.boss||u.hp>=u.maxHp) continue;
     const c=G.creep[Math.floor(u.y/TILE)*W+Math.floor(u.x/TILE)]; if(!(c>CREEP.at)) continue;
     u.hp=Math.min(u.maxHp,u.hp+CREEP.heal*c*dt);
-    if(Math.random()<dt*1.5&&isVisible(u)) G.fx.push({k:'text',x:u.x+rand(-6,6),y:u.y-24,t:0.7,max:0.7,txt:'+',col:'#c38bff'}); }
+    if(Math.random()<dt*1.5&&isVisible(u)) G.fx.push({k:'text',x:u.x+rand(-6,6),y:u.y-24,t:0.7,max:0.7,txt:'+',col:'#c38bff'});
+    if(MYCEL.healThreads&&Math.random()<dt*4&&isVisible(u)){ const a=rand(0,Math.PI*2), r=rand(14,26); G.fx.push({k:'tendril',x:u.x+Math.cos(a)*r,y:u.y+Math.sin(a)*r*0.7+4,tx:u.x,ty:u.y+4,seed:Math.random()*9,t:0.7,max:0.7}); } }
+  /* tracks: whatever walks over the mycel presses a dark print into it that slowly fills in again */
+  if(MYCEL.tracks&&G.creepAny){ const tr=G.mtracks||(G.mtracks=[]);
+    for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!u.moving||u.hidden) continue; u.trkT=(u.trkT||0)-dt; if(u.trkT>0) continue; u.trkT=0.28;
+      const k=Math.floor(u.y/TILE)*W+Math.floor(u.x/TILE); if(!(G.creep[k]>CREEP.at)||!G.seen[k]) continue; tr.push({x:u.x+rand(-2,2),y:u.y+u.r*0.4,r:Math.max(3,u.r*0.45),t:MYCEL.trackLife}); }
+    for(const t of tr) t.t-=dt; if(tr.length&&tr[0].t<=0) G.mtracks=tr.filter(t=>t.t>0); if(G.mtracks.length>400) G.mtracks.splice(0,G.mtracks.length-400); }
 }
 function creepAt(x,y){ return G.creep?G.creep[Math.floor(y/TILE)*G.map.w+Math.floor(x/TILE)]||0:0; }
+/* the vein network of a nest: branches that wander out from it, grown once (seeded by the nest) and kept on it */
+const VEIN_CACHE=new WeakMap();   /* not on the nest itself: the save game stays small */
+function mycelVeins(h){ const R=Math.max(3,hiveOpt(h,'creep',CREEP.max))*TILE, c=VEIN_CACHE.get(h); if(c&&c.R===R) return c.out;
+  const out=[], rnd=(i)=>{ const x=Math.sin((h.id*97+i)*12.9898)*43758.5453; return x-Math.floor(x); }; let n=0;
+  const grow=(x,y,a,len,w,depth)=>{ const pts=[]; for(let s=0;s<len;s++){ a+=(rnd(n++)-0.5)*0.55; x+=Math.cos(a)*5; y+=Math.sin(a)*5*0.85; if(Math.hypot(x-h.x,y-h.y)>R) break; pts.push(x,y);
+      if(depth<3&&rnd(n++)<0.07) grow(x,y,a+(rnd(n++)<0.5?0.75:-0.75),(len*0.55)|0,Math.max(1,w-1),depth+1); } if(pts.length>4) out.push({pts,w,ph:rnd(n++)}); };
+  for(let i=0;i<MYCEL.branches;i++) grow(h.x,h.y,i/MYCEL.branches*Math.PI*2+rnd(i)*0.6,Math.ceil(R/5),3,0);
+  VEIN_CACHE.set(h,{out,R}); return out; }
+function drawMycel(now,vx0,vy0,vx1,vy1){ if(!G.creep||!G.creepAny) return; const m=G.map, W=m.w;
+  const live=(x,y)=>{ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(tx<0||ty<0||tx>=W||ty>=m.h) return 0; const k=ty*W+tx; return G.seen[k]?G.creep[k]:0; };
+  if(MYCEL.tracks) for(const t of G.mtracks||[]){ if(t.x<vx0||t.x>vx1||t.y<vy0||t.y>vy1) continue; const c=live(t.x,t.y); if(c<0.2) continue;
+    ctx.fillStyle=`rgba(24,8,32,${0.55*Math.min(1,t.t/MYCEL.trackLife*1.6)*c})`; ctx.beginPath(); ctx.ellipse(t.x,t.y,t.r,t.r*0.6,0,0,Math.PI*2); ctx.fill(); }
+  if(!MYCEL.veins) return;
+  for(const h of nests()){ if(h.x<vx0-400||h.x>vx1+400||h.y<vy0-400||h.y>vy1+400) continue;
+    for(const v of mycelVeins(h)){ const P=v.pts, n=P.length/2, ph=((now/1000*MYCEL.pulseSpeed+v.ph)%1)*n|0;
+      for(let i=0;i<n;i++){ const x=P[i*2], y=P[i*2+1]; if(x<vx0||x>vx1||y<vy0||y>vy1) continue; const c=live(x,y); if(c<0.3) continue;
+        ctx.fillStyle=`rgba(42,15,54,${0.85*c})`; ctx.fillRect(Math.round(x)-1,Math.round(y)-1,v.w+1,v.w+1); ctx.fillStyle=`rgba(138,90,166,${0.8*c})`; ctx.fillRect(Math.round(x),Math.round(y),1,1);
+        const d=ph-i; if(d>=0&&d<3){ ctx.fillStyle=`rgba(166,255,74,${(0.9-d*0.3)*c})`; ctx.fillRect(Math.round(x)-1,Math.round(y)-1,3,3); } } } } }
 function drawCreep(now,vx0,vy0,vx1,vy1){
   if(!G.creep||!G.creepAny) return; const m=G.map, W=m.w;
   ctx.imageSmoothingEnabled=true; ctx.drawImage(G.creepCv,0,0,W*TILE,m.h*TILE); ctx.imageSmoothingEnabled=false;
+  drawMycel(now,vx0,vy0,vx1,vy1);
   /* veins and pustules on the thicker parts */
   const x0=Math.max(0,Math.floor(vx0/TILE)), y0=Math.max(0,Math.floor(vy0/TILE)), x1=Math.min(W-1,Math.ceil(vx1/TILE)), y1=Math.min(m.h-1,Math.ceil(vy1/TILE));
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const k=y*W+x, c=G.creep[k]; if(c<0.35||!G.seen[k]) continue;
     const n=creepNoise(x,y), n2=creepNoise(y+7,x+3), bx=x*TILE, by=y*TILE;
-    ctx.fillStyle=`rgba(40,14,52,${0.6*c})`; ctx.fillRect(bx+Math.floor(n*TILE*0.7),by+Math.floor(n2*TILE*0.8),Math.round(6+n2*8),2); ctx.fillRect(bx+Math.floor(n2*TILE*0.6),by+Math.floor(n*TILE*0.5),2,Math.round(4+n*6));
     ctx.fillStyle=`rgba(150,90,170,${0.35*c})`; ctx.fillRect(bx+Math.floor(n2*TILE*0.9),by+Math.floor(n*TILE*0.9),3,2);
     if(n>0.55){ const p=0.5+0.5*Math.sin(now/500+n*20); ctx.fillStyle=`rgba(166,255,74,${(0.25+0.45*p)*c})`; ctx.fillRect(bx+Math.floor(n2*TILE*0.8),by+Math.floor(n*TILE*0.7),3,3);
       ctx.fillStyle=`rgba(120,60,150,${0.7*c})`; ctx.fillRect(bx+Math.floor(n2*TILE*0.8)-1,by+Math.floor(n*TILE*0.7)+3,5,2); } }
@@ -72,7 +99,7 @@ function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=0;
   const vis=isVisible(u); G.fx.push({k:'boom',x:u.x,y:u.y,t:0.6,max:0.6,r:34,col:'#c38bff'}); addDecal(u.x,u.y,18,'rgba(70,30,90,.6)');
   for(let i=0;i<26;i++) G.fx.push({k:'ember',x:u.x+rand(-6,6),y:u.y-6+rand(-6,6),vx:rand(-120,120),vy:rand(-170,-20),t:rand(.5,1.1),max:1.1,col:pick(['#a6ff4a','#c38bff','#7a5a8e','#d23a3a','#eef2f5'])});
   if(vis){ SFX.play('huskborn',u.x,u.y); G.shake=Math.max(G.shake||0,0.3); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'IT LIVES',col:'#c38bff'}); }
-  if(vis&&!G.saidHusk){ G.saidHusk=true; say('Dr. Maas','That thing was one of ours. It is still changing, safe on the creep: once it is a full Husk it comes for us. Kill it while it is weak!','alert'); } }
+  if(vis&&!G.saidHusk){ G.saidHusk=true; say('Dr. Maas','That thing was one of ours. It is still changing, safe on the mycel: once it is a full Husk it comes for us. Kill it while it is weak!','alert'); } }
 /* growing up: returns true while it is molting (it stands still and cannot attack) */
 function huskGrow(u,dt){
   if(u.molt>0){ u.molt-=dt; u.order={type:'hold'}; u.path=null; u.target=null; u.cd=Math.max(u.cd,0.3);
@@ -83,7 +110,7 @@ function huskGrow(u,dt){
       const final=u.stage===HUSK_STAGES.length-1;
       if(vis){ SFX.play(final?'huskroar':'crack',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-32,t:1.4,max:1.4,txt:final?'HUSK':HUSK_STAGES[u.stage].name.toUpperCase(),col:final?'#ff5a4f':'#c38bff'}); if(final) G.shake=Math.max(G.shake||0,0.25); }
       if(final){ u.foundT=0; u.hide=null; if(!u.avatar&&G.side!=='swarm'){ u.role='hunt'; u.guardAt=null; u.order=null; }   /* full grown: it leaves the creep and hunts */
-        if(vis&&!G.saidHuskFull){ G.saidHuskFull=true; say('Dr. Maas','It has finished turning. A Husk: it leaves the creep now, and it is coming for us.','alert'); } } }
+        if(vis&&!G.saidHuskFull){ G.saidHuskFull=true; say('Dr. Maas','It has finished turning. A Husk: it leaves the mycel now, and it is coming for us.','alert'); } } }
     return true; }
   if(u.stage<HUSK_STAGES.length-1){ const ready=u.avatar?avatarReady(u,dt):(u.stageT-=dt)<=0;   /* the creature you steer grows by feeding and hiding, not by the clock */
     if(ready){ u.molt=MOLT.time; if(isVisible(u)) SFX.play('molt',u.x,u.y); return true; } }
@@ -208,7 +235,7 @@ function huskScream(u){ if(!u||u.dead) return; const vis=isVisible(u);
   if(u.type==='husk'&&!u.avatar&&G.side!=='swarm'&&u.stage===HUSK_STAGES.length-1&&!u.mend&&u.hp<u.maxHp*HUSK_WARRIOR.mendAt&&nests().some(h=>(h.creepR||0)>=1)){
     u.mend=true; u.target=null; u.order=null;
     if(vis){ G.fx.push({k:'text',x:u.x,y:u.y-48,t:1.4,max:1.4,txt:'FALLS BACK',col:'#c38bff'});
-      if(!G.saidMend){ G.saidMend=true; say('Dr. Maas','It is going back to the creep to heal. It will come out again for the next one of us. Do not let it get there!','alert'); } } } }
+      if(!G.saidMend){ G.saidMend=true; say('Dr. Maas','It is going back to the mycel to heal. It will come out again for the next one of us. Do not let it get there!','alert'); } } } }
 function rootHive(u){
   const s=u.site; u.dead=true; if(G.sel.includes(u)){ G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; }
   const h=makeBuilding('hive','swarm',s.x-1,s.y-1,true);

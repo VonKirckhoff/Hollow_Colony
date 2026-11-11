@@ -24,11 +24,11 @@ const ROGUE_CREW = [
    Effects are applied in rogueStrainApply (31-rogue.js), on top of the rank bonuses. */
 const STRAINS = {
   crawler: { name:'Night Eyes',     from:'Crawler', cost:3, taint:10, glyph:'◉', text:'+2 sight and he barely loses any of it in the dark. +5% speed.' },
-  drone:   { name:'Swift',          from:'Drone',   cost:3, taint:10, glyph:'»', text:'+15% speed.' },
+  drone:   { name:'Swift',          from:'Scuttler',   cost:3, taint:10, glyph:'»', text:'+15% speed.' },
   spitter: { name:'Acid Blood',     from:'Spitter', cost:3, taint:14, glyph:'☣', text:'+15% damage. His rounds leave acid in the wound.' },
   brute:   { name:'Chitin',         from:'Brute',   cost:2, taint:16, glyph:'⬢', text:'+20% armour, +15% health.' },
   husk:    { name:'Knitting Flesh', from:'Husk',    cost:2, taint:18, glyph:'✚', text:'Heals 2.5 health per second once nothing has hit him for 4 seconds.' },
-  hive:    { name:'Hive Scent',     from:'Hive',    cost:3, taint:22, glyph:'✿', text:'The Swarm smells one of its own: the hunt passes him by, hives do not notice him and the brood picks him last.' }
+  hive:    { name:'Hive Scent',     from:'Hive',    cost:3, taint:22, glyph:'✿', text:'The Brood smells one of its own: the hunt passes him by, hives do not notice him and the brood picks him last.' }
 };
 const STRAIN_ORDER = ['crawler','drone','spitter','brute','husk','hive'];
 

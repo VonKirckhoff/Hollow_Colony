@@ -30,10 +30,10 @@ function eggRelicTick(c,dt){ const R=EGG_RELIC, near=(f,r)=>G.ents.some(u=>u.kin
   const corpsOn=near('corps',R.reach), corpsAround=near('corps',R.clear), swarmOn=near('swarm',R.reach), swarmAround=near('swarm',R.clear);
   const shown=G.reveals.some(r=>r.show&&r.until+1>G.time);   /* the start-of-mission camera shot lifts the fog: Dr. Maas waits until the squad itself sees it */
   if(!c.seenSaid&&!shown&&G.side==='corps'&&G.vis[Math.floor(c.y/TILE)*G.map.w+Math.floor(c.x/TILE)]){ c.seenSaid=true;
-    say('Dr. Maas','That egg... it is old. Older than the colony, older than anything here. If the Swarm gets to it, it will wake. Put a soldier on it and keep them off: we are taking it.','alert'); G.pings.push({x:c.x,y:c.y,t:0,col:'#ffd23f'}); }
+    say('Dr. Maas','That egg... it is old. Older than the colony, older than anything here. If the Brood gets to it, it will wake. Put a soldier on it and keep them off: we are taking it.','alert'); G.pings.push({x:c.x,y:c.y,t:0,col:'#ffd23f'}); }
   if(corpsOn&&!swarmAround){ c.secure=Math.min(1,c.secure+dt/R.secure); c.hatch=Math.max(0,c.hatch-dt/R.hatch); if(c.secure>=1){ collectRelic(c); return; } }
   else if(swarmOn&&!corpsAround){ c.hatch=Math.min(1,c.hatch+dt/R.hatch); c.secure=Math.max(0,c.secure-dt/R.secure);
-    if(!c.hatchSaid&&c.hatch>0.15&&G.side==='corps'){ c.hatchSaid=true; say('Alert','The Swarm is at the old egg. It is waking!','alert'); G.pings.push({x:c.x,y:c.y,t:0,col:'#ff5a4f'}); }
+    if(!c.hatchSaid&&c.hatch>0.15&&G.side==='corps'){ c.hatchSaid=true; say('Alert','The Brood is at the old egg. It is waking!','alert'); G.pings.push({x:c.x,y:c.y,t:0,col:'#ff5a4f'}); }
     if(c.hatch>=1&&hives().length+rooting()<hiveMax()) eggWakes(c); }
   else { c.secure=Math.max(0,c.secure-dt/(R.secure*3)); }
   /* the Swarm comes for it: a few Drones from the nearest hive, again later if they die */

@@ -234,34 +234,62 @@ function dustPuff(x,y,n){ for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2), sp=ra
   G.fx.push({k:'dust',x:x+Math.cos(a)*rand(8,40),y:y+Math.sin(a)*rand(6,26),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.6,t:rand(1.2,2.6),max:2.6,r0:rand(10,16),r1:rand(22,40),col:pick(['#b3a58f','#a4967f','#c2b49c'])}); } }
 function updateShip(b,dt){
   const s=b.ship; if(!s) return;
-  if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9}); } }
+  if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9});
+    for(let i=0;i<10;i++){ const a=rand(0,Math.PI*2), v=rand(60,150); G.fx.push({k:'spark',x:b.x+Math.cos(a)*20,y:b.y+Math.sin(a)*14,vx:Math.cos(a)*v,vy:Math.sin(a)*v*0.6-40,t:0.7,max:0.7,col:pick(['#8a8478','#6d675d','#a39b8c'])}); } } }   /* pebbles flung away */
   else if(s.phase==='takeoff'){ s.t-=dt; if(s.t>2.2&&Math.random()<dt*30) dustPuff(b.x,b.y,1); if(s.t<=0) b.ship=null; }
 }
-function drawShip(gx,gy,alt,heading,scale,lights,ramp,now){
-  const art=ARTC.dropship, w=art.width*2.6*scale, h=art.height*2.6*scale;
-  // shadow on the ground, smaller and softer the higher the ship
-  ctx.save(); ctx.translate(gx+alt*0.28,gy+alt*0.42); ctx.rotate(heading); ctx.globalAlpha=Math.max(0.12,0.42-alt/700);
-  ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(0,0,w*0.46,h*0.34,0,0,Math.PI*2); ctx.fill(); ctx.restore();
-  ctx.save(); ctx.translate(gx,gy-alt*0.35); ctx.rotate(heading);
+/* Where the dropship of a pad is right now and how it looks: one pose per ship in the air or on the ground (the 2D and the 3D view both draw from this).
+   Arrival (flight.t 5→0): it comes in on a curve, banking, landing lights sweeping the ground; near the pad the engines turn down and the legs fold out.
+   On the ground: legs out, ramp down while it unloads (or waits for a pickup), engines idle.
+   Take-off (3 s): it lifts on its engines, folds its legs, then the nose comes up and it turns away and speeds off.
+   tilt: engines 0 = pushing back (flying) … 1 = blowing down (hovering) · pitch: nose up 0…1 · beams: landing lights 0…1 · legs, ramp 0…1 */
+const SHIP = { curve:0.32, liftAlt:42, lightReach:70 };
+function shipPoses(b){ const out=[], sm=(e0,e1,v)=>{ const t=clamp((v-e0)/(e1-e0),0,1); return t*t*(3-2*t); };
+  if(b.flight&&b.flight.t<5&&b.flight.ang!==undefined){ const k=Math.max(0,b.flight.t/5), a=b.flight.ang, side=(b.id%2?1:-1);
+    const at=q=>{ const D=820*q*q, off=Math.sin(q*Math.PI)*D*SHIP.curve*side; return [b.x+Math.cos(a)*D-Math.sin(a)*off, b.y+Math.sin(a)*D+Math.cos(a)*off]; };
+    const [gx,gy]=at(k), [px,py]=at(Math.min(1,k+0.02)); let hd=Math.atan2(gy-py,gx-px); if(!(k>0.001)) hd=0;
+    let dd=0-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI; hd+=dd*sm(0.32,0.05,k);
+    out.push({ gx, gy, alt:260*k, hd, scale:1+0.35*k, tilt:1-sm(0.12,0.45,k), pitch:0, beams:k>0.03&&k<0.9?Math.min(1,(0.9-k)*6):0, legs:1-sm(0.02,0.14,k), ramp:0, thrust:1, bank:Math.sin(k*Math.PI)*side*0.5 }); }
+  const s=b.ship; if(!s) return out;
+  if(s.phase==='ground'||s.phase==='parked'){ const open=s.phase==='parked'?1:clamp((2.6-s.t)/0.35,0,1)*clamp(s.t/0.35,0,1);
+    out.push({ gx:b.x, gy:b.y, alt:0, hd:0, scale:1, tilt:1, pitch:0, beams:0, legs:1, ramp:open, thrust:s.phase==='parked'?0.35:0.2+0.8*clamp((s.t-2.2)/0.4,0,1), bank:0 }); }
+  else if(s.phase==='takeoff'){ const k=1-s.t/3, a=s.out;
+    if(k<0.25){ const q=k/0.25; out.push({ gx:b.x, gy:b.y, alt:SHIP.liftAlt*sm(0,1,q), hd:0, scale:1+0.05*q, tilt:1, pitch:0, beams:0, legs:1-q, ramp:0, thrust:1, bank:0 }); }
+    else { const q=(k-0.25)/0.75, D=820*q*q; out.push({ gx:b.x+Math.cos(a)*D, gy:b.y+Math.sin(a)*D, alt:SHIP.liftAlt+218*q, hd:a*Math.min(1,q*1.6), scale:1.05+0.3*q, tilt:1-sm(0,0.6,q), pitch:Math.sin(Math.min(1,q*2.2)*Math.PI/2)*(1-0.6*q), beams:0, legs:0, ramp:0, thrust:1, bank:Math.sin(q*Math.PI)*0.4 }); } }
+  return out; }
+function drawShip(P,now){
+  const art=ARTC.dropship, sc=P.scale, w=art.width*2.6*sc, h=art.height*2.6*sc, sx=w/art.width, sy=h/art.height, gx=P.gx, gy=P.gy, alt=P.alt;
+  /* shadow on the ground: smaller, softer and further off the higher the ship */
+  ctx.save(); ctx.translate(gx+alt*0.28,gy+alt*0.42); ctx.rotate(P.hd); ctx.globalAlpha=Math.max(0.1,0.45-alt/600);
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(0,0,w*0.46*(1-0.2*P.pitch),h*0.34,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+  /* landing lights: two pools of light sweeping the ground ahead of the nose */
+  if(P.beams>0){ const f=P.beams, ahead=SHIP.lightReach+alt*0.35;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for(const side of [-1,1]){ const sw=Math.sin(now/520+side)*22, lx=gx+Math.cos(P.hd)*ahead-Math.sin(P.hd)*(side*14+sw), ly=gy+Math.sin(P.hd)*ahead+Math.cos(P.hd)*(side*14+sw);
+      const g=ctx.createRadialGradient(lx,ly,0,lx,ly,26+alt*0.05); g.addColorStop(0,`rgba(255,240,200,${0.32*f})`); g.addColorStop(1,'rgba(255,240,200,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(lx,ly,30+alt*0.06,20+alt*0.04,P.hd,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=`rgba(255,240,200,${0.08*f})`; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(gx+Math.cos(P.hd)*w*0.45,gy-alt*0.35+Math.sin(P.hd)*w*0.45); ctx.lineTo(lx,ly); ctx.stroke(); }
+    ctx.restore(); }
+  /* engines blowing down: a ring of hot air on the ground under a low ship */
+  if(P.tilt>0.5&&alt<70&&P.thrust>0.5){ const r=(1-alt/70)*(40+10*Math.sin(now/60)); ctx.save(); ctx.globalAlpha=0.18*P.tilt*(1-alt/70); ctx.strokeStyle='#ffd9a0'; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(gx,gy,r*1.3,r*0.9,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
+  ctx.save(); ctx.translate(gx,gy-alt*0.35); ctx.rotate(P.hd); if(P.pitch) ctx.scale(1-0.3*P.pitch,1+0.04*P.pitch);
+  /* landing legs folding out under the hull */
+  if(P.legs>0){ const L=P.legs*7*sc; ctx.fillStyle='#0a0b10'; for(const [lx,ly] of [[-0.3,-0.36],[-0.3,0.36],[0.22,-0.32],[0.22,0.32]]){ const x0=lx*w, y0=ly*h; ctx.fillRect(Math.round(x0-1.5*sc),Math.round(y0+(ly<0?-L:0)),Math.round(3*sc),Math.round(L)); ctx.fillStyle='#5d6f83'; ctx.fillRect(Math.round(x0-3*sc),Math.round(y0+(ly<0?-L-2*sc:L-sc)),Math.round(6*sc),Math.round(3*sc)); ctx.fillStyle='#0a0b10'; } }
   ctx.drawImage(art,Math.round(-w/2),Math.round(-h/2),Math.round(w),Math.round(h));
-  if(lights){ const f=0.55+0.45*Math.sin(now/40), u=3*scale;
-    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=`rgba(255,150,60,${0.55*f})`;
-    for(const py of [-16.5,16.5]){ ctx.beginPath(); ctx.arc(-15*u/3*2.6/3*3,py*u*2.6/3,4*u*f,0,Math.PI*2); ctx.fill(); }
-    ctx.globalCompositeOperation='source-over'; }
+  if(P.pitch){ ctx.fillStyle=`rgba(255,255,255,${0.12*P.pitch})`; ctx.fillRect(Math.round(w*0.05),Math.round(-h*0.25),Math.round(w*0.4),Math.round(h*0.5)); }   /* the raised nose catches the light */
+  /* the engines: pushing back (a long plume behind the pod) or turned down (a ring and a round blast under it) */
+  if(P.thrust>0){ const f=0.6+0.4*Math.sin(now/40);
+    for(const py of [3.5,36.5]){ const cy=-h/2+py*sy, rx=-w/2+11*sx, cx=-w/2+23*sx;
+      ctx.globalCompositeOperation='lighter';
+      const back=(1-P.tilt)*P.thrust; if(back>0.02){ const L=(14+18*back)*sc*f; const g=ctx.createLinearGradient(rx,cy,rx-L,cy); g.addColorStop(0,`rgba(255,200,120,${0.8*back})`); g.addColorStop(1,'rgba(255,90,30,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(rx-L/2,cy,L/2,3*sc,0,0,Math.PI*2); ctx.fill(); }
+      const down=P.tilt*P.thrust; if(down>0.02){ ctx.fillStyle=`rgba(255,150,60,${0.5*down*f})`; ctx.beginPath(); ctx.arc(cx,cy,(4+6*down)*sc*f,0,Math.PI*2); ctx.fill(); ctx.fillStyle=`rgba(127,246,255,${0.45*down})`; ctx.beginPath(); ctx.arc(cx,cy,(2+2.5*down)*sc,0,Math.PI*2); ctx.fill(); }
+      ctx.globalCompositeOperation='source-over';
+      if(P.tilt>0.4){ ctx.strokeStyle=`rgba(10,11,16,${0.9*P.tilt})`; ctx.lineWidth=Math.max(1,1.5*sc); ctx.beginPath(); ctx.arc(cx,cy,3.2*sc,0,Math.PI*2); ctx.stroke(); } } }   /* the nozzle seen from above */
   if(Math.floor(now/400)%2===0){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(-w*0.02),Math.round(-h/2),3,3); ctx.fillStyle='#5fe3b0'; ctx.fillRect(Math.round(-w*0.02),Math.round(h/2-3),3,3); }
-  if(ramp){ ctx.fillStyle='rgba(30,32,40,.9)'; ctx.fillRect(Math.round(-w/2-10*scale),Math.round(-9*scale),Math.round(12*scale),Math.round(18*scale)); }
+  if(P.ramp>0){ const L=12*sc*P.ramp; ctx.fillStyle='rgba(30,32,40,.92)'; ctx.fillRect(Math.round(-w/2-L+2*sc),Math.round(-9*sc),Math.round(L),Math.round(18*sc)); ctx.fillStyle='#f2c230'; ctx.fillRect(Math.round(-w/2-L+2*sc),Math.round(-9*sc),Math.max(1,Math.round(2*sc)),Math.round(18*sc)); }
   ctx.restore();
 }
-function drawShips(now){
-  for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue;
-    if(b.flight && b.flight.t<5 && b.flight.ang!==undefined){ const k=b.flight.t/5, a=b.flight.ang, D=820*k*k, alt=260*k;
-      const gx=b.x+Math.cos(a)*D, gy=b.y+Math.sin(a)*D; let hd=a+Math.PI; const want=0; let dd=want-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI;
-      hd+=dd*Math.min(1,(1-k)*1.4); drawShip(gx,gy,alt,hd,1+0.35*k,true,false,now); }
-    const s=b.ship; if(!s) continue;
-    if(s.phase==='ground'||s.phase==='parked') drawShip(b.x,b.y,0,0,1,s.phase==='parked',true,now);
-    else if(s.phase==='takeoff'){ const k=1-s.t/3, a=s.out, D=820*k*k, alt=260*Math.min(1,k*1.3);
-      drawShip(b.x+Math.cos(a)*D,b.y+Math.sin(a)*D,alt,(a)*Math.min(1,k*1.5),1+0.35*k,true,false,now); } }
-}
+function drawShips(now){ for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue; for(const P of shipPoses(b)) drawShip(P,now); } }
 
 /* Voice volume slider in the top bar (0–100%), remembered in this browser. Releasing it plays a test line. */
 function initVoiceVolume(){ const r=$('#voice-vol'); if(!r) return; r.value=Math.round(ui.voiceVol*100);
@@ -359,7 +387,7 @@ function bodyHome(b,h,u){ const B=SQUAD.body; dropBody(b); b.home=h; b.t=B.time;
   G.swarm.biomass+=B.biomass; G.stats.fed=(G.stats.fed||0)+1; h.hp=Math.min(h.maxHp,h.hp+h.maxHp*B.heal);
   G.fx.push({k:'boom',x:b.x,y:b.y,t:0.4,max:0.4,r:20,col:'#c38bff'});
   if(isVisible(b)){ SFX.play('squelch',b.x,b.y); G.fx.push({k:'text',x:b.x,y:b.y-24,t:1.4,max:1.4,txt:'HOME',col:'#c38bff'}); }
-  if(G.side==='corps'&&isVisible(h)&&!G.saidFed){ G.saidFed=true; say('Dr. Maas','They dragged the body onto the creep around their hive. The hive is sending something out to it. Burn it before it turns!','alert'); } }
+  if(G.side==='corps'&&isVisible(h)&&!G.saidFed){ G.saidFed=true; say('Dr. Maas','They dragged the body onto the mycel around their hive. The hive is sending something out to it. Burn it before it turns!','alert'); } }
 function updateBodies(dt){ const B=SQUAD.body;
   for(const b of G.ents){ if(b.dead||b.kind!=='body') continue;
     if(b.carrier&&(b.carrier.dead||b.carrier.haul!==b)) dropBody(b);

@@ -34,7 +34,7 @@ function v3Init(){
   const sc=sun.shadow.camera; sc.left=-30; sc.right=30; sc.top=30; sc.bottom=-30; sc.near=1; sc.far=90; sun.shadow.bias=-0.0008; sun.shadow.normalBias=0.03;
   V3.scene.add(sun); V3.scene.add(sun.target);
   V3.lights=[]; for(let i=0;i<10;i++){ const l=new THREE.PointLight(0xffd690,0,9,1.5); l.position.set(0,-50,0); V3.scene.add(l); V3.lights.push(l); }
-  V3.u={ fog:{value:null}, size:{value:new THREE.Vector2(1,1)}, lift:{value:new THREE.Vector2(0,0)}, dec:{value:null}, decR:{value:new THREE.Vector4(0,0,1,1)} };
+  V3.u={ fog:{value:null}, size:{value:new THREE.Vector2(1,1)}, lift:{value:new THREE.Vector2(0,0)}, dec:{value:null}, decR:{value:new THREE.Vector4(0,0,1,1)}, time:{value:0} };
   V3.ray=new THREE.Raycaster(); V3.ray.layers.enableAll();
   v3MakeShared();
   V3.ok=true; return true;
@@ -43,9 +43,11 @@ const GEO={}, MAT={};
 /* every material: darkened by the fog of war, lit up where your units see, tinted by creep; the ground also gets the painted 2D animations */
 function v3Fogify(m,decal){
   m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{ v3Fog:V3.u.fog, v3Size:V3.u.size, v3Lift:V3.u.lift, v3Dec:V3.u.dec, v3DecR:V3.u.decR });
-    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 v3W;')
+    sh.uniforms.v3Time=V3.u.time;
+    sh.vertexShader=(decal?'#define V3_DECAL\n':'')+sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef V3_DECAL\n { vec4 wp0=modelMatrix*vec4(transformed,1.0); transformed.y+=texture2D(v3Fog,wp0.xz/v3Size).r*0.16; }\n#endif')
       .replace('#include <project_vertex>','#include <project_vertex>\n#ifdef USE_INSTANCING\n v3W=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz;\n#else\n v3W=(modelMatrix*vec4(transformed,1.0)).xyz;\n#endif');
-    sh.fragmentShader=(decal?'#define V3_DECAL\n':'')+sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size; uniform vec2 v3Lift; uniform sampler2D v3Dec; uniform vec4 v3DecR;')
+    sh.fragmentShader=(decal?'#define V3_DECAL\n':'')+sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size; uniform vec2 v3Lift; uniform sampler2D v3Dec; uniform vec4 v3DecR; uniform float v3Time;')
       .replace('#include <dithering_fragment>',`#include <dithering_fragment>
  vec4 v3f=texture2D(v3Fog,v3W.xz/v3Size);
  #ifdef V3_DECAL
@@ -54,6 +56,9 @@ function v3Fogify(m,decal){
  #endif
  gl_FragColor.rgb=gl_FragColor.rgb*(1.0+v3Lift.x*v3f.g)+v3Lift.y*v3f.g;
  gl_FragColor.rgb=mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(0.62,0.42,0.78)+vec3(0.09,0.02,0.11),v3f.r);
+ #ifdef V3_DECAL
+ gl_FragColor.rgb+=vec3(0.16,0.09,0.2)*v3f.r*pow(0.5+0.5*sin(v3W.x*2.3+v3W.z*1.7+sin(v3W.z*3.1-v3Time*0.6)),6.0);   /* wet sheen on the mycel */
+ #endif
  gl_FragColor.rgb*=1.0-v3f.a;`); };
   return m; }
 function mat(col,o={}){ const k='l'+col+JSON.stringify(o); return MAT[k]||(MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ color:col, ...o }))); }
@@ -179,7 +184,7 @@ function v3Soldier(e){
 /* ---------- creatures ----------
    The Swarm is its own life: lunar fungus and burrowing arthropods, plum flesh with bone plates and green light in the seams.
    On purpose nothing here is shaped like a film monster: no long smooth skulls, no tubes on the back, no bladed tails,
-   no crowned queen with an egg sac, no eggs that open in petals. */
+   no crowned queen with an egg sac, no eggs that open in petals. Names (Nov 2026): Scuttler (type drone), Sporebag (bloater), The Matron (broodmother). */
 const CH={ body:'#3d2a4a', dark:'#2a1e33', bone:'#bcae90', pale:'#7d6290', glow:'#a6ff4a' };
 function fung(col){ return shiny(col,{ specular:0x3a3044, shininess:22 }); }
 function legPair(g,U,m,x,y,z,len,w,splay,bend){ for(const s of [-1,1]){ const hip=grp(s*x,y,z); hip.rotation.z=s*splay; hip.add(box(m,w,len,w,0,-len/2,0));
@@ -198,18 +203,19 @@ function v3Creature(e){
     if(t==='grafter') for(let i=0;i<3;i++) g.add(rotX(cyl(glow('#c58cff'),0.008,0.25,0.008,(i-1)*0.05,0.25,0.2),0.8));
     U.top=0.35*s; return g; }
   if(t==='drone'){
-    /* a long-legged crab of the dark: flat carapace with bone spines, a pod-like abdomen, four walking legs, two big pincers, a cluster of eyes */
-    const body=grp(0,0.34,0); g.add(body); U.torso=body;
-    body.add(ball(C,0.2,0.1,0.22,0,0,0.04)); body.add(ball(Dk,0.17,0.13,0.2,0,0.02,-0.26)); spots(body,6,0.14,0.11,0.16,0.02,0.4,0.025);
-    for(let i=0;i<4;i++) body.add(part(GEO.cone,B,0.03,0.09,0.03,(i%2?1:-1)*0.07,0.11,0.12-i*0.09));   /* short bone spines */
-    body.add(part(GEO.torus,B,0.2,0.35,0.22,0,0.0,0.04));
-    const head=grp(0,0.02,0.24); head.add(ball(L,0.08,0.06,0.07,0,0,0)); for(const [x,y] of [[-0.035,0.03],[0.035,0.03],[-0.05,-0.005],[0.05,-0.005]]) head.add(ball(eye,0.018,0.018,0.018,x,y,0.06));
-    for(const k of [-1,1]){ const f=part(GEO.claw,B,0.007,0.007,0.2,k*0.03,0.04,0.04); f.rotation.set(-0.6,k*0.4,0); head.add(f); } body.add(head); U.head=head;
-    for(const k of [-1,1]){ const sh=grp(k*0.16,0.0,0.18); sh.add(box(Dk,0.05,0.18,0.05,0,-0.09,0)); const el=grp(0,-0.17,0); el.add(box(B,0.07,0.06,0.17,0,0,0.08));   /* the pincer: a heavy bone hand with two jaws */
-      el.add(rotX(part(GEO.claw,B,0.03,0.02,0.14,0,0.02,0.15),-0.25)); el.add(rotX(part(GEO.claw,B,0.025,0.018,0.11,0,-0.03,0.15),0.3)); el.rotation.x=1.2; el.scale.setScalar(1.35); sh.add(el); sh.rotation.set(-0.9,0,k*0.12); sh.userData.base=-0.9; body.add(sh); U.arms.push(sh); }
-    for(let i=0;i<3;i++) for(const k of [-1,1]){ const hip=grp(k*0.17,0.36,0.02-i*0.16); hip.rotation.set(0,k*(i-1)*0.35,k*1.35); hip.add(box(Dk,0.04,0.28,0.04,0,-0.14,0));
-      const kn=grp(0,-0.28,0); kn.rotation.z=-k*2.1; kn.add(box(B,0.03,0.4,0.03,0,-0.2,0)); hip.add(kn); g.add(hip); U.legs.push(hip); }
-    U.top=0.75; return g; }
+    /* the Scuttler: an upright mantis of the dark. A low ringed abdomen, a thin standing body, a small head with two big glowing eyes,
+       two bone scythes folded ready in front, four long splayed legs */
+    const abd=grp(0,0.4,-0.16); abd.rotation.x=-0.25; abd.add(ball(Dk,0.11,0.1,0.24,0,0,-0.04)); for(let i=0;i<3;i++) abd.add(part(GEO.torus,B,0.105-i*0.012,0.25,0.1-i*0.012,0,0,0.08-i*0.1)); spots(abd,3,0.08,0.07,0.18,0.01,0.7,0.02); g.add(abd);
+    const body=grp(0,0.42,0.0); body.rotation.x=-0.35; g.add(body); U.torso=body;
+    body.add(box(C,0.09,0.34,0.08,0,0.17,0)); body.add(box(B,0.095,0.04,0.085,0,0.08,0)); body.add(box(B,0.095,0.04,0.085,0,0.22,0));
+    const head=grp(0,0.38,0.03); head.add(rotX(part(GEO.cone,L,0.07,0.1,0.06,0,0,0.03),Math.PI/2)); for(const k of [-1,1]) head.add(ball(eye,0.035,0.04,0.035,k*0.06,0.01,0.0));
+    for(const k of [-1,1]){ const md=part(GEO.claw,B,0.008,0.008,0.06,k*0.02,-0.03,0.09); md.rotation.y=-k*0.5; head.add(md); } body.add(head); U.head=head;
+    for(const k of [-1,1]){ const sh=grp(k*0.06,0.29,0.04); sh.add(box(B,0.035,0.2,0.035,0,0.1,0)); const el=grp(0,0.2,0); el.add(box(B,0.03,0.2,0.03,0,-0.1,0));
+      const blade=part(GEO.claw,B,0.012,0.04,0.18,0,-0.2,0); blade.rotation.x=Math.PI/2+0.3; el.add(blade); for(let i=0;i<3;i++) el.add(part(GEO.cone,B,0.008,0.03,0.008,0,-0.05-i*0.05,0.02));
+      el.rotation.x=2.5; sh.add(el); sh.rotation.set(-0.9,0,k*0.08); sh.userData.base=-0.9; body.add(sh); U.arms.push(sh); }
+    for(let i=0;i<2;i++) for(const k of [-1,1]){ const hip=grp(k*0.06,0.42,0.02-i*0.16); hip.rotation.set(0,k*(i?-0.5:0.5),k*1.2); hip.add(box(Dk,0.03,0.3,0.03,0,-0.15,0));
+      const kn=grp(0,-0.3,0); kn.rotation.z=-k*1.9; kn.add(box(B,0.025,0.42,0.025,0,-0.21,0)); hip.add(kn); g.add(hip); U.legs.push(hip); }
+    U.top=0.95; return g; }
   if(t==='spitter'){
     /* a squat mortar-beetle: four thick legs, a huge glowing acid bladder on its back, a hard nozzle curving up from the face */
     const body=grp(0,0.38,0); g.add(body); U.torso=body;
@@ -247,19 +253,19 @@ function v3Creature(e){
     for(let i=0;i<4;i++){ const a=i*Math.PI/2+0.4, hip=grp(Math.cos(a)*0.18,0.85,Math.sin(a)*0.18); hip.rotation.set(Math.sin(a)*0.5,0,-Math.cos(a)*0.5); hip.add(box(C,0.04,0.85,0.04,0,-0.42,0)); g.add(hip); U.legs.push(hip); }
     U.top=1.35; return g; }
   if(t==='broodmother'){
-    /* the mother of the brood: a vast puffball body studded with glowing brood pods, eight long arched legs, a ring of feelers round a small mouth */
-    const body=grp(0,1.6,0); g.add(body); U.torso=body;
-    body.add(ball(C,1.15,0.9,1.25,0,0,-0.1)); body.add(ball(Dk,0.95,0.6,1.05,0,-0.45,-0.1));
-    for(let i=0;i<16;i++){ const a=i*2.39, b=0.25+(i*0.37%1)*1.1, x=Math.cos(a)*Math.sin(b)*1.05, y=Math.cos(b)*0.82, z=Math.sin(a)*Math.sin(b)*1.15-0.1, r=0.12+(i%3)*0.05;
-      body.add(ball(mat('#6d8a35',{ transparent:true, opacity:0.8 }),r*1.3,r*1.3,r*1.3,x,y,z)); body.add(ball(glow('#c7f05a'),r*0.7,r*0.7,r*0.7,x,y,z)); }
-    for(let i=0;i<7;i++) body.add(part(GEO.cone,B,0.07,0.3,0.07,Math.cos(i*0.9)*0.5,0.85,Math.sin(i*0.9)*0.5-0.1));
-    const head=grp(0,-0.25,1.05); head.add(ball(L,0.42,0.36,0.32,0,0,0)); head.add(part(GEO.torus,B,0.26,0.6,0.26,0,0,0.25)); head.children[1].rotation.x=0; head.add(ball(glow('#2a0d33'),0.2,0.2,0.08,0,0,0.3));
-    for(let i=0;i<5;i++) head.add(ball(eye,0.06,0.06,0.06,(i-2)*0.15,0.24-Math.abs(i-2)*0.05,0.25));
-    for(let i=0;i<8;i++){ const a=i*Math.PI/4, f=grp(Math.cos(a)*0.24,Math.sin(a)*0.24,0.28); let seg=f; for(let j=0;j<3;j++){ const s=grp(0,0,0.1); s.add(rotX(cyl(L,0.035-j*0.008,0.12,0.035-j*0.008,0,0,0.05),Math.PI/2)); s.rotation.set(Math.sin(a)*0.35,-Math.cos(a)*0.35,0); seg.add(s); seg=s; } head.add(f); (U.feelers=U.feelers||[]).push(f); }
-    body.add(head); U.head=head;
-    for(let i=0;i<4;i++) for(const k of [-1,1]){ const hip=grp(k*0.9,1.55,0.6-i*0.45); hip.rotation.set(0,k*(i-1.5)*0.3,k*1.15); hip.add(box(Dk,0.13,1.2,0.13,0,-0.6,0));
-      const kn=grp(0,-1.2,0); kn.rotation.z=-k*2.2; kn.add(box(B,0.1,1.7,0.1,0,-0.85,0)); kn.add(part(GEO.cone,B,0.06,0.3,0.06,0,-1.8,0)); hip.add(kn); g.add(hip); U.legs.push(hip); }
-    U.top=2.7; return g; }
+    /* The Matron: a beating heart of flesh, red veins running over it and a glowing core showing through, brood pods on top,
+       walking on a tangle of thick roots */
+    const heart=grp(0,1.55,0); g.add(heart); U.sac=heart; U.torso=heart;
+    heart.add(ball(fung('#4a2a4e'),1.15,1.0,1.1,0,0,0)); heart.add(ball(fung('#5e3a62'),0.75,0.6,0.7,-0.25,0.35,0.1)); heart.add(ball(fung('#4a2a4e'),0.6,0.55,0.6,0.45,0.45,-0.2));
+    const vein=shiny('#8a1f35',{ emissive:0x3a0610 });
+    for(let i=0;i<10;i++){ const a=i*0.63, y=((i*0.37)%1-0.5)*0.9, r=Math.sqrt(Math.max(0.05,1-y*y)); const v=ball(vein,0.05,0.42,0.05,Math.cos(a)*r*1.12,y,Math.sin(a)*r*1.07); v.rotation.set(0,-a,0.35*(i%2?1:-1)); heart.add(v); }   /* veins lying on the skin */
+    const core=grp(0.6,0.0,0.55); core.add(ball(glow('#a6ff4a'),0.28,0.28,0.28,0,0,0)); core.add(ball(mat('#4fae22',{ transparent:true, opacity:0.5 }),0.42,0.42,0.42,0,0,0)); heart.add(core); U.core3=core;
+    for(const [x,z] of [[-0.5,0.3],[0.1,-0.5],[0.5,0.2],[-0.2,-0.2]]){ heart.add(ball(mat('#6d8a35',{ transparent:true, opacity:0.8 }),0.2,0.2,0.2,x,0.95,z)); heart.add(ball(glow('#c7f05a'),0.1,0.1,0.1,x,0.95,z)); }
+    for(const k of [-1,1]) heart.add(ball(eye,0.09,0.09,0.09,1.08,0.1,k*0.25));
+    for(let i=0;i<8;i++){ const a=i*Math.PI/4+0.2, hip=grp(Math.cos(a)*0.85,1.15,Math.sin(a)*0.85); hip.rotation.set(Math.sin(a)*1.0,0,-Math.cos(a)*1.0);
+      hip.add(part(GEO.taper,fung('#3d2a4a'),0.16,0.9,0.16,0,-0.45,0)); const kn=grp(0,-0.88,0); kn.rotation.set(-Math.sin(a)*0.55,0,Math.cos(a)*0.55);
+      kn.add(part(GEO.taper,fung('#55405f'),0.1,0.7,0.1,0,-0.35,0)); kn.add(part(GEO.cone,B,0.06,0.25,0.06,0,-0.78,0)); kn.children[1].rotation.x=Math.PI; hip.add(kn); g.add(hip); U.legs.push(hip); }
+    U.top=3.0; return g; }
   if(t==='grazer'){ const B=mat('#b9a98a'), B2=mat('#8f8168'), H=mat('#d3c3a6');
     g.add(ball(B,0.3,0.24,0.46,0,0.62,0)); for(let i=0;i<4;i++) g.add(rotX(box(B2,0.24-i*0.03,0.06,0.14,0,0.84,0.25-i*0.17),0.1));
     const neck=grp(0,0.7,0.35); neck.rotation.x=-0.6; neck.add(box(B,0.12,0.12,0.3,0,0,0.15)); const head=grp(0,0,0.32); head.add(ball(H,0.12,0.11,0.2,0,0,0.05)); head.add(rotX(part(GEO.claw,B2,0.025,0.025,0.15,0.06,0.08,-0.05),-2.3)); head.add(rotX(part(GEO.claw,B2,0.025,0.025,0.15,-0.06,0.08,-0.05),-2.3)); head.rotation.x=0.6; neck.add(head); g.add(neck); U.head=head;
@@ -327,6 +333,38 @@ function v3Model(e){
   g.traverse(o=>{ if(o.isMesh) o.receiveShadow=true; });
   return g; }
 
+
+/* ---------- the dropship (nose along +x): poses come from shipPoses in 22-squad-life.js, the same as in 2D ---------- */
+function v3Dropship(){ const g=new THREE.Group(), U=g.userData; g.rotation.order='YZX';
+  const hull=mat('#5d6f83'), top=mat('#a3b4c6'), dark=mat('#262a33'), plate=mat('#4f5766'), yel=mat('#f2c230');
+  g.add(box(hull,3.0,0.7,1.1,0,0,0)); g.add(box(top,2.6,0.12,0.8,-0.1,0.4,0)); g.add(box(dark,1.0,0.1,0.6,-0.4,0.47,0));
+  g.add(rotZ(part(GEO.cone,hull,0.56,0.9,0.56,1.9,0,0),-Math.PI/2)); g.add(box(shiny('#7ff6ff',{ emissive:0x1a6a78 }),0.5,0.22,0.62,1.45,0.28,0));
+  for(let i=0;i<4;i++) g.add(box(i%2?dark:yel,0.18,0.12,0.02,0.6+i*0.18,-0.12,0.56));
+  for(const z of [-1,1]){ const w=box(plate,1.3,0.1,1.2,-0.25,0.02,z*0.95); w.rotation.y=z*0.25; g.add(w); g.add(box(dark,0.5,0.6,0.08,-1.45,0.45,z*0.42)); }
+  U.pods=[]; for(const z of [-1,1]){ const pod=grp(-0.15,0.05,z*1.65); pod.add(rotZ(cyl(plate,0.24,1.5,0.24,0,0,0),Math.PI/2)); pod.add(rotZ(cyl(top,0.25,0.5,0.25,0.35,0,0),Math.PI/2));
+    pod.add(rotZ(part(GEO.torus,dark,0.2,1,0.2,-0.76,0,0),Math.PI/2)); const fl=rotZ(part(GEO.cone,glow('#ffb35a',{ transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false }),0.17,1,0.17,-0.76,0,0),Math.PI/2);
+    fl.geometry=GEO.flame||(GEO.flame=new THREE.ConeGeometry(1,1,10).translate(0,0.5,0)); fl.castShadow=false; pod.add(fl); pod.userData.flame=fl;
+    const core=rotZ(part(GEO.flame,glow('#9ff8ff',{ transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false }),0.08,1,0.08,-0.76,0,0),Math.PI/2); core.castShadow=false; pod.add(core); pod.userData.core=core;
+    g.add(pod); U.pods.push(pod); }
+  U.legs3=[]; for(const [x,z] of [[-0.9,-0.45],[-0.9,0.45],[0.8,-0.4],[0.8,0.4]]){ const l=grp(x,-0.35,z); l.add(cyl(dark,0.05,0.5,0.05,0,-0.25,0)); l.add(box(plate,0.24,0.05,0.24,0,-0.5,0)); g.add(l); U.legs3.push(l); }
+  const ramp=grp(-1.5,-0.3,0); ramp.add(box(dark,0.9,0.06,0.8,-0.45,0,0)); ramp.add(box(yel,0.06,0.07,0.8,-0.88,0,0)); g.add(ramp); U.ramp=ramp;
+  U.red=ball(glow('#ff5a4f'),0.07,0.07,0.07,-0.2,0.1,-2.45); U.green=ball(glow('#5fe3b0'),0.07,0.07,0.07,-0.2,0.1,2.45); g.add(U.red); g.add(U.green);
+  g.traverse(o=>{ if(o.isMesh&&o.material.type!=='MeshBasicMaterial') o.receiveShadow=true; });
+  return g; }
+function v3Ships(now,lights,put){ const T=now/1000, seen=new Set();
+  for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue; const poses=shipPoses(b);
+    poses.forEach((P,i)=>{ const key=b.id+':'+i; seen.add(key); let g=V3.ships.get(key); if(!g){ g=v3Dropship(); V3.ships.set(key,g); V3.g.add(g); } g.visible=true; const U=g.userData;
+      const x=P.gx/TILE, z=P.gy/TILE, gy=v3H(b.x/TILE,b.y/TILE), y=Math.max(gy,v3H(x,z))+0.85+P.alt/TILE*0.55;
+      g.position.set(x,y,z); g.rotation.set(P.bank*0.6,-P.hd,P.pitch*0.45);
+      for(const pod of U.pods){ pod.rotation.z=P.tilt*Math.PI/2; const L=(0.4+1.2*P.thrust*(0.85+0.15*Math.sin(T*40)))*(P.tilt>0.5?0.8:1.2); pod.userData.flame.scale.set(0.17,P.thrust>0.02?L:0.001,0.17); pod.userData.core.scale.set(0.08,P.thrust>0.02?L*0.6:0.001,0.08); }
+      for(const l of U.legs3) l.scale.y=Math.max(0.01,P.legs);
+      U.ramp.rotation.z=(1-P.ramp)*1.45-P.ramp*0.35;
+      const blink=Math.floor(now/400)%2===0; U.red.visible=U.green.visible=blink;
+      if(P.thrust>0.4&&P.alt<120) lights.push({x,y:y-0.6,z,i:2.2*P.thrust,c:0xffa860,d:6});
+      if(P.beams>0){ const ahead=(SHIP.lightReach+P.alt*0.35)/TILE; for(const side of [-1,1]){ const sw=Math.sin(now/520+side)*0.7, lx=x+Math.cos(P.hd)*ahead-Math.sin(P.hd)*(side*0.45+sw), lz=z+Math.sin(P.hd)*ahead+Math.cos(P.hd)*(side*0.45+sw);
+        put(lx,v3H(lx,lz)+0.08,lz,1.6,'#fff0c8',0.35*P.beams); if(side>0) lights.push({x:lx,y:v3H(lx,lz)+1.2,z:lz,i:1.6*P.beams,c:0xfff0c8,d:5}); } } }); }
+  for(const [k,g] of V3.ships) if(!seen.has(k)) g.visible=false; }
+
 /* ---------- which entities show (as in 2D) ---------- */
 function v3Shown(e){ const m=G.map;
   if(e.dead||e.hidden||e.ospTunnel) return false;
@@ -341,7 +379,7 @@ function v3Shown(e){ const m=G.map;
 /* ---------- frame ---------- */
 function v3Size(){ const w=ui.vw, h=Math.max(100,ui.vh-ui.hudH); if(V3.w!==w||V3.h!==h||V3.dpr!==ui.dpr){ V3.w=w; V3.h=h; V3.dpr=ui.dpr; V3.r.setPixelRatio(Math.min(ui.dpr,1.5)); V3.r.setSize(w,h); V3.cam.aspect=w/h; V3.cam.updateProjectionMatrix(); } }
 function v3Reset(){ if(V3.g) V3.scene.remove(V3.g); V3.g=new THREE.Group(); V3.scene.add(V3.g); V3.objs.clear(); V3.forG=G; V3.mapId=G.map.id;
-  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[];
+  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.ships=new Map();
   V3.fxg=new THREE.Group(); V3.g.add(V3.fxg); V3.fxg.add(V3.tracers); V3.fxg.add(V3.ghost); v3BuildTerrain(); }
 function v3Camera(dt){ const V=VIEW3D, tx=(G.cam.x+ui.vw/2)/TILE, tz=(G.cam.y+(ui.vh-ui.hudH)/2)/TILE, ty=Math.max(0,v3H(tx,tz)), sh=(G.shake||0)*0.3;
   let d=V3.yaw*Math.PI/180-(V3.yawR||0); d=Math.atan2(Math.sin(d),Math.cos(d)); V3.yawR=(V3.yawR||0)+d*Math.min(1,dt*8);
@@ -366,7 +404,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(U.tail) U.tail.rotation.y=Math.sin(T*2.2+e.id)*0.35;
     if(U.feelers) U.feelers.forEach((f,i)=>f.rotation.z=Math.sin(T*2+i)*0.25);
     if(U.head&&!mv) U.head.rotation.y=Math.sin(T*0.7+e.id*1.3)*0.3;
-    if(U.sac) U.sac.scale.setScalar(1+0.05*Math.sin(T*(e.chargeT>0?14:3)+e.id));
+    if(U.sac){ const beat=e.type==='broodmother'?Math.pow(Math.max(0,Math.sin(T*3.2)),12)*0.07:0.05*Math.sin(T*(e.chargeT>0?14:3)+e.id); U.sac.scale.setScalar(1+beat); }
     if(U.torso){ const b=U.torso.userData.by??(U.torso.userData.by=U.torso.position.y); U.torso.position.y=b+Math.sin(T*2+e.id)*0.01; }
     if(U.spin&&fight) U.spin.rotation.z+=0.6;
     if(U.pilot) U.pilot.scale.setScalar(0.025*(0.8+Math.random()*0.5)*(fight?2:1));
@@ -391,7 +429,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
 function render3D(now){
   if(V3.forG!==G||V3.mapId!==G.map.id) v3Reset();
   const dt=Math.min(0.1,(now-(V3.last||now))/1000); V3.last=now;
-  v3Size(); v3Camera(dt); paintFog(); v3Fog(); V3.frame++;
+  v3Size(); v3Camera(dt); paintFog(); v3Fog(); V3.frame++; V3.u.time.value=now/1000;
   const T=now/1000, sel=new Set(G.sel), lights=[];
   for(const e of G.ents){ if(!v3Shown(e)) continue;
     let g=V3.objs.get(e); if(!g){ g=v3Model(e); V3.objs.set(e,g); V3.g.add(g); if(e.faction===G.side&&e.kind==='unit') g.traverse(o=>o.layers.set(1)); }
@@ -399,10 +437,6 @@ function render3D(now){
     if(e.kind==='unit'&&G.mission.dark&&e.faction===G.side&&e.def.bio&&!e.downed) lights.push({x:g.position.x+Math.sin(g.userData.yaw)*1.4,y:g.position.y+1.1,z:g.position.z+Math.cos(g.userData.yaw)*1.4,i:VIEW3D.lamp,c:0xe4ecff,d:7,lamp:1});
     if(e.kind==='building'&&e.def.generator&&e.powered) lights.push({x:g.position.x,y:g.position.y+1.7,z:g.position.z,i:VIEW3D.genLight*(0.92+0.08*Math.sin(now/90+e.id)),c:0xffd690,d:(e.def.light||8)*1.1}); }
   for(const [e,g] of V3.objs){ if(g.userData.f!==V3.frame){ g.visible=false; if(e.dead||V3.frame-g.userData.f>600){ V3.g.remove(g); for(const o of g.userData.own||[]) o.dispose(); V3.objs.delete(e); } } }
-  for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; lights.push({x,y:v3H(x,z)+0.6,z,i:2,c:0xff6a50,d:(SQUAD.flare.light||6)*1.1}); }
-  const near=l=>Math.hypot(l.x-V3.look.x,l.z-V3.look.z); lights.sort((a,b)=>near(a)-near(b));
-  let lampsUsed=0; const use=lights.filter(l=>!l.lamp||lampsUsed++<VIEW3D.lamps);
-  V3.lights.forEach((l,i)=>{ const L=use[i]; if(L){ l.position.set(L.x,L.y,L.z); l.intensity=L.i; l.color.setHex(L.c); l.distance=L.d; } else l.intensity=0; });
   /* selection rings */
   let n=0; const ring=pool(V3.ringPool,()=>{ const r=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, opacity:0.9, depthWrite:false })); r.renderOrder=2; return r; });
   for(const e of sel){ if(e.dead||!v3Shown(e)||e.def&&e.def.ground) continue; const r=ring(n++), rad=e.kind==='building'?(e.size||1)*0.72:(e.r/TILE)*1.5+0.12, x=e.x/TILE, z=e.y/TILE;
@@ -446,7 +480,12 @@ function render3D(now){
   V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<2.5);
   for(const mk of G.markers){ const x=mk.x/TILE, z=mk.y/TILE; put(x,v3H(x,z)+2+Math.sin(now/250)*0.1,z,0.7,mk.col||'#ffb347',0.9); }
   for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; put(x,v3H(x,z)+0.3,z,1.2,'#ff6040',0.8); }
+  v3Ships(now,lights,put);
   hidePool(V3.fxPool,n);
+  for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; lights.push({x,y:v3H(x,z)+0.6,z,i:2,c:0xff6a50,d:(SQUAD.flare.light||6)*1.1}); }
+  const near=l=>Math.hypot(l.x-V3.look.x,l.z-V3.look.z); lights.sort((a,b)=>near(a)-near(b));
+  let lampsUsed=0; const use=lights.filter(l=>!l.lamp||lampsUsed++<VIEW3D.lamps);
+  V3.lights.forEach((l,i)=>{ const L=use[i]; if(L){ l.position.set(L.x,L.y,L.z); l.intensity=L.i; l.color.setHex(L.c); l.distance=L.d; } else l.intensity=0; });
   if(ui.placing){ const d=BUILDINGS[ui.placing.type], s=placementSpot(), cx=s.tx+d.size/2, cz=s.ty+d.size/2; V3.ghost.visible=true; V3.ghost.scale.set(d.size,0.9,d.size); V3.ghost.position.set(cx,v3H(cx,cz)+0.45,cz); V3.ghost.material.color.set(s.ok?'#5fe3b0':'#ff5a4f'); }
   else V3.ghost.visible=false;
   v3GroundLayer(now);
@@ -461,7 +500,7 @@ function render3D(now){
 }
 /* The ground animations of the 2D view (footprints, drag trails, casings, acid pools, burning ground, decals, zones, capture rings, the
    building you are placing …) are drawn by the 2D code onto the game canvas, copied into a texture and laid on the 3D ground. */
-const V3_GROUND_FX=new Set(['casing','melt','shock','stomp','landring','bulge','screech','shaftspit','helmet','topple']);
+const V3_GROUND_FX=new Set(['tendril','casing','melt','shock','stomp','landring','bulge','screech','shaftspit','helmet','topple']);
 function v3GroundLayer(now){
   const on=VIEW3D.groundAnims; if(!on){ V3.u.decR.value.set(-1e4,-1e4,1,1); return; }
   const side=Math.max(ui.vw,ui.vh)+256, x0=G.cam.x+ui.vw/2-side/2, y0=G.cam.y+(ui.vh-ui.hudH)/2-side/2, W=cv.width, H=cv.height, sx=W/side, sy=H/side;
@@ -469,7 +508,7 @@ function v3GroundLayer(now){
   const vx0=x0, vy0=y0, vx1=x0+side, vy1=y0+side, inView=e=>e.x>vx0&&e.x<vx1&&e.y>vy0&&e.y<vy1;
   try{
     for(const d of G.decals){ if(!inView(d)) continue; ctx.fillStyle=d.col; for(let i=0;i<5;i++){ const a=d.seed+i*1.7, rr=d.r*(0.35+0.25*((i*37+d.seed)%1)); ctx.fillRect(Math.round(d.x+Math.cos(a)*d.r*0.5-rr/2),Math.round(d.y+Math.sin(a)*d.r*0.35-rr/3),Math.round(rr),Math.round(rr*0.66)); } }
-    drawPools(now); drawDrags(); drawPrints(); drawFires(now);
+    drawMycel(now,vx0,vy0,vx1,vy1); drawCreepLife(now,vx0,vy0,vx1,vy1); drawPools(now); drawDrags(); drawPrints(); drawFires(now);
     for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||!inView(e)) continue; if(e.wall){ drawTunnel(e,now); continue; } const a=ARTC[e.def.art]; if(a){ ctx.globalAlpha=0.9; ctx.drawImage(a,e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); ctx.globalAlpha=1; }
       if(e.def.capture){ const r=e.size*TILE*0.62, col=e.state==='contested'?'#ff9a3c':e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffb347';
         ctx.lineWidth=5; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle=col; ctx.beginPath(); ctx.arc(e.x,e.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*(e.cap||0)); ctx.stroke(); }

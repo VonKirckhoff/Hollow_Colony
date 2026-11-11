@@ -28,12 +28,12 @@ const UNITS = {
     builds:['relay','sentry','barricade'],
     desc:'Builds relay towers, sentry guns and barricades. Repairs damaged structures nearby on its own. His carbine reaches as far as a rifle, and he shoots back while he works.' },
 
-  crawler: { name:'Crawler', faction:'swarm', sprite:'crawler', role:'Swarm runner',
+  crawler: { name:'Crawler', faction:'swarm', sprite:'crawler', role:'Brood runner',
     hp:30, speed:100, radius:7, sight:6, range:0.6, damage:5, cooldown:0.55, attack:'melee',
-    biomass:15, weight:3, desc:'Fast and fragile. The Swarm\'s runner.' },
-  drone: { name:'Drone', faction:'swarm', sprite:'drone', role:'Swarm warrior',
+    biomass:15, weight:3, desc:'Fast and fragile. The Brood\'s runner.' },
+  drone: { name:'Scuttler', faction:'swarm', sprite:'drone', role:'Brood warrior',
     hp:70, speed:82, radius:9, sight:6, range:0.7, damage:9, cooldown:0.8, attack:'melee',
-    biomass:25, weight:4, desc:'The backbone of the Swarm.' },
+    biomass:25, weight:4, desc:'The backbone of the Brood.' },
   spitter: { name:'Spitter', faction:'swarm', sprite:'spitter', role:'Acid artillery',
     hp:48, speed:66, radius:9, sight:7, range:4.6, damage:12, cooldown:1.7, attack:'acid', splash:0.8,
     biomass:35, weight:2, unlock:120, desc:'Lobs acid over the front line.' },
@@ -43,13 +43,13 @@ const UNITS = {
   seedling: { name:'Seedling', faction:'swarm', sprite:'seedling', role:'Seed of a nest',
     hp:110, speed:42, radius:9, sight:5, range:0, biomass:250, seed:true,
     desc:'A swollen pod on thin legs that a hive grows for one purpose: to carry the Brood somewhere new. It cannot fight. Bring it to a quiet place, away from other hives and out of their sight, and press F: it takes root and becomes a young nest.' },
-  bloater: { name:'Bloater', faction:'swarm', sprite:'bloater', role:'Infected fauna',
+  bloater: { name:'Sporebag', faction:'swarm', sprite:'bloater', role:'Infected fauna',
     hp:120, speed:40, radius:10, sight:5, range:0.8, damage:6, cooldown:1.3, attack:'melee', burst:{ radius:1.8, damage:28 },
-    desc:'A grazer the Swarm killed and dragged home to a hive, remade. Slow and swollen with acid: when it dies it bursts, burning everything around it.' },
+    desc:'A grazer the Brood killed and dragged home to a hive, remade. Slow and swollen with acid: when it dies it bursts, burning everything around it.' },
   husk: { name:'Husk', faction:'swarm', sprite:'husk', role:'Infected soldier',
     hp:150, speed:58, radius:9, sight:6, range:0.8, damage:13, cooldown:0.9, attack:'melee', armor:0.1,
     biomass:60, founder:true,
-    desc:'What the Swarm makes of a fallen soldier. It hatches small and molts once on the creep of its hive. Full grown, it leaves the creep and hunts: a heavy warrior that screams over every kill, making the soldiers around it flinch.' },
+    desc:'What the Brood makes of a fallen soldier. It hatches small and molts once on the mycel of its hive. Full grown, it leaves the mycel and hunts: a heavy warrior that screams over every kill, making the soldiers around it flinch.' },
   brute: { name:'Brute', faction:'swarm', sprite:'brute', role:'Siege beast', scale:2,
     hp:280, speed:50, radius:15, sight:6, range:0.9, damage:26, cooldown:1.4, attack:'melee',
     biomass:90, weight:1, unlock:300, desc:'Armoured siege beast that tears through walls.' },
@@ -60,7 +60,7 @@ const UNITS = {
 
 
 
-  broodmother: { name:'Brood Mother', faction:'swarm', sprite:'broodmother', role:'Queen of the Swarm', scale:4,
+  broodmother: { name:'The Matron', faction:'swarm', sprite:'broodmother', role:'Mother of the Brood', scale:4,
     hp:14000, speed:18, radius:44, sight:9, range:1.4, damage:36, cooldown:1.7, attack:'melee', armor:0.25,
     boss:true, regen:20, eggEvery:15, chargeEvery:10, chargeTime:3, chargeSpeed:2.8, rootSpeed:0.25, spitEvery:7, eggs:2, spit:4, spitDamage:8,
     lairEvery:0.3, lairTimes:2, lairHeal:0.12, lairRegen:110, lairTime:25, lairGuard:4, fleeSpeed:4, fleeArmor:0.5, coverBrood:4, stalkSpeed:0.8, kiteTime:5, lobEggs:3,
@@ -70,7 +70,7 @@ const UNITS = {
 
   grazer: { name:'Grazer', faction:'wild', sprite:'grazer', role:'Lunar fauna',
     hp:40, speed:28, radius:9, sight:4, range:0, bio:true, passive:true,
-    desc:'Docile lunar fauna. The Swarm will infect it if it can.' }
+    desc:'Docile lunar fauna. The Brood will infect it if it can.' }
 };
 
 /* 1d. BUILDINGS. size is in tiles (square). */
@@ -87,18 +87,18 @@ const BUILDINGS = {
   barricade: { name:'Barricade', faction:'corps', size:1, hp:380, sight:2, cost:30, buildTime:5, key:'B', art:'barricade',
                desc:'Cheap wall segment that blocks movement.' },
   hive:      { name:'Hive', faction:'swarm', size:3, hp:1000, sight:8, art:'hive', regen:6, regenDelay:12,
-               desc:'Spawns the Swarm. Regrows slowly when left alone for a while. Destroy it.' },
+               desc:'Spawns the Brood. Regrows slowly when left alone for a while. Destroy it.' },
   lz:        { name:'Landing Zone', faction:'corps', size:3, hp:1, sight:4, art:'lz', reinforce:true, noBlock:true, ground:true,
                orders:['trooper','gunner','medic','pyro','engineer'], cargo:6,
                desc:'A marking on the ground. Order reinforcements here and a dropship brings them in. Units can walk over it and the enemy ignores it. Right-click the ground to set where new troops gather.' },
   uplink:    { name:'Uplink Beacon', faction:'corps', size:2, hp:1, sight:3, art:'uplink', noBlock:true, ground:true, capture:true, captureTime:20, loseTime:15,
-               desc:'Stand next to it with no Swarm close by to capture it. The Swarm takes it back if it holds the beacon unopposed.' },
+               desc:'Stand next to it with no Brood close by to capture it. The Brood takes it back if it holds the beacon unopposed.' },
   /* Mission objects (placed by mission scripts, never built by the player) */
   shaft:     { name:'Mine Shaft', faction:'swarm', size:2, hp:1, sight:0, art:'shaft', noBlock:true, ground:true,
-               desc:'An old mine shaft that goes down into the deep tunnels. Once the hives are gone, the Swarm keeps coming up out of it. It cannot be destroyed.' },
+               desc:'An old mine shaft that goes down into the deep tunnels. Once the hives are gone, the Brood keeps coming up out of it. It cannot be destroyed.' },
   generator: { name:'Generator', faction:'corps', size:2, hp:2000, sight:2, art:'generator', generator:true, noDestroy:true,
                startHp:0.05, failAt:0.6, light:9,
-               desc:'Colony power. Starts broken: Engineers repair it. Running, it lights the area around it, and the Swarm comes for the light. It shuts down when badly damaged.' },
+               desc:'Colony power. Starts broken: Engineers repair it. Running, it lights the area around it, and the Brood comes for the light. It shuts down when badly damaged.' },
   chargesite:{ name:'Charge Site', faction:'corps', size:1, hp:1, sight:2, art:'chargesite', ground:true, noBlock:true, armTime:20,
                desc:'Seismic charge site. An Engineer standing still on it arms a charge.' },
   charge:    { name:'Seismic Charge', faction:'corps', size:1, hp:320, sight:4, art:'charge', fuse:75, blast:4.5, blastDamage:450,
@@ -108,7 +108,7 @@ const BUILDINGS = {
   medtent:   { name:'Hospital Tent', faction:'none', size:2, hp:1, sight:0, art:'medtent', scenery:true,
                desc:'A Corps field hospital tent. Cots, drips, and a cold case of stabilizer.' },
   choirpod:  { name:'Choir Pod', faction:'none', size:1, hp:1, sight:2, art:'choirpod', noBlock:true,
-               desc:'A swollen Swarm throat that sings to the brood and keeps it awake. Only one of its own can stand at it long enough to quiet it.' },
+               desc:'A swollen Brood throat that sings to the brood and keeps it awake. Only one of its own can stand at it long enough to quiet it.' },
   wreck:     { name:'Crashed Dropship', faction:'none', size:3, hp:1, sight:0, art:'wreck', scenery:true, smoke:true,
                desc:'The first rescue dropship that came for Hollow Colony. It never lifted off again. Still smouldering.' },
   rubble:    { name:'Rubble', faction:'none', size:1, hp:1, sight:0, art:'rubble', scenery:true,
@@ -118,7 +118,7 @@ const BUILDINGS = {
   membrane:  { name:'Membrane', faction:'swarm', size:1, hp:600, sight:1, art:'membrane',
                desc:'Living tissue that seals a tunnel. It cannot be harmed while its egg chambers live.' },
   egg:       { name:'Egg', faction:'swarm', size:1, hp:40, sight:2, art:'egg', noBlock:true,
-               desc:'A hive lays one right at its foot when a body lies in its creep. It opens, and a Grafter crawls out for the body.' },
+               desc:'A hive lays one right at its foot when a body lies in its mycel. It opens, and a Grafter crawls out for the body.' },
   cocoon:    { name:'Cocoon', faction:'swarm', size:1, hp:35, sight:2, hatch:5, art:'cocoon', noBlock:true,
                desc:'A fallen body, being remade. Destroy it before it hatches.' }
 };

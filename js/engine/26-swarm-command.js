@@ -158,7 +158,7 @@ function swarmButtons(){ const out=avatarButtons(), S=G.swarm, used=broodUsed(),
   out.push({row:'Orders',key:'A',glyph:'⚔',cost:waiting||'',active:ui.amove,off:!waiting,tip:`Attack|Click a spot or an enemy: ${sel?`the ${sel} you selected go`:`all ${waiting} waiting go (every team from its own gathering point)`} for it. Shift+A: together, so they all arrive at the same time.`,act:e=>{ ui.amoveSync=!!(e&&e.shiftKey); ui.amove=!ui.amove; ui.burrow=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.amove); }});
   out.push({row:'Orders',key:'G',glyph:'⚑',active:ui.rallyPick,tip:'Gather|Click where the brood gathers. Right-click anywhere does the same. With one team selected: that team\'s own gathering point. New brood hatches at the hive nearest to it, or at the hive you selected.',act:()=>{ ui.rallyPick=!ui.rallyPick; ui.amove=false; ui.burrow=false; cv.classList.toggle('amove',ui.rallyPick); }});
   const nb=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier).length;
-  out.push({row:'Orders',key:'H',glyph:'⤓',cost:nb||'',off:!nb,tip:`Harvest|${sel?'The units you selected':'The waiting brood'} go out to carry the ${nb} fallen lying in the field home to a hive. One carries, one guards. On the creep a Grafter from a hive egg turns them.`,act:swarmHarvest});
+  out.push({row:'Orders',key:'H',glyph:'⤓',cost:nb||'',off:!nb,tip:`Harvest|${sel?'The units you selected':'The waiting brood'} go out to carry the ${nb} fallen lying in the field home to a hive. One carries, one guards. On the mycel a Grafter from a hive egg turns them.`,act:swarmHarvest});
   const B=SWARM_PLAY.burrow, cd=Math.ceil(B.cooldown-(G.time-S.burrowAt));
   out.push({row:'Orders',key:'B',glyph:'⇣',cost:cd>0?`${cd}s`:B.cost,active:ui.burrow,off:cd>0||S.biomass<B.cost,tip:`Burrow|${B.units.length} of the brood dig up out of the ground where you click, at least ${B.clear} tiles from the Lunar Corps. Costs ${B.cost} biomass, then the ground needs ${B.cooldown} seconds.`,act:()=>{ ui.burrow=!ui.burrow; ui.amove=false; ui.rallyPick=false; cv.classList.toggle('amove',ui.burrow); }});
   return out; }
@@ -187,8 +187,8 @@ function drawSwarmOrders(now){ const r=G.swarm.rally;
 function swarmHud(){ $('#r-salvage').textContent=Math.floor(G.swarm.biomass); const s=$('#r-supply'); s.textContent=`${broodUsed()}/${broodCap()}`; s.classList.toggle('warn',broodUsed()>=broodCap());
   $('#r-troops').textContent=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm').length; }
 function setupSideHud(){ const sw=swarmSide(), lbl=(id,t)=>{ const el=$(id); if(el){ const l=el.closest('.res').querySelector('.lbl'); if(l) l.textContent=t; } };
-  lbl('#r-salvage',sw?'Biomass':'Salvage'); lbl('#r-supply',sw?'Brood':'Supply'); lbl('#r-troops',sw?'Swarm':'Troops');
-  $('#r-troops-wrap').dataset.tip=sw?'The Swarm on the field|Your brood, the hive guards and everything that hatched on its own.':'Troops|';
+  lbl('#r-salvage',sw?'Biomass':'Salvage'); lbl('#r-supply',sw?'Brood':'Supply'); lbl('#r-troops',sw?'Creatures':'Troops');
+  $('#r-troops-wrap').dataset.tip=sw?'The Brood on the field|Your brood, the hive guards and everything that hatched on its own.':'Troops|';
   document.body.classList.toggle('as-swarm',sw); if(typeof trackerLabel==='function') trackerLabel(); }
 const SWARM_HINT='You are the Brood. Drag to select swarm units and <kbd>Right-click</kbd> to move them; with nothing selected, right-click calls the brood together. <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> hatch (click a hive to hatch there), <kbd>A</kbd> + click attacks, <kbd>H</kbd> brings the fallen home.';
 /* the Lunar Corps as the computer: a squad answers when one of its buildings or soldiers nearby is hit */

@@ -21,7 +21,7 @@ const NS_PAIRS=[ ['sw','e'], ['n','s'], ['e','sw'], ['s','n'], ['sw','n'], ['e',
 MISSIONS.push(
   {
     id:'night-shift', title:'Night Shift', map:'kappa', ospreyVoice:'Unknown voice',
-    summary:'Hold the Kappa field hospital until dawn. Something walks past the Swarm to get in, and it keeps coming back.',
+    summary:'Hold the Kappa field hospital until dawn. Something walks past the Brood to get in, and it keeps coming back.',
     briefing:[
       'A week after Hollow Colony. The relay station you held at Kappa is a field hospital now, and Dr. Maas\'s shipment sits in its tents: three cases of her stabilizer and the files that go with it. The convoy to Tycho comes at dawn, ten minutes from now.',
       'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Kestrel can fly replacements to the pad just south of the tents; claim the relay pads to pay for them.',
@@ -91,7 +91,7 @@ MISSIONS.push(
           g.say('Sgt. Kessler','He is not running away, he is running to the hive. And it lets him in. Whatever they are, the brood patches them up. Burn the hives and they have nowhere to go.'); } },
       { when:g=>g.vars.came&&g.hives()===0, do:g=>g.say('Sgt. Kessler','That was the last hive. Next one we put down stays down.') },
       /* the sirens wake the basin */
-      { when:g=>g.vars.came&&g.time>g.vars.came+60, do:g=>{ g.wave(G.mission.job.nsWave,{x:20,y:20}); g.say('Kappa medical','The sirens... the basin is waking up. Swarm moving from the hives!'); } },
+      { when:g=>g.vars.came&&g.time>g.vars.came+60, do:g=>{ g.wave(G.mission.job.nsWave,{x:20,y:20}); g.say('Kappa medical','The sirens... the basin is waking up. Brood moving from the hives!'); } },
       /* the push: every nsEvery seconds whoever is back on his feet comes in again, each time from another side: they go down into the
          hive tunnels and come up at that side's staging point (NS_SIDES). The brood comes up out of the ground at another side at the
          same time (NS_PAIRS), with Spitters from the first push and a Brute from push nsBrute on. */

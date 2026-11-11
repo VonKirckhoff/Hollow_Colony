@@ -8,9 +8,9 @@
 MISSIONS.push(
   {
     id:'mothers-heart', title:'Mother\'s Heart', map:'depths', ospreyVoice:'Osprey crew',
-    summary:'Something bled the Brood Mother. Burn the heart she left behind before the Osprey crew drains it.',
+    summary:'Something bled the Matron. Burn the heart she left behind before the Osprey crew drains it.',
     briefing:[
-      'Seismic picked up a scream under Tycho Maw, then a long silence. Something went into the Brood Mother\'s lair and hurt her. She tore herself free and crawled into the deep, and she left part of herself behind: one of her hearts, torn loose and still beating.',
+      'Seismic picked up a scream under Tycho Maw, then a long silence. Something went into the Matron\'s lair and hurt her. She tore herself free and crawled into the deep, and she left part of herself behind: one of her hearts, torn loose and still beating.',
       'The Osprey crew got there first. They opened her membrane, and now they are drawing the blood out of it. Dr. Maas says whatever is in that blood could finish what the strain started in them. Command wants it ash.',
       'Kestrel puts you down at the cave mouth with a Command Post to call in replacements, but there is no time to dig in. Push through the tunnels to the lair in the north-east and burn that heart. A Pyro does it fastest. The brood is frantic with its mother hurt, and it will not touch the crew.'
     ],
@@ -64,7 +64,7 @@ MISSIONS.push(
       { when:g=>g.near('corps','9',8)>0, do:g=>{ g.say('Sgt. Kessler','There they are. And there it is, God, it is still beating.'); } },
       { repeat:true, when:g=>g.vars.done==='burnt'&&!g.vars.won, do:g=>g.setText('blood',`Her heart is ash. The crew is running (${g.ospreyLeft()} still in the lair)`) },
       { when:g=>g.vars.done==='burnt'&&g.ospreyLeft()===0&&g.ospreyComing()===0, do:g=>{ g.vars.won=true; g.complete('hq');
-          g.win('Her heart burns black and purple and stinks for hours. The Osprey crew is gone down her tunnel, how much of her they took with them nobody can say. Deeper still, the seismic trace keeps moving: the Brood Mother is alive, and she is crawling home. Dr. Maas says she will seal the lair and lay as she has never laid before. Dust goes in after her next.'); } },
+          g.win('Her heart burns black and purple and stinks for hours. The Osprey crew is gone down her tunnel, how much of her they took with them nobody can say. Deeper still, the seismic trace keeps moving: the Matron is alive, and she is crawling home. Dr. Maas says she will seal the lair and lay as she has never laid before. Dust goes in after her next.'); } },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post is overrun. Without it nobody comes down for you, and the Osprey crew finishes in peace.'); } }
     ]
   }

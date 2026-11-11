@@ -12,7 +12,7 @@ ROGUE_MISSIONS.push(
     briefing:[
       'Three weeks in the tunnels. The cases from Kappa Basin are empty, Devreese can brew only so much from Maas\'s formula, the food is nearly gone, and she says the strain burns hotter in a body that is starving.',
       'Kappa Station is a supply post again: three caches on the station platform, a small garrison, two Sentry Guns, and two Relay Towers, one on the station and one on the northern ridge. Those towers are the danger. The moment anyone at Kappa sees us, they start calling Tycho.',
-      'If Tycho hears about us, the whole Corps comes looking and this is over. Stay out of their sight. The Swarm hates Kappa as much as we do: let it wear the garrison down first, and a tower that is already rubble cannot call anyone. If they do see us, both towers go down within thirty seconds, or we are finished. Take all three caches and leave through the old mine shaft in the east wall.'
+      'If Tycho hears about us, the whole Corps comes looking and this is over. Stay out of their sight. The Brood hates Kappa as much as we do: let it wear the garrison down first, and a tower that is already rubble cannot call anyone. If they do see us, both towers go down within thirty seconds, or we are finished. Take all three caches and leave through the old mine shaft in the east wall.'
     ],
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['c','a'],
@@ -39,7 +39,7 @@ ROGUE_MISSIONS.push(
           g.reveal({x:46,y:38},9,1e6); g.reveal({x:47,y:5},4,1e6); } },
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','Kappa Station. Three caches, two towers, a dozen of ours. They are not ours any more. Quietly, people.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Cnudde','Those relay towers are the problem. If they see us, Kappa calls Tycho, and then the whole Corps knows we are alive. Knock both towers down and the line goes dead.') },
-      { when:g=>g.time>16, do:g=>g.crewSay('Braet','Hold fire, Captain? (Q) Let the Swarm do the shooting at Kappa. We just watch.') },
+      { when:g=>g.time>16, do:g=>g.crewSay('Braet','Hold fire, Captain? (Q) Let the Brood do the shooting at Kappa. We just watch.') },
       /* the caches */
       { repeat:true, when:g=>!!g.vars.caches&&!g.vars.cachesDone, do:g=>{ const n=g.vars.caches.filter(c=>c.dead).length; g.setText('caches',`Take the three caches on Kappa Station (${n}/3)`);
           if(n>=3){ g.vars.cachesDone=true; g.complete('caches'); g.unmark('st'); g.addObjective('escape','Everyone into the old mine shaft in the east wall (right-click it)'); g.exitMark('exit'); g.openExit();

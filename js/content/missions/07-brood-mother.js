@@ -2,12 +2,12 @@
 /* Mission 7: Brood Mother */
 MISSIONS.push(
   {
-    id:'brood-mother', title:'Brood Mother', map:'depths',
-    summary:'Descend beneath Tycho Maw, burn three egg chambers and kill the Brood Mother.',
+    id:'brood-mother', title:'The Matron', map:'depths',
+    summary:'Descend beneath Tycho Maw, burn three egg chambers and kill the Matron.',
     briefing:[
-      'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs. The Brood Mother lived through what the Osprey crew did to her: she crawled back to her lair, sealed it again, and lays faster than ever.',
+      'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs. The Matron lived through what the Osprey crew did to her: she crawled back to her lair, sealed it again, and lays faster than ever.',
       'Three egg chambers feed a sealed lair in the north-east. Living membrane closes the only tunnel into the lair, and it will not die while its chambers live.',
-      'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Brood Mother. Do not let her get away to heal.'
+      'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Matron. Do not let her get away to heal.'
     ],
     limits:{ sentry:6 },
     landingZone:{ tx:16, ty:44, max:15, delay:25 },
@@ -24,9 +24,9 @@ MISSIONS.push(
     triggers:[
       { when:g=>g.time>0.3, do:g=>{
           g.wall('8',2.3,'lair');
-          g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.boss(g.vars.mother,'Brood Mother');
+          g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.boss(g.vars.mother,'The Matron');
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); } },
-      { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to the Maw Depths. Three egg chambers, one queen. Dig in at the cave mouth first.') },
+      { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to the Maw Depths. Three egg chambers, one mother. Dig in at the cave mouth first.') },
       { when:g=>g.time>14, do:g=>g.say('Sgt. Kessler','Six sentries max down here. Relay pads in the side tunnels will keep the salvage flowing.') },
       { when:g=>g.time>26, do:g=>{ g.say('Dropship Kestrel','Kestrel on station. Fifteen boots on the ground max. Select the Landing Zone to order replacements.'); g.ping({x:17,y:45}); } },
       { when:g=>g.time>45, do:g=>g.say('Dr. Maas','The membrane at the lair is fed by the chambers. Kill all three and it will rot away.') },
@@ -36,7 +36,7 @@ MISSIONS.push(
       { when:g=>g.vars.burned>=2, do:g=>{ g.say('Cmdr. Varga','Two down. The swarm is getting desperate. Brace for a big push!'); g.wave(140); } },
       { when:g=>g.vars.burned>=3, do:g=>{ g.complete('chambers'); g.openWall('lair');
           g.say('Dr. Maas','The membrane is dissolving. The lair is open. She is in there, and she is enormous.');
-          g.addObjective('mother','Kill the Brood Mother'); g.marker('queen','9','Brood Mother'); } },
+          g.addObjective('mother','Kill the Matron'); g.marker('queen','9','The Matron'); } },
       { when:g=>g.vars.mother && g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.say('Sgt. Kessler','Contact! By God, look at the size of her!'); } },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=1, do:g=>g.say('Dr. Maas','She is calling her brood! Burn the eggs before they hatch, and do not let her rest or she will heal.') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=2, do:g=>g.say('Dr. Maas','She is weakening. Keep the pressure on, and keep the Pyro on her eggs.') },
@@ -57,7 +57,7 @@ MISSIONS.push(
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=3, do:g=>g.say('Cmdr. Varga','She is almost finished. Everything you have, now!') },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen. The brood will keep breeding.'); } },
       { when:g=>g.vars.mother && g.vars.mother.dead, do:g=>{ g.complete('mother'); g.complete('hq');
-          g.win('The Brood Mother is dead. In the silence after, the egg chambers go dark one by one. The moon has a chance.'); } }
+          g.win('The Matron is dead. In the silence after, the egg chambers go dark one by one. The moon has a chance.'); } }
     ]
   }
 );

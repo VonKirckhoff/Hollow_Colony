@@ -60,10 +60,10 @@
   <div class="sheet">
     <div class="eyebrow">LUNAR CORPS · FIELD OPERATIONS</div>
     <h1 class="title">Hollow<br><span>Colony</span></h1>
-    <p class="lede">The terraforming colonies on the moon have gone quiet. Something woke beneath the regolith, and it is spreading. Command the Lunar Corps and burn the Swarm back into the dark.</p>
+    <p class="lede">The terraforming colonies on the moon have gone quiet. Something woke beneath the regolith, and it is spreading. Command the Lunar Corps and burn the Brood back into the dark.</p>
     <div class="menu-list">
       <button class="menu-btn" type="button" id="m-continue" hidden>Continue</button>
-      <button class="menu-btn" type="button" data-go="campaign">Campaign <small>Lunar Corps and Swarm operations</small></button>
+      <button class="menu-btn" type="button" data-go="campaign">Campaign <small>Lunar Corps and Brood operations</small></button>
       <button class="menu-btn" type="button" data-go="trophies">Trophies <small>Every trophy and relic</small></button>
       <button class="menu-btn" type="button" data-go="skirmish">Skirmish <small>Pick a map, destroy every hive</small></button>
       <button class="menu-btn" type="button" data-go="manual">Field manual <small>Controls and factions</small></button>
@@ -78,10 +78,10 @@
 <section class="screen" id="s-campaign" hidden>
   <div class="sheet camp">
    <div class="camp-l">
-    <div class="camp-side" id="camp-side" role="tablist" aria-label="Choose a side"><button type="button" role="tab" data-side="corps"><span class="cs-k">Play as</span><b>Lunar Corps</b><span class="cs-n">Operation Hollow Light</span><span class="cs-p" id="cs-p-corps"></span></button><button type="button" role="tab" data-side="swarm"><span class="cs-k">Play as</span><b>The Swarm</b><span class="cs-n">The Long Hunger</span><span class="cs-p" id="cs-p-swarm"></span></button><button type="button" role="tab" data-side="rogue" hidden><span class="cs-k">Play as</span><b>The Osprey crew</b><span class="cs-n">Rogue Strain</span><span class="cs-p" id="cs-p-rogue"></span></button></div>
+    <div class="camp-side" id="camp-side" role="tablist" aria-label="Choose a side"><button type="button" role="tab" data-side="corps"><span class="cs-k">Play as</span><b>Lunar Corps</b><span class="cs-n">Operation Hollow Light</span><span class="cs-p" id="cs-p-corps"></span></button><button type="button" role="tab" data-side="swarm"><span class="cs-k">Play as</span><b>The Brood</b><span class="cs-n">The Long Hunger</span><span class="cs-p" id="cs-p-swarm"></span></button><button type="button" role="tab" data-side="rogue" hidden><span class="cs-k">Play as</span><b>The Osprey crew</b><span class="cs-n">Rogue Strain</span><span class="cs-p" id="cs-p-rogue"></span></button></div>
     <div class="eyebrow" id="camp-eyebrow">CAMPAIGN · LUNAR CORPS</div>
     <h2 class="h" id="camp-title">Operation Hollow Light</h2>
-    <p class="lede rogue-only">The Osprey went down at Hollow Colony and its crew is listed as killed in action. They are not dead. Seven soldiers, no base, no dropship, hunted by the Swarm and by the Corps. Harvest Swarm DNA, splice it into the crew between jobs, and keep the taint from eating them alive.</p>
+    <p class="lede rogue-only">The Osprey went down at Hollow Colony and its crew is listed as killed in action. They are not dead. Seven soldiers, no base, no dropship, hunted by the Brood and by the Corps. Harvest Brood DNA, splice it into the crew between jobs, and keep the taint from eating them alive.</p>
     <p class="lede swarm-only">Play the same story from the other side. You are the Brood: you choose what hatches, where it gathers and where it strikes, and the swarm does the rest. The Lunar Corps is played by the computer.</p>
     <div class="lbl" id="camp-progress"></div>
     <div class="hero-card" id="hero-card"></div>
@@ -188,17 +188,17 @@
       <div class="note"><b>Firing on the move</b>Soldiers keep walking but shoot back at anything in range, a bit slower than standing still. Engineers do the same while they build or repair.</div>
       <div class="note"><b>Cover</b>Rock or a building between a soldier and a Spitter cuts the damage he takes by 40%.</div>
       <div class="note"><b>Suppression</b>Anything a Gunner hits slows down for a moment.</div>
-      <div class="note"><b>Acid blood</b>Swarm bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for 3 seconds.</div>
+      <div class="note"><b>Acid blood</b>Brood bleeds acid. Killing one up close burns your soldiers, and the pool keeps burning for 3 seconds.</div>
       <div class="note"><b>Cocoons</b>Your dead are turned into cocoons that hatch in seconds. Burn them; a Pyro does triple damage.</div>
       <div class="note"><b>Medic triage</b>The downed first, then the worst wounded. His sidearm only comes out when nobody nearby needs him.</div>
-      <div class="note"><b>Down, not out</b>A soldier at 0 health goes down for 15 seconds. The Swarm leaves him be: it wants the body. A Medic who reaches him patches him up in 4 seconds. Nobody comes, and he bleeds out.</div>
-      <div class="note"><b>The fallen</b>The Swarm drags a body home to the creep around a hive. There an egg opens, a Grafter latches on, and the body becomes a cocoon. Stand next to it, kill the carrier, shoot the eggs, or let a Pyro burn it.</div>
+      <div class="note"><b>Down, not out</b>A soldier at 0 health goes down for 15 seconds. The Brood leaves him be: it wants the body. A Medic who reaches him patches him up in 4 seconds. Nobody comes, and he bleeds out.</div>
+      <div class="note"><b>The fallen</b>The Brood drags a body home to the mycel around a hive. There an egg opens, a Grafter latches on, and the body becomes a cocoon. Stand next to it, kill the carrier, shoot the eggs, or let a Pyro burn it.</div>
       <div class="note"><b>Husks</b>An infected soldier. It hatches as a Twitcher, molts into a Shambler, then into a Husk; while it molts it takes extra damage. A Husk slips away to a quiet spot and takes root. Kill it before a new hive grows there.</div>
       <div class="note"><b>Darkness and flares</b>In dark missions everyone sees half as far. Flares light the ground for 45 seconds: three per mission, six in the dark.</div>
-      <div class="note"><b>Motion tracker</b>Shows Swarm moving near your selected squad, even in the dark, and beeps faster as they close in.</div>
-      <div class="note"><b>Swarm tactics</b>Big waves may send bait first, or split up and come at you from the side.</div>
+      <div class="note"><b>Motion tracker</b>Shows Brood moving near your selected squad, even in the dark, and beeps faster as they close in.</div>
+      <div class="note"><b>Brood tactics</b>Big waves may send bait first, or split up and come at you from the side.</div>
       <div class="note"><b>Hives fight back</b>Come too close and a hive notices you: its guards attack and it births a brood. Every hit makes it scream for more; badly hurt, it calls the other hives. Left alone, it heals.</div>
-      <div class="note"><b>The creep</b>A purple fungus spreads around every hive. The Swarm heals while standing on it. It withers when the hive dies.</div>
+      <div class="note"><b>The mycel</b>A purple fungus spreads around every hive. The Brood heals while standing on it. It withers when the hive dies.</div>
       <div class="note"><b>Landing pads</b>Order replacements from the pad. Never more than the squad you started with.</div>
       <div class="note"><b>Intel</b>Every soldier, structure and enemy with its numbers: see Intel in the main menu.</div>
     </div>
@@ -211,19 +211,19 @@
         <ul><li>Salvage from crates and from Relay Towers on relay pads. Each tower adds supply.</li>
             <li>Train soldiers at the Command Post, or order them in at a landing pad.</li>
             <li>Troopers, Gunners and Pyros fight; Medics heal; Engineers build, repair and arm charges.</li></ul></div>
-      <div class="faction"><b style="color:var(--swarm)">The Swarm</b><span class="ftag">Enemy</span>
+      <div class="faction"><b style="color:var(--swarm)">The Brood</b><span class="ftag">Enemy</span>
         <ul><li>Grows from hives and comes in waves that get bigger.</li>
-            <li>Crawlers and Drones rush, Spitters lob acid from range, Brutes break walls.</li>
-            <li>Everything living it kills becomes a cocoon: new Swarm.</li>
-            <li>In its own campaign you are the Swarm: hatch, hunt and bring the fallen home.</li></ul></div>
+            <li>Crawlers and Scuttlers rush, Spitters lob acid from range, Brutes break walls.</li>
+            <li>Everything living it kills becomes a cocoon: new Brood.</li>
+            <li>In its own campaign you are the Brood: hatch, hunt and bring the fallen home.</li></ul></div>
       <div class="faction rogue"><b style="color:var(--rogue)">Rogue Strain</b><span class="ftag">Third campaign</span>
         <ul><li>The seven survivors of the Osprey, written off as killed in action. They found Dr. Maas's samples and stopped answering the radio.</li>
             <li>No base, no dropship, no replacements: the same seven people from job to job, led by their Captain.</li>
-            <li>They splice Swarm DNA into their own blood. Strains make them faster, tougher or deadlier; taint makes them stranger, up to a feral fit.</li>
+            <li>They splice Brood DNA into their own blood. Strains make them faster, tougher or deadlier; taint makes them stranger, up to a feral fit.</li>
             <li>Black and dark brown uniforms with a red armband.</li>
-            <li>Hunted by both sides: the Swarm, and the loyal Corps in the normal Corps kit, who shoot on sight.</li></ul></div>
+            <li>Hunted by both sides: the Brood, and the loyal Corps in the normal Corps kit, who shoot on sight.</li></ul></div>
       <div class="notes fnotes">
-      <div class="note rogue"><b>The loyal Corps</b>In Rogue Strain the Lunar Corps is the enemy. Its soldiers fight the Swarm and the crew alike: they hold a post, patrol or hunt you, and come running when one of them is hit. Their Relay Towers, Sentry Guns and Barricades are theirs too.</div>
+      <div class="note rogue"><b>The loyal Corps</b>In Rogue Strain the Lunar Corps is the enemy. Its soldiers fight the Brood and the crew alike: they hold a post, patrol or hunt you, and come running when one of them is hit. Their Relay Towers, Sentry Guns and Barricades are theirs too.</div>
       <div class="note rogue"><b>Playable after the Corps campaign</b>Rogue Strain opens once every Lunar Corps campaign mission is won on Normal or Hard. Its campaign screen and Intel tab can be read before that.</div>
       </div>
     </div>
@@ -245,9 +245,9 @@
     <h2 class="h">Campaigns</h2>
     <div class="notes">
       <div class="note"><b>Training</b>Both campaigns start with a training (00) that walks you through every button. Press N to skip a step.</div>
-      <div class="note"><b>Playing the Swarm</b>Pick The Swarm on the campaign screen. Q W E R hatch, right-click sets the gathering point (or moves the swarm units you selected), A + click attacks, H brings the fallen home, B + click burrows up a small brood. Ctrl + a number keeps a group: flank or lure with two groups of your own.</div>
-      <div class="note rogue"><b>Rogue Strain</b>Opens once every Lunar Corps campaign mission is won on Normal or Hard. You play the seven survivors of the Osprey. Swarm you kill without fire can leave DNA samples: walk over them. Between jobs, splice them into the crew on the campaign screen. Taint makes them stronger and stranger: from 85% seizures, at 100% a feral fit. A crew Medic with a stabilizer dose fixes that (J). The crew wears black and dark brown with a red armband; soldiers in the normal Corps kit are the loyal Corps, and they shoot you on sight.</div>
-      <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty. Flawless: win a mission without losing a soldier, one per difficulty. Two grand trophies: all of the Lunar Corps, and every Swarm mission on every difficulty.</div>
+      <div class="note"><b>Playing the Brood</b>Pick The Brood on the campaign screen. Q W E R hatch, right-click sets the gathering point (or moves the swarm units you selected), A + click attacks, H brings the fallen home, B + click burrows up a small brood. Ctrl + a number keeps a group: flank or lure with two groups of your own.</div>
+      <div class="note rogue"><b>Rogue Strain</b>Opens once every Lunar Corps campaign mission is won on Normal or Hard. You play the seven survivors of the Osprey. Brood you kill without fire can leave DNA samples: walk over them. Between jobs, splice them into the crew on the campaign screen. Taint makes them stronger and stranger: from 85% seizures, at 100% a feral fit. A crew Medic with a stabilizer dose fixes that (J). The crew wears black and dark brown with a red armband; soldiers in the normal Corps kit are the loyal Corps, and they shoot you on sight.</div>
+      <div class="note"><b>Trophy wall</b>Win every campaign mission with your own soldier alive, for each role and each difficulty. Flawless: win a mission without losing a soldier, one per difficulty. Two grand trophies: all of the Lunar Corps, and every Brood mission on every difficulty.</div>
     </div>
     </div>
 

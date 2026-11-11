@@ -5,13 +5,13 @@
    Hover a name to see what it does. Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
    loads; ↺ puts one value back, "Reset all" puts everything back. "Export" lists every change so you can copy it.
    Unit stats count for units that appear after the change; health is also adjusted on the units already on the map. */
-const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, SWARM_LIGHT, SWARM_SCORCH, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, INTERCOM, VIEW3D, SIGHT, ROGUE, OSPREY, UNITS, BUILDINGS };
+const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, SWARM_LIGHT, SWARM_SCORCH, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, INTERCOM, VIEW3D, SIGHT, MYCEL, SHIP, ROGUE, OSPREY, UNITS, BUILDINGS };
 const DEV_TABS = [
   { id:'live', name:'Live' }, { id:'mission', name:'Mission' },
   { id:'diff', name:'Difficulty', roots:['DIFFICULTY','SWARM_DIFF'] },
-  { id:'swarm', name:'Swarm', roots:['WAVES','PACK','HIVE_DEFENCE','TACTICS','CREEP','HUSK','EGG','MOLT','HIVE_DEATH','SWARM_PLAY','HIVE_SENSE','SWARM_LIGHT','SWARM_SCORCH','FIRST_HUNGER','BROOD_TACTICS','DEMO','AVATAR','BROOD_SURGE'] },
+  { id:'swarm', name:'Brood', roots:['WAVES','PACK','HIVE_DEFENCE','TACTICS','CREEP','MYCEL','HUSK','EGG','MOLT','HIVE_DEATH','SWARM_PLAY','HIVE_SENSE','SWARM_LIGHT','SWARM_SCORCH','FIRST_HUNGER','BROOD_TACTICS','DEMO','AVATAR','BROOD_SURGE'] },
   { id:'squad', name:'Squad', roots:['SQUAD','SIGHT','FORMATION','REPAIR_SIDE','AURA','RISEN','VET_XP','OSPREY'] },
-  { id:'fx', name:'Effects', roots:['FIRE','ANIM','SHOWCASE','INTERCOM','VIEW3D'] },
+  { id:'fx', name:'Effects', roots:['FIRE','ANIM','SHOWCASE','INTERCOM','VIEW3D','SHIP'] },
   { id:'rogue', name:'Rogue', roots:['ROGUE'] },
   { id:'units', name:'Units' } ];
 /* mission settings that may be missing in a mission but can be set (empty = the default) */
@@ -90,7 +90,7 @@ function devRender(){ const el=$('#dev'); if(!el||el.hidden||!G) return;
   else if(T.id==='mission'){ const m=G.mission, K='M:'+m.id+'|';
     h=`<div class="dv-note">${m.title} · <i>${m.id}</i>. Saved changes count for this mission only.</div>`+
       `<details open><summary>Start and Landing Zone</summary>${DEV_MISSION_KEYS.filter(k=>!k.startsWith('swarm.')).map(k=>devRow(K+k,k)).join('')}</details>`+
-      (m.swarm?`<details open><summary>Swarm (this mission)</summary>${[...new Set([...DEV_MISSION_KEYS.filter(k=>k.startsWith('swarm.')&&(m.swarm.waves||!k.startsWith('swarm.waves'))),...devLeaves(m.swarm,'swarm')])].map(k=>devRow(K+k,k.slice(6))).join('')}</details>`:'')+
+      (m.swarm?`<details open><summary>Brood (this mission)</summary>${[...new Set([...DEV_MISSION_KEYS.filter(k=>k.startsWith('swarm.')&&(m.swarm.waves||!k.startsWith('swarm.waves'))),...devLeaves(m.swarm,'swarm')])].map(k=>devRow(K+k,k.slice(6))).join('')}</details>`:'')+
       (m.job?`<details open><summary>${m.rogue?'This job (Rogue)':'This mission'}</summary>${devLeaves(m.job,'job').map(k=>devRow(K+k,k.slice(4))).join('')}</details>`:'')+   /* Rogue jobs: their own numbers (mission.job) */
       `<div class="dv-note">Empty = the game's default. The waves only grow for growWaves waves; maxAlive is how many roam at once (× difficulty).</div>`; }
   else if(T.id==='units'){ const types=[...Object.keys(UNITS).map(k=>['UNITS',k]),...Object.keys(BUILDINGS).map(k=>['BUILDINGS',k])];
@@ -103,7 +103,7 @@ function devRender(){ const el=$('#dev'); if(!el||el.hidden||!G) return;
   devStatus(); }
 function devLive(){ const S=G.swarm, hs=hives().length, nx=S.nextWave-G.time;
   const info=[['Time',fmtTime(G.time)],['Difficulty',(G.diff&&G.diff.label)||G.diffKey],['Hives',hs+(S.hives0?` of ${S.hives0}`:'')],['Wave',S.waveN+(G.mission.swarm&&G.mission.swarm.waves?` · next in ${isFinite(nx)?Math.max(0,Math.ceil(nx))+' s':'–'}`:'')],
-    ['Swarm roaming',`${roamCount()} / ${Math.round(swarmCap())}`],['Swarm total',swarmCount()],['Corps troops',`${typeof troopCount==='function'?troopCount():'?'}${troopCap()<Infinity?' / '+troopCap():''}`],['Next wave budget',G.mission.swarm&&G.mission.swarm.waves?(S.waveN++,(()=>{ const b=Math.round(waveBudget()); S.waveN--; return b; })()):'–']];
+    ['Brood roaming',`${roamCount()} / ${Math.round(swarmCap())}`],['Brood total',swarmCount()],['Corps troops',`${typeof troopCount==='function'?troopCount():'?'}${troopCap()<Infinity?' / '+troopCap():''}`],['Next wave budget',G.mission.swarm&&G.mission.swarm.waves?(S.waveN++,(()=>{ const b=Math.round(waveBudget()); S.waveN--; return b; })()):'–']];
   return `<div class="dv-live">${info.map(([a,b])=>`<span>${a}</span><b data-live="${a}">${b}</b>`).join('')}</div>
     <label class="dv-row"><span>Salvage</span><input type="number" step="10" data-live-set="salvage" value="${Math.floor(G.salvage)}"></label>
     <label class="dv-row"><span>Biomass</span><input type="number" step="10" data-live-set="biomass" value="${Math.floor(S.biomass)}"></label>
@@ -111,7 +111,7 @@ function devLive(){ const S=G.swarm, hs=hives().length, nx=S.nextWave-G.time;
     <label class="dv-row"><span>Next wave in (s)</span><input type="number" step="5" data-live-set="nextWave" value="${isFinite(nx)?Math.max(0,Math.ceil(nx)):''}"></label>
     <div class="dv-tools"><button type="button" data-dv="wave">Wave now</button><button type="button" data-dv="reveal" class="${G.devReveal?'on':''}">${G.devReveal?'Reveal map: on':'Reveal map: off'}</button><button type="button" data-dv="heal">Heal everyone</button>
       <button type="button" data-dv="maxxp" title="Every soldier below it goes to the top: 60 XP (Captain) for your own soldier, 40 XP (Lieutenant) for the rest. Who has more keeps it.">Max XP</button><button type="button" data-dv="zeroxp" title="Every soldier back to 0 XP (Private).">XP to 0</button>
-      <button type="button" data-dv="clear">Kill all roaming Swarm</button><button type="button" data-dv="win">Win mission</button><button type="button" data-dv="lose">Lose mission</button></div>
+      <button type="button" data-dv="clear">Kill all roaming Brood</button><button type="button" data-dv="win">Win mission</button><button type="button" data-dv="lose">Lose mission</button></div>
     <div class="dv-note">These change only this game. The other tabs hold the settings you can save.</div>`; }
 /* XP tools: every soldier of the Lunar Corps on the map (and in reserve) to the top, or back to nothing.
    Max: your own soldier 60 XP (Captain), the others 40 XP (Lieutenant); who already has more keeps it. Quiet: no radio line for each one. */

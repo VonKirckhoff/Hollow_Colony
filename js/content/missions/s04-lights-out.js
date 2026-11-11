@@ -38,7 +38,7 @@ SWARM_MISSIONS.push(
           for(const u of g.corps()){ u.order={type:'hold'}; u.stance='hold'; u.home={x:u.x,y:u.y}; }
           swarmBrood(); g.vars.hq=G.ents.find(e=>e.type==='hq'); } },
       { when:g=>g.time>1, do:g=>g.brood_say('The town hums and glows. Their machines stand in the four corners. In the dark we are many; in the light we are slow. Bite the light out.') },
-      { when:g=>g.time>4, do:g=>g.say('Cmdr. Varga','Grid is up, all four generators. Keep them running, Dust. The light keeps the Swarm off the streets.') },
+      { when:g=>g.time>4, do:g=>g.say('Cmdr. Varga','Grid is up, all four generators. Keep them running, Dust. The light keeps the Brood off the streets.') },
       { when:g=>g.time>30, do:g=>g.brood_say('When a machine dies, a mender walks out to wake it, with a few to guard him. Wait for him in the dark.') },
       /* the grid shields the Command Post; Engineers restart dead generators */
       { repeat:true, when:g=>g.time>0.3, do:g=>{ const gens=['1','2','3','4'].map(k=>g.generatorAt(k)).filter(Boolean), dark=gens.filter(e=>!e.powered).length, hq=g.vars.hq;

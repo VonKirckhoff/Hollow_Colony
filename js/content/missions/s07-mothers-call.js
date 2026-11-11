@@ -23,13 +23,13 @@ SWARM_MISSIONS.push(
       hives:['a','b','c'], hiveHp:1.6 },
     swarm:{ biomass:260, rate:1.2, guardMax:2, guardEvery:20, aggro:6, waves:null, cap:40, unlock:{ spitter:0, brute:0 } },
     objectives:[
-      { id:'mother', text:'Keep the Brood Mother alive (12:00)' },
+      { id:'mother', text:'Keep the Matron alive (12:00)' },
       { id:'wall',   text:'Keep the living wall standing: guard the three egg chambers (3/3)' }
     ],
     triggers:[
       { when:g=>g.time>0.1, do:g=>{ swarmBrood();
           g.wall('8',2.3,'lair');
-          const m=g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; m.hp=m.maxHp*MOTHER_RAID.hp; g.boss(m,'Brood Mother');
+          const m=g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; m.hp=m.maxHp*MOTHER_RAID.hp; g.boss(m,'The Matron');
           g.place('sentry','P',3,-2); g.place('sentry','P',4,1);
           for(const u of g.corps()){ u.order={type:'hold'}; u.stance='hold'; u.home={x:u.x,y:u.y}; }
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber');
@@ -46,7 +46,7 @@ SWARM_MISSIONS.push(
       /* the wall: fed by the chambers */
       { repeat:true, when:()=>true, do:g=>{ const n=['a','b','c'].filter(k=>g.hiveAt(k)).length; for(const k of ['a','b','c']) if(!g.hiveAt(k)) g.unmark('ch'+k);
           g.setText('wall',`Keep the living wall standing: guard the three egg chambers (${n}/3)`);
-          const m=g.vars.mother; if(m&&!m.dead) g.setText('mother',`Keep the Brood Mother alive (${fmtClock(g.timerLeft())}, ${Math.round(100*m.hp/m.maxHp)}% health)`);
+          const m=g.vars.mother; if(m&&!m.dead) g.setText('mother',`Keep the Matron alive (${fmtClock(g.timerLeft())}, ${Math.round(100*m.hp/m.maxHp)}% health)`);
           if(n<(g.vars.chambers??3)){ g.vars.chambers=n; if(n>0) g.brood_say(n===2?'A chamber burns. The wall thins. Two still feed it.':'Another chamber burns. One alone feeds the wall now. Guard it!'); }
           if(n===0&&!g.vars.open){ g.vars.open=true; g.fail('wall'); g.openWall('lair'); g.brood_say('The wall rots away. Nothing stands between them and the Mother. To her, all of you!');
             g.say('Cmdr. Varga','The membrane is down! Everyone into the lair!'); for(const u of g.corps()) if(!u.def.builder&&!u.def.heal){ u.retaking=null; } g.orderCorps(g.corps().filter(u=>!u.def.builder),'9','amove'); } } },

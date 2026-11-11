@@ -112,7 +112,7 @@ function launchWave(budget,aim){
     if(t){ u.order={type:'amove',x:t.x+rand(-30,30),y:t.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); } }
   if(hs.length||shafts().length) waveTactic(out);
   makePacks(out);
-  if(out.length){ SFX.play('horn'); say('Alert','Swarm movement detected. A wave is coming.','alert'); }
+  if(out.length){ SFX.play('horn'); say('Alert','Brood movement detected. A wave is coming.','alert'); }
   return out;
 }
 

@@ -13,7 +13,7 @@ MISSIONS.push(
     briefing:[
       'Containment Order 9 is in force. The raiders at Kappa were the crew of the Osprey, alive and carrying the strain. Medical says they are no longer survivors. They are vectors.',
       'They have been seen on the Selene Highlands, and an ore hauler with no flight plan is heading there. She needs an uplink beacon to land. Take all three beacons and hold them when she comes in, and she has nowhere to set down.',
-      'Sgt. Kessler goes with you. He knew some of them before the crash and he asked for this. Keep him alive. The Swarm on the Highlands does not touch them, so it will all be coming for you. Kestrel flies replacements to the Landing Zone on the plating; claim the relay pads to pay for them.'
+      'Sgt. Kessler goes with you. He knew some of them before the crash and he asked for this. Keep him alive. The Brood on the Highlands does not touch them, so it will all be coming for you. Kestrel flies replacements to the Landing Zone on the plating; claim the relay pads to pay for them.'
     ],
     job:{ koShip:300, koRethink:12, koBack:{ easy:80, normal:60, hard:45 } },
     start:{ salvage:300, camera:'P',

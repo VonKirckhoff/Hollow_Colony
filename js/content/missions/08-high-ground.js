@@ -5,9 +5,9 @@ MISSIONS.push(
     id:'high-ground', title:'High Ground', map:'high',
     summary:'Take three uplink beacons on the Selene Highlands and hold them while the data goes out.',
     briefing:[
-      'The Brood Mother is dead, but her brood still covers the Selene Highlands. Dr. Maas needs to send her research to Earth, and only the old uplink beacons on the three plateaus can reach that far.',
+      'The Matron is dead, but her brood still covers the Selene Highlands. Dr. Maas needs to send her research to Earth, and only the old uplink beacons on the three plateaus can reach that far.',
       'The beacons stand on open ground, so the brood can reach them from every side. Old mine shafts run under the four hives: burn a hive and the brood keeps coming up out of its shaft.',
-      'Capture all three beacons, then keep all three in your hands until the upload is complete. The Swarm will try to take them back. Train troops at the Command Post or order them in at the Landing Zone next to it; you can field at most twenty-four.'
+      'Capture all three beacons, then keep all three in your hands until the upload is complete. The Brood will try to take them back. Train troops at the Command Post or order them in at the Landing Zone next to it; you can field at most twenty-four.'
     ],
     limits:{ sentry:8 },
     landingZone:{ tx:47, ty:54, max:24, delay:25 },
@@ -28,7 +28,7 @@ MISSIONS.push(
       { when:g=>g.vars.phase2 && g.vars.next && g.time>g.vars.next-29.5 && !g.vars.firstWave, do:g=>{ g.vars.firstWave=true; } },
       { when:g=>g.time>0.3, do:g=>{ g.marker('u1','1','Uplink'); g.marker('u2','2','Uplink'); g.marker('u3','3','Uplink'); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Three beacons, wide open ground. Take them one at a time.') },
-      { when:g=>g.time>12, do:g=>g.say('Sgt. Kessler','Stand next to a beacon with no Swarm nearby to capture it. Twenty seconds, uncontested.') },
+      { when:g=>g.time>12, do:g=>g.say('Sgt. Kessler','Stand next to a beacon with no Brood nearby to capture it. Twenty seconds, uncontested.') },
       { when:g=>g.time>20, do:g=>{ g.say('Dropship Kestrel','Kestrel on station. The Landing Zone next to the Command Post takes reinforcement orders. Twenty-four boots max.'); g.ping({x:48,y:55}); } },
       { when:g=>g.time>30, do:g=>g.say('Dr. Maas','The beacons have no cover around them. A Sentry Gun next to each one will hold a lot.') },
       { repeat:true, when:g=>!g.vars.phase2, do:g=>{ const n=g.uplinks(); g.setText('take',`Capture the three uplink beacons (${n}/3)`);
