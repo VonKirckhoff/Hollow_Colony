@@ -46,6 +46,18 @@ with sync_playwright() as p:
           const hits=V3.ray.intersectObjects([V3.terrain,V3.objs.get(d)],true); const first=hits[0]; let o=first&&first.object; while(o&&!o.userData.ent&&o!==V3.terrain) o=o.parent;
           d.dead=true; return [x,y,o===V3.terrain?'rock':'drone']; } } return null; }""")
     check('rock hides what is behind it', r and r[2]=='rock', r)
+    # turn the camera a quarter: the ground under the mouse still matches, the arrow keys move along the turned view
+    J(pg,"()=>{ turnView3D(90); }"); pg.wait_for_timeout(1500)
+    check('camera turned', abs(J(pg,"()=>V3.yawR*180/Math.PI")-90)<3, J(pg,"()=>V3.yawR*180/Math.PI"))
+    r=J(pg,"""()=>{ const G=__hc.G, x=(G.cam.x+ui.vw/2), y=(G.cam.y+(ui.vh-ui.hudH)/2); const s=v3Screen(x,y,0), w=v3Pick(s.x,s.y,false); return Math.round(Math.hypot(w.x-x,w.y-y)); }""")
+    check('pick the ground, turned', r<6, r)
+    p0=J(pg,"()=>{ const u=__hc.G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'); window._pu=u; const s=v3Screen(u.x,u.y,0); return [s.x,s.y]; }")
+    pg.keyboard.down('ArrowRight'); pg.wait_for_timeout(300); pg.keyboard.up('ArrowRight'); pg.wait_for_timeout(100)
+    p1=J(pg,"()=>{ const u=window._pu, s=v3Screen(u.x,u.y,0); return [s.x,s.y]; }")
+    check('arrow right moves the view right (the world slides left)', p1[0]<p0[0]-40 and abs(p1[1]-p0[1])<40, [p0,p1])
+    J(pg,"()=>{ const u=window._pu; bark(u,'move'); G.fx.push({k:'casing',x:u.x,y:u.y,t:2,max:2,vx:0,vy:0}); u.burnT=1; }") if False else J(pg,"()=>{ const u=window._pu; try{ bark(u,'move'); }catch(e){} u.burnT=1; render(performance.now()); }")
+    pg.keyboard.press('Home'); pg.wait_for_timeout(1200)
+    check('Home sets it straight', abs(J(pg,"()=>V3.yawR"))<0.05, J(pg,"()=>[V3.yaw,V3.yawR,ui.mode]"))
     # dark mission lights, a building being placed, then back to 2D
     J(pg,"()=>{ render(performance.now()); }")
     pg.keyboard.press('F3'); pg.wait_for_timeout(300)
