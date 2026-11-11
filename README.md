@@ -426,6 +426,16 @@ De Swarm wil Dr. Maas boven alles (`SWARM_VIP` in js/engine/08-combat.js): in ee
 ### Camera volgen
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
 
+### 3D-weergave (prototype)
+Met **F3** of de knop **2D / 3D** bovenaan schakel je tijdens een missie tussen de gewone kaart en een 3D-weergave, in de stijl van *Aliens versus Predator: Extinction*. Het is hetzelfde gevecht: zelfde regels, zelfde bevelen, je kunt op elk moment terugschakelen. Je keuze wordt onthouden (`hc-view3d`).
+- **Terrein in 3D.** Rots (`#`), hoge rots (`^`), kristal (`*`) en kliffen (`%`) staan recht; plateaus liggen hoger, kraterbodems lager, kraterranden zijn een lage wal waar je overheen kijkt. De grond houdt de geschilderde textuur van de 2D-kaart.
+- **Rots verbergt wat erachter staat.** Een vijand achter een rotswand zie je niet vanuit de camera. Je eigen soldaten achter rots verschijnen als een groene schim (xray), zodat je ze niet kwijtraakt.
+- **Modellen** voor alle soldaten (rol herkenbaar: Gunner met rotatiekanon, Pyro met tanks, Medic met wit, Engineer met gele rugzak; de Osprey-bemanning in zwart/donkerbruin met rode armband), de Swarm (Crawler, Drone, Spitter, Brute, Bloater, Husk, Grafter, Seedling, Brood Mother), grazers en de gebouwen. Wat nog geen model heeft, staat er als rechtopstaande pixel-sprite.
+- **Licht en schaduw.** Een lage zon met lange schaduwen; in donkere missies enkel helmlampen en draaiende generatoren. Fog of war en de schimmel van de Swarm kleuren de grond zoals in 2D.
+- **Besturing** zoals in 2D: klikken, slepen voor een selectiekader, rechtsklikken, randscrollen, pijltjestoetsen, minimap en camera volgen. Het **muiswiel** zoomt in en uit. In 3D kan de camera tot aan de rand van de kaart kijken.
+- **Prototype:** het zicht van de soldaten (fog of war) en de vuurlijn rekenen nog zoals in 2D; de 3D-rotsen verbergen enkel voor het oog. Draaien met de camera kan nog niet. Barks, de motion tracker en enkele kleine animaties tonen enkel in 2D.
+- Code: js/engine/33-view3d.js (THREE.js in js/vendor/three.min.js, MIT-licentie). De instelbare waarden staan in `VIEW3D` (dev-paneel, tab *Effects*): camerahoek en -afstand, hoogtes van het terrein, licht, grootte van de modellen, sterkte van de xray.
+
 ### Geluid
 **Muziek.** Op de menuschermen speelt zacht een soundtrack die, net als de geluiden, live in de browser wordt opgewekt (Web Audio, geen audiobestanden). Tijdens een missie zwijgt ze, tenzij je bovenaan op **Music** klikt: dan speelt je menumuziek (of shuffle/autoplay) zachter op de achtergrond, op 45% van het muziekvolume (`GAME_MUSIC_LEVEL` in js/engine/24-music.js). Die keuze wordt onthouden (`hc-game-music`). De muziek wordt een paar keer per seconde vooruit ingepland; dat vraagt weinig van de computer. Rechtsonder op de menuschermen: **♫ Tracks** (de muziekspeler), *Music on/off* en een volumeschuif (standaard 30%). Browsers laten pas geluid toe na een klik of toets; daarom opent het spel op een **startscherm** (*Click or press any key*), en met die eerste klik begint de muziek meteen. Staat de muziek uit, of laat de browser geluid al toe, dan valt het startscherm weg. Naast de knoppen staat een **now playing**-balkje: titel, deel, tijd en een voortgangsbalkje; het licht op als er een ander stuk begint (handig bij shuffle) en opent de muziekspeler als je erop klikt.
 
@@ -709,6 +719,8 @@ js/engine/                      SECTION 2 — ENGINE, in genummerde blokken
                                 (26-swarm-command.js: spelen als de Swarm, de Lunar Corps als computer)
                                 (27-training.js: één wezen besturen van ei tot hive)
                                 (31-rogue.js: Rogue Strain, de Osprey-bemanning, DNA, taint, de loyale Corps)
+                                (33-view3d.js: de 3D-weergave, F3; tekent hetzelfde spel met THREE.js)
+js/vendor/three.min.js          THREE.js (MIT) voor de 3D-weergave
 map-editor/                     de kaarteditor (leest de kaarten uit js/content/maps/)
 ```
 
@@ -910,6 +922,7 @@ De meeste waarden staan in `js/content/units.js`. Uitzonderingen: `FORMATION` st
   - `hc-diff`: moeilijkheidsgraad
   - `hc-mute`: geluid aan/uit
   - `hc-follow`: camera volgen aan/uit
+  - `hc-view3d`: 2D- of 3D-weergave
   - `hc-custom-maps`: kaarten die je via *Load map code* hebt toegevoegd
 
   Wis de sitegegevens van je browser om opnieuw te beginnen.
