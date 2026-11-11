@@ -1,7 +1,7 @@
 'use strict';
 /* Training (the Swarm): The First Hunger, in Kappa Basin. Every order of the Brood, step by step.
    Hives → hatching → the gathering point → steering a selection → a grazer and the Bloater → soldiers, the fallen, egg and Grafter
-   → the Husk → the top bar → burrowing → tearing down an outpost. Press N to skip a step. Brood Tactics (t-swarm-tactics.js) goes on from here.
+   → the Husk → the top bar → burrowing → tearing down an outpost. Press N to skip a step. Brood Tactics (t-brood-tactics.js) goes on from here.
    Every step has a demo(g,D) for Watch mode (27b-demo.js): what the demo does to show the step. */
 /* FIRST_HUNGER: preyEvery = seconds before a new pair of soldiers wanders into the open once the last ones are down · prey = how many come
    · huskMax = no new prey while this many soldiers are turned or turning (bodies on the field, cocoons, Twitchers and Husks):

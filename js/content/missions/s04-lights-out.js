@@ -1,7 +1,7 @@
 'use strict';
 /* Swarm mission 4: Lights Out — Blackout, seen from the hives.
    The Lunar Corps has lit Mare Colony again: four generators in the corners, a Command Post in the square below.
-   Light hurts the Brood (mission.lightBlind: slow and clumsy in a lit street, see 26b-swarm-missions.js), and in the dark it sees less.
+   Light hurts the Brood (mission.lightBlind: slow and clumsy in a lit street, see 26b-brood-missions.js), and in the dark it sees less.
    A generator bitten to pieces goes dead; an Engineer with an escort comes out to restart it (lure them).
    The grid also shields the Command Post: as long as any of the four runs, it cannot be harmed.
    Win: tear down the Command Post. Lose: every nest burnt. */

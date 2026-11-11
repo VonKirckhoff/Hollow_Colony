@@ -29,7 +29,7 @@ function trackerContacts(ref){
 }
 function drawTracker(now){
   if(!ui.tracker||!G||G.over) return;
-  if(G.side==='swarm') return drawHiveSense(now);   /* playing the Swarm: Hive Sense instead (26-swarm-command.js) */
+  if(G.side==='swarm') return drawHiveSense(now);   /* playing the Swarm: Hive Sense instead (26-brood-command.js) */
   const S=SQUAD.tracker.size, cx=ui.vw-S-22, cy=ui.vh-ui.hudH-S-22, ref=trackerRef(), cs=trackerContacts(ref), sweep=(now/1000*2.2)%(Math.PI*2);
   ctx.save();
   ctx.fillStyle='rgba(6,14,10,.82)'; ctx.beginPath(); ctx.arc(cx,cy,S,0,Math.PI*2); ctx.fill();

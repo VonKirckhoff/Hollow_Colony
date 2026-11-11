@@ -2,7 +2,7 @@
 /* Swarm mission 8: Seed the Moon — Tycho Maw, seen from the hives.
    The Mother lives. Now the Brood must spread across the crater before the Lunar Corps sterilises it from orbit.
    From SEED_RAIN.first seconds on, a strike from orbit falls every SEED_RAIN.every seconds: a red circle and a SCORCH countdown
-   (scorchAt in 26b-swarm-missions.js), mostly on a nest (the one hit longest ago), sometimes on the thickest part of the brood.
+   (scorchAt in 26b-brood-missions.js), mostly on a nest (the one hit longest ago), sometimes on the thickest part of the brood.
    Grow new nests from Seedlings (up to SEED_RAIN.seeds of them) and from the three old eggs on the crater floor.
    Their camp in the south sends fire teams for the nest nearest to it.
    Win: SEED_RAIN.goal nests alive when the clock runs out. Lose: every nest burnt. */
