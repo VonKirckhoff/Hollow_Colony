@@ -24,16 +24,11 @@
     <div class="res mission-tag" id="r-mission"><b id="r-mtitle"></b><span class="lbl" id="r-mode"></span></div>
     <span id="clock">00:00</span>
     <button class="tb-btn" id="btn-follow" type="button" data-tip="Camera follow|The camera moves along with your squad after an order. Key C.">Follow on</button>
-    <button class="tb-btn hide-sm" id="btn-tracker" type="button" data-tip="Motion tracker|Shows moving Swarm near your selected squad and beeps faster as they close in. Key K.">Tracker on</button>
-    <button class="tb-btn hide-sm" id="btn-voices" type="button" data-tip="Voices|Soldiers speak their lines out loud, using your browser's speech voices. Key O.">Voices on</button>
-    <label class="tb-vol hide-sm" data-tip="Voice volume|How loud the soldiers speak."><span class="lbl">Vol</span><input type="range" id="voice-vol" min="0" max="100" step="5" aria-label="Voice volume"></label>
-    <button class="tb-btn hide-sm" id="btn-gmusic" type="button" data-tip="Music|The soundtrack softly in the background while you play. Pick the track in the music player on the menu screens.">Music off</button>
-    <button class="tb-btn" id="btn-sound" type="button">Sound on</button>
     <button class="tb-btn" id="btn-view" type="button" data-tip="2D / 3D view|Switch between the flat map and the 3D view (prototype). In 3D, rock hides what stands behind it; mouse wheel zooms. Key F3.">2D</button>
     <button class="tb-btn" id="btn-turn-l" type="button" style="display:none" data-tip="Turn left|Turn the 3D camera a quarter to the left. Middle mouse drag turns and tilts freely; Home sets it straight.">⟲</button>
     <button class="tb-btn" id="btn-turn-r" type="button" style="display:none" data-tip="Turn right|Turn the 3D camera a quarter to the right. Middle mouse drag turns and tilts freely; Home sets it straight.">⟳</button>
     <button class="tb-btn hide-sm" id="btn-speed" type="button">1×</button>
-    <button class="tb-btn" id="btn-menu" type="button">Menu</button>
+    <button class="tb-btn" id="btn-menu" type="button" data-tip="Menu|Pause, save, settings (light and sound), field manual, restart or quit. Key P or Esc.">Menu</button>
   </div>
   <div id="comms"></div>
   <div id="bossbar" hidden><span id="boss-name">BOSS</span><div class="bbar"><i id="boss-hp"></i></div></div>
@@ -73,6 +68,7 @@
       <button class="menu-btn" type="button" data-go="skirmish">Skirmish <small>Pick a map, destroy every hive</small></button>
       <button class="menu-btn" type="button" data-go="manual">Field manual <small>Controls and factions</small></button>
       <button class="menu-btn" type="button" data-go="intel">Intel <small>Every soldier, structure and enemy</small></button>
+      <button class="menu-btn" type="button" data-go="settings">Settings <small>Light and sound</small></button>
     </div>
     <div class="foot">Prototype v0.1<br>© 2026 VonKirckhoff. All rights reserved.</div>
   </div>
@@ -180,7 +176,7 @@
       <div class="mgroup"><h3>View and sound</h3><dl class="manual">
         <dt>Arrows, edge</dt><dd>Scroll. Middle-drag also works; click or drag the minimap to jump.</dd>
         <dt>Space</dt><dd>Jump to the latest alert.</dd>
-        <dt>C / K / O</dt><dd>Camera follow, motion tracker, voices on/off.</dd>
+        <dt>C / O</dt><dd>Camera follow on/off, voices on/off. Light and sound: Menu → Settings.</dd>
         <dt>P / Esc</dt><dd>Pause. Esc also cancels a pending click.</dd>
       </dl></div>
     </div>
@@ -277,10 +273,34 @@
     <div class="menu-list">
       <button class="menu-btn" type="button" id="p-resume">Resume</button>
       <button class="menu-btn" type="button" id="p-save">Save game <small>One slot: replaces the last save</small></button>
+      <button class="menu-btn" type="button" id="p-settings">Settings <small>Light and sound</small></button>
       <button class="menu-btn" type="button" id="p-manual">Field manual</button>
       <button class="menu-btn" type="button" id="p-restart">Restart mission</button>
       <button class="menu-btn" type="button" id="p-quit">Quit to menu</button>
     </div>
+  </div>
+</section>
+
+<!-- SETTINGS: light and sound -->
+<section class="screen" id="s-settings" hidden>
+  <div class="sheet settings">
+    <div class="eyebrow">SETTINGS</div>
+    <h2 class="h">Light and sound</h2>
+    <div class="set-grid">
+      <div class="set-col">
+        <div class="lbl">Light</div>
+        <div id="set-light"></div>
+        <button class="tb-btn" type="button" id="set-light-reset" data-tip="Reset light|Every light setting back to how the game comes.">Reset light</button>
+      </div>
+      <div class="set-col">
+        <div class="lbl">Sound</div>
+        <div class="set-row"><span>Music in missions</span><button class="tb-btn" id="btn-gmusic" type="button" data-tip="Music|The soundtrack softly in the background while you play. Pick the track in the music player on the menu screens.">Music off</button></div>
+        <div class="set-row"><span>Sound effects</span><button class="tb-btn" id="btn-sound" type="button" data-tip="Sound|Mutes or unmutes every sound in the game.">Sound on</button></div>
+        <div class="set-row"><span>Soldiers' voices <small>key O</small></span><button class="tb-btn" id="btn-voices" type="button" data-tip="Voices|Soldiers speak their lines out loud, using your browser's speech voices. Key O.">Voices on</button></div>
+        <label class="set-row tb-vol"><span>Voice volume</span><input type="range" id="voice-vol" min="0" max="100" step="5" aria-label="Voice volume"></label>
+      </div>
+    </div>
+    <div class="menu-list"><button class="menu-btn" type="button" id="settings-back">Back</button></div>
   </div>
 </section>
 
@@ -439,7 +459,8 @@
 <script src="js/engine/27b-demo.js"></script>
 <script src="js/engine/32-osprey.js"></script>   <!-- before the dev panel: it lists OSPREY -->
 <script src="js/vendor/three.min.js"></script>   <!-- THREE.js (MIT), for the 3D view -->
-<script src="js/engine/33-view3d.js"></script>   <!-- the 3D view (prototype); before the dev panel: it lists VIEW3D -->
+<script src="js/engine/33-view3d.js"></script>
+<script src="js/engine/34-settings.js"></script>   <!-- Menu → Settings: light and sound -->   <!-- the 3D view (prototype); before the dev panel: it lists VIEW3D -->
 <script src="js/engine/28-dev-help.js"></script>
 <script src="js/engine/28-dev.js"></script>
 <script src="js/engine/29-relics.js"></script>

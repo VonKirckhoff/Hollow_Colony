@@ -45,7 +45,7 @@ with sync_playwright() as p:
       { const lone=makeUnit('trooper','corps',45*32,36*32); const cs=senseContacts({x:45*32,y:30*32}); const k=cs.find(c=>c.e===lone);
         ok(k&&k.kind==='easy','Hive Sense: a lone soldier is easy prey (orange)'); const inr=G.vars.drill.find(u=>!u.dead&&!u.downed&&inRing(u)); ok(inr&&!easyPrey(inr),'a drill soldier in his ring is not');
         const sv={x:inr.x,y:inr.y}; inr.x=drillCentre().x+9*32; ok(easyPrey(inr),'out of his ring he is'); inr.x=sv.x; inr.y=sv.y; lone.dead=true;
-        trackerLabel(); ok(/Sense/.test(document.getElementById('btn-tracker').textContent),'the button says Sense'); }
+        trackerLabel(); ok(ui.tracker===true,'Hive Sense is always on (no button since Nov 2026)'); }
       /* 2c. a soldier chases a lone biter, and turns back at chaseR */
       const tr=G.vars.drill.find(u=>u.type==='trooper'&&!u.dead&&!u.downed); const c0=drillCentre(); const ang=0; tr.x=c0.x+3*32; tr.y=c0.y; tr.dhome={x:tr.x,y:tr.y};
       const bx=c0.x+Math.cos(ang)*(BROOD_TACTICS.ring-0.5)*32, by=c0.y+Math.sin(ang)*(BROOD_TACTICS.ring-0.5)*32;

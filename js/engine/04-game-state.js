@@ -17,7 +17,7 @@ function recordWin(id,diff,time,flawless){ const P=ui.progress, r=P.results[id],
   if(flawless && (!n.flawless || DIFF_RANK[diff]>DIFF_RANK[n.flawless])) n.flawless=diff;   /* won without losing a soldier: the best difficulty it was done on */
   store.set('hc-progress',P); }
 const ui={ mode:'menu', mouse:{x:0,y:0,wx:0,wy:0,inWin:false}, drag:null, pan:null, placing:null, amove:false, keys:{}, dpr:1, vw:0, vh:0, hudH:0,
-  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:store.get('hc-tracker',true), voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.3), zombie:store.get('hc-zombie',false), campSide:store.get('hc-camp-side','corps'), skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
+  diff:store.get('hc-diff','normal'), follow:store.get('hc-follow',true), tracker:true, voices:store.get('hc-voices',true), voiceVol:store.get('hc-voice-vol',0.3), zombie:store.get('hc-zombie',false), campSide:store.get('hc-camp-side','corps'), skMap:'kappa', progress:loadProgress(), roster:null /* loaded at boot (23-main-loop.js) */, lastClick:{id:0,t:0}, menuCam:{x:0,y:0} };
 let NEXT_ID=1;
 
 function newGame(mission, diffKey){

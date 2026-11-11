@@ -44,10 +44,11 @@ const ART = {
     oval(x,10,10,9,5,P.k); oval(x,10,10,8,4,P.C); oval(x,9,9,6,3,P.p); oval(x,15,9,3,3,P.k); oval(x,15,9,2,2,P.A); x.fillStyle=P.a; x.fillRect(15,8,2,1);
     x.fillStyle=P.e; x.fillRect(4,10,5,1); x.fillRect(8,8,1,4); x.fillRect(11,11,3,1); x.fillRect(12,7,1,2); x.fillStyle=P.E; x.fillRect(5,8,2,1); x.fillRect(10,12,2,1);
     x.fillStyle=P.c; x.fillRect(2,13,3,1); x.fillRect(16,14,2,1); return c; },
-  /* a hive egg: a leathery pod with a lid of four petals */
+  /* a brood bulb: a round fungal pod with light in its veins and a curled sprout on top */
   egg(){ const [c,x]=pxCtx(12,14); const P=PALETTE;
-    oval(x,6,8,5,6,P.k); oval(x,6,8,4,5,P.C); oval(x,5,7,2,3,P.p); x.fillStyle=P.c; x.fillRect(3,2,6,1); x.fillRect(5,1,2,2);
-    x.fillStyle=P.e; x.fillRect(6,3,1,2); x.fillRect(4,10,1,2); x.fillRect(8,7,1,3); x.fillStyle=P.k; x.fillRect(4,13,4,1); return c; },
+    oval(x,6,9,5,5,P.k); oval(x,6,9,4,4,P.C); oval(x,5,8,2,2,P.p); oval(x,9,11,2,2,P.k); oval(x,9,11,1,1,P.p);
+    x.fillStyle=P.k; x.fillRect(5,2,3,3); x.fillRect(7,1,3,2); x.fillStyle=P.p; x.fillRect(6,3,1,2); x.fillRect(7,2,2,1); x.fillRect(9,2,1,1);
+    x.fillStyle=P.e; x.fillRect(3,9,1,1); x.fillRect(7,8,1,1); x.fillRect(5,11,1,1); x.fillRect(8,10,1,1); x.fillStyle=P.k; x.fillRect(3,13,6,1); return c; },
   cocoon(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
     oval(x,8,9,5,6,P.k); oval(x,8,9,4,5,P.C); oval(x,7,7,2,3,P.p); x.fillStyle=P.e; x.fillRect(9,8,1,4); x.fillRect(6,11,3,1); return c; },
   lz(){ const [c,x]=pxCtx(48,48); const P=PALETTE;

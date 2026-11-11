@@ -276,11 +276,11 @@ function grafterThink(u,dt){ u.flash=Math.max(0,u.flash-dt); u.anim+=dt; u.movin
 /* an egg on the map: it breathes, and shudders open when its Grafter is needed */
 function drawEgg(b,art,now){ const opening=b.openT!=null, p=opening?1-b.openT/EGG.open:0, s=1+Math.sin(now/500+b.id)*0.04+(opening?0.12*p:0), jx=opening?rand(-1.5,1.5):0;
   const w=art.width*2*s, h=art.height*2*s; ctx.drawImage(art,Math.round(b.x-w/2+jx),Math.round(b.y-h+6),Math.round(w),Math.round(h));
-  if(opening){ const tx=b.x+jx, ty=b.y-h+9;   /* the four petals of the lid peel open, goo drips, a glow inside */
-    ctx.fillStyle=`rgba(166,255,74,${0.35+0.5*p})`; ctx.fillRect(Math.round(tx-2-2*p),Math.round(ty-1),Math.round(4+4*p),3);
-    for(let i=0;i<4;i++){ const a=-Math.PI/2+(i-1.5)*(0.35+0.55*p), L=4+6*p; ctx.save(); ctx.translate(Math.round(tx),Math.round(ty)); ctx.rotate(a+Math.PI/2);
-      ctx.fillStyle='#0a0b10'; ctx.fillRect(-3,-L-1,6,L+1); ctx.fillStyle='#45304f'; ctx.fillRect(-2,-L,4,L); ctx.fillStyle='#7a5a8e'; ctx.fillRect(-1,-L,2,Math.ceil(L/2)); ctx.restore(); }
-    for(let i=0;i<2;i++){ const d=(now/700+i*0.5+b.id)%1; ctx.fillStyle='#a6ff4a'; ctx.fillRect(Math.round(tx-3+i*6),Math.round(ty+2+d*h*0.5),2,2); } } }
+  if(opening){ const tx=b.x+jx, ty=b.y-h+10;   /* the bulb splits along a glowing seam and breathes out a cloud of spores */
+    ctx.fillStyle=`rgba(166,255,74,${0.35+0.5*p})`; ctx.fillRect(Math.round(tx-3-2*p),Math.round(ty+4),Math.round(6+4*p),2);
+    for(let i=0;i<7;i++){ const d=(now/900+i/7+b.id*0.13)%1, a=i*2.4; ctx.globalAlpha=(1-d)*(0.4+0.6*p); ctx.fillStyle=i%2?'#a6ff4a':'#c58cff';
+      ctx.fillRect(Math.round(tx+Math.cos(a)*d*10*p),Math.round(ty+4-d*16*p),2,2); }
+    ctx.globalAlpha=1; } }
 
 /* ---------- a hive's death: the last scream ----------
    A burnt hive does not just blow up. For HIVE_DEATH.scream seconds it shakes harder and harder, its heart races,

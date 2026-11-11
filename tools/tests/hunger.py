@@ -11,8 +11,8 @@ with sync_playwright() as p:
       const ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m); try{
       const S=G.tutSteps||TRAINING.swarm.triggers; step(1);
       const steps=G.tutSteps; const idx=t=>steps.findIndex(s=>(s.obj||'').includes(t));
-      ok(steps.length===21,'21 steps ('+steps.length+')'); ok(!steps.some(st=>/drill|Lure|Two teams/.test(st.obj||'')),'no drill, lure or teams steps (those are in Brood Tactics)'); ok(!steps.some(st=>(st.keys||[]).includes('T')),'no tactic key any more'); ok(!/roots into a new hive/.test(steps[idx('Watch it grow')].say),'step 10 no longer talks about new hives');
-      ok(/Save game/.test(steps[idx('Open the menu')].say),'menu step mentions Save game');
+      ok(steps.length===19,'19 steps ('+steps.length+')'); ok(!steps.some(st=>/drill|Lure|Two teams/.test(st.obj||'')),'no drill, lure or teams steps (those are in Brood Tactics)'); ok(!steps.some(st=>(st.keys||[]).includes('T')),'no tactic key any more'); ok(!/roots into a new hive/.test(steps[idx('Watch it grow')].say),'step 10 no longer talks about new hives');
+      ok(/Save game/.test(steps[idx('Menu (P)')].say)&&/Settings/.test(steps[idx('Menu (P)')].say),'menu step mentions Save game and Settings');
       ok(G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'&&Math.hypot(e.x/32-19.5,e.y/32-20.5)<8).length>=2,'two guards at the outpost ('+G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit').map(e=>Math.round(e.x/32)+','+Math.round(e.y/32)).join(' ')+')'); ok(!G.rings||!G.rings.length,'no drill ring here');
       /* 1. prey keeps coming */
       const prey0=G.vars.prey.slice(); for(const u of prey0) goDown(u,null);

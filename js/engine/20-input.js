@@ -86,7 +86,7 @@ $('#btn-sound').addEventListener('click',()=>{ uiUsed('sound'); SFX.toggle(); so
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
 function toggleFollow(){ uiUsed('follow'); ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
 $('#btn-follow').addEventListener('click',toggleFollow); followLabel();
-$('#btn-tracker').addEventListener('click',()=>toggleTracker()); $('#btn-voices').addEventListener('click',()=>toggleVoices());   /* label set at boot (23-main-loop.js) */
+$('#btn-voices').addEventListener('click',()=>toggleVoices());   /* label set at boot (23-main-loop.js) */
 $('#btn-speed').addEventListener('click',()=>{ if(!G) return; uiUsed('speed'+(G.speed===1?'1.5':G.speed===1.5?'2':'1')); G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
 function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.target.closest('[data-tip]'); if(!el){ tip.hidden=true; return; }
   const [t,b]=el.dataset.tip.split('|'); tip.innerHTML=`<b>${t}</b>${b||''}`; tip.hidden=false; const r=tip.getBoundingClientRect();
@@ -104,7 +104,6 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ if(ui.picking){ ui.picking=null; cv.classList.remove('amove'); G.selDirty=true; } else if(ui.placing){ ui.placing=null; G.selDirty=true; } else if(ui.amove){ ui.amove=false; cv.classList.remove('amove'); G.selDirty=true; } else pause(true); return; }
   if(k==='p'){ pause(true); return; }
   if(k==='c' && !e.ctrlKey && !e.metaKey){ toggleFollow(); return; }
-  if(k==='k' && !e.ctrlKey && !e.metaKey){ toggleTracker(); return; }
   if(k==='o' && !e.ctrlKey && !e.metaKey){ toggleVoices(); return; }
   /* control groups 1–5, by key position so AZERTY works too: Ctrl+N saves the selection as group N, Ctrl+Shift+N adds it to group N,
      N selects the group (twice: the camera jumps to it). A soldier may be in more than one group. */

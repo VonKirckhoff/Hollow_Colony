@@ -107,7 +107,7 @@ function render(now){
   // vignette
   const g=ctx.createRadialGradient(ui.vw/2,ui.vh/2,Math.min(ui.vw,ui.vh)*0.4,ui.vw/2,ui.vh/2,Math.max(ui.vw,ui.vh)*0.75); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.45)'); ctx.fillStyle=g; ctx.fillRect(0,0,ui.vw,ui.vh);
   drawHurtEdge(); drawTracker(now);
-  if(G.paused&&!G.over){ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,ui.vw,ui.vh); }
+  if(G.paused&&!G.over&&$('#s-settings').hidden){ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,ui.vw,ui.vh); }
 }
 function drawStars(cam){ ctx.fillStyle='#2a2d3a'; for(let i=0;i<70;i++){ const x=((hash2(i,1,9)*ui.vw*2-cam.x*0.05)%ui.vw+ui.vw)%ui.vw, y=((hash2(i,2,9)*ui.vh*2-cam.y*0.05)%ui.vh+ui.vh)%ui.vh; ctx.fillRect(x|0,y|0,1+(i%3===0),1); } }
 function drawUnit(u){

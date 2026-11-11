@@ -37,7 +37,7 @@ let fogCanvas=null, fogCtx=null, fogImg=null;
 function paintFog(){
   const m=G.map;
   if(!fogCanvas||fogCanvas.width!==m.w||fogCanvas.height!==m.h){ [fogCanvas,fogCtx]=pxCtx(m.w,m.h); fogImg=fogCtx.createImageData(m.w,m.h); }
-  const d=fogImg.data, seenA=G.mission.dark?238:150;   /* in the dark, what you saw earlier fades almost to black */
+  const d=fogImg.data, seenA=Math.min(250,Math.round((G.mission.dark?238:150)*(ui.fogDark??1)));   /* in the dark, what you saw earlier fades almost to black */
   for(let i=0;i<m.w*m.h;i++){ d[i*4]=5; d[i*4+1]=6; d[i*4+2]=10; d[i*4+3]=G.vis[i]?0:(G.seen[i]?seenA:250); }
   fogCtx.putImageData(fogImg,0,0);
 }
