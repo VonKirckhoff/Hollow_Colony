@@ -16,19 +16,25 @@ CASES=[
   ok(G.vars.cases.length===3&&G.vars.cases.every(c=>c.stab===1),'a case of stabilizer at every tent'); { const lz=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'), rt=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.type==='relay'); ok(!!lz&&!!rt,'a relief pad and a Relay Tower for the hospital');
     ok(lz&&rt&&Math.abs(lz.x-rt.x)<TILE&&lz.y>rt.y&&lz.y-lz.size*TILE/2===rt.y+rt.size*TILE/2,'the pad lies right under the tower, south of the camp'); }
   { const ring=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'&&e.ringer), f=ring.filter(u=>!u.def.heal&&!u.def.builder), c={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, ds=f.map(u=>Math.hypot(u.x-c.x,u.y-c.y)/TILE);
-    ok(ring.length>=9&&ring.every(u=>u.order&&u.order.type==='hold'),'the garrison holds in a ring ('+ring.length+')'); ok(Math.min(...ds)>1.5&&Math.max(...ds)<3.2,'fighters on the ring ('+ds.map(d=>d.toFixed(1)).join(' ')+')');
+    ok(ring.length===7&&ring.every(u=>u.order&&u.order.type==='hold'),'the garrison holds in a ring ('+ring.length+')'); ok(Math.min(...ds)>1.5&&Math.max(...ds)<3.2,'fighters on the ring ('+ds.map(d=>d.toFixed(1)).join(' ')+')');
     ok(ring.filter(u=>u.def.heal||u.def.builder).every(u=>Math.hypot(u.x-c.x,u.y-c.y)<1.4*TILE),'Medics and the Engineer inside it'); }
   ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit').length>=8,'the hospital garrison'); ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry').length===2,'two Sentry Guns'); ok(G.vars.alarm==null&&!G.timer,'quiet until someone is seen');'''),
 ('needle: download, alarm, relief squads','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()) u.invuln=true; const d=crew().find(u=>u.def.heal); for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='building') e.dead=true;
-  for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='unit') e.dead=true;
-  tp(d,21,18); step(2); ok(G.vars.dlStart&&G.vars.alarm!=null,'Devreese at the terminal: the hospital raises the alarm'); ok(G.timer&&G.timer.label==='Relief squad','a relief squad is coming'); const p1=G.vars.dl; ok(p1>0.02&&p1<0.1,'the download runs ('+Math.round(p1*100)+'%)');
-  tp(d,30,30); step(3); ok(Math.abs(G.vars.dl-p1)<0.06,'she walks away: it stops'); tp(d,21,18);
-  step(G.mission.job.firstWave); ok(G.vars.sent===1,'the first relief squad lands'); const sq=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'); const fresh=sq.filter(u=>u.ringAt); ok(fresh.length>=4&&fresh.every(u=>!u.hunter),'the relief squad does not hunt: it gets a place in the ring ('+fresh.length+')');
-  step(12); ok(fresh.every(u=>u.dead||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<TILE),'walks into the camp and joins the ring'); ok(fresh.every(u=>u.dead||Math.hypot(u.ringAt.x-NT_RING.x*TILE,u.ringAt.y-NT_RING.y*TILE)<4*TILE),'round the middle of the camp');
-  for(const u of sq) u.invuln=true; tp(d,21,18); for(let i=0;i<50&&!G.vars.dlDone;i++){ tp(d,21,18); step(1); } ok(G.vars.dlDone&&obj('records')==='done'&&G.rogue.formula,'the files: Maas\\'s formula');
-  ok(obj('stab')==='active'&&!G.rogue.exitOpen,'shaft shut until the cases are taken'); for(const c of G.vars.cases){ tp(d,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); step(0.4); } step(1);
+  const ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), J=G.mission.job; let most=0; const watch=s=>{ for(let i=0;i<s*30&&!G.over;i++){ __hc.update(1/30); if(i%15===0){ most=Math.max(most,G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit').length); for(const e of G.ents) if(!e.dead&&e.faction==='loyal'&&e.kind==='unit') types.add(e.type); } } }, types=new Set();
+  ok(G.vars.ringMax===7&&ring().length===7,'the ring starts with 7 men ('+ring().length+')'); ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'&&e.patrol&&!e.ringer).length===2,'and a patrol of 2 outside it');
+  for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='unit'&&!e.ringer) e.dead=true;
+  tp(d,21,18); watch(2); ok(G.vars.dlStart&&G.vars.alarm!=null,'Devreese at the terminal: the hospital raises the alarm'); ok(!G.timer&&G.vars.dueAt==null,'no relief yet: the ring is whole'); const p1=G.vars.dl; ok(p1>0.02&&p1<0.1,'the download runs ('+Math.round(p1*100)+'%)');
+  tp(d,30,30); watch(3); ok(Math.abs(G.vars.dl-p1)<0.06,'she walks away: it stops'); tp(d,21,18);
+  ring().slice(0,J.lostFor-1).forEach(u=>u.dead=true); watch(3); ok(G.vars.dueAt==null,(J.lostFor-1)+' fallen: still no call');
+  ring()[0].dead=true; watch(1); ok(G.vars.dueAt!=null&&G.timer&&G.timer.label==='Relief squad',J.lostFor+' fallen: the hospital calls a relief squad');
+  const before=new Set(ring()); watch(J.call+1); ok(G.vars.sent===1,'the first relief squad lands'); const fresh=ring().filter(u=>!before.has(u));
+  ok(fresh.length===J.lostFor&&ring().length===G.vars.ringMax,'it fills the ring back up to 7, no more ('+fresh.length+' new)'); ok(fresh.every(u=>!u.hunter),'the relief squad does not hunt');
+  watch(12); ok(fresh.every(u=>u.dead||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<TILE),'walks into the camp and joins the ring'); ok(fresh.every(u=>u.dead||Math.hypot(u.ringAt.x-NT_RING.x*TILE,u.ringAt.y-NT_RING.y*TILE)<4*TILE),'round the middle of the camp');
+  for(const u of G.ents) if(u.faction==='loyal') u.invuln=true; tp(d,21,18); for(let i=0;i<50&&!G.vars.dlDone;i++){ tp(d,21,18); watch(1); } ok(G.vars.dlDone&&obj('records')==='done'&&G.rogue.formula,'the files: Maas\\'s formula');
+  ok(obj('stab')==='active'&&!G.rogue.exitOpen,'shaft shut until the cases are taken'); for(const c of G.vars.cases){ tp(d,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); watch(0.4); } watch(1);
   ok(obj('stab')==='done'&&G.rogue.exitOpen,'three cases: the north shaft opens'); ok(G.rogue.stab>=3,'the doses are in the bag ('+G.rogue.stab+')');
-  for(let i=0;i<150;i++){ calm(); step(1); } ok(G.vars.sent===G.mission.job.waves,'all '+G.mission.job.waves+' relief squads came'); ok(G.ents.some(e=>!e.dead&&e.faction==='loyal'&&e.type==='pyro'),'the second one brought a flamer');
+  for(let w=0;w<J.waves+2;w++){ ring().forEach(u=>u.dead=true); calm(); watch(J.call+5); }
+  ok(G.vars.sent===J.waves,'at most '+J.waves+' drops, however many fall ('+G.vars.sent+')'); ok(most<=G.vars.ringMax,'never more than '+G.vars.ringMax+' Corps soldiers on the field ('+most+')'); ok(types.has('pyro'),'the second one brought a flamer');
   { const sp=exitSpot(G.ents.find(e=>e.exit)); for(const x of crew()) tp(x,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); } step(1); ok(G.over&&G.over.win,'down the north shaft: won');
   const R=rogueStore(); ok(R.flags.formula&&G.rogueResult.formula,'the formula is kept'); ok(/formula/.test(rogueEndHtml()),'the end screen says so'); ok(/brews/.test(rogueBriefNote()),'the next briefing counts the brewed dose');
   const s0=R.stab; start('rogue-dead-air'); step(0.5); ok(__hc.G.rogue.stab===s0+ROGUE.stab.start+ROGUE.stab.formula,'the next job starts with the brewed dose too ('+__hc.G.rogue.stab+')');'''),
@@ -69,7 +75,7 @@ CASES=[
 ('intel, trophy wall, dev panel','''goMenu('intel'); intelTab='rogue'; buildIntel(); ok(ROGUE_INTEL.some(x=>x.id==='veil')&&document.querySelectorAll('#intel-list .ili').length===7+6+ROGUE_INTEL.length,'The veil in Rogue Intel');
   ok(ROGUE_TROPHIES.some(t=>t.id==='rogue:wolf'),'Wolf in the Fold on the list'); goMenu('trophies'); trophTab='rogue'; buildTrophies(); const wb=document.querySelector('#trophy-wall').getBoundingClientRect(); ok(wb.bottom<=innerHeight&&wb.top>=0,'the Rogue tab still fits on one screen ('+Math.round(wb.bottom)+'/'+innerHeight+')');
   ok(/Wolf in the Fold/.test(document.querySelector('#trophy-wall').textContent),'the plaque hangs on the wall'); goMenu('menu');
-  for(const k of ['ROGUE|stab.formula','ROGUE|veil.taint','ROGUE|veil.broken','M|job.download','M|job.pod','M|job.lull','M|job.stir','M|job.waves','M|job.squad','M|job.firstWave','M|job.waveEvery']) ok(!!devHelp(k),'dev help: '+k);''')
+  for(const k of ['ROGUE|stab.formula','ROGUE|veil.taint','ROGUE|veil.broken','M|job.download','M|job.pod','M|job.lull','M|job.stir','M|job.waves','M|job.squad','M|job.lostFor','M|job.call']) ok(!!devHelp(k),'dev help: '+k);''')
 ]
 res=[]
 with sync_playwright() as p:

@@ -3,7 +3,8 @@
    Kappa Basin, a week after Osprey Down. The Corps turned the relay station Squad Dust held into a field hospital, and the
    shipment Dr. Maas sent to Tycho (her stabilizer and her files) never got further than Kappa. Devreese has to stand at the records
    terminal for a while to pull the files off it; the moment she starts (or the moment anyone sees the crew) the hospital calls Tycho,
-   and relief squads land on the pad just south of the camp, under its Relay Tower, and join the defence ring. Take the three cases of stabilizer from the tents and leave by the north shaft.
+   and once the ring round the camp has lost job.lostFor men, a relief squad lands on the pad just south of the camp, under its Relay Tower,
+   and fills the ring back up (never past its first strength; job.waves drops at most). Take the three cases of stabilizer from the tents and leave by the north shaft.
    The files hold Maas's formula: from the next job on, Devreese brews her own stabilizer (ROGUE.stab.formula per job).
    job: the numbers of this job (dev panel, "This job"). */
 const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of the three hospital tents */
@@ -20,7 +21,7 @@ ROGUE_MISSIONS.push(
       'Maas sent the rest to Tycho: her stabilizer and every file she had on it. It never got further than Kappa Basin. The Corps turned the relay station Squad Dust held last month into a field hospital, and the shipment sits in its tents.',
       'Three cases of stabilizer, one in each tent. And the records terminal: if Devreese can stand at it long enough, she pulls Maas\'s formula off it, and we never have to steal a dose again. The moment she starts, the hospital calls for help. Then out through the old shaft in the north wall.'
     ],
-    job:{ download:50, firstWave:20, waveEvery:35, waves:3, squad:4 },
+    job:{ download:50, lostFor:3, call:15, waves:3, squad:4 },
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c'],
       shafts:[ {x:17,y:2,wall:'n',exit:true,label:'North shaft'} ],
@@ -39,8 +40,9 @@ ROGUE_MISSIONS.push(
           g.loyalB('sentry',{x:16,y:20}); g.loyalB('sentry',{x:25,y:19}); g.vars.relay=g.loyalB('relay',NT_RELAY);
           /* the garrison stands in a defence ring round the middle of the camp: fighters on the ring, Medics and the Engineer inside */
           const gar=[...g.loyal('trooper',{x:21,y:21},2),...g.loyal('gunner',{x:24,y:22},1),...g.loyal('trooper',{x:19,y:16},1),
-            ...g.loyal('medic',{x:19,y:22},2),...g.loyal('engineer',{x:22,y:20},1),...g.loyal('trooper',{x:20,y:24},2)];
-          ntRing(g,gar,true);
+            ...g.loyal('medic',{x:19,y:22},2),...g.loyal('engineer',{x:22,y:20},1)];
+          ntRing(g,gar,true); g.vars.ringMax=gar.length;   /* the ring's full strength: a relief squad never fills it past this */
+          g.loyal('trooper',{x:12,y:22},2,{ patrol:[{x:12,y:22},{x:20,y:27},{x:29,y:21},{x:25,y:13}] });   /* and a patrol round the camp, outside the ring */
           g.pad(NT_PAD,'relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
           g.marker('term',{x:20,y:18},'Records terminal');
           g.reveal({x:20,y:20},6,1e6); } },   /* the hospital is lit all night: the crew can watch it from afar */
@@ -66,16 +68,21 @@ ROGUE_MISSIONS.push(
           if(n>=3){ g.vars.stabDone=true; g.complete('stab'); g.crewSay('Mortier','Three cases. Cold as ice. Somebody at Tycho is going to have a very bad morning.'); } } },
       /* the defence ring: everyone back to his place once the fight is over, and the ring closes up when someone falls */
       { repeat:true, when:g=>!!g.vars.ringOn, do:g=>ntRingTick(g) },
-      /* Tycho's relief squads: they land on the pad, walk to the middle of the camp and join the ring */
-      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&!g.vars.landAt&&g.time>=ntDue(g)-3.2, do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
-      { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; const J=G.mission.job, n=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), k=g.vars.sent++;
-          const sq=[...g.loyal('trooper',NT_PAD,n-1),...g.loyal(k===1?'pyro':'gunner',NT_PAD,1)]; if(k===2) sq.push(...g.loyal('medic',NT_PAD,1));
+      /* Tycho's relief squads: only once the ring has lost job.lostFor men does the hospital call one in (job.call seconds before it lands),
+         at most job.waves of them; it lands on the pad, walks to the middle of the camp and fills the ring back up to its first strength */
+      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&g.vars.dueAt==null&&ntMissing(g)>=G.mission.job.lostFor, do:g=>{
+          g.vars.dueAt=g.time+G.mission.job.call; g.setTimer(G.mission.job.call,'Relief squad'); g.ping(NT_PAD);
+          g.say('Kappa medical',['Kappa medical to Tycho: we are losing people in the perimeter. Send the relief squad, now!','Kappa medical, the ring is thinning again. Tycho, we need another squad!','Kappa medical to Tycho, we are bleeding out here. Whatever you have left, send it!'][g.vars.sent]||'Kappa medical requests a relief squad.'); } },
+      { repeat:true, when:g=>g.vars.dueAt!=null&&!g.vars.landAt&&!g.vars.won&&g.time>=g.vars.dueAt-3.2, do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
+      { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
+          const J=G.mission.job, most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), n=Math.max(1,Math.min(most,ntMissing(g))), k=g.vars.sent++;
+          const sq=[...g.loyal(k===2&&n>1?'medic':'trooper',NT_PAD,1)]; if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2));
           ntRing(g,sq);
           g.say(['Lt. Okafor','Sgt. Brandt','Lt. Okafor'][k]||'Corps radio',[
             'Relief squad on the ground at Kappa. Into the ring, all of you. Weapons free, mind the tents.',
             'Second squad down. Close up the ring with Okafor\'s people. Flamer on the line, keep them out of the tents.',
             'This is Okafor again, last squad Tycho can spare. Whoever you are, you are not leaving Kappa.'][k]||'Relief squad down.');
-          if(g.vars.sent<J.waves) g.setTimer(Math.max(1,ntDue(g)-g.time),'Relief squad'); else g.clearTimer(); } },
+          if(g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
       /* the sirens wake the basin */
       { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.wave(45,{x:20,y:18}); g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
       /* both done: out through the north shaft */
@@ -93,15 +100,15 @@ ROGUE_MISSIONS.push(
 );
 /* the alarm: the hospital calls Tycho, and the relief squads start coming */
 function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.say('Kappa medical',line);
-  g.ping(NT_PAD); g.setTimer(G.mission.job.firstWave,'Relief squad');
-  g.crewSay('Capt. Kerckhoffs','That is the alarm. Tycho will be dropping people on that pad. Get Devreese her files and get the cases, fast.'); }
+  g.ping(NT_PAD);
+  g.crewSay('Capt. Kerckhoffs','That is the alarm. Thin out that ring and Tycho drops more people on that pad. Get Devreese her files and get the cases, fast.'); }
 /* the defence ring (circle formation, holding): add units to it and share out the places again.
    Fighters stand on a ring round NT_RING (it grows with the number of men), Medics and Engineers on a small circle inside.
    at once: put them straight on their places (the start of the mission). */
 function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=true; u.hunter=false; u.patrol=null; }
   g.vars.ringOn=true; const R=NT_RING, cx=(R.x)*TILE, cy=(R.y)*TILE;
   const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), fight=us.filter(u=>!u.def.heal&&!u.def.builder), sup=us.filter(u=>u.def.heal||u.def.builder);
-  const place=(grp,r)=>{ if(!grp.length) return; const spots=grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/2; let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
+  const place=(grp,r)=>{ if(!grp.length) return; const spots=grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/4;   /* not straight north: the terminal stands there */  let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
       if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; });
     const a=assignCheapest(grp.map(u=>spots.map(p=>(u.x-p.x)**2+(u.y-p.y)**2)));
     grp.forEach((u,i)=>{ const p=spots[a[i]]; u.ringAt={x:p.x,y:p.y}; u.home={x:p.x,y:p.y};
@@ -119,5 +126,5 @@ function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time
     const d=Math.hypot(u.x-p.x,u.y-p.y);
     if(d>TILE*0.6){ if(!u.order||u.order.type==='hold'){ u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } }
     else if(!u.order){ u.order={type:'hold'}; u.path=null; } } }
-/* when the next relief squad is due */
-function ntDue(g){ const J=G.mission.job; return g.vars.alarm+J.firstWave+g.vars.sent*J.waveEvery; }
+/* how many men the ring is short of its first strength */
+function ntMissing(g){ return Math.max(0,(g.vars.ringMax||0)-G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer).length); }
