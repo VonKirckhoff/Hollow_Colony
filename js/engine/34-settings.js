@@ -6,18 +6,22 @@
 const LIGHT_SET = [
   { k:'bright',  label:'Brightness',         tip:'Everything on the battlefield, 2D and 3D.',                                         min:0.6, max:1.6, step:0.05, def:1 },
   { k:'fog',     label:'Explored areas',     tip:'How dark the places are that you saw before but nobody sees now (2D and 3D). Left is lighter.', min:0.3, max:1.3, step:0.05, def:1 },
-  { k:'sun',     label:'3D sunlight',        tip:'The low sun that throws the long shadows.',                                         min:0,   max:3,   step:0.05, def:1.45 },
-  { k:'ambient', label:'3D soft light',      tip:'Light from all sides: lifts the shadows.',                                          min:0,   max:2,   step:0.05, def:0.85 },
-  { k:'seen',    label:'3D in sight',        tip:'Extra light on what your units see right now.',                                     min:0,   max:1,   step:0.02, def:0.28 },
-  { k:'dark',    label:'3D dark missions',   tip:'Soft light in dark missions (Blackout, Night Shift …).',                            min:0,   max:1,   step:0.02, def:0.26 },
-  { k:'lamp',    label:'3D helmet lamps',    tip:'How bright the helmet lamps shine in dark missions.',                               min:0,   max:3,   step:0.05, def:1.25 },
-  { k:'gen',     label:'3D generators',      tip:'The light of a running generator.',                                                 min:0,   max:5,   step:0.1,  def:2.4 },
+  { k:'sun',     label:'3D sunlight',        tip:'The low sun that throws the long shadows.',                                         min:0,   max:3,   step:0.05, def:1.15 },
+  { k:'ambient', label:'3D soft light',      tip:'Light from all sides: lifts the shadows.',                                          min:0,   max:2,   step:0.05, def:0.68 },
+  { k:'seen',    label:'3D in sight',        tip:'Extra light on what your units see right now.',                                     min:0,   max:1,   step:0.02, def:0.2 },
+  { k:'dark',    label:'3D dark missions',   tip:'Soft light in dark missions (Blackout, Night Shift …).',                            min:0,   max:1,   step:0.02, def:0.22 },
+  { k:'lamp',    label:'3D helmet lamps',    tip:'How bright the helmet lamps shine in dark missions. Lamps on one spot do not add up: three together is the most.', min:0, max:3, step:0.05, def:1 },
+  { k:'beam',    label:'3D lamp beams',      tip:'How well you see the beam of light from the helmet lamps.',                         min:0,   max:1.5, step:0.05, def:0.5 },
+  { k:'gen',     label:'3D generators',      tip:'The light of a running generator.',                                                 min:0,   max:5,   step:0.1,  def:2.1 },
   { k:'shadows', label:'3D shadows',         tip:'Shadows of rock, buildings and units. Off is lighter on a slow computer.',          check:true,               def:true }
 ];
 const lightSet = Object.assign(Object.fromEntries(LIGHT_SET.map(o=>[o.k,o.def])), store.get('hc-light',{}));
+/* Nov 2026 (version 2): the 3D light was too bright. Saved light from before that goes back once to the new, softer defaults. */
+const LIGHT_VER = 2;
+if((lightSet.ver||1)<LIGHT_VER){ for(const k of ['sun','ambient','seen','dark','lamp','gen']) lightSet[k]=LIGHT_SET.find(o=>o.k===k).def; lightSet.ver=LIGHT_VER; store.set('hc-light',lightSet); }
 function applyLight(){ const L=lightSet, V=VIEW3D;
   V.sun=L.sun; V.ambient=L.ambient; V.seenLift=L.seen; V.seenAdd=L.seen*0.18; V.darkSeenAdd=L.seen*0.4;
-  V.darkAmbient=L.dark; V.darkSun=L.dark*0.55; V.lamp=L.lamp; V.genLight=L.gen; V.shadows=!!L.shadows;
+  V.darkAmbient=L.dark; V.darkSun=L.dark*0.55; V.lamp=L.lamp; V.beam=L.beam; V.genLight=L.gen; V.shadows=!!L.shadows;
   ui.fogDark=L.fog;
   const f=Math.abs(L.bright-1)<0.001?'':`brightness(${L.bright})`; cv.style.filter=f; if(V3.r) V3.r.domElement.style.filter=f; }
 function buildLightSettings(){ const box=$('#set-light'); if(!box) return; box.innerHTML='';
@@ -34,5 +38,5 @@ SCREENS.push('settings');
 $('#p-settings').addEventListener('click',openSettings);
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-go="settings"]'); if(b) buildLightSettings(); });   /* from the main menu (goMenu shows the screen) */
 $('#settings-back').addEventListener('click',()=>{ if(G&&!G.over&&ui.mode==='pause'){ show('pause'); $('#p-resume').focus({preventScroll:true}); } else goMenu('menu'); });
-$('#set-light-reset').addEventListener('click',()=>{ for(const o of LIGHT_SET) lightSet[o.k]=o.def; store.set('hc-light',lightSet); applyLight(); buildLightSettings(); });
+$('#set-light-reset').addEventListener('click',()=>{ for(const o of LIGHT_SET) lightSet[o.k]=o.def; lightSet.ver=LIGHT_VER; store.set('hc-light',lightSet); applyLight(); buildLightSettings(); });
 applyLight();

@@ -12,9 +12,11 @@ const VIEW3D = {
   pitch:56, dist:17, minDist:7, maxDist:42, fov:40, minPitch:32, maxPitch:84,   /* camera: degrees above the ground, distance to the point it looks at (tiles) */
   turnSpeed:0.35, tiltSpeed:0.25,                                                /* middle mouse drag: degrees per pixel */
   rock:2.0, highRock:2.9, crystal:1.9, rim:0.4, cliff:1.15, plateau:0.9, crater:-0.5, rockNoise:0.6,   /* terrain heights (tiles), taken when a mission starts */
-  sun:1.45, ambient:0.85, darkSun:0.14, darkAmbient:0.26,                        /* light; dark: missions with mission.dark */
-  seenLift:0.28, seenAdd:0.05, darkSeenAdd:0.11,                                 /* what your units see right now: brighter (×1+lift, +add) */
-  lamp:1.25, lamps:6, genLight:2.4,                                              /* helmet lamps in the dark (nearest the camera), running generators */
+  sun:1.15, ambient:0.68, darkSun:0.12, darkAmbient:0.22,                        /* light; dark: missions with mission.dark (Nov 2026: a bit less bright) */
+  seenLift:0.2, seenAdd:0.036, darkSeenAdd:0.08,                                 /* what your units see right now: brighter (×1+lift, +add) */
+  lamp:1.0, lamps:6, genLight:2.1,                                               /* helmet lamps in the dark (nearest the camera), running generators */
+  lampStack:0.3, lampStackMax:3, lampOverlap:2.6,                                /* lamps on one spot do not add up: each extra lamp adds lampStack, at most lampStackMax lamps' worth (3 = full); lampOverlap: tiles within which two lamp spots count as one */
+  beam:0.5,                                                                      /* how well you see the helmet lamp beam itself (0 = not at all) */
   unitScale:1.3, xray:0.4, shadows:true, groundAnims:true
 };
 const V3 = { on:store.get('hc-view3d',false), ok:false, g:null, mapId:null, objs:new Map(), dying:new Map(), frame:0, yaw:0 };
@@ -164,6 +166,14 @@ function v3Soldier(e){
   else if(t==='engineer'){ g.add(ball(D,0.1,0.1,0.1,0,0.92,0)); g.add(part(GEO.half,Rs,0.13,0.11,0.14,0,0.95,0)); g.add(box(Rs,0.28,0.02,0.3,0,0.95,0.02)); g.add(box(glow('#7ff6ff'),0.14,0.04,0.03,0,0.92,0.1)); }
   else if(t==='pyro'){ g.add(ball(A,0.12,0.11,0.12,0,0.93,0)); for(const k of [-1,1]){ g.add(rotX(cyl(D,0.05,0.07,0.05,k*0.045,0.89,0.1),1.4)); g.add(box(glow('#ffb347'),0.05,0.035,0.02,k*0.04,0.96,0.115)); } }   /* gas mask with two filters */
   else { g.add(ball(A,0.125,0.11,0.135,0,0.94,-0.005)); g.add(rz?box(glow(P.eye),0.17,0.05,0.04,0,0.92,0.11):box(shiny(osp?'#ff5040':'#7ff6ff',{ emissive:osp?0x801010:0x2a8a96 }),0.17,0.05,0.04,0,0.92,0.11)); g.add(box(Rs,0.03,0.025,0.24,0,1.045,-0.01)); }
+  /* helmet lamp: a small lamp on the right of the helmet; in dark missions it glows and throws a visible beam down to the spot it lights (v3Pose) */
+  { const lx=-0.1, ly=t==='scientist'?0.98:1.0, lz=0.085; g.add(rotX(cyl(mat('#2a2e33'),0.032,0.05,0.032,lx,ly,lz-0.015),Math.PI/2));
+    const bulb=ball(glow('#5a5e66'),0.026,0.026,0.012,lx,ly,lz+0.012); g.add(bulb); U.lampBulb=bulb; U.lampBulbOff=bulb.material;
+    const beam=grp(lx,ly,lz+0.02); beam.userData.noXray=true;
+    for(const [r,o] of [[0.22,1],[0.4,0.45]]){ const m=new THREE.MeshBasicMaterial({ color:0xe4ecff, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide });
+      const c=new THREE.Mesh(V3.beamGeo||(V3.beamGeo=new THREE.ConeGeometry(1,1,18,1,true).translate(0,-0.5,0).rotateX(-Math.PI/2)),m); c.scale.set(r,r,1); c.userData.noXray=true; c.userData.op=o; c.raycast=()=>{}; beam.add(c); (U.own||(U.own=[])).push(m); }
+    const halo=v3Sprite(); halo.material.color.set('#fff2d0'); halo.scale.setScalar(0.32); halo.position.set(lx,ly,lz+0.04); halo.userData.noXray=true; halo.raycast=()=>{}; halo.visible=false; g.add(halo); U.lampHalo=halo; U.own.push(halo.material);
+    beam.visible=false; g.add(beam); U.beam=beam; }
   if(t==='medic'){ g.add(box(mat('#e2463a'),0.03,0.08,0.02,0,1.0,0.1)); g.add(box(mat('#e2463a'),0.08,0.03,0.02,0,1.0,0.1)); for(const s of [-1,1]) g.add(box(mat('#e2463a'),0.02,0.06,0.02,s*0.27,0.8,0.02)); }
   /* back and weapon: per role */
   const gun=grp(0.07,0.66,0.2); g.add(gun); U.gun=gun;
@@ -485,6 +495,11 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
       g.rotation.z=(mv?Math.sin(ph*0.5)*0.16:Math.sin(T*0.9+e.id)*0.05)+U.lean*(e.id%2?1:-1);   /* the shamble: a lurching sway, always leaning to one side */
       if(U.arms[0]&&!e.downed) U.arms[0].rotation.x=U.arms[0].userData.base*0.3+(mv?Math.sin(ph*0.5)*0.2:0);   /* one arm hangs loose */
       if(Math.random()<0.05) G.fx.push({k:'spark',x:e.x+rand(-6,6),y:e.y-rand(4,20),vx:rand(-8,8),vy:rand(-40,-20),t:0.8,max:0.8,col:'#9dff6a'}); }
+    if(U.beam){ const on=!!G.mission.dark&&e.faction===G.side&&!e.downed&&VIEW3D.lamp>0, b=U.beam; b.visible=on&&VIEW3D.beam>0;
+      U.lampBulb.material=on?(MAT.lampOn||(MAT.lampOn=glow('#fff6dc'))):U.lampBulbOff; if(on) U.lampBulb.scale.set(0.034,0.034,0.016); else U.lampBulb.scale.set(0.026,0.026,0.012);
+      if(b.visible){ const s=g.scale.x||1, len=Math.hypot(1.4/s,1.0)*1.02, a=VIEW3D.beam*Math.min(1.5,VIEW3D.lamp)*Math.sqrt(U.lampShare??1);   /* aim at the lit spot, 1.4 tiles ahead on the ground */
+        b.rotation.set(Math.atan2(b.position.y,1.4/s-b.position.z),0,0); for(const c of b.children){ c.scale.z=len; c.material.opacity=0.26*a*c.userData.op; } }
+      U.lampHalo.visible=on&&VIEW3D.beam>0; if(on) U.lampHalo.material.opacity=Math.min(1,0.9*VIEW3D.beam*Math.min(1.5,VIEW3D.lamp)); }
     if(U.weld) U.weld.visible=!!(e.order&&/repair|build/.test(e.order.type))&&Math.random()<0.7;
     if(e.type==='brute') v3PoseBrute(e,U,T,mv,fight,ph); else if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph);
     if(mv) y+=Math.abs(Math.sin(ph))*0.025;
@@ -709,6 +724,12 @@ function v3HiveDeathPose(f,g,T){ const D=HIVE_DEATH, tt=f.max-f.t, U=g.userData,
 function v3HiveDeaths(T){ const live=new Set();
   for(const f of G.fx){ if(f.k!=='hivedeath') continue; live.add(f); let g=V3.dying.get(f); if(!g){ g=v3HiveDeathModel(f); V3.dying.set(f,g); V3.g.add(g); } v3HiveDeathPose(f,g,T); }
   for(const [f,g] of V3.dying) if(!live.has(f)){ V3.g.remove(g); for(const m of g.userData.own) m.dispose(); V3.dying.delete(f); } }
+/* Helmet lamps on one spot must not add up to a glare. n = how many lamps light this spot (a lamp counts less the farther its spot is,
+   gone at lampOverlap tiles). Together they give 1 + (n-1)×lampStack lamps' worth, at most lampStackMax lamps (3 = full), shared out over them. */
+function lampTotal(n){ const V=VIEW3D; return 1+(Math.min(n,V.lampStackMax)-1)*V.lampStack; }
+function v3LampShare(ls){ const R=VIEW3D.lampOverlap;
+  for(const l of ls){ let n=0; for(const o of ls){ const d=Math.hypot(o.x-l.x,o.z-l.z); if(d<R) n+=1-d/R; }
+    const k=lampTotal(Math.max(1,n))/Math.max(1,n); l.i*=k; if(l.U) l.U.lampShare=k; } }
 function render3D(now){
   if(V3.forG!==G||V3.mapId!==G.map.id) v3Reset();
   const dt=Math.min(0.1,(now-(V3.last||now))/1000); V3.last=now;
@@ -717,7 +738,7 @@ function render3D(now){
   for(const e of G.ents){ if(!v3Shown(e)) continue;
     let g=V3.objs.get(e); if(!g){ g=v3Model(e); V3.objs.set(e,g); V3.g.add(g); if(e.faction===G.side&&e.kind==='unit') g.traverse(o=>{ if(!o.userData.noXray) o.layers.set(1); }); }
     g.visible=true; g.userData.f=V3.frame; v3Pose(e,g,T);
-    if(e.kind==='unit'&&G.mission.dark&&e.faction===G.side&&e.def.bio&&!e.downed) lights.push({x:g.position.x+Math.sin(g.userData.yaw)*1.4,y:g.position.y+1.1,z:g.position.z+Math.cos(g.userData.yaw)*1.4,i:VIEW3D.lamp,c:0xe4ecff,d:7,lamp:1});
+    if(e.kind==='unit'&&G.mission.dark&&e.faction===G.side&&e.def.bio&&!e.downed) lights.push({x:g.position.x+Math.sin(g.userData.yaw)*1.4,y:g.position.y+1.1,z:g.position.z+Math.cos(g.userData.yaw)*1.4,i:VIEW3D.lamp,c:0xe4ecff,d:7,lamp:1,U:g.userData});
     if(e.kind==='building'&&e.def.generator&&e.powered) lights.push({x:g.position.x,y:g.position.y+1.7,z:g.position.z,i:VIEW3D.genLight*(0.92+0.08*Math.sin(now/90+e.id)),c:0xffd690,d:(e.def.light||8)*1.1}); }
   for(const [e,g] of V3.objs){ if(g.userData.f!==V3.frame){ g.visible=false; if(e.dead||V3.frame-g.userData.f>600){ V3.g.remove(g); for(const o of g.userData.own||[]) o.dispose(); V3.objs.delete(e); } } }
   v3HiveDeaths(T);
@@ -773,6 +794,7 @@ function render3D(now){
   for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; lights.push({x,y:v3H(x,z)+0.6,z,i:2,c:0xff6a50,d:(SQUAD.flare.light||6)*1.1}); }
   const near=l=>Math.hypot(l.x-V3.look.x,l.z-V3.look.z); lights.sort((a,b)=>near(a)-near(b));
   let lampsUsed=0; const use=lights.filter(l=>!l.lamp||lampsUsed++<VIEW3D.lamps);
+  v3LampShare(lights.filter(l=>l.lamp));
   V3.lights.forEach((l,i)=>{ const L=use[i]; if(L){ l.position.set(L.x,L.y,L.z); l.intensity=L.i; l.color.setHex(L.c); l.distance=L.d; } else l.intensity=0; });
   if(ui.placing){ const d=BUILDINGS[ui.placing.type], s=placementSpot(), cx=s.tx+d.size/2, cz=s.ty+d.size/2; V3.ghost.visible=true; V3.ghost.scale.set(d.size,0.9,d.size); V3.ghost.position.set(cx,v3H(cx,cz)+0.45,cz); V3.ghost.material.color.set(s.ok?'#5fe3b0':'#ff5a4f'); }
   else V3.ghost.visible=false;
