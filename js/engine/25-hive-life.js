@@ -313,10 +313,10 @@ function drawEgg(b,art,now){ const opening=b.openT!=null, p=opening?1-b.openT/EG
    A burnt hive does not just blow up. For HIVE_DEATH.scream seconds it shakes harder and harder, its heart races,
    it shrieks (green rings) and the last of its brood scuttles away from it (only a picture: they are not units).
    Then it caves in (HIVE_DEATH.fall seconds): it flattens and darkens, dirt flies, and smoke plumes keep rising until
-   the end. A picture in G.fx (k:'hivedeath'), drawn by drawHiveDeath; the hive itself is already gone. */
+   the end. A picture in G.fx (k:'hivedeath'), drawn by drawHiveDeath (in 3D by v3HiveDeaths); the hive itself is already gone. */
 const HIVE_DEATH = { scream:1.8, fall:0.6, time:3.4, rings:3, brood:7, smoke:12 };
 function hiveDeath(h){ const D=HIVE_DEATH;
-  G.fx.push({k:'hivedeath',x:h.x,y:h.y,t:D.time,max:D.time,seed:h.id*7.3,ph:h.id*0.37});
+  G.fx.push({k:'hivedeath',x:h.x,y:h.y,t:D.time,max:D.time,seed:h.id*7.3,ph:h.id*0.37,id:h.id});
   SFX.play('huskroar',h.x,h.y); SFX.play('hatch',h.x,h.y); }
 function hiveDeathTick(f){ const tt=f.max-f.t;   /* the sound of the cave-in, once */
   if(!f.fell&&tt>=HIVE_DEATH.scream){ f.fell=true; SFX.play('squelch',f.x,f.y); SFX.play('boom',f.x,f.y);

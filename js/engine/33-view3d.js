@@ -17,7 +17,7 @@ const VIEW3D = {
   lamp:1.25, lamps:6, genLight:2.4,                                              /* helmet lamps in the dark (nearest the camera), running generators */
   unitScale:1.3, xray:0.4, shadows:true, groundAnims:true
 };
-const V3 = { on:store.get('hc-view3d',false), ok:false, g:null, mapId:null, objs:new Map(), frame:0, yaw:0 };
+const V3 = { on:store.get('hc-view3d',false), ok:false, g:null, mapId:null, objs:new Map(), dying:new Map(), frame:0, yaw:0 };
 
 /* ---------- setup ---------- */
 function v3Init(){
@@ -442,7 +442,7 @@ function v3Shown(e){ const m=G.map;
 /* ---------- frame ---------- */
 function v3Size(){ const w=ui.vw, h=Math.max(100,ui.vh-ui.hudH); if(V3.w!==w||V3.h!==h||V3.dpr!==ui.dpr){ V3.w=w; V3.h=h; V3.dpr=ui.dpr; V3.r.setPixelRatio(Math.min(ui.dpr,1.5)); V3.r.setSize(w,h); V3.cam.aspect=w/h; V3.cam.updateProjectionMatrix(); } }
 function v3Reset(){ if(V3.g) V3.scene.remove(V3.g); V3.g=new THREE.Group(); V3.scene.add(V3.g); V3.objs.clear(); V3.forG=G; V3.mapId=G.map.id;
-  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.ships=new Map();
+  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
   V3.fxg=new THREE.Group(); V3.g.add(V3.fxg); V3.fxg.add(V3.tracers); V3.fxg.add(V3.ghost); v3BuildTerrain(); }
 function v3Camera(dt){ const V=VIEW3D, tx=(G.cam.x+ui.vw/2)/TILE, tz=(G.cam.y+(ui.vh-ui.hudH)/2)/TILE, ty=Math.max(0,v3H(tx,tz)), sh=(G.shake||0)*0.3;
   let d=V3.yaw*Math.PI/180-(V3.yawR||0); d=Math.atan2(Math.sin(d),Math.cos(d)); V3.yawR=(V3.yawR||0)+d*Math.min(1,dt*8);
@@ -654,6 +654,48 @@ function v3PoseGrazer(e,U,T,mv){
   U.ears.forEach((r,i)=>{ const s=-Math.sign(r.userData.bz), tw=Math.sin(T*1.3+e.id*3+i*2)>0.97?0.5:0; r.rotation.z=r.userData.bz+s*((up?0.7:0)+tw); });
   if(flee&&mv){ const p=T*16+e.id; U.legs.forEach((l,i)=>{ l.rotation.x=(l.userData.bx||0)+(i<2?1:-1)*Math.sin(p)*0.75; l.userData.knee.rotation.x=Math.max(0,Math.sin(p+(i<2?0:Math.PI)))*0.8; }); U.torso.rotation.x=Math.sin(p)*0.08; }
   else U.torso.rotation.x*=0.85; }
+/* ---------- a hive's death in 3D: the last scream (HIVE_DEATH in 25-hive-life.js), the same story as drawHiveDeath in 2D ----------
+   While it screams the hive shakes harder and harder, its heart races and green shriek rings fly out over the ground; the last of
+   its brood scuttles away in every direction (only a picture). Then it caves in: it flattens, spreads and goes dark, a dark scar
+   stays on the ground, dirt flies (the 'ember' fx) and smoke plumes rise until the end (drawn with the other fx in render3D).
+   One model per G.fx entry (V3.dying), with its own materials so it can darken and fade; gone when the fx ends. */
+const V3_DARK=typeof THREE!=='undefined'?new THREE.Color('#0a0b10'):null;
+function v3HiveDeathModel(f){
+  const g=new THREE.Group(), U=g.userData, own=U.own=[], D=HIVE_DEATH;
+  const mine=m=>{ const c=m.clone(); if(m.onBeforeCompile) c.onBeforeCompile=m.onBeforeCompile; own.push(c); return c; };
+  const hv=v3Building({ type:'hive', id:f.id||0, size:2 }); U.cols=[];
+  hv.traverse(o=>{ if(o.isMesh){ o.material=mine(o.material); if(o.material.color) U.cols.push({ m:o.material, c:o.material.color.clone(), s:o.material.specular&&o.material.specular.clone() }); } });
+  U.hive=hv; U.heart=hv.userData.heart; g.add(hv);
+  const scarM=new THREE.MeshBasicMaterial({ color:0x0a0b10, transparent:true, opacity:0.7, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2 }); own.push(scarM);
+  U.scar=new THREE.Mesh(GEO.disc,scarM); U.scar.position.y=0.2;   /* above the bulge of the mycel */ U.scar.renderOrder=1; g.add(U.scar);
+  U.rings=[]; for(let i=0;i<Math.max(1,D.rings);i++){ const m=new THREE.MeshBasicMaterial({ color:0xa6ff4a, transparent:true, depthWrite:false, side:THREE.DoubleSide }); own.push(m);
+    const r=new THREE.Mesh(GEO.ring,m); r.renderOrder=2; g.add(r); U.rings.push(r); }
+  U.brood=[]; for(let i=0;i<Math.max(0,D.brood);i++){   /* a little scuttler: dark shell, purple head, four legs */
+    const bm=v3Fogify(new THREE.MeshPhongMaterial({ color:'#1a1420', specular:0x8a7aa0, shininess:60, transparent:true })), hm=v3Fogify(new THREE.MeshLambertMaterial({ color:'#7a5a8e', transparent:true })); own.push(bm,hm);
+    const c=grp(); c.add(ball(bm,0.12,0.07,0.15,0,0.09,0)); c.add(ball(hm,0.06,0.05,0.06,0,0.1,0.15)); c.userData.legs=[];
+    for(let k=0;k<4;k++){ const l=limb(bm,0.025,0.11,(k%2?1:-1)*0.1,0.1,k<2?0.06:-0.06); l.rotation.z=(k%2?1:-1)*0.9; c.add(l); c.userData.legs.push(l); }
+    c.userData.mats=[bm,hm]; g.add(c); U.brood.push(c); }
+  return g; }
+function v3HiveDeathPose(f,g,T){ const D=HIVE_DEATH, tt=f.max-f.t, U=g.userData, x=f.x/TILE, z=f.y/TILE, gy=v3H(x,z);
+  g.visible=!!G.seen[Math.floor(f.y/TILE)*G.map.w+Math.floor(f.x/TILE)]; if(!g.visible) return;
+  g.position.set(x,gy,z);
+  const scream=tt<D.scream, fall=clamp((tt-D.scream)/Math.max(0.01,D.fall),0,1), hv=U.hive;
+  hv.visible=tt<D.scream+D.fall+0.2;
+  if(hv.visible){ const sh=scream?Math.min(5,tt*2.8):0, k=Math.floor(tt*30);   /* shaking harder and harder, as in 2D (pixels → tiles) */
+    hv.position.set((hdRnd(f.seed+k)-0.5)*sh*0.035,0,(hdRnd(f.seed+k+50)-0.5)*sh*0.035);
+    const wob=scream?Math.sin(tt*30):0, wide=(1+0.2*fall)*(1+0.04*wob); hv.scale.set(wide,(1-0.8*fall)*(1+0.06*wob),wide);
+    const dark=Math.min(0.75,tt/D.scream*0.25+fall*0.55); for(const c of U.cols){ c.m.color.copy(c.c).lerp(V3_DARK,dark); if(c.s) c.m.specular.copy(c.s).multiplyScalar(Math.max(0,1-dark*1.8)); }   /* no wet shine left on a dead hive */
+    if(U.heart) U.heart.scale.setScalar(0.3*(scream?1+0.5*Math.pow(Math.max(0,Math.sin(tt*24)),2)+tt*0.15:1-0.6*fall)); }   /* the heart races, then gives out */
+  U.scar.visible=tt>=D.scream; if(U.scar.visible){ const r=0.7+0.6*fall; U.scar.scale.set(r*1.3,1,r); U.scar.material.opacity=0.7*Math.min(1,f.t/0.4); }
+  U.rings.forEach((r,w)=>{ const t=tt-w*0.5; r.visible=scream&&t>=0&&t<=0.8; if(!r.visible) return; const R=(16+t*130)/TILE; r.scale.set(R,1,R); r.position.y=0.3+t*0.4; r.material.opacity=1-t/0.8; });
+  U.brood.forEach((c,n)=>{ const t=tt-0.3-n*0.18; c.visible=t>=0&&t<=2.6; if(!c.visible) return;
+    const a=hdRnd(f.seed+n+20)*Math.PI*2, d=(24+t*95)/TILE, bx=Math.cos(a)*d, bz=Math.sin(a)*d;
+    c.position.set(bx,v3H(x+bx,z+bz)-gy+Math.abs(Math.sin(tt*24+n))*0.02,bz); c.rotation.y=Math.atan2(Math.cos(a),Math.sin(a));
+    const leg=Math.floor(tt*12+n)%2; c.userData.legs.forEach((l,i)=>l.rotation.x=((i+leg)%2?0.6:-0.6));
+    const op=Math.min(1,(2.6-t)*2); for(const m of c.userData.mats) m.opacity=op; }); }
+function v3HiveDeaths(T){ const live=new Set();
+  for(const f of G.fx){ if(f.k!=='hivedeath') continue; live.add(f); let g=V3.dying.get(f); if(!g){ g=v3HiveDeathModel(f); V3.dying.set(f,g); V3.g.add(g); } v3HiveDeathPose(f,g,T); }
+  for(const [f,g] of V3.dying) if(!live.has(f)){ V3.g.remove(g); for(const m of g.userData.own) m.dispose(); V3.dying.delete(f); } }
 function render3D(now){
   if(V3.forG!==G||V3.mapId!==G.map.id) v3Reset();
   const dt=Math.min(0.1,(now-(V3.last||now))/1000); V3.last=now;
@@ -665,6 +707,7 @@ function render3D(now){
     if(e.kind==='unit'&&G.mission.dark&&e.faction===G.side&&e.def.bio&&!e.downed) lights.push({x:g.position.x+Math.sin(g.userData.yaw)*1.4,y:g.position.y+1.1,z:g.position.z+Math.cos(g.userData.yaw)*1.4,i:VIEW3D.lamp,c:0xe4ecff,d:7,lamp:1});
     if(e.kind==='building'&&e.def.generator&&e.powered) lights.push({x:g.position.x,y:g.position.y+1.7,z:g.position.z,i:VIEW3D.genLight*(0.92+0.08*Math.sin(now/90+e.id)),c:0xffd690,d:(e.def.light||8)*1.1}); }
   for(const [e,g] of V3.objs){ if(g.userData.f!==V3.frame){ g.visible=false; if(e.dead||V3.frame-g.userData.f>600){ V3.g.remove(g); for(const o of g.userData.own||[]) o.dispose(); V3.objs.delete(e); } } }
+  v3HiveDeaths(T);
   /* selection rings */
   let n=0; const ring=pool(V3.ringPool,()=>{ const r=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, opacity:0.9, depthWrite:false })); r.renderOrder=2; return r; });
   for(const e of sel){ if(e.dead||!v3Shown(e)||e.def&&e.def.ground) continue; const r=ring(n++), rad=e.kind==='building'?(e.size||1)*0.72:(e.r/TILE)*1.5+0.12, x=e.x/TILE, z=e.y/TILE;
@@ -691,7 +734,11 @@ function render3D(now){
       case 'flame': put(x,gy+0.35+(1-a)*0.6,z,0.28+(1-a)*0.5,a>0.6?'#ffe08a':a>0.3?'#ff8a2a':'#783214',a); break;
       case 'boom': put(x,gy+0.45,z,(f.r/TILE)*2.2*(1-a*0.6),f.col||'#ffa03c',a*0.9); break;
       case 'dust': put(x,gy+0.3,z,(f.r0+(1-a)*f.r1)/TILE*2,f.col||'#777',a*0.35,true); break;
-      case 'hivedeath': put(x,gy+0.8,z,3*(1-a)+0.5,'#a6ff4a',a*0.6); break;
+      case 'hivedeath': { const D=HIVE_DEATH, tt=f.max-f.t; if(!G.seen[Math.floor(f.y/TILE)*G.map.w+Math.floor(f.x/TILE)]) break;
+        if(tt<D.scream) put(x,gy+1.1,z,1.4+0.5*Math.abs(Math.sin(tt*24)),'#a6ff4a',0.25+0.2*tt/D.scream);   /* the heart's glow while it screams */
+        for(let k=0;k<D.smoke;k++){ const t=tt-0.3-k*0.22; if(t<0||t>2.2) continue;   /* smoke plumes, as in 2D */
+          put(x+((hdRnd(f.seed+k)-0.5)*56+Math.sin(t*3+k)*5)/TILE,gy+0.3+t*46/TILE,z+(hdRnd(f.seed+k+40)-0.5)*40/TILE,(4+t*9)*4.5/TILE,'#34323a',Math.max(0,0.8-t*0.3),true);   /* darker than in 2D: the 3D ground is lighter */ }
+        break; }
       case 'mlight': put(x,gy+0.6,z,1.0,'#ffd690',a*0.5); break;
       case 'meteor': put(x,gy+a*6,z,0.5,'#ffb347',1); break;
       case 'slash': put(x,gy+0.6,z,0.5,'#ffffff',a*0.8); break; } }
