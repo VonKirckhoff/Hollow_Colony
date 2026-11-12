@@ -33,6 +33,8 @@ CASES=[
   const n=G.ents.filter(e=>e.rogue&&e.dna).length; const d2=makeUnit('drone','swarm',tr.x+40,tr.y); kill(d2,py); ok(G.ents.filter(e=>e.rogue&&e.dna).length===n,'a drone burnt leaves nothing'); ROGUE.dna.drone=keep;
   const hs=hives(); hs[0].invuln=false; kill(hs[0],tr); ok(G.rogue.harvested===1&&G.ents.filter(e=>!e.dead&&e.rogue&&e.dna==='hive').length===ROGUE.dna.hive,'a hive shot dead is harvested');
   hs[1].invuln=false; kill(hs[1],py); ok(G.rogue.burnt===1&&G.rogue.harvested===1,'a hive burnt is not');
+  { const sg=makeBuilding('sentry','corps',2,2,true); hs[2].invuln=false; kill(hs[2],sg); ok(G.rogue.harvested===2,'a hive killed by a Sentry Gun of the crew is harvested too');
+    ROGUE.dna.drone=1; const n2=G.ents.filter(e=>e.rogue&&e.dna).length, d3=makeUnit('drone','swarm',tr.x+40,tr.y); kill(d3,sg); ok(G.ents.filter(e=>e.rogue&&e.dna).length===n2+1,'and so is a drone it kills'); ROGUE.dna.drone=keep; sg.dead=true; }
   const loy=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'); loy.invuln=false; const xp=tr.vet.xp; kill(loy,tr); ok(tr.vet.xp===xp+ROGUE.loyal.xp,'a loyal kill gives XP'); ok(G.ents.some(e=>e.kind==='body'&&Math.hypot(e.x-loy.x,e.y-loy.y)<2),'and leaves a body for the Swarm');'''),
 ('taint: seizure, feral, stabilizer','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt), m=crew().find(x=>x.def.heal); u.invuln=true; m.invuln=true;
   u.vet.taint=90; let seized=false; for(let i=0;i<60&&!seized;i++){ step(1); if(u.stunT>0) seized=true; } ok(seized,'seizures above '+ROGUE.taint.seizure);

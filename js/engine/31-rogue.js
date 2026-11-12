@@ -204,7 +204,7 @@ function rogueKill(e,src){ if(!isRogue()||!G.rogue) return;
     if(!G.saidCrewDown){ G.saidCrewDown=true; setTimeout(()=>{ if(G&&!G.over) say(doc,doc==='Devreese'?`We lost ${v.name}... no. Wait. The strain is still moving in ${pron(v,'him')}. Win this, and I can bring ${pron(v,'him')} back. ${pron(v,'He')} will not come back clean.`:`Devreese is down... but look at her hand, it is still twitching. The strain will not let her go. Win this and we carry her out.`,'crew'); },1500); }
     else say('Crew',`${crewTitle(v)} is down. Win the job and the strain brings ${pron(v,'him')} back, tainted.`,'alert');
     return; }
-  const crewKill=src&&(src.crew||(src.faction==='corps'&&src.dead));
+  const crewKill=src&&(src.crew||src.faction==='corps');   /* the crew, or something of theirs: a Sentry Gun they built, a round from a crew member who has since fallen */
   if(e.kind==='building'&&e.type==='hive'){ if(!crewKill) return;
     if(burntBy(e,src)){ G.rogue.burnt++; G.fx.push({k:'text',x:e.x,y:e.y-40,t:1.6,max:1.6,txt:'BURNT · NO SAMPLES',col:'#ff9a3c'});
       if(!G.saidBurnt){ G.saidBurnt=true; say('Devreese','Mortier! You cooked it. There is nothing left in there I can use. Kill them with lead if you want samples.','crew'); } return; }

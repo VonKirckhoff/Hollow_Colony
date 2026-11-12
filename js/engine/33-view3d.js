@@ -319,6 +319,17 @@ function v3Small(e){
   const g=new THREE.Group();
   if(e.kind==='body'){ const swarm=e.faction==='swarm'||e.bio===false, m=swarm?shiny(CH.body):mat(e.faction==='osprey'?'#2e2621':'#5a6880'), a=(e.id%7)*0.9;
     const b=box(m,0.28,0.12,0.62,0,0.07,0); b.rotation.y=a; g.add(b); g.add(ball(mat(swarm?CH.bone:'#262b35'),0.11,0.09,0.11,Math.sin(a)*0.37,0.09,Math.cos(a)*0.37)); g.userData.top=0.3; return g; }
+  if(e.rogue&&e.dna){ /* a DNA sample: an upright glass vial of glowing ichor with a steel cap, as in 2D (green, or purple from a hive) */
+    const col=e.dna==='hive'?'#c38bff':'#8dff4a';
+    g.add(ball(glow(col,{ transparent:true, opacity:0.18, depthWrite:false }),0.2,0.24,0.2,0,0.18,0));   /* its glow */
+    g.add(cyl(glow(col),0.065,0.26,0.065,0,0.15,0)); g.add(cyl(mat('#d8eef4',{ transparent:true, opacity:0.35 }),0.085,0.36,0.085,0,0.2,0));
+    g.add(cyl(shiny('#cfd8e0'),0.095,0.07,0.095,0,0.41,0)); g.add(box(glow('#e8ffd0'),0.018,0.12,0.01,-0.03,0.19,0.07));
+    g.scale.setScalar(1.35); g.userData.top=0.75; g.userData.bob=true; return g; }   /* a bit bigger than true size, so it reads from the camera */
+  if(e.rogue&&e.heart){ g.add(ball(shiny('#8a2f6a'),0.24,0.2,0.24,0,0.24,0)); g.add(ball(glow('#c38bff'),0.06,0.06,0.06,-0.1,0.3,0.18)); g.userData.top=0.5; g.userData.bob=true; return g; }
+  if(e.rogue){ /* a stabilizer case (blue with a cyan cross) or a loot case (brown with an orange cross), as in 2D */
+    const c=e.stab?'#7fdfff':'#ffb347'; g.add(box(mat(e.stab?'#3a6f86':'#6b5a3a'),0.42,0.24,0.3,0,0.12,0));
+    g.add(box(glow(c),0.07,0.02,0.24,0,0.245,0)); g.add(box(glow(c),0.26,0.02,0.07,0,0.245,0)); g.add(box(glow(c),0.07,0.16,0.01,0,0.12,0.151)); g.add(box(glow(c),0.2,0.05,0.01,0,0.13,0.151));
+    g.userData.top=0.4; g.userData.bob=true; return g; }
   if(e.relic){ g.add(box(mat('#3a3f48'),0.3,0.2,0.3,0,0.1,0)); g.add(ball(glow('#c58cff'),0.09,0.09,0.09,0,0.3,0)); g.userData.top=0.5; g.userData.bob=true; return g; }
   g.add(box(mat(e.supply?'#3a6a8a':'#5a4632'),0.36,0.26,0.28,0,0.13,0)); g.add(box(mat('#f2c230'),0.37,0.05,0.29,0,0.2,0)); g.userData.top=0.4; g.userData.bob=true; return g; }
 function v3Model(e){
