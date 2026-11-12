@@ -373,7 +373,7 @@ function v3Building(e){
     let seg=grp(0,0.38,0); g.add(seg); for(let i=0;i<4;i++){ const s=grp(0,0.05,0); s.add(cyl(fung('#bcae90'),0.018-i*0.003,0.06,0.018-i*0.003,0,0.025,0)); s.rotation.z=0.45; seg.add(s); seg=s; } top=0.6; }
   else if(t==='cocoon'){ const c=ball(shiny('#4f6a2a'),0.24,0.34,0.24,0,0.32,0); g.add(c); g.add(ball(glow('#a6ff4a'),0.08,0.12,0.08,0,0.34,0.17)); U.pulse=c; top=0.7; }
   else if(t==='door'){ g.add(box(mat('#59616f'),0.98,1.2,0.98,0,0.6,0)); g.add(box(yel,1.0,0.1,1.0,0,1.0,0)); top=1.3; }
-  else if(t==='membrane'){ g.add(box(mat('#7a5a8e',{ transparent:true, opacity:0.8 }),0.95,1.3,0.5,0,0.65,0)); top=1.3; }
+  else if(t==='membrane') return v3Membrane(e);
   else if(t==='rubble'){ for(let i=0;i<5;i++) g.add(part(GEO.lowball,mat('#4a4a52'),0.25,0.2,0.25,(hash2(e.id,i,1)-0.5)*0.6,0.12,(hash2(e.id,i,2)-0.5)*0.6)); top=0.4; }
   else if(t==='wreck'){ const W=mat('#3a3f48'); const hull=box(W,1.2,0.6,2.6,0,0.35,0); hull.rotation.set(0.15,0.4,0.2); g.add(hull); const wing=box(W,2.4,0.08,0.7,0.2,0.25,0.2); wing.rotation.set(0,0.4,0.35); g.add(wing); U.smoke=true; top=1; }
   else if(t==='medtent'){ const tent=new THREE.Mesh(new THREE.CylinderGeometry(0,1,1,4),mat('#c8d0c0')); tent.scale.set(0.9,1.6,0.9); tent.position.y=0.45; tent.rotation.y=Math.PI/4; tent.castShadow=true; g.add(tent); g.add(box(mat('#e2463a'),0.3,0.08,0.02,0,0.5,0.66)); top=1; }
@@ -381,6 +381,73 @@ function v3Building(e){
   else if(t==='choirpod'){ g.add(part(GEO.cone,shiny('#5c3e6e'),0.3,0.9,0.3,0,0.45,0)); g.add(ball(glow('#c58cff'),0.1,0.1,0.1,0,0.92,0)); top=1; }
   else return null;
   U.top=top; return g; }
+/* ---------- the membrane: a living web that grows across a tunnel ----------
+   Each tile sends a half sheet towards every neighbour that is membrane or rock, so the sheets of a whole wall meet edge to edge and
+   hang between fleshy knots like tissue between fingers. The top edge follows the world position (neighbours agree where they meet), dips
+   between the knots and climbs into rock. Tendons run across, glowing veins between them. It breathes (a wave through the wall), shudders
+   when hit, tears open as it loses health; while its egg chambers live the veins burn bright and the sheet is taut, once it is weakened
+   the veins dim and it hangs slack. The model is rebuilt when a neighbour dies (v3MembKey). */
+const MEMB={ breathe:0.22, breatheSpeed:1.7, slackBreathe:0.3, slackSpeed:1.1, slackBulge:1.35, shudder:0.5, sag:0.34, opTaut:0.72, opSlack:0.55 };
+const MEMB_COL={ col:'#7a5a8e', vein:'#a6ff4a', veinWeak:'#56692f', tendon:'#3a2448', root:'#5c3e6e' };
+const MEMB_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+function v3MembNb(e){ const S=membraneTiles(), W=G.map.w, out=[];
+  for(const [dx,dy] of MEMB_DIRS){ const x=e.tx+dx, y=e.ty+dy; if(x<0||y<0||x>=W||y>=G.map.h){ out.push('r'); continue; } const k=y*W+x;
+    out.push(S.has(k)?'m':!walkableT(x,y)?'r':'-'); } return out; }
+function v3MembKey(e){ return v3MembNb(e).join(''); }
+function membTop(wx,wz){ return 1.18+0.2*Math.sin(wx*2.7+wz*1.3)+0.14*Math.sin(wx*1.1-wz*3.3); }   /* the ragged top edge, the same for both sheets meeting at a point */
+function v3MembSheet(e,dx,dy,rock,own,i){
+  const cx=e.tx+0.5, cz=e.ty+0.5, NU=8, NV=9, sgn=hash2(e.tx*2+dx+7,e.ty*2+dy+7,3)<0.5?-1:1, bow=0.07+hash2(e.tx,e.ty,i)*0.05;
+  const rockH=rock?tileH(G.map.tiles[(e.ty+dy)*G.map.w+e.tx+dx])*0.92:0;
+  const top=u=>{ const wx=cx+dx*u*0.5, wz=cz+dy*u*0.5, h=membTop(wx,wz)*(1-MEMB.sag*Math.sin(u*Math.PI/2)); return rock?h+(Math.min(Math.max(h,rockH),h+0.35)-h)*u*u:h; };
+  const surf=(u,v,lift=0)=>{ const z=(sgn*bow*Math.sin(Math.PI*u)*Math.sin(Math.PI*Math.min(1,v*1.1))+lift*sgn)*(rock?1-u*0.6:1);
+    return new THREE.Vector3(u*0.5,v*top(u),z); };
+  /* the sheet itself */
+  const pos=[], idx=[]; for(let j=0;j<=NV;j++) for(let k=0;k<=NU;k++){ const p=surf(k/NU,j/NV); pos.push(p.x,p.y,p.z); }
+  for(let j=0;j<NV;j++) for(let k=0;k<NU;k++){ const a=j*(NU+1)+k, b=a+1, c=a+NU+1, d=c+1; idx.push(a,c,b,b,c,d); }
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setIndex(idx); geo.computeVertexNormals(); own.push(geo);
+  const half=new THREE.Group(); half.rotation.y=Math.atan2(-dy,dx);   /* local +x runs from the knot to the edge */
+  const sheet=new THREE.Mesh(geo,MAT.membTaut); sheet.castShadow=true; sheet.renderOrder=1; half.add(sheet); half.userData.sheet=sheet;
+  /* tendons: two dark cords across the sheet, a vein of light running beside each, and fine veins branching off */
+  const cord=(pts,r,m,lift)=>{ const c=new THREE.CatmullRomCurve3(pts.map(([u,v])=>surf(u,v,lift))), tg=new THREE.TubeGeometry(c,10,r,5,false); own.push(tg); const o=new THREE.Mesh(tg,m); half.add(o); return o; };
+  const h1=hash2(e.tx,e.ty,i+11), h2=hash2(e.tx,e.ty,i+23);
+  cord([[0,0.15+h1*0.2],[0.35,0.4],[0.7,0.6+h2*0.15],[1,0.75]],0.022,MAT.membTendon,0.012);
+  cord([[0,0.85],[0.4,0.62+h1*0.1],[0.8,0.35],[1,0.2+h2*0.15]],0.018,MAT.membTendon,0.012);
+  half.userData.veins=[ cord([[0,0.3+h1*0.2],[0.3,0.5],[0.65,0.72],[1,0.88]],0.009,MAT.membVein,0.02),
+    cord([[0.15,0.95],[0.45,0.7],[0.8,0.55],[1,0.45]],0.008,MAT.membVein,0.02),
+    cord([[0.3,0.5],[0.42,0.32],[0.55,0.12]],0.006,MAT.membVein,0.02), cord([[0.65,0.72],[0.75,0.9]],0.006,MAT.membVein,0.02) ];
+  /* fleshy roots along the foot and a thick rim along the top */
+  for(let k=0;k<3;k++){ const u=0.2+k*0.3, w=0.1+hash2(e.tx,e.ty,i*5+k)*0.06; half.add(ball(MAT.membRoot,0.13,w,0.12+w*0.5,u*0.5,0.03,0)); }
+  const rim=[]; for(let k=0;k<=5;k++) rim.push([k/5,0.985]); cord(rim,0.014,MAT.membTendon,0);
+  /* tears: dark ragged holes that open as it loses health */
+  half.userData.tears=[]; for(let k=0;k<2;k++){ const u=0.35+k*0.35*hash2(e.tx,e.ty,i+40+k)+0.05, v=0.3+0.35*hash2(e.tx,e.ty,i+50+k), r=0.07+0.05*hash2(e.tx,e.ty,i+60+k);
+    const sh=new THREE.Shape(); for(let a=0;a<=12;a++){ const ang=a/12*Math.PI*2, rr=r*(0.6+0.7*hash2(e.tx*13+a,e.ty,i+k)); sh[a?'lineTo':'moveTo'](Math.cos(ang)*rr,Math.sin(ang)*rr*1.4); }
+    const tg=new THREE.ShapeGeometry(sh); own.push(tg); const t=new THREE.Mesh(tg,MAT.membTear), p=surf(u,v,0.006); t.position.copy(p); t.visible=false;
+    t.userData.at=0.75-k*0.3-0.1*hash2(e.tx,e.ty,i+70+k); half.add(t); half.userData.tears.push(t); }
+  return half; }
+function v3Membrane(e){
+  if(!MAT.membTaut){ const sh=o=>v3Fogify(new THREE.MeshPhongMaterial({ color:MEMB_COL.col, emissive:'#2a1236', specular:0x8a7aa0, shininess:40, side:THREE.DoubleSide, transparent:true, depthWrite:false, ...o }));
+    MAT.membTaut=sh({ opacity:MEMB.opTaut }); MAT.membSlack=sh({ opacity:MEMB.opSlack, color:'#6a4e78' });
+    MAT.membTendon=shiny(MEMB_COL.tendon); MAT.membRoot=fung(MEMB_COL.root); MAT.membVein=glow(MEMB_COL.vein); MAT.membVeinWeak=glow(MEMB_COL.veinWeak);
+    MAT.membTear=v3Fogify(new THREE.MeshBasicMaterial({ color:'#120816', side:THREE.DoubleSide })); }
+  const g=new THREE.Group(), U=g.userData, own=[], nb=v3MembNb(e); U.own=own; U.memb=true; U.nkey=nb.join(''); U.halves=[];
+  let dirs=MEMB_DIRS.map((d,i)=>[d,nb[i]]).filter(([d,n])=>n!=='-');
+  if(!dirs.length) dirs=[[MEMB_DIRS[0],'-'],[MEMB_DIRS[1],'-']];   /* alone in the open: a single sheet across */
+  dirs.forEach(([[dx,dy],n],i)=>{ const h=v3MembSheet(e,dx,dy,n==='r',own,i); g.add(h); U.halves.push(h); });
+  /* the knot in the middle: a tendon column with a swelling at the top and a fleshy foot */
+  const top=membTop(e.tx+0.5,e.ty+0.5), H=(k)=>hash2(e.tx,e.ty,90+k); U.knot=part(GEO.taper,MAT.membTendon,0.06,top,0.06,0,top/2,0); U.knot.rotation.set((H(1)-0.5)*0.15,0,(H(2)-0.5)*0.15); g.add(U.knot);
+  for(let k=0;k<5;k++){ const y=0.08+k*top/5.2, w=0.1-k*0.012+H(k+3)*0.03; g.add(ball(MAT.membRoot,w,0.09+H(k+9)*0.05,w*0.9,(H(k+15)-0.5)*0.05,y,(H(k+21)-0.5)*0.05)); }   /* a lumpy, tapering knot of flesh */
+  g.add(ball(MAT.membRoot,0.22,0.08,0.22,0,0.02,0)); g.add(ball(MAT.membTendon,0.045,0.07,0.045,0,top-0.02,0));
+  U.bud=ball(MAT.membVein,0.035,0.035,0.035,(H(30)-0.5)*0.04,top*0.55,0.05); g.add(U.bud);   /* a glowing node half-way up the knot */
+  U.top=top+0.2; U.phase=(e.tx+e.ty)*0.55; return g; }
+function v3PoseMembrane(e,g,T){ const U=g.userData, weak=!e.invuln, f=clamp(e.hp/e.maxHp,0,1), hit=e.flash>0;
+  const M=MEMB, br=weak?M.slackBulge+M.slackBreathe*Math.sin(T*M.slackSpeed+U.phase):1+M.breathe*Math.sin(T*M.breatheSpeed+U.phase), sh=hit?Math.sin(T*70)*M.shudder:0;
+  MAT.membTaut.opacity=M.opTaut; MAT.membSlack.opacity=M.opSlack;
+  const sm=weak?MAT.membSlack:MAT.membTaut, vm=weak?MAT.membVeinWeak:MAT.membVein;
+  for(const h of U.halves){ h.scale.set(1,weak?0.93:1,br+sh); if(h.userData.sheet.material!==sm) h.userData.sheet.material=sm;
+    for(const v of h.userData.veins) if(v.material!==vm) v.material=vm;
+    for(const t of h.userData.tears) t.visible=f<t.userData.at; }
+  U.bud.scale.setScalar(0.04*(1+(weak?0.1:0.5)*Math.max(0,Math.sin(T*2.4+U.phase)))); if(U.bud.material!==vm) U.bud.material=vm;
+  g.rotation.z=hit?Math.sin(T*55)*0.015:0; }
 function v3Small(e){
   const g=new THREE.Group();
   if(e.kind==='body'&&e.fauna){ /* a grazer carcass: the grazer on its back, legs stiff in the air, head lolling to one side (as in 2D) */
@@ -517,6 +584,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.pulse) U.pulse.scale.set(0.24,0.34*(1+0.06*Math.sin(T*7+e.id)),0.24);
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
   if(U.smoke&&Math.random()<0.3) V3.smoke.push({x,z,y:y+0.6,t:0});
+  if(U.memb) v3PoseMembrane(e,g,T);
   if(e.type==='egg'){ const p=e.openT!=null?1-e.openT/EGG.open:0; g.scale.setScalar(1+Math.sin(T*2+e.id)*0.04+0.15*p); U.opening=p; } }
 /* the Brute: head down when it fights, down hard and the whole body forward when it rams; the bands shift as it walks;
    a puff of steam from the nostrils now and then; one band breaks off below 50% health, a second below 25% (the seams glow brighter) */
@@ -737,6 +805,7 @@ function render3D(now){
   const T=now/1000, sel=new Set(G.sel), lights=[];
   for(const e of G.ents){ if(!v3Shown(e)) continue;
     let g=V3.objs.get(e); if(!g){ g=v3Model(e); V3.objs.set(e,g); V3.g.add(g); if(e.faction===G.side&&e.kind==='unit') g.traverse(o=>{ if(!o.userData.noXray) o.layers.set(1); }); }
+    if(g.userData.memb&&(V3.frame+e.id)%20===0&&v3MembKey(e)!==g.userData.nkey){ V3.g.remove(g); for(const o of g.userData.own||[]) o.dispose(); g=v3Model(e); V3.objs.set(e,g); V3.g.add(g); }   /* a neighbour died: grow anew */
     g.visible=true; g.userData.f=V3.frame; v3Pose(e,g,T);
     if(e.kind==='unit'&&G.mission.dark&&e.faction===G.side&&e.def.bio&&!e.downed) lights.push({x:g.position.x+Math.sin(g.userData.yaw)*1.4,y:g.position.y+1.1,z:g.position.z+Math.cos(g.userData.yaw)*1.4,i:VIEW3D.lamp,c:0xe4ecff,d:7,lamp:1,U:g.userData});
     if(e.kind==='building'&&e.def.generator&&e.powered) lights.push({x:g.position.x,y:g.position.y+1.7,z:g.position.z,i:VIEW3D.genLight*(0.92+0.08*Math.sin(now/90+e.id)),c:0xffd690,d:(e.def.light||8)*1.1}); }
