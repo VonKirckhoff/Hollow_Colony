@@ -41,6 +41,12 @@ const DEV_HELP = {
   'MYCEL|healThreads':'Thin threads creep to the feet of a creature healing on the mycel.',
   'SIGHT|rockBlocks':'Rock walls (#, ^, *, cliffs) block what your soldiers and creatures see; the wall itself is seen, crater rims do not block, from the plateau you see over the cliff edge. Off: everyone sees all round, as before Nov 2026.',
   /* 3D view (prototype, 33-view3d.js) */
+  'HIVE3D|sapSpeed':'3D hive: how fast the green sap runs up the roots to the bulb.',
+  'HIVE3D|sap':'3D hive: sap drops per root (taken when the model is built).',
+  'HIVE3D|spores':'3D hive: spores drifting up from the puffs at its foot (taken when the model is built).',
+  'HIVE3D|sporeRise':'3D hive: how high the spores drift before they fade (tiles).',
+  'HIVE3D|sway':'3D hive: how far the sprout on top sways.',
+  'HIVE3D|sag':'3D hive: height of the bulb below 33% health (1 = no sagging).',
   'MEMB|breathe':'3D membrane: how far the sheets swell in and out while it cannot be harmed (0 = still).',
   'MEMB|breatheSpeed':'3D membrane: breathing speed while it cannot be harmed.',
   'MEMB|slackBreathe':'3D membrane: how far the sheets swell once weakened (slower, deeper).',

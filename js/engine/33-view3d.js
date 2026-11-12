@@ -357,11 +357,7 @@ function v3Building(e){
     const tur=grp(0,0.45,0); tur.add(box(plate,0.34,0.24,0.38,0,0,0)); tur.add(box(yel,0.35,0.04,0.39,0,0.1,0)); tur.add(box(glow('#ff5a4f'),0.06,0.03,0.02,0,0.04,0.2)); for(const k of [-1,1]) tur.add(rotX(cyl(steel,0.025,0.45,0.025,k*0.07,0.0,0.32),Math.PI/2));
     g.add(tur); U.turret=tur; top=0.85; }
   else if(t==='barricade'){ g.add(box(mat('#6a6a70'),0.95,0.6,0.42,0,0.3,0)); g.add(box(yel,0.96,0.08,0.43,0,0.46,0)); for(const x of [-0.3,0.3]) g.add(box(dark,0.06,0.62,0.44,x,0.31,0)); top=0.7; }
-  else if(t==='hive'){ const H=shiny('#3a2448'), H2=shiny('#5c3e6e');
-    for(let i=0;i<8;i++){ const a=i*0.8; g.add(ball(i%2?H:H2,0.5+hash2(e.id,i,1)*0.35,0.45+hash2(e.id,i,2)*0.5,0.5,Math.cos(a)*0.7,0.3,Math.sin(a)*0.7)); }
-    g.add(ball(H,0.85,1.15,0.85,0,0.7,0)); for(let i=0;i<6;i++) g.add(ball(H2,0.35,0.06,0.5,0,0.5+i*0.18,-0.2)); const heart=ball(glow('#a6ff4a'),0.3,0.3,0.3,0,1.2,0.65); g.add(heart); U.heart=heart;
-    g.add(ball(glow('#2a0d33'),0.32,0.4,0.1,0,0.35,0.8));   /* the mouth */
-    for(let i=0;i<6;i++){ const r=cyl(H2,0.06,1.7,0.06,Math.cos(i*1.05)*1.1,0.22,Math.sin(i*1.05)*1.1); r.rotation.set(Math.sin(i*1.05)*1.25,0,-Math.cos(i*1.05)*1.25); g.add(r); } top=2; }
+  else if(t==='hive') return v3Hive(e);
   else if(t==='lz'){ U.lamps=[]; for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ g.add(cyl(dark,0.05,0.3,0.05,x*1.3,0.15,z*1.3)); const l=ball(glow('#ffb347'),0.05,0.05,0.05,x*1.3,0.32,z*1.3); g.add(l); U.lamps.push(l); } top=0.4; }
   else if(t==='uplink'){ g.add(box(metal,0.8,0.2,0.8,0,0.1,0)); g.add(cyl(plate,0.06,1.0,0.06,0,0.6,0)); g.add(rotX(part(GEO.half,steel,0.42,0.14,0.42,0,1.1,0.05),-0.8)); top=1.4; }
   else if(t==='shaft'){ if(e.wall){ U.top=0.5; return g; } g.add(part(GEO.disc,glow('#050507'),0.7,1,0.7,0,0.03,0)); g.add(part(GEO.torus,mat('#4f5766'),0.8,1.4,0.8,0,0.08,0)); g.add(box(mat('#5a4632'),1.7,0.1,0.12,0,0.8,0.55)); g.add(box(mat('#5a4632'),0.12,0.8,0.12,-0.8,0.4,0.55)); g.add(box(mat('#5a4632'),0.12,0.8,0.12,0.8,0.4,0.55)); top=1.0; }
@@ -381,6 +377,77 @@ function v3Building(e){
   else if(t==='choirpod'){ g.add(part(GEO.cone,shiny('#5c3e6e'),0.3,0.9,0.3,0,0.45,0)); g.add(ball(glow('#c58cff'),0.1,0.1,0.1,0,0.92,0)); top=1; }
   else return null;
   U.top=top; return g; }
+/* ---------- the hive: the root bulb of 2D, in 3D (Nov 2026) ----------
+   A folded bulb with a wet shine (folds twist a little as they climb) on a foot of thick, twisting roots that sink into the mycel,
+   each with a rootlet. Green sap runs along the roots towards the bulb. A curled sprout sways on top with a glowing bud; small
+   mushrooms and spore puffs grow round its foot and spores drift up from them. The heart glows on the front as before.
+   Hurt, as in 2D (below 66% and below 33%): roots wither (grey, shrunk, no sap), cracks open in the bulb, and at the worst the
+   bulb sags and darkens, the bud dims and the sprout droops. A dying hive (HIVE_DEATH) uses the worst look. */
+const HIVE3D={ sapSpeed:0.35, sap:2, spores:5, sporeRise:1.6, sway:0.1, sag:0.9 };
+const HIVE3D_COL={ body:'#3a2448', fold:'#5c3e6e', hurt:'#2c2034', root:'#38243f', foldHurt:'#46344f', dead:'#55505a', sap:'#a6ff4a', bud:'#a6ff4a', budWeak:'#56692f', crack:'#2f5a18' };
+/* a tube along points that tapers from r0 to r1 (one mesh: cheap) */
+function v3Tube(pts,r0,r1,n=12,rad=6){ const c=new THREE.CatmullRomCurve3(pts), geo=new THREE.TubeGeometry(c,n,r0,rad,false), P=geo.attributes.position, p=new THREE.Vector3();
+  for(let i=0;i<=n;i++){ c.getPointAt(i/n,p); const k=1+(r1/r0-1)*i/n; for(let j=0;j<=rad;j++){ const v=i*(rad+1)+j; P.setXYZ(v,p.x+(P.getX(v)-p.x)*k,p.y+(P.getY(v)-p.y)*k,p.z+(P.getZ(v)-p.z)*k); } }
+  P.needsUpdate=true; geo.computeBoundingSphere(); geo.userData.curve=c; return geo; }
+function v3Hive(e){
+  const g=new THREE.Group(), U=g.userData, id=e.id||0, C=HIVE3D_COL, own=U.own=[], H=1.9, h=(i,s)=>hash2(id,i,s), V=(x,y,z)=>new THREE.Vector3(x,y,z);
+  const mesh=(geo,m)=>{ own.push(geo); const o=new THREE.Mesh(geo,m); o.castShadow=true; return o; };
+  const tw=0.5+h(1,1)*0.5, lump=h(1,2)*6;
+  const bulbR=(t,a)=>1.1*Math.pow(Math.max(0,Math.sin(Math.PI*t)),0.7)*(1-0.3*t)*(1+0.07*Math.cos(7*(a+tw*t))+0.03*Math.sin(3*a+lump)*Math.sin(Math.PI*t));
+  const surf=(t,a,out=0)=>{ const r=bulbR(t,a)+out; return V(Math.sin(a)*r,t*H,Math.cos(a)*r); };
+  const body=grp(); g.add(body); U.body=body; U.mats=[];
+  /* the bulb: a lathe, then pushed out into seven folds */
+  const prof=[]; for(let i=0;i<=24;i++){ const t=i/24; prof.push(new THREE.Vector2(Math.max(0.001,1.1*Math.pow(Math.sin(Math.PI*t),0.7)*(1-0.3*t)),t*H)); }
+  const bg=new THREE.LatheGeometry(prof,56), P=bg.attributes.position;
+  for(let v=0;v<P.count;v++){ const x=P.getX(v), y=P.getY(v), z=P.getZ(v), r=Math.hypot(x,z); if(r<1e-3) continue; const a=Math.atan2(x,z), k=bulbR(y/H,a)/r; P.setXYZ(v,x*k,y,z*k); }
+  bg.computeVertexNormals(); const bulb=mesh(bg,shiny(C.body)); body.add(bulb); U.bulb=bulb;
+  U.folds=[]; for(let k=0;k<7;k++){ const pts=[]; for(let s=0;s<=6;s++){ const t=0.12+s*0.125, a=k*Math.PI*2/7-tw*t; pts.push(surf(t,a,-0.01)); }
+    const f=mesh(v3Tube(pts,0.05,0.025,14,5),shiny(C.fold)); body.add(f); U.folds.push(f); }
+  /* the heart (as before) and the mouth at the foot: a dark slit between two fleshy lips */
+  const heart=ball(glow('#a6ff4a'),0.3,0.3,0.3,0,1.2,0.65); body.add(heart); U.heart=heart;
+  const mz=bulbR(0.2,0)-0.02; body.add(ball(glow('#2a0d33'),0.26,0.16,0.08,0,0.38,mz)); for(const k of [-1,1]) body.add(ball(shiny(C.fold),0.28,0.06,0.09,0,0.38+k*0.13,mz-0.01));
+  /* cracks: dark seams with a green glow deep inside; a few open below 66%, all below 33% */
+  U.cracks=[]; for(let k=0;k<8;k++){ const t0=0.3+h(k,30)*0.45, a0=h(k,31)*Math.PI*2, pts=[]; let t=t0, a=a0;
+    for(let s=0;s<4;s++){ pts.push(surf(t,a,0.005)); t+=(h(k,32+s)-0.5)*0.12+0.04; a+=(h(k,40+s)-0.5)*0.35; }
+    const c=mesh(v3Tube(pts,0.03,0.012,8,4),glow(C.crack)); c.visible=false; body.add(c); U.cracks.push(c); }
+  /* the sprout: a curl with a fleshy bud that glows */
+  const sp=grp(0,H-0.08,0); body.add(sp); U.sprout=sp; const spts=[], curl=1.6+h(2,1)*0.6, side=h(2,2)<0.5?-1:1;
+  for(let s=0;s<=8;s++){ const q=s/8, an=q*curl; spts.push(V(side*(1-Math.cos(an))*0.28,Math.sin(an)*0.28+q*0.2,0)); }
+  sp.add(mesh(v3Tube(spts,0.07,0.025,12,6),shiny(C.body))); U.sproutTube=sp.children[0];
+  const tip=spts[8]; U.bud=ball(shiny(C.fold),0.07,0.07,0.07,tip.x,tip.y,tip.z); U.budGlow=ball(glow(C.bud),0.045,0.045,0.045,tip.x,tip.y+0.03,tip.z+0.03); sp.add(U.bud,U.budGlow);
+  /* the roots: thick at the bulb, tapering into the ground, with a rootlet each; sap runs up them */
+  U.roots=[]; for(let i=0;i<7;i++){ const a=i*Math.PI*2/7+h(i,3)*0.35, d=V(Math.sin(a),0,Math.cos(a)), pp=V(Math.cos(a),0,-Math.sin(a)), w=(h(i,4)-0.5)*0.45, L=h(i,5)*0.35;
+    const b0=surf(0.12,a,-0.1), rg=grp(b0.x,b0.y,b0.z); g.add(rg);
+    const at=(r,y,wig)=>V(d.x*r+pp.x*wig-b0.x,y-b0.y,d.z*r+pp.z*wig-b0.z);
+    const pts=[at(bulbR(0.16,a)-0.12,b0.y,0),at(0.9,0.2,w*0.3),at(1.2+L*0.4,0.1,w),at(1.5+L*0.7,0.03,-w*0.5),at(1.8+L,-0.2,-w*0.2)];
+    const geo=v3Tube(pts,0.19,0.035,16,7), root=mesh(geo,fung(C.root)); rg.add(root);
+    const p2=pts[2], s2=h(i,6)<0.5?-1:1, lp=[p2.clone(),p2.clone().add(V(d.x*0.2+pp.x*s2*0.2,-0.04,d.z*0.2+pp.z*s2*0.2)),p2.clone().add(V(d.x*0.35+pp.x*s2*0.38,-0.22,d.z*0.35+pp.z*s2*0.38))];
+    const twig=mesh(v3Tube(lp,0.06,0.015,6,5),fung(C.root)); rg.add(twig);
+    const sap=[]; for(let s=0;s<Math.max(0,HIVE3D.sap|0);s++){ const b=ball(glow(C.sap),0.05,0.05,0.05,0,0,0); rg.add(b); sap.push(b); }
+    U.roots.push({ g:rg, curve:geo.userData.curve, parts:[root,twig], sap, dead:false }); }
+  /* mushrooms and spore puffs between the roots */
+  U.puffs=[]; for(let i=0;i<9;i++){ const a=(i+0.5)*Math.PI*2/9+h(i,7)*0.3, r=0.8+h(i,8)*0.55, x=Math.sin(a)*r, z=Math.cos(a)*r;
+    if(i%3===2){ const s=0.08+h(i,9)*0.05, pf=ball(fung('#7d6290'),s,s*0.85,s,x,s*0.7,z); g.add(pf); g.add(ball(glow('#c7f05a'),s*0.3,s*0.3,s*0.3,x,s*1.45,z)); U.puffs.push(V(x,s*1.5,z)); continue; }
+    for(let k=0;k<1+(h(i,10)*3|0);k++){ const ox=x+(h(i,11+k)-0.5)*0.22, oz=z+(h(i,14+k)-0.5)*0.22, ht=0.1+h(i,17+k)*0.14, cr=0.06+h(i,20+k)*0.07, lean=(h(i,23+k)-0.5)*0.5;
+      const m=grp(ox,0,oz); m.rotation.set(lean,0,lean*0.6); m.add(cyl(fung('#bcae90'),0.014+cr*0.15,ht,0.014+cr*0.15,0,ht/2,0));
+      m.add(part(GEO.half,fung(k%2?'#bcae90':'#8a6a9a'),cr,cr*0.6,cr,0,ht,0)); g.add(m); } }
+  if(!U.puffs.length) U.puffs.push(V(0.9,0.1,0));
+  /* spores drifting up from the puffs */
+  U.spores=[]; for(let k=0;k<Math.max(0,HIVE3D.spores|0);k++){ const s=ball(glow('#c7f05a'),0.03,0.03,0.03,0,0,0); s.userData.from=U.puffs[k%U.puffs.length]; s.userData.ph=h(k,50); g.add(s); U.spores.push(s); }
+  U.hive=true; U.hurt=0; U.top=2.2; return g; }
+/* the look for a hurt level (0 healthy, 1 below 66%, 2 below 33%), as in hiveDraw in 2D: which roots wither, cracks, sagging, dim bud */
+function v3HiveHurt(g,hurt){ const U=g.userData, C=HIVE3D_COL; if(U.hurt===hurt) return; U.hurt=hurt;
+  U.roots.forEach((r,i)=>{ const dead=hurt>0&&(i%3===0||(hurt>1&&i%3===1)); r.dead=dead; r.g.scale.setScalar(dead?0.6:1); for(const p of r.parts) p.material=dead?shiny(C.dead,{ specular:0x222222, shininess:10 }):fung(C.root); for(const s of r.sap) s.visible=!dead; });
+  U.cracks.forEach((c,i)=>c.visible=hurt>1||(hurt>0&&i<3));
+  U.bulb.material=shiny(hurt>1?C.hurt:C.body); for(const f of U.folds) f.material=shiny(hurt>1?C.foldHurt:C.fold);
+  U.body.scale.y=hurt>1?HIVE3D.sag:1; U.budGlow.material=glow(hurt>1?C.budWeak:C.bud); U.sprout.rotation.x=hurt>1?0.5:0; }
+function v3PoseHive(e,g,T){ const U=g.userData, f=clamp(e.hp/e.maxHp,0,1), hurt=f<0.33?2:f<0.66?1:0, rate=[1,0.75,0.5][hurt], D=HIVE3D, p=new THREE.Vector3();
+  v3HiveHurt(g,hurt);
+  U.sprout.rotation.z=Math.sin(T*1.3*rate+e.id)*D.sway; U.sprout.rotation.y=Math.sin(T*0.6+e.id)*D.sway*2;
+  U.budGlow.scale.setScalar(0.045*(1+0.25*Math.sin(T*3*rate+e.id)));
+  U.roots.forEach((r,i)=>{ if(r.dead) return; r.sap.forEach((s,k)=>{ const q=((T*D.sapSpeed*rate+i*0.23+k/r.sap.length)%1+1)%1; r.curve.getPointAt(1-q,p);   /* from the tip up to the bulb */
+    const rad=0.19+(0.035-0.19)*(1-q); s.position.set(p.x,p.y+rad*0.75,p.z); s.scale.setScalar(0.03+0.03*Math.sin(q*Math.PI)); }); });
+  U.spores.forEach(s=>{ const q=((T*0.22+s.userData.ph)%1), o=s.userData.from; s.position.set(o.x+Math.sin(T*1.7+s.userData.ph*9)*0.12*q,o.y+q*D.sporeRise,o.z+Math.cos(T*1.3+s.userData.ph*7)*0.12*q); s.scale.setScalar(0.03*Math.sin(q*Math.PI)); }); }
 /* ---------- the membrane: a living web that grows across a tunnel ----------
    Each tile sends a half sheet towards every neighbour that is membrane or rock, so the sheets of a whole wall meet edge to edge and
    hang between fleshy knots like tissue between fingers. The top edge follows the world position (neighbours agree where they meet), dips
@@ -616,6 +683,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.blink) U.blink.visible=Math.floor(T*1.6+e.id)%2===0;
   if(U.lamps) U.lamps.forEach((l,i)=>l.visible=Math.floor(T*3-i*0.5)%2===0);
   if(U.heart){ const f=e.hp/e.maxHp; U.heart.scale.setScalar(0.3*(1+0.2*Math.max(0,Math.sin(T*(2+f*2)+e.id)))); g.scale.set(1+0.02*Math.sin(T*2+e.id),1+0.03*Math.sin(T*2+e.id),1); }
+  if(U.hive) v3PoseHive(e,g,T);
   if(U.turret) U.turret.rotation.y=Math.atan2(Math.cos(e.angle||0),Math.sin(e.angle||0));
   if(U.pulse) U.pulse.scale.set(0.24,0.34*(1+0.06*Math.sin(T*7+e.id)),0.24);
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
@@ -795,7 +863,7 @@ const V3_DARK=typeof THREE!=='undefined'?new THREE.Color('#0a0b10'):null;
 function v3HiveDeathModel(f){
   const g=new THREE.Group(), U=g.userData, own=U.own=[], D=HIVE_DEATH;
   const mine=m=>{ const c=m.clone(); if(m.onBeforeCompile) c.onBeforeCompile=m.onBeforeCompile; own.push(c); return c; };
-  const hv=v3Building({ type:'hive', id:f.id||0, size:2 }); U.cols=[];
+  const hv=v3Building({ type:'hive', id:f.id||0, size:2 }); U.cols=[]; v3HiveHurt(hv,2); own.push(...hv.userData.own);   /* it dies in its worst look */
   hv.traverse(o=>{ if(o.isMesh){ o.material=mine(o.material); if(o.material.color) U.cols.push({ m:o.material, c:o.material.color.clone(), s:o.material.specular&&o.material.specular.clone() }); } });
   U.hive=hv; U.heart=hv.userData.heart; g.add(hv);
   const scarM=new THREE.MeshBasicMaterial({ color:0x0a0b10, transparent:true, opacity:0.7, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2 }); own.push(scarM);
