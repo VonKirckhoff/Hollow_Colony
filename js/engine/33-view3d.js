@@ -802,7 +802,7 @@ function v3Overlay(now){
 /* ---------- switching, the camera controls, and the hooks into 2D drawing and input ---------- */
 function v3Want(){ return !!(V3.on&&G&&(ui.mode==='game'||ui.mode==='pause'||ui.mode==='end')); }
 function v3Active(){ return v3Want()&&V3.ok; }
-function v3Label(){ const b=$('#btn-view'); if(b) b.textContent=V3.on?'3D':'2D'; for(const id of ['btn-turn-l','btn-turn-r']){ const t=$('#'+id); if(t) t.style.display=V3.on?'':'none'; } }
+function v3Label(){ const b=$('#btn-view'); if(b) b.textContent=V3.on?'3D':'2D'; for(const id of ['btn-turn-l','btn-turn-r']){ const t=$('#'+id); if(t){ t.style.display=''; t.style.visibility=V3.on?'':'hidden'; } }   /* hidden, not removed: the top bar keeps its places */ }
 function toggleView3D(){
   if(!V3.on&&!v3Init()){ toast('3D view is not available in this browser (no WebGL).'); return; }
   V3.on=!V3.on; store.set('hc-view3d',V3.on); v3Label(); if(G) clampCam(); toast(V3.on?'3D view. Middle mouse turns the camera, the wheel zooms, F3 back to 2D.':'2D view.',true); }
