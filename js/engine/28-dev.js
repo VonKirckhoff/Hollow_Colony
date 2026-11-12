@@ -5,7 +5,7 @@
    Hover a name to see what it does. Every change works at once. "Save" keeps your changes in this browser (hc-dev-tune) and applies them every time the game
    loads; ↺ puts one value back, "Reset all" puts everything back. "Export" lists every change so you can copy it.
    Unit stats count for units that appear after the change; health is also adjusted on the units already on the map. */
-const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, SWARM_LIGHT, SWARM_SCORCH, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, INTERCOM, VIEW3D, SIGHT, MYCEL, SHIP, ROGUE, OSPREY, UNITS, BUILDINGS };
+const DEV_ROOTS = { DIFFICULTY, SWARM_DIFF, WAVES, PACK, HIVE_DEFENCE, TACTICS, CREEP, HUSK, EGG, MOLT, HIVE_DEATH, FIRE, ANIM, REPAIR_SIDE, SWARM_PLAY, HIVE_SENSE, SWARM_LIGHT, SWARM_SCORCH, FIRST_HUNGER, BROOD_TACTICS, DEMO, AVATAR, SQUAD, FAUNA, FORMATION, AURA, RISEN, VET_XP, BROOD_SURGE, SHOWCASE, INTERCOM, VIEW3D, SIGHT, MYCEL, SHIP, ROGUE, OSPREY, UNITS, BUILDINGS };
 const DEV_TABS = [
   { id:'live', name:'Live' }, { id:'mission', name:'Mission' },
   { id:'diff', name:'Difficulty', roots:['DIFFICULTY','SWARM_DIFF'] },

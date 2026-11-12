@@ -76,6 +76,7 @@ function damage(t,amt,src){
     const sh=G.ents.filter(e=>!e.dead&&e.shieldOf===t&&Math.hypot(e.x-t.x,e.y-t.y)<t.r+3*TILE);
     if(sh.length){ const s=pick(sh), part=amt*t.def.shieldShare; damage(s,part,src); amt-=part; } }
   t.calm=0; t.hitAt=G.time;
+  if(t.faction==='wild'&&src&&src.x!=null) t.scareFrom={x:src.x,y:src.y};   /* a grazer bolts away from what hit it (FAUNA in 09-unit-behaviour.js) */
   const armor=t.armor!=null?t.armor:t.def.armor; if(armor) amt*=1-armor;   /* t.armor: per mission (mission.tough) */
   amt=coverDamage(t,amt,src);
   if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */

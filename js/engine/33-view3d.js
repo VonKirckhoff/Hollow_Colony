@@ -226,21 +226,47 @@ function v3Creature(e){
     for(const z of [0.13,-0.13]) for(const k of [-1,1]){ const hip=grp(k*0.17,0.38,z); hip.rotation.z=k*0.7; hip.add(box(Dk,0.07,0.22,0.07,0,-0.11,0)); const kn=grp(0,-0.22,0); kn.rotation.z=-k*0.9; kn.add(box(B,0.05,0.22,0.05,0,-0.11,0)); hip.add(kn); g.add(hip); U.legs.push(hip); }
     U.top=0.85; return g; }
   if(t==='brute'){
-    /* an armoured ram: a curved back of bone bands like an armadillo, heavy club forelegs, a low head with curled horns */
-    const body=grp(0,0.78,0); g.add(body); U.torso=body;
-    body.add(ball(C,0.4,0.36,0.55,0,0,0));
-    for(let i=0;i<6;i++){ const band=part(GEO.half,i%2?B:fung('#a89a7e'),0.43-Math.abs(i-2.5)*0.03,0.4,0.11,0,0.02,0.4-i*0.16); band.rotation.x=0; body.add(band); }
-    spots(body,5,0.38,0.2,0.5,-0.08,2.1,0.035);
-    const head=grp(0,-0.18,0.55); head.add(ball(L,0.2,0.17,0.2,0,0,0)); head.add(box(B,0.22,0.06,0.12,0,-0.12,0.1)); head.add(ball(eye,0.035,0.025,0.02,0.09,0.05,0.17)); head.add(ball(eye,0.035,0.025,0.02,-0.09,0.05,0.17));
-    for(const k of [-1,1]){ const horn=part(GEO.torus,B,0.12,0.12,0.12,k*0.2,0.05,-0.02); horn.rotation.set(0,Math.PI/2,0); head.add(horn); } body.add(head); U.head=head;
-    for(const k of [-1,1]){ const sh=grp(k*0.32,-0.05,0.3); sh.add(box(Dk,0.15,0.36,0.16,0,-0.18,0)); const el=grp(0,-0.35,0); el.add(box(C,0.13,0.32,0.13,0,-0.14,0)); el.add(ball(B,0.12,0.09,0.13,0,-0.32,0.02)); sh.add(el); sh.rotation.x=-0.15; sh.userData.base=-0.15; body.add(sh); U.arms.push(sh); }
-    for(const k of [-1,1]){ const hip=grp(k*0.28,0.6,-0.4); hip.add(box(Dk,0.15,0.32,0.16,0,-0.16,0)); const kn=grp(0,-0.32,0); kn.add(box(C,0.12,0.3,0.12,0,-0.15,0)); kn.add(ball(B,0.1,0.06,0.12,0,-0.3,0.02)); hip.add(kn); g.add(hip); U.legs.push(hip); }
+    /* an armoured ram: seven overlapping bone bands like an armadillo (knobs on top, plum flesh and a thin green glow in the seams),
+       a flat battering-ram skull plate with cracks, curled ram horns, eyes deep under the plate, two short tusks,
+       club forelegs studded with bone, digitigrade hind legs on hooves, a blunt plate over the rump (no tail).
+       U.bands break off as it gets hurt (v3Pose: below 50% and 25%), the seams behind them glow brighter. */
+    const body=grp(0,0.78,0); g.add(body); U.torso=body; U.bands=[]; U.seams=[];
+    body.add(ball(C,0.38,0.33,0.55,0,0,0)); body.add(ball(Dk,0.33,0.2,0.48,0,-0.13,0.02));
+    const B2=fung('#a89a7e'), B3=fung('#8f8268'), seam=glow('#3f6a1e');
+    for(let i=0;i<7;i++){ const r=0.46-Math.abs(i-2.6)*0.032, z=0.42-i*0.145, yo=0.02-Math.max(0,i-4)*0.035, band=grp(0,yo,z);
+      band.add(part(GEO.half,i%2?B:B2,r,r*0.92,0.135,0,0,0)); band.add(part(GEO.half,B3,r+0.014,r*0.92+0.014,0.03,0,0,-0.105));   /* the band and its raised back edge */
+      for(const a of [-0.55,0,0.55]){ const kn=part(GEO.cone,B3,0.035,0.07,0.035,Math.sin(a)*r*0.98,Math.cos(a)*r*0.9+0.02,-0.02); kn.rotation.z=-a; band.add(kn); }
+      body.add(band); band.userData.by=yo; U.bands.push(band);
+      if(i<6){ const sm=part(GEO.half,seam,r*0.955,r*0.88,0.03,0,yo,z-0.15); body.add(sm); U.seams.push(sm); } }
+    spots(body,4,0.36,0.12,0.45,-0.16,2.1,0.03);
+    const rump=part(GEO.half,B2,0.25,0.12,0.22,0,-0.04,-0.55); rump.rotation.x=-Math.PI/2; body.add(rump);
+    for(let i=0;i<5;i++){ const a=i*1.257+0.3, kn=part(GEO.lowball,B3,0.04,0.04,0.04,Math.cos(a)*0.17,-0.04+Math.sin(a)*0.15,-0.6); body.add(kn); }
+    /* the head: skull, ram plate, cracks, brow, sockets with small eyes, jaw with tusks, nostrils (steam comes out here) */
+    const head=grp(0,-0.12,0.58); body.add(head); U.head=head;
+    head.add(ball(L,0.19,0.16,0.2,0,0,0));
+    const plate=grp(0,0.04,0.17); plate.rotation.x=-0.28; head.add(plate);
+    plate.add(ball(B,0.17,0.145,0.06,0,0,0)); plate.add(ball(B2,0.19,0.045,0.07,0,0.12,-0.01)); plate.add(ball(B3,0.13,0.03,0.05,0,-0.13,0.0));
+    for(const [x,y,h,r] of [[-0.07,0.03,0.09,0.5],[-0.035,-0.035,0.06,-0.3],[0.08,0.0,0.07,-0.9],[0.04,0.06,0.05,0.2]]){ const ck=box(B3,0.009,h,0.01,x,y,0.058); ck.rotation.z=r; plate.add(ck); }   /* old cracks in the plate */
+    for(const k of [-1,1]){ head.add(ball(Dk,0.045,0.035,0.03,k*0.115,-0.06,0.18)); head.add(ball(eye,0.022,0.018,0.015,k*0.115,-0.06,0.2)); }
+    const jaw=grp(0,-0.13,0.06); jaw.add(box(Dk,0.2,0.06,0.2,0,0,0.04)); for(const k of [-1,1]){ const tk=part(GEO.claw,B,0.022,0.022,0.11,k*0.085,0.0,0.12); tk.rotation.x=-0.7; jaw.add(tk); } head.add(jaw); U.jaw=jaw;
+    for(const k of [-1,1]) head.add(ball(glow('#120c16'),0.02,0.015,0.01,k*0.04,-0.1,0.21));
+    const snout=grp(0,-0.1,0.24); head.add(snout); U.snout=snout;
+    /* curled ram horns: a chain of ridged segments that grows up and back, then curls down and forward around the side of the head */
+    for(const k of [-1,1]){ let seg=grp(k*0.17,0.1,-0.03); seg.rotation.set(-0.5,0,-k*0.6); head.add(seg);
+      for(let i=0;i<7;i++){ const rr=0.065-i*0.0065, ln=0.085; seg.add(cyl(i%2?B:B2,rr,ln,rr,0,ln/2,0)); seg.add(part(GEO.torus,B3,rr*1.05,0.6,rr*1.05,0,0.004,0));
+        const nx=grp(0,ln,0); nx.rotation.set(-0.72,0,-k*0.07); seg.add(nx); seg=nx; } }
+    /* club forelegs: a thick upper arm under a bone shoulder plate, a forearm, a knuckled bone club with studs */
+    for(const k of [-1,1]){ const sh=grp(k*0.33,-0.05,0.3); sh.add(box(Dk,0.17,0.34,0.18,0,-0.16,0)); sh.add(part(GEO.half,B2,0.13,0.1,0.15,k*0.02,0.0,0)); sh.children[1].rotation.z=-k*0.5;
+      const el=grp(0,-0.33,0); el.add(part(GEO.taper,C,0.08,0.3,0.08,0,-0.14,0)); el.children[0].rotation.x=Math.PI; el.add(ball(B,0.13,0.15,0.14,0,-0.31,0.02)); el.add(box(B3,0.17,0.04,0.17,0,-0.25,0.02));
+      for(let i=0;i<6;i++){ const a=i*1.05; el.add(part(GEO.cone,B3,0.025,0.06,0.025,Math.cos(a)*0.13,-0.33+Math.sin(a)*0.05,0.02+Math.sin(a)*0.1)); el.children[el.children.length-1].rotation.set(Math.sin(a)*1.2,0,-Math.cos(a)*1.4); }
+      sh.add(el); sh.rotation.x=-0.15; sh.userData.base=-0.15; body.add(sh); U.arms.push(sh); }
+    /* hind legs: thigh down and forward, shin down and back, an upright foot on a split hoof */
+    for(const k of [-1,1]){ const hip=grp(k*0.27,0.64,-0.38); hip.rotation.x=-0.45; hip.add(box(Dk,0.17,0.34,0.2,0,-0.16,0));
+      const kn=grp(0,-0.32,0); kn.rotation.x=0.95; kn.add(box(C,0.12,0.26,0.13,0,-0.12,0)); kn.add(ball(B3,0.07,0.06,0.07,0,0,0));
+      const ft=grp(0,-0.25,0); ft.rotation.x=-0.5; ft.add(box(Dk,0.09,0.13,0.1,0,-0.06,0)); ft.add(box(B,0.15,0.05,0.17,0,-0.13,0.03)); for(const x of [-0.04,0.04]) ft.add(part(GEO.claw,B3,0.025,0.02,0.07,x,-0.14,0.1));
+      kn.add(ft); hip.add(kn); hip.userData.knee=kn; kn.userData.kb=0.95; g.add(hip); U.legs.push(hip); }
     U.top=1.3; return g; }
-  if(t==='bloater'){ const belly=grp(0,0.5,0); belly.add(ball(glow('#a3c94a'),0.32,0.27,0.34,0,0,0)); belly.add(ball(mat('#6d7a2e',{ transparent:true, opacity:0.78 }),0.4,0.34,0.43,0,0,0)); g.add(belly); U.sac=belly;
-    for(let i=0;i<9;i++){ const a=i*2.4, b=0.4+hash2(e.id,i,3)*0.8; belly.add(ball(glow('#d8ff6a'),0.04,0.04,0.04,Math.cos(a)*Math.sin(b)*0.4,Math.cos(b)*0.33,Math.sin(a)*Math.sin(b)*0.42)); }
-    g.add(ball(L,0.12,0.11,0.13,0,0.42,0.42)); g.add(ball(eye,0.03,0.02,0.02,0.05,0.45,0.53)); g.add(ball(eye,0.03,0.02,0.02,-0.05,0.45,0.53));
-    for(const z of [0.22,-0.22]) for(const k of [-1,1]){ const hip=grp(k*0.28,0.3,z); hip.rotation.z=k*0.5; hip.add(box(C,0.08,0.24,0.08,0,-0.12,0)); g.add(hip); U.legs.push(hip); }
-    U.top=0.95; return g; }
+  if(t==='bloater') return v3Grazer(e,true);
   if(t==='husk'){ const F=mat('#56614b'), Su=mat('#3d4556'), A=mat('#4a5468'), grow=shiny('#5c3e6e');
     for(const s of [-1,1]){ const hip=grp(s*0.08,0.42,0); hip.add(box(Su,0.1,0.22,0.11,0,-0.11,0)); const kn=grp(0,-0.22,0); kn.add(box(F,0.09,0.2,0.1,0,-0.1,0)); kn.add(box(mat('#262b35'),0.11,0.07,0.17,0,-0.2,0.025)); hip.add(kn); g.add(hip); U.legs.push(hip); }
     const torso=grp(0,0.48,0); torso.rotation.x=0.45; g.add(torso); U.torso=torso;
@@ -266,12 +292,46 @@ function v3Creature(e){
       hip.add(part(GEO.taper,fung('#3d2a4a'),0.16,0.9,0.16,0,-0.45,0)); const kn=grp(0,-0.88,0); kn.rotation.set(-Math.sin(a)*0.55,0,Math.cos(a)*0.55);
       kn.add(part(GEO.taper,fung('#55405f'),0.1,0.7,0.1,0,-0.35,0)); kn.add(part(GEO.cone,B,0.06,0.25,0.06,0,-0.78,0)); kn.children[1].rotation.x=Math.PI; hip.add(kn); g.add(hip); U.legs.push(hip); }
     U.top=3.0; return g; }
-  if(t==='grazer'){ const B=mat('#b9a98a'), B2=mat('#8f8168'), H=mat('#d3c3a6');
-    g.add(ball(B,0.3,0.24,0.46,0,0.62,0)); for(let i=0;i<4;i++) g.add(rotX(box(B2,0.24-i*0.03,0.06,0.14,0,0.84,0.25-i*0.17),0.1));
-    const neck=grp(0,0.7,0.35); neck.rotation.x=-0.6; neck.add(box(B,0.12,0.12,0.3,0,0,0.15)); const head=grp(0,0,0.32); head.add(ball(H,0.12,0.11,0.2,0,0,0.05)); head.add(rotX(part(GEO.claw,B2,0.025,0.025,0.15,0.06,0.08,-0.05),-2.3)); head.add(rotX(part(GEO.claw,B2,0.025,0.025,0.15,-0.06,0.08,-0.05),-2.3)); head.rotation.x=0.6; neck.add(head); g.add(neck); U.head=head;
-    for(const z of [0.28,-0.28]) for(const k of [-1,1]){ const hip=grp(k*0.16,0.55,z); hip.add(box(B,0.08,0.3,0.09,0,-0.15,0)); const kn=grp(0,-0.3,0); kn.add(box(B2,0.06,0.26,0.06,0,-0.13,0)); hip.add(kn); g.add(hip); U.legs.push(hip); }
-    U.top=1.0; return g; }
+  if(t==='grazer') return v3Grazer(e,false);
   return null; }
+
+/* the grazer: docile lunar fauna in dusty ochre with a pale belly. A folded hide, two rows of slanted dark plates down the back,
+   a long neck, big dark eyes, flap ears, two short back-swept horns, feelers under the snout to scrape lichen off the rock,
+   knees and broad flat hooves for the dust, a stubby tail. Infected (the Sporebag) it is the same beast, swollen: the hide split
+   over a see-through belly full of glowing acid, purple rot in the folds, green eyes. */
+function v3Grazer(e,sick){
+  const g=new THREE.Group(), U=g.userData; U.legs=[]; U.arms=[]; U.grazer=!sick;
+  const H=sick?mat('#7a5634'):mat('#a87a42'), Dk=sick?fung(CH.body):mat('#6e4e2a'), N=mat(sick?'#9a8a6a':'#d6b47e'), P=sick?fung('#4a3040'):mat('#4f3720'),
+        Hf=mat('#2e2218'), Hn=mat(sick?'#8f8168':'#c9b48a'), eyeM=sick?glow(CH.glow):shiny('#141013',{ specular:0xffffff, shininess:110 });
+  const body=grp(0,0.62,0); g.add(body); U.torso=body;
+  if(sick){ const belly=grp(0,-0.02,0); belly.add(ball(glow('#a3c94a'),0.3,0.26,0.4,0,0,0)); belly.add(ball(mat('#6d7a2e',{ transparent:true, opacity:0.72 }),0.37,0.32,0.48,0,0,0));
+      for(let i=0;i<10;i++){ const a=i*2.4, b=0.5+hash2(e.id,i,3)*0.9; belly.add(ball(glow('#d8ff6a'),0.035,0.035,0.035,Math.cos(a)*Math.sin(b)*0.37,Math.cos(b)*0.31,Math.sin(a)*Math.sin(b)*0.47)); }
+      body.add(belly); U.sac=belly;
+      for(const [x,z,w,a] of [[0.17,0.18,0.15,0.5],[-0.19,-0.06,0.17,-0.55],[0.13,-0.27,0.13,0.35],[-0.12,0.3,0.11,-0.3]]){ const sh=part(GEO.half,H,w,0.03,w*1.3,x,Math.sqrt(Math.max(0,1-(x/0.37)**2-(z/0.48)**2))*0.3-0.03,z); sh.rotation.z=-a; body.add(sh); }   /* torn flaps of hide still lying on the belly */
+      spots(body,5,0.34,0.2,0.44,0.0,1.7,0.03); }
+  else { body.add(ball(H,0.28,0.24,0.44,0,0,0)); body.add(ball(N,0.23,0.15,0.37,0,-0.1,0.02));
+      const R=mat('#96693a'); body.add(ball(R,0.27,0.2,0.13,0,0.06,0.3)); body.add(ball(R,0.25,0.19,0.12,0,0.05,-0.3)); body.add(ball(R,0.2,0.12,0.06,0,0.03,0.39)); for(const k of [-1,1]) body.add(ball(R,0.05,0.14,0.2,k*0.25,-0.02,0.02)); }   /* rolls of loose hide over the shoulders, the rump and along the flanks */
+  const bh=sick?0.32:0.24, bl=sick?0.48:0.44;
+  for(let i=0;i<6;i++) for(const k of [-1,1]){ if(sick&&hash2(e.id,i,k+5)<0.5) continue; const z=0.3-i*0.12+(k>0?0.05:0), y=bh*Math.sqrt(Math.max(0,1-(z/bl)**2))-0.005;
+      const pl=part(GEO.cone,P,0.012,0.11-Math.abs(i-2)*0.012,0.055,k*0.05,y+0.04,z); pl.rotation.z=-k*0.35; body.add(pl); }   /* two rows of slanted plates */
+  const tail=grp(0,0.04,-bl+0.02); tail.add(rotX(part(GEO.taper,H,0.05,0.18,0.05,0,0,-0.08),-Math.PI/2-0.5)); body.add(tail); U.tail=tail;
+  /* neck and head */
+  const neck=grp(0,0.1,bl-0.1); neck.rotation.x=-0.6; neck.userData.base=-0.6; body.add(neck); U.neck=neck;
+  neck.add(rotX(part(GEO.taper,H,0.085,0.32,0.1,0,0,0.15),-Math.PI/2)); neck.add(ball(sick?H:mat('#96693a'),0.1,0.09,0.08,0,0.0,0.04));
+  neck.add(box(N,0.06,0.05,0.26,0,-0.06,0.15));
+  const head=grp(0,0,0.32); head.rotation.x=0.6; head.userData.base=0.6; head.scale.setScalar(1.25); neck.add(head); U.head=head;
+  head.add(ball(H,0.11,0.1,0.14,0,0,0.05)); head.add(ball(N,0.075,0.065,0.09,0,-0.03,0.17));
+  for(const k of [-1,1]){ head.add(ball(eyeM,0.038,0.044,0.04,k*0.085,0.03,0.09)); if(!sick) head.add(ball(glow('#ffffff'),0.008,0.008,0.008,k*0.1,0.05,0.12));
+    const ear=grp(k*0.075,0.07,-0.04); ear.add(ball(Dk,0.07,0.014,0.035,k*0.06,0,0)); ear.add(ball(N,0.05,0.016,0.022,k*0.06,0.004,0.005)); ear.rotation.set(0,k*0.5,-k*0.35); ear.userData.bz=-k*0.35; head.add(ear); (U.ears||(U.ears=[])).push(ear);
+    const horn=part(GEO.claw,Hn,0.022,0.022,0.14,k*0.045,0.09,-0.0); horn.rotation.set(-2.5,k*0.25,0); head.add(horn); }
+  const jaw=grp(0,-0.07,0.12); jaw.add(box(Dk,0.09,0.03,0.11,0,0,0.04)); head.add(jaw); U.jaw=jaw;
+  U.feelers=[]; for(let i=0;i<4;i++){ const f=grp((i-1.5)*0.03,-0.07,0.22); f.add(cyl(sick?glow('#c7f05a'):Hn,0.005,0.08,0.005,0,-0.04,0)); f.rotation.x=0.3; head.add(f); U.feelers.push(f); }
+  /* legs with knees and broad flat hooves; order: front left, front right, back left, back right */
+  const lw=sick?1.15:1, spread=sick?0.2:0.17;
+  for(const z of [0.26,-0.26]) for(const k of [-1,1]){ const hip=grp(k*spread,-0.07,z); hip.add(box(H,0.09*lw,0.27,0.11*lw,0,-0.12,0));
+      const kn=grp(0,-0.26,0); kn.add(ball(Dk,0.05,0.045,0.055,0,0,0)); kn.add(box(Dk,0.06*lw,0.22,0.065*lw,0,-0.11,0)); kn.add(cyl(Hf,0.055,0.04,0.065,0,-0.235,0.01)); hip.add(kn); hip.userData.knee=kn;
+      body.add(hip); U.legs.push(hip); }
+  U.top=sick?1.05:1.0; return g; }
 
 /* ---------- buildings, crates, bodies ---------- */
 function v3Billboard(canvas,scale=2){ const tex=new THREE.CanvasTexture(canvas); tex.magFilter=THREE.NearestFilter;
@@ -317,6 +377,10 @@ function v3Building(e){
   U.top=top; return g; }
 function v3Small(e){
   const g=new THREE.Group();
+  if(e.kind==='body'&&e.fauna){ /* a grazer carcass: the grazer on its back, legs stiff in the air, head lolling to one side (as in 2D) */
+    const c=v3Grazer({ id:e.id, type:'grazer' },false), U=c.userData; c.rotation.set(0,(e.id%7)*0.9,Math.PI); c.position.y=0.88;
+    U.neck.rotation.set(0.5,0.6,0); U.head.rotation.x=0.2; U.jaw.rotation.x=0.4; U.legs.forEach((l,i)=>{ l.rotation.set((i<2?-0.35:0.35),0,(i%2?0.25:-0.25)); l.userData.knee.rotation.x=i<2?0.5:-0.3; });
+    U.tail.rotation.x=0.6; c.scale.setScalar(VIEW3D.unitScale); g.add(c); g.userData.top=0.6; return g; }
   if(e.kind==='body'){ const swarm=e.faction==='swarm'||e.bio===false, m=swarm?shiny(CH.body):mat(e.faction==='osprey'?'#2e2621':'#5a6880'), a=(e.id%7)*0.9;
     const b=box(m,0.28,0.12,0.62,0,0.07,0); b.rotation.y=a; g.add(b); g.add(ball(mat(swarm?CH.bone:'#262b35'),0.11,0.09,0.11,Math.sin(a)*0.37,0.09,Math.cos(a)*0.37)); g.userData.top=0.3; return g; }
   if(e.rogue&&e.dna){ /* a DNA sample: an upright glass vial of glowing ichor with a steel cap, as in 2D (green, or purple from a hive) */
@@ -410,7 +474,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(U.want!=null){ let d=U.want-U.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); U.yaw+=d*0.25; }
     U.px=e.x; U.py=e.y; g.rotation.set(0,U.yaw,0);
     const mv=e.moving&&!e.downed, ph=T*(e.def.speed>80?14:10)+e.id, sw=mv?Math.sin(ph)*0.55:0;
-    U.legs.forEach((l,i)=>{ const b=l.userData.bx??(l.userData.bx=l.rotation.x); l.rotation.x=b+(i%2?sw:-sw); if(l.userData.knee) l.userData.knee.rotation.x=mv?Math.max(0,Math.sin(ph+(i%2?Math.PI:0)))*0.6:0; });
+    U.legs.forEach((l,i)=>{ const b=l.userData.bx??(l.userData.bx=l.rotation.x); l.rotation.x=b+(i%2?sw:-sw); if(l.userData.knee){ const k=l.userData.knee; k.rotation.x=(k.userData.kb||0)+(mv?Math.max(0,Math.sin(ph+(i%2?Math.PI:0)))*0.6:0); } });
     U.arms.forEach((a,i)=>{ const b=a.userData.base||0; a.rotation.x=U.gun?b+(mv?Math.sin(ph)*0.06:0):b+(e.lunge>0?-0.9:(mv?(i%2?sw:-sw)*0.6:Math.sin(T*1.5+e.id+i)*0.08)); });
     if(U.tail) U.tail.rotation.y=Math.sin(T*2.2+e.id)*0.35;
     if(U.feelers) U.feelers.forEach((f,i)=>f.rotation.z=Math.sin(T*2+i)*0.25);
@@ -421,6 +485,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(U.pilot) U.pilot.scale.setScalar(0.025*(0.8+Math.random()*0.5)*(fight?2:1));
     if(U.blink) U.blink.visible=Math.floor(T*2+e.id)%2===0;
     if(U.weld) U.weld.visible=!!(e.order&&/repair|build/.test(e.order.type))&&Math.random()<0.7;
+    if(e.type==='brute') v3PoseBrute(e,U,T,mv,fight,ph); else if(U.grazer) v3PoseGrazer(e,U,T,mv);
     if(mv) y+=Math.abs(Math.sin(ph))*0.025;
     if(e.downed){ g.rotation.x=-Math.PI/2*0.92; y+=0.12; } else if(e.stunT>0) g.rotation.z=Math.sin(T*9)*0.25;
     const lg=e.lunge>0?0.15:0; g.position.set(x+Math.sin(U.yaw)*lg,y,z+Math.cos(U.yaw)*lg);
@@ -437,6 +502,28 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
   if(U.smoke&&Math.random()<0.3) V3.smoke.push({x,z,y:y+0.6,t:0});
   if(e.type==='egg'){ const p=e.openT!=null?1-e.openT/EGG.open:0; g.scale.setScalar(1+Math.sin(T*2+e.id)*0.04+0.15*p); U.opening=p; } }
+/* the Brute: head down when it fights, down hard and the whole body forward when it rams; the bands shift as it walks;
+   a puff of steam from the nostrils now and then; one band breaks off below 50% health, a second below 25% (the seams glow brighter) */
+function v3PoseBrute(e,U,T,mv,fight,ph){
+  const f=e.hp/e.maxHp, broke=f<0.25?2:f<0.5?1:0;
+  if(U.broke!==broke){ const was=U.broke||0; U.broke=broke; const gone=[1+e.id%2,4+e.id%2].slice(0,broke);
+    U.bands.forEach((b,i)=>b.visible=!gone.includes(i)); U.seams.forEach(m=>m.material=broke?glow('#a6ff4a'):glow('#3f6a1e'));
+    if(broke>was&&V3.smoke){ const w=U.bands[gone[broke-1]].getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); for(let i=0;i<3;i++) V3.smoke.push({x:w.x+rand(-0.2,0.2),z:w.z+rand(-0.2,0.2),y:w.y,t:0,sz:0.3,col:'#8f8268'}); } }
+  U.bands.forEach((b,i)=>{ b.position.y=b.userData.by+(mv?Math.sin(ph-i*0.9)*0.014:0); });
+  const ram=e.lunge>0, hw=ram?0.55:fight?0.22:0; U.head.rotation.x+=(hw-U.head.rotation.x)*0.3; U.torso.rotation.x+=((ram?0.12:0)-U.torso.rotation.x)*0.3;
+  U.jaw.rotation.x=ram?0.25:Math.max(0,Math.sin(T*0.9+e.id))*0.06;
+  if(!mv&&!fight&&V3.smoke&&Math.random()<0.006){ const w=U.snout.getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); for(let i=0;i<2;i++) V3.smoke.push({x:w.x,z:w.z,y:w.y,t:i*0.3,sz:0.16,col:'#b4b4c0'}); } }
+/* the grazer: grazes with its head down and its jaw chewing, lifts its head and pricks its ears when something walks near,
+   twitches an ear now and then, and gallops (front legs together, then the back ones, the body rocking) when it flees */
+function v3PoseGrazer(e,U,T,mv){
+  const flee=e.fleeT>0;
+  if(U.alertT==null||T>U.alertT){ U.alertT=T+0.4; U.alert=G.ents.some(o=>!o.dead&&o.kind==='unit'&&o.faction!=='wild'&&o.faction!=='none'&&Math.abs(o.x-e.x)<5*TILE&&Math.abs(o.y-e.y)<5*TILE); }
+  const up=flee||U.alert, graze=!up&&!mv&&Math.sin(T*0.3+e.id*1.7)>-0.3, nw=up?-0.95:graze?0.55:-0.6, hw=graze?1.0:0.6;
+  U.neck.rotation.x+=(nw-U.neck.rotation.x)*0.06; U.head.rotation.x+=(hw-U.head.rotation.x)*0.06;
+  U.jaw.rotation.x=graze&&U.neck.rotation.x>0.3?Math.max(0,Math.sin(T*7+e.id))*0.35:0;
+  U.ears.forEach((r,i)=>{ const s=-Math.sign(r.userData.bz), tw=Math.sin(T*1.3+e.id*3+i*2)>0.97?0.5:0; r.rotation.z=r.userData.bz+s*((up?0.7:0)+tw); });
+  if(flee&&mv){ const p=T*16+e.id; U.legs.forEach((l,i)=>{ l.rotation.x=(l.userData.bx||0)+(i<2?1:-1)*Math.sin(p)*0.75; l.userData.knee.rotation.x=Math.max(0,Math.sin(p+(i<2?0:Math.PI)))*0.8; }); U.torso.rotation.x=Math.sin(p)*0.08; }
+  else U.torso.rotation.x*=0.85; }
 function render3D(now){
   if(V3.forG!==G||V3.mapId!==G.map.id) v3Reset();
   const dt=Math.min(0.1,(now-(V3.last||now))/1000); V3.last=now;
@@ -487,7 +574,7 @@ function render3D(now){
     if(e.chargeT>0) put(p.x+Math.sin(g.userData.yaw)*0.35,p.y+top*0.75,p.z+Math.cos(g.userData.yaw)*0.35,0.25+0.15*Math.sin(now/40),'#c7f05a',0.9);
     if(e.beam&&!e.beam.dead){ const b=V3.objs.get(e.beam); if(b) for(let k=1;k<6;k++){ const t=((k/6)+now/900)%1; put(p.x+(b.position.x-p.x)*t,p.y+0.6+(b.position.y-p.y)*t,p.z+(b.position.z-p.z)*t,0.12,'#78ffbe',0.8); } } }
   for(const [e,g] of V3.objs) if(g.visible&&g.userData.opening>0){ const p=g.userData.opening; for(let i=0;i<3;i++){ const d=(now/900+i/3+e.id*0.13)%1, a=i*2.4+now/700; put(g.position.x+Math.cos(a)*d*0.4*p,g.position.y+0.4+d*0.8*p,g.position.z+Math.sin(a)*d*0.4*p,0.1,i%2?'#a6ff4a':'#c58cff',(1-d)*0.9); } }   /* an egg breathing out spores */
-  for(const s of V3.smoke){ const k=s.t/2.5; put(s.x+k*0.6,s.y+k*1.8,s.z,0.4+k*1.2,'#3a3a3a',0.5*(1-k),true); }
+  for(const s of V3.smoke){ const k=s.t/2.5, z=s.sz||1; put(s.x+k*0.6*z,s.y+k*1.8*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',0.5*(1-k),true); }   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
   V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<2.5);
   for(const mk of G.markers){ const x=mk.x/TILE, z=mk.y/TILE; put(x,v3H(x,z)+2+Math.sin(now/250)*0.1,z,0.7,mk.col||'#ffb347',0.9); }
   for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; put(x,v3H(x,z)+0.3,z,1.2,'#ff6040',0.8); }

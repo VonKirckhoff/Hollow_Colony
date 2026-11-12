@@ -4,7 +4,8 @@
 const PALETTE = {
   k:'#0a0b10', a:'#a3b4c6', A:'#5d6f83', v:'#ffb347', V:'#ffe2a8', g:'#262a33', G:'#4f5766',
   w:'#eef2f5', W:'#aab4bf', r:'#e2463a', y:'#f2c230', o:'#ff8a2a', O:'#b9521c', s:'#d9a27a',
-  c:'#24182c', C:'#45304f', p:'#7a5a8e', b:'#d3c3a6', e:'#a6ff4a', E:'#4fae22', m:'#b3263c', q:'#7ff6ff', h:'#5a4632'
+  c:'#24182c', C:'#45304f', p:'#7a5a8e', b:'#d3c3a6', e:'#a6ff4a', E:'#4fae22', m:'#b3263c', q:'#7ff6ff', h:'#5a4632',
+  u:'#a87a42', U:'#4f3720', n:'#d6b47e', N:'#6e4e2a'
 };
 
 /* 1b. SPRITES — pixel art, facing right. '.' is transparent.
@@ -25,14 +26,21 @@ const SPRITES = {
     "...kAk..kAk.....",
     "...kgk..kgk.....",
     "...kkk..kkk....."],
+  /* the Sporebag: the same grazer, swollen: its hide split over a see-through belly of glowing acid, green eyes */
   bloater:[
-    "....kkkkk.......",
-    "..kkCpepCkk.kk..",
-    ".kCpeCpeCpCkkpk.",
-    ".kCepCCpeCCCpbk.",
-    "..kkCkkkCkkCkk..",
-    "...kCk.kCk.kk...",
-    "...kk..kk......."],
+    "................kk......",
+    "................kppk....",
+    "....k.....k.k...kCCCCk..",
+    "...kpk...kCkCk.kpCCeCCk.",
+    "..kCepCpkpeCpCkkCCCeCCnk",
+    ".kCpeEeEeEeEpeCCCCCCCk..",
+    "kCpeEeeEeeEeEepCCk.kkk..",
+    "kCpEeeEeeeeEeeEpCk......",
+    ".kCpEeEeeEeeEepCk.......",
+    "..kCppEppEppEpCk........",
+    "...kCk.kCk.kCk.kCk......",
+    "...kCk.kCk.kCk.kCk......",
+    "...kkk.kkk.kkk.kkk......"],
   seedling:[
     ".....kkkk.......",
     "...kkCppCkk.....",
@@ -235,12 +243,19 @@ const SPRITES = {
     "..kCCkkCCk.kCCk.kCCk.kCCk.kCCk..",
     ".kCCk.kCCkkCCk..kCCk..kCCk.kCCk.",
     "kCCk.kCCk.kCCk..kCCk..kCCk..kCCk"],
+  /* the grazer: lunar fauna in dusty ochre, a pale belly, two rows of dark plates on its back, a raised head with a big dark eye, an ear and a back-swept horn, four legs on flat hooves */
   grazer:[
-    "....kkkkk.......",
-    "..kkbbbbbkk.kk..",
-    ".kbbwbbbbbbkkbk.",
-    ".kbbbbbbbbbbbkk.",
-    "..kkbkkkbkkbk...",
-    "...kbk.kbk.kk...",
-    "...kk..kk......."]
+    "................kk......",
+    "................kNNk....",
+    "....k.k.k.k.k...kuuuuk..",
+    "...kUkUkUkUkUk.kNuukuuk.",
+    "..kuUuuUuuUuuUkkuuukuunk",
+    ".kuNuuuuuuuuuuuuuuuuuk..",
+    "kNuuNuuuuuNuuuuuuk.kkk..",
+    ".kuuuuuuuuuuuuuuk.......",
+    ".kuNnnnnnnnnnnuuk.......",
+    "..kunnnnnnnnnnuk........",
+    "...kNk.kNk.kNk.kNk......",
+    "...kNk.kNk.kNk.kNk......",
+    "...kkk.kkk.kkk.kkk......"]
 };

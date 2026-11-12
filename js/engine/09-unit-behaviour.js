@@ -1,5 +1,7 @@
 'use strict';
 /* ---------- 2h. unit behaviour ---------- */
+/* lunar fauna: a grazer that is hit bolts away from what hit it, and the grazers near it run with it */
+const FAUNA = { flee:3.5, fleeTime:2.5, fleeSpeed:2.2, herd:3 };   /* tiles it runs, seconds, × speed, tiles the herd panics with it (flee 0 = they stand still) */
 function updateUnit(u,dt){
   const d=u.def;
   if(u.downed){ downedThink(u,dt); return; }
@@ -179,8 +181,13 @@ function escortThink(u,dt){
   if(u.follT<=0){ u.follT=0.5; u.lead=nearestOf(u,e=>e.kind==='unit'&&e.faction===u.faction&&!e.def.escort&&e.def.damage&&dist(e,u)<12*TILE); }
   if(u.lead && !u.lead.dead && dist(u,u.lead)>1.8*TILE) goTo(u,u.lead.x,u.lead.y,dt,0.6);
 }
+function wildFlee(u,from){ const a0=Math.atan2(u.y-from.y,u.x-from.x);
+  for(const da of [0,0.5,-0.5,1,-1,1.6,-1.6]){ const x=u.x+Math.cos(a0+da)*FAUNA.flee*TILE, y=u.y+Math.sin(a0+da)*FAUNA.flee*TILE;
+    if(walkableP(x,y)){ u.order={type:'move',x,y}; setPath(u,x,y); u.fleeT=FAUNA.fleeTime; u.speedMul=FAUNA.fleeSpeed; u.wait=rand(3,6); return true; } } return false; }
 function wildThink(u,dt){
   u.flash=Math.max(0,u.flash-dt);
+  if(u.scareFrom){ const f=u.scareFrom; u.scareFrom=null; if(FAUNA.flee>0&&wildFlee(u,f)) for(const o of G.ents) if(o!==u&&!o.dead&&o.faction==='wild'&&o.kind==='unit'&&!(o.fleeT>0)&&dist(o,u)<FAUNA.herd*TILE) wildFlee(o,f); }
+  if(u.fleeT>0){ u.fleeT-=dt; if(u.fleeT<=0||!u.order){ u.fleeT=0; u.speedMul=1; } }
   if(u.order){ if(stepMove(u,dt)) u.order=null; return; }
   u.wait=(u.wait||rand(2,6))-dt;
   if(u.wait<=0){ u.wait=rand(4,9); const h=u.home||{x:u.x,y:u.y}; const a=rand(0,Math.PI*2), r=rand(0.5,3)*TILE; u.order={type:'move',x:h.x+Math.cos(a)*r,y:h.y+Math.sin(a)*r}; setPath(u,u.order.x,u.order.y); }
