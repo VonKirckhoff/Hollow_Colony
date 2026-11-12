@@ -630,7 +630,7 @@ function v3Shown(e){ const m=G.map;
 /* ---------- frame ---------- */
 function v3Size(){ const w=ui.vw, h=Math.max(100,ui.vh-ui.hudH); if(V3.w!==w||V3.h!==h||V3.dpr!==ui.dpr){ V3.w=w; V3.h=h; V3.dpr=ui.dpr; V3.r.setPixelRatio(Math.min(ui.dpr,1.5)); V3.r.setSize(w,h); V3.cam.aspect=w/h; V3.cam.updateProjectionMatrix(); } }
 function v3Reset(){ if(V3.g) V3.scene.remove(V3.g); V3.g=new THREE.Group(); V3.scene.add(V3.g); V3.objs.clear(); V3.forG=G; V3.mapId=G.map.id;
-  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
+  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
   V3.fxg=new THREE.Group(); V3.g.add(V3.fxg); V3.fxg.add(V3.tracers); V3.fxg.add(V3.ghost); v3BuildTerrain(); }
 function v3Camera(dt){ const V=VIEW3D, tx=(G.cam.x+ui.vw/2)/TILE, tz=(G.cam.y+(ui.vh-ui.hudH)/2)/TILE, ty=Math.max(0,v3H(tx,tz)), sh=(G.shake||0)*0.3;
   let d=V3.yaw*Math.PI/180-(V3.yawR||0); d=Math.atan2(Math.sin(d),Math.cos(d)); V3.yawR=(V3.yawR||0)+d*Math.min(1,dt*8);
@@ -902,6 +902,95 @@ function lampTotal(n){ const V=VIEW3D; return 1+(Math.min(n,V.lampStackMax)-1)*V
 function v3LampShare(ls){ const R=VIEW3D.lampOverlap;
   for(const l of ls){ let n=0; for(const o of ls){ const d=Math.hypot(o.x-l.x,o.z-l.z); if(d<R) n+=1-d/R; }
     const k=lampTotal(Math.max(1,n))/Math.max(1,n); l.i*=k; if(l.U) l.U.lampShare=k; } }
+/* ---------- the moon's own weather in 3D (Nov 2026): meteorites and dust devils ----------
+   The 2D sim makes them (meteorTick / devilTick in 25b); here they get a real shape.
+   Meteorite: a glowing stone comes in at a slant, with a white-to-ice-blue streak and a thin smoke trail, lights the ground,
+   hits with a flash, a ring of dust, stones that hang in the low gravity and a small crater that glows and cools (the scar is the 2D decal).
+   Dust devil: a turning funnel of dust, thin at the foot and wide at the top, with a collar of dust and grit that is sucked up and thrown out. */
+const AMBIENT3D = {
+  meteorHigh:9, meteorSlant:6, meteorSize:0.17, meteorTrail:18, meteorRocks:12, meteorLight:3, craterGlow:2.5, meteorLife:4.5, meteorGravity:2.2,   /* tiles, seconds; tiles/s² (stones hang in the low gravity) */
+  devilHigh:2.8, devilWide:1.0, devilPuffs:18, devilGrit:12, devilLean:0.45
+};
+function v3Ambient(now,put,lights){ const A=AMBIENT3D; V3.meteors=V3.meteors||new Map();
+  const dt=Math.max(0,Math.min(0.1,G.time-(V3.ambT??G.time))); V3.ambT=G.time;   /* game time: stands still in a pause, runs with the game speed */
+  for(const f of G.fx) if(f.k==='meteor'&&!V3.meteors.has(f)) V3.meteors.set(f,{ f, t0:G.time-(f.max-f.t), ang:Math.random()*Math.PI*2, spin:new THREE.Vector3(rand(-9,9),rand(-9,9),rand(-9,9)) });
+  for(const [f,M] of V3.meteors){ M.tt=G.time-M.t0;
+    if(M.tt>A.meteorLife){ v3MeteorDone(M); V3.meteors.delete(f); continue; }
+    v3Meteor(M,now,dt,put,lights); }
+  V3.put=put; v3Devils(); }
+const METEOR_HIT=0.55;   /* seconds of the fall, as in 2D (meteorFx) */
+function v3MeteorDone(M){ if(M.g){ V3.fxg.remove(M.g); } }
+function v3Meteor(M,now,dt,put,lights){ const A=AMBIENT3D, f=M.f, ix=f.x/TILE, iz=f.y/TILE, gy=v3H(ix,iz);
+  if(!G.seen[Math.floor(f.y/TILE)*G.map.w+Math.floor(f.x/TILE)]){ if(M.g) M.g.visible=false; return; }
+  if(!M.g){ const g=M.g=new THREE.Group(); V3.fxg.add(g);
+    M.head=new THREE.Mesh(GEO.lowball,glow('#fff1d6')); M.head.scale.set(A.meteorSize,A.meteorSize*0.8,A.meteorSize*1.2); g.add(M.head);
+    M.ring=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ color:0xb9ad98, transparent:true, depthWrite:false })); M.ring.visible=false; g.add(M.ring);
+    M.glow=new THREE.Mesh(GEO.disc,new THREE.MeshBasicMaterial({ color:0xff5a10, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending })); M.glow.visible=false; g.add(M.glow);
+    M.rim=new THREE.Mesh(GEO.torus,mat('#4e4234')); M.rim.visible=false; M.rim.receiveShadow=true; g.add(M.rim);
+    M.rocks=[]; }
+  M.g.visible=true; const tt=M.tt, dx=Math.cos(M.ang)*A.meteorSlant, dz=Math.sin(M.ang)*A.meteorSlant;
+  const at=k=>({ x:ix+dx*(1-k), y:gy+A.meteorHigh*(1-k), z:iz+dz*(1-k) });
+  if(tt<METEOR_HIT){ const k=tt/METEOR_HIT, p=at(k);
+    M.head.visible=true; M.head.position.set(p.x,p.y,p.z); M.head.rotation.x+=M.spin.x*dt; M.head.rotation.y+=M.spin.y*dt; M.head.rotation.z+=M.spin.z*dt;
+    put(p.x,p.y,p.z,0.75,'#ffb347',0.8); put(p.x,p.y,p.z,0.35,'#ffffff',1);
+    const N=A.meteorTrail; for(let i=1;i<=N;i++){ const ki=k-i*0.022; if(ki<0) break; const q=at(ki), w=1-i/N;
+      put(q.x,q.y,q.z,0.08+0.3*w,i<3?'#ffffff':i<6?'#ffe2a8':'#7ff6ff',w*0.9); }
+    if(Math.random()<0.6) V3.smoke.push({ x:p.x, y:p.y, z:p.z, t:0, sz:0.14, col:'#a7a4a8', a:0.22, rise:0.2 });   /* a thin trail of smoke hangs behind it */
+    lights.push({ x:p.x, y:p.y, z:p.z, i:0.6+1.6*k, c:0xffc080, d:4+3*k });
+    return; }
+  /* the hit */
+  const h=tt-METEOR_HIT; M.head.visible=false;
+  if(!M.hit){ M.hit=true; const n=A.meteorRocks;
+    for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, sp=rand(0.5,1.7), m=new THREE.Mesh(GEO.lowball,mat(pick(['#6a5a48','#8a7a6a','#4e4034','#b0a28a'])));
+      const s=rand(0.035,0.08); m.scale.set(s,s*0.8,s); m.castShadow=true; m.position.set(ix,gy+0.05,iz); M.g.add(m);
+      M.rocks.push({ m, vx:Math.cos(a)*sp, vy:rand(1.2,2.6), vz:Math.sin(a)*sp, r:rand(-8,8), rest:false }); }
+    for(let i=0;i<10;i++){ const a=i/10*Math.PI*2; V3.smoke.push({ x:ix+Math.cos(a)*0.3, y:gy+0.1, z:iz+Math.sin(a)*0.3, t:0, sz:0.55, col:'#8a8276' }); } }
+  const G3=A.meteorGravity;
+  for(const r of M.rocks){ if(r.rest) continue; r.vy-=G3*dt; r.m.position.x+=r.vx*dt; r.m.position.y+=r.vy*dt; r.m.position.z+=r.vz*dt; r.m.rotation.x+=r.r*dt; r.m.rotation.z+=r.r*0.7*dt;
+    const gh=v3H(r.m.position.x,r.m.position.z); if(r.m.position.y<=gh+0.02&&r.vy<0){ r.m.position.y=gh+0.02; r.rest=true; } }
+  const fadeOut=Math.min(1,(A.meteorLife-tt)/0.8);
+  for(const r of M.rocks) r.m.scale.y=r.m.scale.x*0.8*fadeOut+0.0001;
+  if(h<0.25) put(ix,gy+0.5,iz,2.4*(1-h/0.25)+0.4,'#fff3c4',1-h/0.25);   /* the flash */
+  if(h<0.5) lights.push({ x:ix, y:gy+0.8, z:iz, i:A.meteorLight*(1-h/0.5), c:0xffb070, d:7 });
+  const rk=Math.min(1,h/1.1); M.ring.visible=rk<1; M.ring.scale.set(0.3+2.2*rk,1,0.3+2.2*rk); M.ring.position.set(ix,gy+0.06,iz); M.ring.material.opacity=0.55*(1-rk);
+  for(let i=0;i<8&&h<1.6;i++){ const a=i/8*Math.PI*2+M.ang, d=0.3+1.6*Math.min(1,h/1.2); put(ix+Math.cos(a)*d,gy+0.2+h*0.25,iz+Math.sin(a)*d,0.5+h*0.6,'#9a9080',0.4*(1-h/1.6),true); }
+  const cg=Math.max(0,1-h/A.craterGlow); M.glow.visible=cg>0; M.glow.scale.setScalar(0.32); M.glow.position.set(ix,gy+0.05,iz); M.glow.material.opacity=0.9*cg*(0.85+0.15*Math.sin(now/70));
+  if(cg>0.05) put(ix,gy+0.15,iz,0.6,'#ff7a2a',0.5*cg);
+  M.rim.visible=true; M.rim.scale.set(0.38,0.3*fadeOut+0.001,0.38); M.rim.position.set(ix,gy+0.01,iz); }
+function devilPos(f){ const tt=f.max-f.t; return { x:f.x+tt*f.vx, y:f.y-Math.sin(tt*0.9+f.seed)*10, tt }; }   /* same as drawDevil (25b) */
+/* the funnel itself: two open cones of streaky, turning dust (a shader), the axis bent so the top sways and lags */
+function v3DevilMesh(){ const geo=new THREE.CylinderGeometry(1,0.12,1,28,10,true).translate(0,0.5,0), g=new THREE.Group(), U={ time:{value:0}, fade:{value:1}, lean:{value:new THREE.Vector2()}, H:{value:1}, W:{value:1} };
+  const mk=(k,col,sp,op)=>{ const m=new THREE.ShaderMaterial({ transparent:true, depthWrite:false, side:THREE.DoubleSide,
+      uniforms:{ ...U, col:{value:new THREE.Color(col)}, sp:{value:sp}, op:{value:op}, k:{value:k} },
+      vertexShader:`uniform vec2 lean; uniform float H, W, k; varying float vh; varying float va; varying vec3 vn; varying vec3 vw;
+        void main(){ vec3 p=position; vh=p.y; va=atan(p.z,p.x); float h=p.y; p.xz*=W*k; p.y*=H; p.x+=lean.x*h+lean.y*h*h; p.z+=0.15*sin(h*5.0+va)*h;
+          vec4 w=modelMatrix*vec4(p,1.0); vw=w.xyz; vn=normalize(mat3(modelMatrix)*normal); gl_Position=projectionMatrix*viewMatrix*w; }`,
+      fragmentShader:`uniform float time, fade, sp, op; uniform vec3 col; varying float vh; varying float va; varying vec3 vn; varying vec3 vw;
+        float hs(vec2 q){ return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453); }
+        float n2(vec2 q){ vec2 i=floor(q), f=fract(q); f=f*f*(3.0-2.0*f); return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y); }
+        void main(){ float a=va/6.2831853, t=time*sp;
+          float s=n2(vec2(a*7.0+t*(1.6-vh*0.7)-vh*2.5, vh*3.0-time*0.8))*0.65+n2(vec2(a*17.0+t*2.2-vh*5.0, vh*7.0-time*1.4))*0.35;
+          float streak=smoothstep(0.3,0.8,s);
+          float edge=pow(1.0-abs(dot(normalize(cameraPosition-vw),vn)),0.6);   /* thicker where you look along its side */
+          float alpha=streak*(0.35+0.65*edge)*smoothstep(0.0,0.12,vh)*(1.0-smoothstep(0.65,1.0,vh))*op*fade;
+          gl_FragColor=vec4(col*(0.8+0.3*s),alpha); }` });
+    const o=new THREE.Mesh(geo,m); o.frustumCulled=false; o.renderOrder=3; return o; };
+  g.add(mk(1.0,'#d2c2a2',7.0,1.0)); g.add(mk(0.7,'#a8977c',9.5,0.85));
+  g.userData={ U, geo }; V3.fxg.add(g); return g; }
+function v3Devils(){ V3.devils=V3.devils||new Map(); const live=new Set();
+  for(const f of G.fx) if(f.k==='devil'){ live.add(f); v3Devil(f); }
+  for(const [f,g] of V3.devils) if(!live.has(f)){ V3.fxg.remove(g); g.userData.geo.dispose(); g.children.forEach(o=>o.material.dispose()); V3.devils.delete(f); } }
+function v3Devil(f){ const put=V3.put, A=AMBIENT3D, P=devilPos(f), tt=P.tt, cx=P.x/TILE, cz=P.y/TILE;
+  let M=V3.devils.get(f); if(!M){ M=v3DevilMesh(); V3.devils.set(f,M); }
+  if(!G.seen[Math.floor(P.y/TILE)*G.map.w+Math.floor(P.x/TILE)]){ M.visible=false; return; } M.visible=true;
+  const gy=v3H(cx,cz), grow=Math.min(1,tt/1.2), die=Math.min(1,f.t/1.2), fade=Math.min(grow,die), H=A.devilHigh*(0.35+0.65*grow)*(0.6+0.4*die), W=A.devilWide*(1+(1-die)*0.8);
+  const dir=Math.sign(f.vx||1), lean=t=>Math.sin(tt*1.3+f.seed)*A.devilLean*t-dir*t*t*0.35;   /* the top sways and lags behind the foot */
+  { const U=M.userData.U, sw=Math.sin(tt*1.3+f.seed)*A.devilLean; M.position.set(cx,gy,cz); U.time.value=tt; U.fade.value=fade; U.H.value=H; U.W.value=W; U.lean.value.set(sw,-dir*0.35); }
+  const N=A.devilPuffs; for(let i=0;i<N;i++){ const h=i/N, a=tt*(9-h*4)+i*2.39, r=0.08+Math.pow(h,1.4)*W, x=cx+lean(h)+Math.cos(a)*r, z=cz+Math.sin(a)*r*0.9;
+    put(x,gy+0.1+h*H,z,0.2+h*0.45,i%3?'#b8a68a':'#d6c6a8',(0.45-h*0.3)*fade,true); }
+  for(let i=0;i<7;i++){ const a=-tt*5+i*0.9, r=0.4+0.25*Math.sin(tt*3+i); put(cx+Math.cos(a)*r,gy+0.15,cz+Math.sin(a)*r,0.7,'#bfae92',0.5*fade,true); }   /* the collar of dust at its foot */
+  const n=A.devilGrit; for(let j=0;j<n;j++){ const p=(tt*0.55+j/n)%1, a=tt*12+j*1.9, out=Math.max(0,p-0.82)/0.18, r=0.1+p*W*0.7+out*1.4;
+    put(cx+lean(p)+Math.cos(a)*r,gy+0.08+p*H*0.9-out*out*H*0.7,cz+Math.sin(a)*r,0.07,'#3e352c',0.9*fade*(1-out*0.6),true); } }   /* grit sucked up, thrown out at the top */
 function render3D(now){
   if(V3.forG!==G||V3.mapId!==G.map.id) v3Reset();
   const dt=Math.min(0.1,(now-(V3.last||now))/1000); V3.last=now;
@@ -930,7 +1019,7 @@ function render3D(now){
   hidePool(V3.shotPool,n);
   /* effects in the air */
   let nt=0; const P=V3.tracerPos, Cc=V3.tracerCol; n=0; const fx=pool(V3.fxPool,v3Sprite);
-  const put=(x,y,z,sz,col,a,normal)=>{ if(n>=400) return; const s=fx(n++); s.material.blending=normal?THREE.NormalBlending:THREE.AdditiveBlending; s.position.set(x,y,z); s.scale.setScalar(sz); s.material.color.set(col); s.material.opacity=a; };
+  let cap=400; const put=(x,y,z,sz,col,a,normal)=>{ if(n>=cap) return; const s=fx(n++); s.material.blending=normal?THREE.NormalBlending:THREE.AdditiveBlending; s.position.set(x,y,z); s.scale.setScalar(sz); s.material.color.set(col); s.material.opacity=a; };
   for(const f of G.fx){ const a=Math.max(0,f.t/f.max);
     if(f.k==='tracer'&&nt<400){ const x1=f.x1/TILE, z1=f.y1/TILE, x2=f.x2/TILE, z2=f.y2/TILE, c=new THREE.Color('#ffe2a8').multiplyScalar(a);
       P.set([x1,v3H(x1,z1)+0.6,z1,x2,v3H(x2,z2)+0.5,z2],nt*6); Cc.set([c.r,c.g,c.b,c.r,c.g,c.b],nt*6); nt++; continue; }
@@ -940,14 +1029,13 @@ function render3D(now){
       case 'spark': case 'ember': put(x,gy+0.35+(1-a)*0.5,z,0.13,f.col||'#ffb347',a); break;
       case 'flame': put(x,gy+0.35+(1-a)*0.6,z,0.28+(1-a)*0.5,a>0.6?'#ffe08a':a>0.3?'#ff8a2a':'#783214',a); break;
       case 'boom': put(x,gy+0.45,z,(f.r/TILE)*2.2*(1-a*0.6),f.col||'#ffa03c',a*0.9); break;
-      case 'dust': put(x,gy+0.3,z,(f.r0+(1-a)*f.r1)/TILE*2,f.col||'#777',a*0.35,true); break;
+      case 'dust': put(x,gy+0.3+(f.lift?(1-a)*f.lift:0),z,(f.r0+(1-a)*f.r1)/TILE*2,f.col||'#777',a*(f.lift?0.5:0.35),true); break;   /* f.lift: dust whipped up by a dust devil rises */
       case 'hivedeath': { const D=HIVE_DEATH, tt=f.max-f.t; if(!G.seen[Math.floor(f.y/TILE)*G.map.w+Math.floor(f.x/TILE)]) break;
         if(tt<D.scream) put(x,gy+1.1,z,1.4+0.5*Math.abs(Math.sin(tt*24)),'#a6ff4a',0.25+0.2*tt/D.scream);   /* the heart's glow while it screams */
         for(let k=0;k<D.smoke;k++){ const t=tt-0.3-k*0.22; if(t<0||t>2.2) continue;   /* smoke plumes, as in 2D */
           put(x+((hdRnd(f.seed+k)-0.5)*56+Math.sin(t*3+k)*5)/TILE,gy+0.3+t*46/TILE,z+(hdRnd(f.seed+k+40)-0.5)*40/TILE,(4+t*9)*4.5/TILE,'#34323a',Math.max(0,0.8-t*0.3),true);   /* darker than in 2D: the 3D ground is lighter */ }
         break; }
       case 'mlight': put(x,gy+0.6,z,1.0,'#ffd690',a*0.5); break;
-      case 'meteor': put(x,gy+a*6,z,0.5,'#ffb347',1); break;
       case 'slash': put(x,gy+0.6,z,0.5,'#ffffff',a*0.8); break; } }
   for(let i=nt*6;i<(V3.lastNt||0)*6;i++){ P[i]=0; Cc[i]=0; } V3.lastNt=nt;
   V3.tracers.geometry.setDrawRange(0,nt*2); V3.tracers.geometry.attributes.position.needsUpdate=true; V3.tracers.geometry.attributes.color.needsUpdate=true;
@@ -958,11 +1046,11 @@ function render3D(now){
     if(e.chargeT>0) put(p.x+Math.sin(g.userData.yaw)*0.35,p.y+top*0.75,p.z+Math.cos(g.userData.yaw)*0.35,0.25+0.15*Math.sin(now/40),'#c7f05a',0.9);
     if(e.beam&&!e.beam.dead){ const b=V3.objs.get(e.beam); if(b) for(let k=1;k<6;k++){ const t=((k/6)+now/900)%1; put(p.x+(b.position.x-p.x)*t,p.y+0.6+(b.position.y-p.y)*t,p.z+(b.position.z-p.z)*t,0.12,'#78ffbe',0.8); } } }
   for(const [e,g] of V3.objs) if(g.visible&&g.userData.opening>0){ const p=g.userData.opening; for(let i=0;i<3;i++){ const d=(now/900+i/3+e.id*0.13)%1, a=i*2.4+now/700; put(g.position.x+Math.cos(a)*d*0.4*p,g.position.y+0.4+d*0.8*p,g.position.z+Math.sin(a)*d*0.4*p,0.1,i%2?'#a6ff4a':'#c58cff',(1-d)*0.9); } }   /* an egg breathing out spores */
-  for(const s of V3.smoke){ const k=s.t/2.5, z=s.sz||1; put(s.x+k*0.6*z,s.y+k*1.8*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',0.5*(1-k),true); }   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
+  for(const s of V3.smoke){ const k=s.t/2.5, z=s.sz||1, up=s.rise??1.8; put(s.x+k*0.6*z,s.y+k*up*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',(s.a??0.5)*(1-k),true); }   /* s.a, s.rise: a faint trail that hangs (a meteorite's) */   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
   V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<2.5);
   for(const mk of G.markers){ const x=mk.x/TILE, z=mk.y/TILE; put(x,v3H(x,z)+2+Math.sin(now/250)*0.1,z,0.7,mk.col||'#ffb347',0.9); }
   for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; put(x,v3H(x,z)+0.3,z,1.2,'#ff6040',0.8); }
-  v3Ships(now,lights,put);
+  v3Ships(now,lights,put); cap=n+140; v3Ambient(now,put,lights);   /* the meteorite and dust devil always get their own room */
   hidePool(V3.fxPool,n);
   for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; lights.push({x,y:v3H(x,z)+0.6,z,i:2,c:0xff6a50,d:(SQUAD.flare.light||6)*1.1}); }
   const near=l=>Math.hypot(l.x-V3.look.x,l.z-V3.look.z); lights.sort((a,b)=>near(a)-near(b));

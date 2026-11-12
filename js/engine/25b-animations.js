@@ -13,12 +13,12 @@ const FIRE = { burn:3, dps:6, radius:0.75, ignite:3, igniteDps:6, max:40, merge:
    burning after it leaves the fire · igniteDps: damage per second while it burns · max: patches at once · merge: a new flame within this many tiles
    of a patch feeds that patch (it burns longer and grows up to `grow` times its radius) */
 const ANIM = { prints:80, printLife:7, casings:40, casingLife:5, melt:1.8, glint:1.4, meteorEvery:35, bruteShake:0.05, acid:2.2, flyover:true,
-  spitCharge:0.5, emerge:1, idle:true, strays:0.25, dragLife:25, hurtEdge:60, lamps:true, lampRange:5, lampGlow:0.1, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, glints:true, lowGravity:45 };
+  spitCharge:0.5, emerge:1, idle:true, strays:0.25, dragLife:25, hurtEdge:60, lamps:true, lampRange:5, lampGlow:0.1, muzzleLight:true, orderMark:true, unfold:1.2, devilEvery:45, devilDust:7, devilReach:22, glints:true, lowGravity:45 };
 /* spitCharge: seconds a Spitter's throat swells before the acid leaves (you can step aside; 0 = at once) · emerge: seconds the ground bulges
    before a burrowing wave breaks out (0 = at once) · hurtEdge: damage within about a second that makes the screen edge glow red on the side of
    the attack (0 = never) · lamps: helmet lamps in the dark (they also let you see lampRange tiles further in their beam) · lampGlow: how bright the beams are · muzzleLight: every shot
    lights the ground for a moment · orderMark: a ripple where you send your squad · unfold: seconds a Sentry Gun takes to unfold once set up ·
-   devilEvery: about every this many seconds a dust devil crosses the screen (0 = never) · glints: crystals and ice sparkle ·
+   devilEvery: about every this many seconds a dust devil crosses the screen (0 = never) · devilDust, devilReach: a dust devil whips dust off units within devilReach px (puffs per second, 0 = never) · glints: crystals and ice sparkle ·
    lowGravity: how fast debris of an explosion falls back (pixels/s², the game's normal is 180): on the moon it hangs in the air */
 
 /* ---- shared helpers ---- */
@@ -233,6 +233,12 @@ function sentryUnfolds(b){ if(b.type==='sentry'&&ANIM.unfold>0) b.unfoldT=ANIM.u
 function devilTick(dt){ if(!(ANIM.devilEvery>0)) return; G.devilT=(G.devilT??rand(10,ANIM.devilEvery))-dt; if(G.devilT>0) return; G.devilT=ANIM.devilEvery*rand(0.6,1.4);
   for(let i=0;i<20;i++){ const x=G.cam.x+rand(40,ui.vw*0.6), y=G.cam.y+rand(80,ui.vh-(ui.hudH||0)-40), k=Math.floor(y/TILE)*G.map.w+Math.floor(x/TILE), c=G.map.tiles[k];
     if((c!=='.'&&c!==',')||!animSeen(x,y)||(G.creep&&G.creep[k]>0.1)) continue; G.fx.push({k:'devil',x,y,vx:rand(18,30),vy:0,t:7,max:7,seed:Math.random()*99,rest:true}); return; } }
+/* a dust devil that crosses units whips dust up off them (drawn in 2D and 3D: f.lift = how high it rises in 3D, tiles) */
+function devilDustTick(dt){ if(!(ANIM.devilDust>0)) return;
+  for(const f of G.fx){ if(f.k!=='devil'||f.t<0.3) continue; const tt=f.max-f.t, x0=f.x+tt*f.vx, y0=f.y-Math.sin(tt*0.9+f.seed)*10, R=ANIM.devilReach;
+    for(const u of G.ents){ if(u.dead||u.hidden||(u.kind!=='unit'&&u.kind!=='body')) continue; const d=Math.hypot(u.x-x0,u.y-y0); if(d>R||Math.random()>dt*ANIM.devilDust*(1-d/R*0.6)) continue;
+      const a=Math.atan2(u.y-y0,u.x-x0)+Math.PI/2;   /* swept round with the turning air */
+      G.fx.push({k:'dust',x:u.x+rand(-3,3),y:u.y+rand(-1,3),vx:Math.cos(a)*rand(14,26)+f.vx*0.6,vy:Math.sin(a)*rand(8,16)-rand(6,12),t:1.7,max:1.7,r0:1,r1:rand(4,7),col:pick(['#b8a68a','#d6c6a8']),lift:rand(0.9,1.8)}); } } }
 function drawDevil(f){ const tt=f.max-f.t, fade=Math.min(1,tt,f.t), x0=f.x+tt*f.vx, y0=f.y-Math.sin(tt*0.9+f.seed)*10;
   for(let i=0;i<28;i++){ const h=i/28, a=tt*9+i*0.9, r=3+h*14; ctx.fillStyle=`rgba(${i%3?'138,127,112':'179,165,143'},${(0.7-h*0.45)*fade})`; ctx.fillRect(Math.round(x0+Math.cos(a)*r+Math.sin(tt*3)*h*6),Math.round(y0-h*44+Math.sin(a)*r*0.3),2,2); } }
 function drawGlints(now,vx0,vy0,vx1,vy1){ if(!ANIM.glints) return; const m=G.map, W=m.w, x0=Math.max(0,Math.floor(vx0/TILE)), y0=Math.max(0,Math.floor(vy0/TILE)), x1=Math.min(W-1,Math.ceil(vx1/TILE)), y1=Math.min(m.h-1,Math.ceil(vy1/TILE));
@@ -328,4 +334,4 @@ function updateAnims(dt){
   for(const d of G.drags||[]) d.t-=dt; if(G.drags&&G.drags.length&&G.drags[0].t<=0) G.drags=G.drags.filter(d=>d.t>0);
   for(const f of G.fx){ if(f.k==='topple') toppleTick(f); if(f.k==='casing'||f.k==='helmet') casingTick(f,dt); else if(f.k==='meteor') meteorFx(f); else if(f.k==='debris') debrisTick(f,dt); }
   if(G.hurtAcc) G.hurtAcc*=Math.exp(-dt*1.6);
-  meteorTick(dt); devilTick(dt); updateFires(dt); }
+  meteorTick(dt); devilTick(dt); devilDustTick(dt); updateFires(dt); }
