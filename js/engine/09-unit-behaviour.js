@@ -89,6 +89,8 @@ function nearestOf(from,filter){ let best=null, bd=Infinity; for(const e of G.en
    75/50/25% health (and gets faster each time) and regenerates when nobody has hurt her for a while. */
 function layEgg(x,y,type){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(!walkableT(tx,ty)) return;
   const c=makeBuilding('cocoon','swarm',tx,ty,true); c.x=x; c.y=y; c.r=9; c.hatchT=4; c.hatchType=type; }
+/* what the Matron just did, for her 3D model to act it out (33-view3d.js) */
+function bossAnim(u,k){ u.bossAnim={ k, at:G.time }; }
 function bossThink(u,dt){
   const d=u.def, S=u.bossState||(u.bossState={eggT:6,spitT:4,phase:0,calm:99});
   S.calm+=dt; if(S.calm>8 && u.hp<u.maxHp){ u.hp=Math.min(u.maxHp,u.hp+d.regen*dt); if(Math.random()<dt*2) G.fx.push({k:'text',x:u.x+rand(-20,20),y:u.y-60,t:0.8,max:0.8,txt:'+',col:'#a6ff4a'}); }
@@ -120,7 +122,7 @@ function bossThink(u,dt){
   if(S.retreat==='heal'){ const near=foes.some(e=>dist(e,u)<d.lairGuard*TILE+u.r); S.healT-=dt; u.speedMul=d.rootSpeed;
     if(near||S.healT<=0||u.hp>=S.healTo){ S.retreat=null; u.order=null; u.guardAt={x:S.home.x,y:S.home.y}; if(near){ S.chargeT=0; G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'FURY!',col:'#ff5a4f'}); } }
     else { u.hp=Math.min(S.healTo,u.hp+d.lairRegen*dt); if(Math.random()<dt*4) G.fx.push({k:'text',x:u.x+rand(-24,24),y:u.y-60,t:0.8,max:0.8,txt:'+',col:'#a6ff4a'});
-      S.eggT-=dt*2; if(S.eggT<=0){ S.eggT=d.eggEvery*0.5; for(let i=0;i<d.eggs+1;i++){ const a=rand(0,Math.PI*2), r=rand(1.5,3.5)*TILE; layEgg(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,pick(['crawler','drone'])); } SFX.play('hatch',u.x,u.y); }
+      S.eggT-=dt*2; if(S.eggT<=0){ S.eggT=d.eggEvery*0.5; for(let i=0;i<d.eggs+1;i++){ const a=rand(0,Math.PI*2), r=rand(1.5,3.5)*TILE; layEgg(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,pick(['crawler','drone'])); } bossAnim(u,'egg'); SFX.play('hatch',u.x,u.y); }
       return; } }
   /* an ambush in her lair: whoever comes into it makes the eggs round her hatch at once */
   if(foes.some(e=>Math.hypot(e.x-S.home.x,e.y-S.home.y)<(d.lairGuard+3)*TILE)) for(const c of G.ents) if(!c.dead&&c.type==='cocoon'&&c.hatchT>0.3&&Math.hypot(c.x-S.home.x,c.y-S.home.y)<6*TILE) c.hatchT=0.3;
@@ -142,26 +144,26 @@ function bossThink(u,dt){
     const glob=(tx,ty,delay)=>{ const sx=u.x, sy=u.y-50; G.shots.push({k:'acid',sx,sy,tx,ty,t:-delay,dur:Math.hypot(tx-sx,ty-sy)/240+0.3,src:u,dmg:d.spitDamage,splash:0.8*TILE,faction:u.faction,pool:d.rainPool}); };
     S.rainT=(S.rainT??3)-dt;
     if(S.stillT>d.rainStill){ S.stillT=0; S.rainT=d.rainEvery; for(let i=0;i<d.rainGlobs;i++){ const a=i/d.rainGlobs*Math.PI*2, r=i?rand(0.8,2)*TILE:0; glob(cx+Math.cos(a)*r,cy+Math.sin(a)*r,i*0.08); }
-      SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'ACID RAIN',col:'#a6ff4a'}); }
+      bossAnim(u,'rain'); SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'ACID RAIN',col:'#a6ff4a'}); }
     else if(S.rainT<=0){ S.rainT=d.rainEvery; const a0=Math.atan2(cy-u.y,cx-u.x), far=Math.max(u.r+4*TILE,Math.hypot(cx-u.x,cy-u.y));
       for(let w=0;w<3;w++){ const R=w===0?u.r+4*TILE:w===1?(u.r+4*TILE+far)/2:far, spread=1.6*(u.r+4*TILE)/Math.max(R,1);
         for(let i=0;i<d.rainGlobs;i++){ const a=a0+(i/(d.rainGlobs-1)-0.5)*spread, r=R+rand(-0.5,0.5)*TILE; glob(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,w*0.7+i*0.08); } }
-      SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'ACID RAIN',col:'#a6ff4a'}); } }
+      bossAnim(u,'rain'); SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'ACID RAIN',col:'#a6ff4a'}); } }
   /* kept at a distance: she creeps after you instead of standing still, and flings eggs into your ranks */
   const near=foes.reduce((m,e)=>Math.min(m,dist(e,u)),Infinity), reach=(d.range+1.5)*TILE+u.r;
   S.farT=near>reach?(S.farT||0)+dt:0;
   if(S.farT>d.kiteTime){ S.farT=0; const unitsF=foes.filter(e=>e.kind==='unit'); const t=pick(unitsF.length?unitsF:foes);
     for(let i=0;i<d.lobEggs;i++){ const tx=t.x+rand(-1.5,1.5)*TILE, ty=t.y+rand(-1.5,1.5)*TILE; G.shots.push({k:'broodlob',sx:u.x,sy:u.y-50,tx,ty,t:-i*0.2,dur:Math.hypot(tx-u.x,ty-u.y)/300+0.4,faction:'none',splash:0,dmg:0,type:S.phase>=2?pick(['drone','crawler']):'crawler'}); }
-    SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'SPAWN!',col:'#a6ff4a'}); }
+    bossAnim(u,'lob'); SFX.play('spit',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'SPAWN!',col:'#a6ff4a'}); }
   // mostly rooted while she spits and lays eggs; every few seconds she charges into the nearest group
   S.chargeT=(S.chargeT??6)-dt;
   if(S.chargeT<=0){ S.charge=d.chargeTime; S.chargeT=d.chargeEvery*(S.phase>=2?0.75:1); SFX.play('squelch',u.x,u.y); G.fx.push({k:'text',x:u.x,y:u.y-70,t:1,max:1,txt:'CHARGE!',col:'#ff5a4f'}); }
   if(S.charge>0){ S.charge-=dt; u.speedMul=d.chargeSpeed; if(Math.random()<dt*20) G.fx.push({k:'ember',x:u.x+rand(-30,30),y:u.y+rand(-4,8),vx:rand(-30,30),vy:rand(-40,-10),t:0.5,max:0.5,col:'#6b5a7a'}); }
   else u.speedMul=near>reach?d.stalkSpeed:d.rootSpeed;   /* close: rooted; kept at a distance: she creeps after you */
   S.eggT-=dt; if(S.eggT<=0){ S.eggT=d.eggEvery*(S.phase>=2?0.7:1); const types=S.phase>=2?['drone','crawler']:['crawler'];
-    for(let i=0;i<d.eggs;i++){ const a=rand(0,Math.PI*2), r=rand(1.5,3)*TILE; layEgg(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,pick(types)); } SFX.play('hatch',u.x,u.y); }
+    for(let i=0;i<d.eggs;i++){ const a=rand(0,Math.PI*2), r=rand(1.5,3)*TILE; layEgg(u.x+Math.cos(a)*r,u.y+Math.sin(a)*r,pick(types)); } bossAnim(u,'egg'); SFX.play('hatch',u.x,u.y); }
   S.spitT-=dt; if(S.spitT<=0){ S.spitT=d.spitEvery; for(let i=0;i<d.spit;i++){ const t=pick(foes); const sx=u.x+u.face*40, sy=u.y-40, tx=t.x+rand(-24,24), ty=t.y+rand(-24,24);
-      G.shots.push({k:'acid',sx,sy,tx,ty,t:-i*0.12,dur:Math.hypot(tx-sx,ty-sy)/260+0.2,src:u,dmg:d.spitDamage,splash:0.8*TILE,faction:u.faction}); } SFX.play('spit',u.x,u.y); }
+      G.shots.push({k:'acid',sx,sy,tx,ty,t:-i*0.12,dur:Math.hypot(tx-sx,ty-sy)/260+0.2,src:u,dmg:d.spitDamage,splash:0.8*TILE,faction:u.faction}); } bossAnim(u,'spit'); SFX.play('spit',u.x,u.y); }
   const th=[0.75,0.5,0.25];
   if(S.phase<3 && u.hp/u.maxHp<th[S.phase]){ S.phase++; u.enrage=1+0.15*S.phase; SFX.play('horn');
     G.fx.push({k:'boom',x:u.x,y:u.y-20,t:0.6,max:0.6,r:90,col:'#a6ff4a'});
@@ -170,7 +172,7 @@ function bossThink(u,dt){
     freeTilesNear(tile.x,tile.y,n+6).slice(6).forEach(s=>{ const m=makeUnit(pick(types),'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); m.role='hunt'; });
     S.phaseT=0;   /* a new stage: she will burrow once in it */
     for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!e.downed&&dist(e,u)<d.screechR*TILE+u.r) e.dazeT=d.screechTime;   /* her screech: your soldiers shoot slower for a moment */
-    G.fx.push({k:'screech',x:u.x,y:u.y-30,t:0.9,max:0.9,R:d.screechR*TILE});
+    G.fx.push({k:'screech',x:u.x,y:u.y-30,t:0.9,max:0.9,R:d.screechR*TILE}); bossAnim(u,'screech');
     if(S.phase>=3) freeTilesNear(tile.x,tile.y,d.shieldBrood+10).slice(10).forEach(s=>{ const m=makeUnit('drone','swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); m.role='shield'; m.shieldOf=u; }); }   /* her shields: they stay with her and take a share of the hits */
 }
 function escortThink(u,dt){

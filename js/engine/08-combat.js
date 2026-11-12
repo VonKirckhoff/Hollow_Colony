@@ -134,7 +134,7 @@ function kill(e,src){
     if(e.def.burst) bloaterBurst(e);
     if(e.faction==='swarm' && src && src.faction==='corps'){ if(G.side==='corps') G.stats.kills++; if(src.vet){ src.vet.kills++; gainXP(src, VET_XP[e.type]||VET_XP.kill); } }
     if(e.order && e.order.type==='build' && !e.order.site && !e.order.deploy) G.salvage+=BUILDINGS[e.order.btype].cost;
-    if(e.faction==='corps' && e.def.bio && src && src.def && src.def.boss && src.def.feedHeal && !src.dead){ src.hp=Math.min(src.maxHp,src.hp+src.def.feedHeal*src.maxHp); G.fx.push({k:'text',x:src.x,y:src.y-80,t:1.2,max:1.2,txt:'FEEDS',col:'#a6ff4a'}); }   /* what she kills, she eats: it heals her */
+    if(e.faction==='corps' && e.def.bio && src && src.def && src.def.boss && src.def.feedHeal && !src.dead){ src.hp=Math.min(src.maxHp,src.hp+src.def.feedHeal*src.maxHp); if(typeof bossAnim==='function') bossAnim(src,'eat'); G.fx.push({k:'text',x:src.x,y:src.y-80,t:1.2,max:1.2,txt:'FEEDS',col:'#a6ff4a'}); }   /* what she kills, she eats: it heals her */
     if((e.faction==='corps'||e.faction==='loyal') && e.def.bio && !e.noBody && !(e.vet&&e.vet.risen) && !(src&&src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e);   /* the Swarm can claim it later */
     else if(e.faction==='wild' && e.def.bio && src && src.faction==='swarm' && !src.avatar && !(src.def&&src.def.boss) && walkableP(e.x,e.y)) makeBody(e,true);   /* fauna: the Swarm drags the carcass home, a Grafter turns it into a Bloater */
     else if(e.faction!=='corps' && e.def.bio && src && src.faction==='swarm' && !(src.def&&src.def.boss) && walkableP(e.x,e.y) && creepAt(e.x,e.y)>0.3){   /* nothing hatches off the creep */

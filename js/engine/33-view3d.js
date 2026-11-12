@@ -278,20 +278,7 @@ function v3Creature(e){
   if(t==='seedling'){ const pod=grp(0,0.95,0); pod.add(ball(shiny('#5c3e6e'),0.3,0.36,0.3,0,0,0)); for(let i=0;i<5;i++) pod.add(ball(glow('#c58cff'),0.05,0.05,0.05,Math.cos(i*1.26)*0.27,0.08,Math.sin(i*1.26)*0.27)); g.add(pod); U.sac=pod;
     for(let i=0;i<4;i++){ const a=i*Math.PI/2+0.4, hip=grp(Math.cos(a)*0.18,0.85,Math.sin(a)*0.18); hip.rotation.set(Math.sin(a)*0.5,0,-Math.cos(a)*0.5); hip.add(box(C,0.04,0.85,0.04,0,-0.42,0)); g.add(hip); U.legs.push(hip); }
     U.top=1.35; return g; }
-  if(t==='broodmother'){
-    /* The Matron: a beating heart of flesh, red veins running over it and a glowing core showing through, brood pods on top,
-       walking on a tangle of thick roots */
-    const heart=grp(0,1.55,0); g.add(heart); U.sac=heart; U.torso=heart;
-    heart.add(ball(fung('#4a2a4e'),1.15,1.0,1.1,0,0,0)); heart.add(ball(fung('#5e3a62'),0.75,0.6,0.7,-0.25,0.35,0.1)); heart.add(ball(fung('#4a2a4e'),0.6,0.55,0.6,0.45,0.45,-0.2));
-    const vein=shiny('#8a1f35',{ emissive:0x3a0610 });
-    for(let i=0;i<10;i++){ const a=i*0.63, y=((i*0.37)%1-0.5)*0.9, r=Math.sqrt(Math.max(0.05,1-y*y)); const v=ball(vein,0.05,0.42,0.05,Math.cos(a)*r*1.12,y,Math.sin(a)*r*1.07); v.rotation.set(0,-a,0.35*(i%2?1:-1)); heart.add(v); }   /* veins lying on the skin */
-    const core=grp(0.6,0.0,0.55); core.add(ball(glow('#a6ff4a'),0.28,0.28,0.28,0,0,0)); core.add(ball(mat('#4fae22',{ transparent:true, opacity:0.5 }),0.42,0.42,0.42,0,0,0)); heart.add(core); U.core3=core;
-    for(const [x,z] of [[-0.5,0.3],[0.1,-0.5],[0.5,0.2],[-0.2,-0.2]]){ heart.add(ball(mat('#6d8a35',{ transparent:true, opacity:0.8 }),0.2,0.2,0.2,x,0.95,z)); heart.add(ball(glow('#c7f05a'),0.1,0.1,0.1,x,0.95,z)); }
-    for(const k of [-1,1]) heart.add(ball(eye,0.09,0.09,0.09,1.08,0.1,k*0.25));
-    for(let i=0;i<8;i++){ const a=i*Math.PI/4+0.2, hip=grp(Math.cos(a)*0.85,1.15,Math.sin(a)*0.85); hip.rotation.set(Math.sin(a)*1.0,0,-Math.cos(a)*1.0);
-      hip.add(part(GEO.taper,fung('#3d2a4a'),0.16,0.9,0.16,0,-0.45,0)); const kn=grp(0,-0.88,0); kn.rotation.set(-Math.sin(a)*0.55,0,Math.cos(a)*0.55);
-      kn.add(part(GEO.taper,fung('#55405f'),0.1,0.7,0.1,0,-0.35,0)); kn.add(part(GEO.cone,B,0.06,0.25,0.06,0,-0.78,0)); kn.children[1].rotation.x=Math.PI; hip.add(kn); g.add(hip); U.legs.push(hip); }
-    U.top=3.0; return g; }
+  if(t==='broodmother') return v3Matron(e);
   if(t==='grazer') return v3Grazer(e,false);
   return null; }
 
@@ -442,6 +429,7 @@ function v3Ships(now,lights,put){ const T=now/1000, seen=new Set();
 
 /* ---------- which entities show (as in 2D) ---------- */
 function v3Shown(e){ const m=G.map;
+  if(e.hidden&&!e.dead&&e.bossState&&e.bossState.burrow&&e.def.burrowTime-e.bossState.burrow.t<0.9) return isVisible(e);   /* the Matron sinking into the ground */
   if(e.dead||e.hidden||e.ospTunnel) return false;
   if(e.kind==='body'&&e.carrier) return isVisible(e.carrier);
   const i=Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE);
@@ -485,7 +473,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(U.pilot) U.pilot.scale.setScalar(0.025*(0.8+Math.random()*0.5)*(fight?2:1));
     if(U.blink) U.blink.visible=Math.floor(T*2+e.id)%2===0;
     if(U.weld) U.weld.visible=!!(e.order&&/repair|build/.test(e.order.type))&&Math.random()<0.7;
-    if(e.type==='brute') v3PoseBrute(e,U,T,mv,fight,ph); else if(U.grazer) v3PoseGrazer(e,U,T,mv);
+    if(e.type==='brute') v3PoseBrute(e,U,T,mv,fight,ph); else if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph);
     if(mv) y+=Math.abs(Math.sin(ph))*0.025;
     if(e.downed){ g.rotation.x=-Math.PI/2*0.92; y+=0.12; } else if(e.stunT>0) g.rotation.z=Math.sin(T*9)*0.25;
     const lg=e.lunge>0?0.15:0; g.position.set(x+Math.sin(U.yaw)*lg,y,z+Math.cos(U.yaw)*lg);
@@ -513,6 +501,148 @@ function v3PoseBrute(e,U,T,mv,fight,ph){
   const ram=e.lunge>0, hw=ram?0.55:fight?0.22:0; U.head.rotation.x+=(hw-U.head.rotation.x)*0.3; U.torso.rotation.x+=((ram?0.12:0)-U.torso.rotation.x)*0.3;
   U.jaw.rotation.x=ram?0.25:Math.max(0,Math.sin(T*0.9+e.id))*0.06;
   if(!mv&&!fight&&V3.smoke&&Math.random()<0.006){ const w=U.snout.getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); for(let i=0;i<2;i++) V3.smoke.push({x:w.x,z:w.z,y:w.y,t:i*0.3,sz:0.16,col:'#b4b4c0'}); } }
+/* ---------- The Matron (Wortelhart, the root heart) ----------
+   A two-chambered heart of flesh, shingled with bark and bone plates, thick knotted veins that pulse one after another,
+   her glowing core showing through a split in the skin. A vertical maw at the front lined with bone hooks, a ring of small
+   glowing eye pits above it, three grasping tendrils below. Brood pods sit in bark cups on top, each with a small Scuttler
+   curled inside; a long root-arm on her back plucks a pod and flings it. Three bone chimneys on her back breathe spores
+   (her acid rain comes out of them). She walks on eight knotted roots with side roots and root hairs, and drags a tail of
+   mycel roots behind her. Shaped as a heart and a tree stump on purpose: no crown, no egg sac, nothing of a film queen.
+   v3PoseMatron: rooted (roots dig in), charge, creeping, spit, egg flinging, acid rain, screech, eating, the drag back to
+   her lair, healing, burrowing and breaking out; plates tear off at 66% and 33% health and the split widens. */
+function v3Matron(e){
+  const g=new THREE.Group(), U=g.userData; U.legs=[]; U.arms=[]; U.matron=true;
+  const RX=1.1, RY=0.95, RZ=1.05, V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0), FW=V(0,0,1);
+  const skin=(d,off=0)=>{ d=d.clone().normalize(); const p=d.multiplyScalar(1/Math.hypot(d.x/RX,d.y/RY,d.z/RZ)), n=V(p.x/RX/RX,p.y/RY/RY,p.z/RZ/RZ).normalize(); p.addScaledVector(n,off); return {p,n}; };
+  const at=(o,p,n,ax=FW)=>{ o.position.copy(p); o.quaternion.setFromUnitVectors(ax,n); return o; };
+  const seg=(m,r,a,b)=>{ const d=b.clone().sub(a), L=d.length(), o=part(GEO.cyl,m,r,L,r,0,0,0); o.position.copy(a).addScaledVector(d,0.5); o.quaternion.setFromUnitVectors(UP,d.normalize()); return o; };
+  const flip=o=>{ o.rotation.x=Math.PI; return o; };
+  const skinM=U.skinM=v3Fogify(new THREE.MeshPhongMaterial({ color:'#4a2a4e', specular:0x3a3044, shininess:22 }));
+  const skin2=fung('#5e3a62'), bark=fung('#5b4a3a'), bark2=fung('#463729'), B=fung(CH.bone), B3=fung('#8f8268'), Dk=fung(CH.dark), C=fung(CH.body), flesh=fung('#6e3f5c'), root2=fung('#55405f');
+  U.skinBase=new THREE.Color('#4a2a4e'); U.skinPale=new THREE.Color('#8a7488');
+  /* the heart: a big chamber, a second chamber high at the back, an atrium on top */
+  const heart=grp(0,1.55,0); g.add(heart); U.torso=heart; U.heart=heart;
+  U.ch1=ball(skinM,RX,RY,RZ,0,0,0); U.ch2=ball(skinM,0.78,0.72,0.72,-0.5,0.4,-0.3); U.atr=ball(skin2,0.5,0.42,0.48,0.45,0.62,-0.35); heart.add(U.ch1,U.ch2,U.atr);
+  /* bark and bone plates shingled over the skin; under each a patch of raw glowing flesh. Stage 1 plates tear off below 66%, stage 2 below 33% */
+  U.plates=[];
+  for(let i=0;i<24;i++){ const y=0.86-(i+0.5)/24*1.6, r=Math.sqrt(1-y*y), a=i*2.399+0.4, d=V(Math.cos(a)*r,y,Math.sin(a)*r);
+    if(d.z>0.4&&Math.abs(d.x)<0.8&&d.y<0.6) continue;   /* the face stays bare: maw, eyes, the split */
+    const {p,n}=skin(d), w=0.27+((i*0.618)%1)*0.1;
+    heart.add(at(part(GEO.half,glow('#2f5a18'),w*0.8,0.035,w*0.65,0,0,0),p,n,UP));
+    const pl=at(grp(),p.clone().addScaledVector(n,-0.05),n,UP), inn=grp(); inn.rotation.y=a*1.7; pl.add(inn);
+    inn.add(part(GEO.half,i%2?bark:B,w,0.15,w*0.78,0,0,0)); inn.add(box(i%2?bark2:B3,w*1.1,0.035,0.035,0,0.13,0));
+    for(const x of [-0.35,0.35]) inn.add(part(GEO.cone,B3,0.025,0.06,0.025,x*w,0.14,0));
+    pl.userData.stage=i%3===0?1:i%3===1?2:0; heart.add(pl); U.plates.push(pl); }
+  /* thick knotted veins from under her up over the top, each with its own pulse; a small fork halfway */
+  U.veins=[];
+  [-0.2,0.5,2.5,3.2,3.9,4.6,5.4].forEach((a0,i)=>{ const m=v3Fogify(new THREE.MeshPhongMaterial({ color:'#5e1426', emissive:0x1e0308, specular:0x552233, shininess:40 })); U.veins.push(m);
+    const pts=[]; for(let j=0;j<=9;j++){ const t=j/9, y=-0.85+t*1.62, a=a0+Math.sin(t*3+i)*0.22, r=Math.sqrt(Math.max(0.04,1-y*y)); pts.push(skin(V(Math.cos(a)*r,y,Math.sin(a)*r),0.025).p); }
+    for(let j=0;j<9;j++){ heart.add(seg(m,0.05*(1-j/18),pts[j],pts[j+1])); if(j%3===1) heart.add(ball(m,0.07,0.06,0.07,pts[j].x,pts[j].y,pts[j].z)); }
+    const f0=pts[4], f1=skin(V(Math.cos(a0+0.5)*0.9,-0.05,Math.sin(a0+0.5)*0.9),0.02).p, f2=skin(V(Math.cos(a0+0.75)*0.85,0.3,Math.sin(a0+0.75)*0.85),0.02).p;
+    heart.add(seg(m,0.03,f0,f1)); heart.add(seg(m,0.022,f1,f2)); });
+  /* the split: her core glows through a tear between two swollen lips; a second split opens below 33% */
+  const slit=(d)=>{ const s=skin(d,0.01), sg=at(grp(),s.p,s.n); const core=ball(glow('#a6ff4a'),0.07,0.42,0.09,0,0,-0.02), mem=ball(mat('#4fae22',{ transparent:true, opacity:0.45 }),0.13,0.5,0.07,0,0,0);
+    const lips=[-1,1].map(k=>{ const l=grp(k*0.09,0,0); l.add(ball(flesh,0.07,0.5,0.09,0,0,0)); l.userData.k=k; sg.add(l); return l; });
+    const drips=[0,1,2,3].map(i=>{ const dp=ball(glow('#a6ff4a'),0.025,0.045,0.025,0,0,0); dp.visible=false; sg.add(dp); return dp; });
+    sg.add(core,mem); heart.add(sg); return { g:sg, core, mem, lips, drips }; };
+  U.slits=[slit(V(0.75,0.25,0.62)),slit(V(-0.85,-0.1,0.5))]; U.slits[1].g.visible=false;
+  /* the maw: a vertical slit at the front, lips with bone hooks, a red throat */
+  const d0=V(0,-0.3,1).normalize(), mw=skin(d0), maw=at(grp(),mw.p,mw.n); heart.add(maw); U.maw=maw;
+  maw.add(ball(mat('#1a0a12'),0.16,0.4,0.12,0,0,-0.02)); maw.add(ball(glow('#5a1222'),0.05,0.22,0.04,0,0,0.07));
+  U.lips=[-1,1].map(k=>{ const lip=grp(k*0.06,0,0); lip.add(ball(flesh,0.1,0.46,0.11,k*0.06,0,0.02));
+    for(let i=0;i<5;i++){ const c=part(GEO.claw,B,0.018,0.018,0.09,0,(i-2)*0.15,0.08); c.rotation.y=-k*1.2; lip.add(c); }
+    lip.userData.k=k; maw.add(lip); return lip; });
+  /* a ring of small eye pits above the maw */
+  U.eyes=[]; const right=V(1,0,0), up=V(0,1,0.3).normalize();
+  for(let i=0;i<9;i++){ const a=0.25+i/8*(Math.PI-0.5), d=d0.clone().addScaledVector(right,Math.cos(a)*0.5).addScaledVector(up,Math.sin(a)*0.5), {p,n}=skin(d), sz=0.026+0.016*Math.sin(a);
+    heart.add(at(ball(Dk,sz*1.8,sz*1.8,sz,0,0,0),p,n)); const ey=at(ball(glow(CH.glow),sz,sz,sz*0.8,0,0,0),p.clone().addScaledVector(n,0.012),n); ey.userData.s=sz; heart.add(ey); U.eyes.push(ey); }
+  /* three grasping tendrils under the maw */
+  U.tents=[-1,0,1].map(k=>{ const s=skin(V(k*0.28,-0.8,0.8)), base=grp(s.p.x,s.p.y,s.p.z); base.rotation.y=k*0.25; heart.add(base); const segs=[]; let par=base;
+    for(let j=0;j<6;j++){ const r=0.06-j*0.007, sg=grp(0,j?-0.18:0,0); sg.add(flip(part(GEO.taper,flesh,r,0.19,r,0,-0.09,0))); if(j===5) sg.add(flip(part(GEO.cone,B,0.025,0.1,0.025,0,-0.22,0)));
+      par.add(sg); segs.push(sg); par=sg; } return segs; });
+  /* brood pods in bark cups on top, a Scuttler curled in each */
+  U.pods=[[0.35,1,0.4],[0,1,0.55],[0.6,0.85,0.1],[0.25,1,-0.05],[-0.25,0.9,0.6]].map(([x,y,z],i)=>{ const s=skin(V(x,y,z)), pg=at(grp(),s.p,s.n,UP);
+    pg.add(part(GEO.half,bark2,0.19,0.08,0.19,0,-0.02,0)); pg.add(part(GEO.torus,bark,0.17,0.9,0.17,0,0.03,0));
+    const pod=ball(mat('#6d8a35',{ transparent:true, opacity:0.5, depthWrite:false }),0.15,0.2,0.15,0,0.17,0), lit=ball(glow('#c7f05a'),0.06,0.04,0.06,0,0.05,0);
+    const sc=grp(0,0.15,0); sc.add(box(Dk,0.025,0.11,0.03,0,0,0)); sc.add(ball(Dk,0.03,0.03,0.03,0,0.07,0.01)); for(const k of [-1,1]){ sc.add(ball(glow(CH.glow),0.008,0.008,0.008,k*0.014,0.075,0.035)); const cl=part(GEO.claw,B3,0.006,0.006,0.06,k*0.02,0.04,0.02); cl.rotation.x=0.9; sc.add(cl); }
+    sc.rotation.z=0.5; pg.add(sc,pod,lit); heart.add(pg); return { pod, lit, sc }; });
+  /* the root-arm on her back that flings a pod */
+  { const s=skin(V(0.35,0.85,-0.45)), arm=grp(s.p.x,s.p.y,s.p.z); arm.rotation.x=-0.6; arm.rotation.z=-0.25; heart.add(arm); const segs=[]; let par=arm;
+    for(let j=0;j<6;j++){ const r=0.11-j*0.013, sg=grp(0,j?0.2:0,0); sg.add(part(GEO.taper,j%2?C:root2,r,0.21,r,0,0.1,0)); sg.add(part(GEO.torus,bark2,r*1.05,0.7,r*1.05,0,0.01,0)); par.add(sg); segs.push(sg); par=sg; }
+    const hand=grp(0,0.22,0); for(let i=0;i<3;i++){ const c=part(GEO.claw,B,0.02,0.02,0.14,Math.cos(i*2.09)*0.06,0,Math.sin(i*2.09)*0.06); c.rotation.set(-Math.PI/2+0.5*Math.sin(i*2.09),0,0); hand.add(c); }
+    const pod=ball(mat('#6d8a35',{ transparent:true, opacity:0.6 }),0.12,0.15,0.12,0,0.12,0); pod.add(ball(glow('#c7f05a'),0.4,0.4,0.4,0,0,0)); hand.add(pod); par.add(hand);
+    U.fling={ segs, pod }; }
+  /* three bone chimneys on her back that breathe spores */
+  U.vents=[[0.75,0.45,-0.6],[0.3,0.35,-0.95],[0.95,0.0,-0.4]].map(([x,y,z])=>{ const s=skin(V(x,y,z)), v=at(grp(),s.p,s.n,UP);
+    v.add(part(GEO.taper,B,0.13,0.42,0.13,0,0.2,0)); v.add(part(GEO.torus,B3,0.13,0.8,0.13,0,0.1,0)); v.add(part(GEO.torus,B3,0.11,0.8,0.11,0,0.3,0));
+    v.add(ball(Dk,0.08,0.03,0.08,0,0.42,0)); const top=ball(glow('#a6ff4a'),0.055,0.02,0.055,0,0.43,0); v.add(top); v.userData.top=top; heart.add(v); return v; });
+  /* eight knotted roots with side roots and root hairs */
+  U.roots=[];
+  for(let i=0;i<8;i++){ const a=i*Math.PI/4+Math.PI/8, yawG=grp(Math.cos(a)*0.75,1.25,Math.sin(a)*0.75); yawG.rotation.y=-a; g.add(yawG);
+    const hip=grp(); hip.rotation.z=1.0; yawG.add(hip);
+    hip.add(flip(part(GEO.taper,C,0.17,0.95,0.17,0,-0.47,0))); hip.add(part(GEO.lowball,bark2,0.13,0.11,0.13,0,-0.95,0)); hip.add(part(GEO.lowball,bark,0.12,0.09,0.12,0,-0.4,0.02));
+    const sr=grp(0,-0.5,0); sr.rotation.set(i%2?0.7:-0.7,0,0.6); sr.add(flip(part(GEO.taper,root2,0.045,0.38,0.045,0,-0.18,0))); hip.add(sr);
+    const knee=grp(0,-0.95,0); knee.rotation.z=-1.3; hip.add(knee);
+    knee.add(flip(part(GEO.taper,root2,0.11,0.8,0.11,0,-0.39,0))); knee.add(part(GEO.lowball,bark2,0.09,0.08,0.09,0,-0.35,0));
+    const sr2=grp(0,-0.3,0); sr2.rotation.set(i%2?-0.8:0.8,0,-0.5); sr2.add(flip(part(GEO.taper,C,0.035,0.3,0.035,0,-0.14,0))); knee.add(sr2);
+    const foot=grp(0,-0.78,0); knee.add(foot); foot.add(ball(bark2,0.07,0.05,0.07,0,0,0));
+    for(let j=0;j<5;j++){ const hh=grp(); hh.rotation.set((j-2)*0.32,0,j%2?0.35:-0.35); hh.add(flip(part(GEO.cone,B3,0.02,0.22,0.02,0,-0.1,0))); foot.add(hh); }
+    U.roots.push({ yawG, hip, knee, foot, a }); }
+  /* a tail of mycel roots dragging behind her, glowing at the tips */
+  U.trail=[0,1,2,3,4].map(k=>{ const base=grp((k-2)*0.22,0.55,-0.7); base.rotation.y=(k-2)*0.28; g.add(base); const segs=[]; let par=base;
+    for(let j=0;j<6;j++){ const sg=grp(0,0,j?-0.3:0); sg.rotation.x=j===0?-1.0:0.3-(j>3?0.3:0); const m=part(GEO.cyl,j%2?C:root2,0.035-j*0.004,0.31,0.035-j*0.004,0,0,-0.15); m.rotation.x=Math.PI/2; sg.add(m);
+      if(j===5) sg.add(ball(glow('#a6ff4a'),0.03,0.03,0.04,0,0,-0.3)); par.add(sg); segs.push(sg); par=sg; } return segs; });
+  U.rootK=0; U.stage=0; U.lean=0; U.open=0; U.top=3.0; return g; }
+/* one frame of the Matron; returns how far she sits lower or higher than the ground (burrowing, dragging, rooted) */
+function v3PoseMatron(e,g,U,T,mv,fight,ph){
+  const S=e.bossState||{}, d=e.def, A=e.bossAnim, since=k=>A&&A.k===k?G.time-A.at:99, lerp=(a,b,k)=>a+(b-a)*k;
+  const charge=S.charge>0, flee=S.retreat==='go', heal=S.retreat==='heal', rooted=!charge&&!flee&&e.awake&&(e.speedMul||1)<=d.rootSpeed+0.01;
+  U.rootK=lerp(U.rootK,rooted?1:0,0.08); let dy=-0.14*U.rootK+(charge?0.08:0)+(flee?-0.22:0);
+  /* damage: plates tear off, the split opens wider, the second split opens, it drips */
+  const f=e.hp/e.maxHp, stage=f<0.33?2:f<0.66?1:0;
+  if(U.stage!==stage){ const was=U.stage; U.stage=stage;
+    U.plates.forEach(p=>{ const off=p.userData.stage&&p.userData.stage<=stage; if(off&&p.visible&&stage>was&&V3.smoke){ const w=p.getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); V3.smoke.push({x:w.x,z:w.z,y:w.y,t:0,sz:0.25,col:'#6b5a48'}); } p.visible=!off; });
+    U.slits[1].g.visible=stage>=2; }
+  const nd=stage===0?0:stage===1?2:4;
+  U.slits.forEach((s,si)=>{ const w=si?0.6:1+stage*0.8; s.lips.forEach(l=>l.position.x=l.userData.k*(0.09+0.07*(si?1:stage))); s.core.scale.set(0.07*w,0.42,0.09); s.mem.scale.set(0.13*w,0.5,0.07);
+    s.drips.forEach((dp,i)=>{ dp.visible=s.g.visible&&i<(si?2:nd); if(!dp.visible) return; const c=(T*0.7+i*0.37+si*0.2)%1; dp.position.set((i-1.5)*0.05,-0.15-c*0.9,0.05+c*0.12); dp.scale.setScalar(0.03*(1-c*0.6)); }); });
+  /* the beat: lub-dub, faster when she charges or flees, slow while she heals; a hard beat when she lays eggs */
+  const rate=charge?6.5:flee?5:heal?2.2:3.2, b1=Math.pow(Math.max(0,Math.sin(T*rate)),12)+(since('egg')<0.5?0.6:0), b2=Math.pow(Math.max(0,Math.sin(T*rate-0.6)),12);
+  U.heart.scale.setScalar(1+0.035*b1); U.ch2.scale.set(0.78*(1+0.08*b2),0.72*(1+0.08*b2),0.72*(1+0.08*b2)); U.atr.scale.set(0.5*(1+0.1*b2),0.42*(1+0.1*b2),0.48*(1+0.1*b2));
+  U.veins.forEach((m,i)=>{ const k=Math.pow(Math.max(0,Math.sin(T*rate-i*0.35)),6), p=flee?0.25:1; m.emissive.setRGB((0.08+0.4*k)*p,(0.01+0.03*k)*p,(0.03+0.08*k)*p); m.color.setHex(flee?0xb07a86:0x5e1426); });
+  U.skinM.color.lerp(flee?U.skinPale:U.skinBase,0.05);
+  const hk=heal?1.3+0.25*Math.sin(T*4):1; U.slits[0].core.scale.x*=hk; U.slits[0].core.scale.y*=heal?1.15:1;
+  /* her face: the eyes flare when she screeches, the maw opens to spit, to scream and to eat */
+  const sc=since('screech'), sp=since('spit'), ea=since('eat'), scr=sc<1.1;
+  U.eyes.forEach((ey,i)=>ey.scale.setScalar(ey.userData.s*(scr?1.8:1)*(0.85+0.15*Math.sin(T*3+i))));
+  const open=scr?1:sp<0.45?0.6:(ea>0.7&&ea<1.6)?0.8:0.08*Math.max(0,Math.sin(T*0.8+e.id));
+  U.open=lerp(U.open,open,0.25); U.lips.forEach(l=>l.rotation.y=l.userData.k*U.open*0.7);
+  U.lean=lerp(U.lean,charge?0.25:flee?0.12:scr?-0.22:sp<0.4?0.1:0,0.12); U.heart.rotation.x=U.lean;
+  U.heart.position.x=scr?Math.sin(T*60)*0.03*(1-sc/1.1):0; U.heart.rotation.z=0;
+  /* tendrils: sway; reach out and pull in what she eats; trail behind when she drags herself home */
+  U.tents.forEach((segs,k)=>segs.forEach((s,j)=>{ let tg=j===0?-0.4:-0.25+Math.sin(T*1.4+j*0.7+k*2)*0.12;
+    if(ea<0.7) tg=j===0?-1.2:-0.05; else if(ea<1.6) tg=j===0?-0.2:-0.55; else if(flee) tg=j===0?0.35:0.05+Math.sin(T*3+j+k)*0.1;
+    s.rotation.x=lerp(s.rotation.x,tg,0.15); }));
+  /* pods: they breathe, the Scuttlers inside twitch now and then; they light up when she lays or flings */
+  const lob=since('lob'), egg=since('egg');
+  U.pods.forEach((p,i)=>{ p.pod.scale.set(0.15,0.2*(1+0.04*Math.sin(T*2+i)),0.15); const tw=Math.sin(T*0.7+i*3)>0.85; p.sc.rotation.y=Math.sin(T*(tw?18:2)+i*1.7)*(tw?0.5:0.15);
+    p.lit.scale.setScalar(0.06*((lob<0.8||egg<0.8)?1.8:1)); });
+  /* the root-arm: rests curled over her back; winds back and snaps forward to fling a pod */
+  U.fling.segs.forEach((s,j)=>{ const tg=lob<0.35?0.62:lob<0.65?-0.28:0.42+Math.sin(T*0.9+j)*0.05; s.rotation.x=lerp(s.rotation.x,tg,lob<0.65?0.35:0.1); });
+  U.fling.pod.visible=!(lob>0.5&&lob<1.6);
+  /* the chimneys: swell and blow green spores for the acid rain; a lazy puff now and then */
+  const rn=since('rain');
+  U.vents.forEach((v,i)=>{ const sw=rn<1.4?1+0.35*Math.abs(Math.sin(rn*14+i)):1+0.03*Math.sin(T*2+i); v.scale.set(1+(sw-1)*0.5,sw,1+(sw-1)*0.5);
+    if(V3.smoke&&(rn<1.4?Math.random()<0.35:Math.random()<0.003)){ const w=v.userData.top.getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); V3.smoke.push({x:w.x,z:w.z,y:w.y,t:0,sz:rn<1.4?0.3:0.15,col:rn<1.4?'#7ad62a':'#4a5a3a'}); } });
+  /* roots: they step in pairs as she walks (fast in a charge, low and dragging when she flees), dig in when she is rooted */
+  const mk=mv?1:0, p2=ph*(charge?1.6:1);
+  U.roots.forEach((r,i)=>{ const p=p2*0.5+(i%2)*Math.PI+(i>>1)*0.4, lift=Math.max(0,Math.sin(p))*0.3*mk*(flee?0.4:1);
+    r.yawG.rotation.y=-r.a+Math.sin(p)*0.15*mk; r.hip.rotation.z=1.0+lift+U.rootK*0.06-(flee?0.2:0); r.knee.rotation.z=-1.3-lift*0.6-U.rootK*0.1; r.foot.scale.setScalar(1+0.5*U.rootK); });
+  U.trail.forEach((segs,k)=>segs.forEach((s,j)=>{ if(j) s.rotation.y=Math.sin(T*(mv?3:1.6)-j*0.8+k)*0.12; }));
+  /* burrowing: she sinks into the ground; breaking out: she rises out of it */
+  if(S.burrow){ const k=clamp((d.burrowTime-S.burrow.t)/0.9,0,1); dy-=k*3.2; U.heart.rotation.z=Math.sin(T*20)*0.08*k; }
+  else if(S.calmAfter>d.burrowCalm-0.8){ const k=(S.calmAfter-(d.burrowCalm-0.8))/0.8; dy-=k*3; U.heart.rotation.z=Math.sin(T*20)*0.06*k; }
+  return dy; }
 /* the grazer: grazes with its head down and its jaw chewing, lifts its head and pricks its ears when something walks near,
    twitches an ear now and then, and gallops (front legs together, then the back ones, the body rocking) when it flees */
 function v3PoseGrazer(e,U,T,mv){
