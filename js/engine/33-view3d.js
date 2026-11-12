@@ -454,8 +454,7 @@ function v3Small(e){
     const c=v3Grazer({ id:e.id, type:'grazer' },false), U=c.userData; c.rotation.set(0,(e.id%7)*0.9,Math.PI); c.position.y=0.88;
     U.neck.rotation.set(0.5,0.6,0); U.head.rotation.x=0.2; U.jaw.rotation.x=0.4; U.legs.forEach((l,i)=>{ l.rotation.set((i<2?-0.35:0.35),0,(i%2?0.25:-0.25)); l.userData.knee.rotation.x=i<2?0.5:-0.3; });
     U.tail.rotation.x=0.6; c.scale.setScalar(VIEW3D.unitScale); g.add(c); g.userData.top=0.6; return g; }
-  if(e.kind==='body'){ const swarm=e.faction==='swarm'||e.bio===false, m=swarm?shiny(CH.body):mat(e.faction==='osprey'?'#2e2621':'#5a6880'), a=(e.id%7)*0.9;
-    const b=box(m,0.28,0.12,0.62,0,0.07,0); b.rotation.y=a; g.add(b); g.add(ball(mat(swarm?CH.bone:'#262b35'),0.11,0.09,0.11,Math.sin(a)*0.37,0.09,Math.cos(a)*0.37)); g.userData.top=0.3; return g; }
+  if(e.kind==='body') return v3Fallen(e,g);
   if(e.rogue&&e.dna){ /* a DNA sample: an upright glass vial of glowing ichor with a steel cap, as in 2D (green, or purple from a hive) */
     const col=e.dna==='hive'?'#c38bff':'#8dff4a';
     g.add(ball(glow(col,{ transparent:true, opacity:0.18, depthWrite:false }),0.2,0.24,0.2,0,0.18,0));   /* its glow */
@@ -469,6 +468,42 @@ function v3Small(e){
     g.userData.top=0.4; g.userData.bob=true; return g; }
   if(e.relic){ g.add(box(mat('#3a3f48'),0.3,0.2,0.3,0,0.1,0)); g.add(ball(glow('#c58cff'),0.09,0.09,0.09,0,0.3,0)); g.userData.top=0.5; g.userData.bob=true; return g; }
   g.add(box(mat(e.supply?'#3a6a8a':'#5a4632'),0.36,0.26,0.28,0,0.13,0)); g.add(box(mat('#f2c230'),0.37,0.05,0.29,0,0.2,0)); g.userData.top=0.4; g.userData.bob=true; return g; }
+/* ---------- a fallen soldier ----------
+   The soldier's own model (role, kit, Osprey colours) laid on his back: arms flung out, one knee bent, the head turned aside,
+   the visor dark, his weapon beside his hand and a dark pool under him. When the Brood drags him off (b.carrier) he is pulled
+   by the boots: feet up at the carrier, head and arms trailing over the ground, the weapon left behind, the pool gone.
+   Tunables in FALLEN3D. */
+const FALLEN3D={ lift:0.32, behind:0.5, sway:0.12, pool:0.7 };
+function v3Fallen(e,g){
+  const L=e.look||{ type:'trooper' }, s=v3Soldier({ id:e.id, type:L.type, faction:L.osp?'osprey':'corps', crew:L.osp }), U=g.userData, S=s.userData, h=(e.id*7919)%97/97;
+  /* soldier space: feet at 0, head at y≈1.05, facing +z. Laid down (rotation.x −90°) the head ends at −z: on his back, the face up. */
+  s.rotation.x=-Math.PI/2; s.position.set(0,0.09,0.52); s.rotation.z=(h-0.5)*0.25;
+  s.traverse(o=>{ if(o.material&&!o.isSprite&&o!==S.lampBulb&&((o.material.emissive&&o.material.emissive.getHex())||(o.material.isMeshBasicMaterial&&!o.material.transparent))){ o.material=mat('#14181e'); } });   /* visor, goggles and lights go dark */
+  if(S.beam) S.beam.visible=false; if(S.lampHalo) S.lampHalo.visible=false;
+  S.arms.forEach((a,i)=>{ const k=i?1:-1; a.rotation.set(-0.15,0,k*(1.05+h*0.5)); a.children[1].rotation.x=-0.35-h*0.4; a.userData.lie=a.rotation.z; });
+  S.legs.forEach((l,i)=>{ const k=i?1:-1; l.rotation.set(i===(e.id%2)?-0.55:0,0,k*0.14); l.userData.knee.rotation.x=i===(e.id%2)?0.9:0.1; });
+  /* the head turned aside: the parts above the shoulders roll a little round the neck */
+  const head=new THREE.Group(); head.position.set(0,0.83,0); s.add(head);
+  for(const c of [...s.children]) if(c!==head&&c.position.y>0.82&&c!==S.gun&&!(c.isSprite)){ c.position.y-=0.83; head.add(c); }
+  head.rotation.y=(e.id%2?1:-1)*0.75; head.rotation.x=-0.15;
+  if(S.gun){ s.remove(S.gun); const gun=S.gun; gun.position.set((e.id%2?-1:1)*0.42,0.04,0.12); gun.rotation.set(0,(e.id%2?-1:1)*(0.4+h),Math.PI/2); g.add(gun); U.gun=gun; }   /* his weapon, dropped by his hand */
+  const pool=new THREE.Group(), bm=MAT.blood||(MAT.blood=v3Fogify(new THREE.MeshLambertMaterial({ color:0x2a0806 }))), P=FALLEN3D.pool;   /* an uneven dark pool under his back and head */
+  for(const [px,pz,w,d] of [[0,-0.12,0.42,0.55],[(h-0.5)*0.3,-0.42,0.3,0.3],[(0.5-h)*0.25,0.12,0.22,0.26],[(e.id%2?1:-1)*0.22,-0.3,0.16,0.2]]){
+    const b=part(GEO.ball,bm,P*w,0.008,P*d,px*P/0.55,0.012,pz*P/0.55); b.castShadow=false; b.receiveShadow=true; b.rotation.y=h*3+px*5; pool.add(b); }
+  g.add(pool); U.pool=pool;
+  const tilt=new THREE.Group(); tilt.add(s); g.add(tilt); U.tilt=tilt; U.body=s; U.S=S; U.fallen=true;
+  g.rotation.order='YXZ'; U.yaw=(e.id%7)*0.9; s.scale.setScalar(VIEW3D.unitScale); U.top=0.35; return g; }
+function v3PoseFallen(e,g,T,x,z){ const U=g.userData, F=FALLEN3D, c=e.carrier;
+  if(c){ const dx=e.x-(U.px??e.x), dy=e.y-(U.py??e.y); if(Math.hypot(dx,dy)>0.3){ let d=Math.atan2(dx,dy)-U.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); U.yaw+=d*0.2; } }
+  U.px=e.x; U.py=e.y;
+  const drag=!!c, dt=Math.min(0.1,Math.max(0,T-(U.lt??T))); U.lt=T; const k=U.dk=(U.dk||0)+((drag?1:0)-(U.dk||0))*Math.min(1,dt*8);   /* eases between lying and being dragged */
+  const bx=x-Math.sin(U.yaw)*F.behind*k, bz=z-Math.cos(U.yaw)*F.behind*k;   /* dragged: he trails behind the carrier, boots at its jaws */
+  g.position.set(bx,v3H(bx,bz),bz); g.rotation.set(0,U.yaw,0);
+  U.tilt.position.y=F.lift*k*0.55; U.tilt.rotation.x=-F.lift*k;   /* feet up, head down on the ground */
+  U.S.arms.forEach((a,i)=>{ const s=i?1:-1, tr=2.7+Math.sin(T*6+i*1.7+e.id)*F.sway;   /* dragged: the arms trail over the head */
+    a.rotation.x=-0.15*(1-k)+tr*k; a.rotation.z=a.userData.lie*(1-k)+s*0.35*k; });
+  U.body.rotation.z=(drag?Math.sin(T*5+e.id)*F.sway*0.6:0)+((e.id*7919)%97/97-0.5)*0.25*(1-k);
+  if(U.gun) U.gun.visible=!drag; if(U.pool) U.pool.visible=!drag&&!e.home; }
 function v3Model(e){
   let g=null;
   if(e.kind==='unit'){ const f=UNITS[e.type]&&UNITS[e.type].faction; g=(f==='corps'&&e.type!=='husk')?v3Soldier(e):v3Creature(e);
@@ -573,6 +608,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(e.downed){ g.rotation.x=-Math.PI/2*0.92; y+=0.12; } else if(e.stunT>0) g.rotation.z=Math.sin(T*9)*0.25;
     const lg=e.lunge>0?0.15:0; g.position.set(x+Math.sin(U.yaw)*lg,y,z+Math.cos(U.yaw)*lg);
     const s0=U.s0||(U.s0=g.scale.x), fl=e.flash>0?1.06:1; if(U.fl!==fl){ U.fl=fl; g.scale.setScalar(s0*fl); } return; }
+  if(U.fallen) return v3PoseFallen(e,g,T,x,z);
   if(e.kind!=='building'&&U.bob) y+=0.05+Math.sin(T*3+e.id)*0.04;
   g.position.set(x,y,z);
   if(e.kind!=='building') return;

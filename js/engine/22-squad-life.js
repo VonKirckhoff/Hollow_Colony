@@ -374,7 +374,8 @@ function drawDowned(u,sp,w,h,now){ const d=u.downed;
 /* fauna: a grazer the Swarm killed leaves a carcass that goes the same way (dragged home, an egg, a Grafter), but becomes a Bloater */
 function makeBody(e,fauna){ const B=SQUAD.body;
   G.ents.push({ id:NEXT_ID++, kind:'body', type:'body', faction:'none', def:{ name:fauna?'Grazer carcass':'Fallen soldier' }, x:e.x, y:e.y, r:8, t:B.time, claim:0, burn:0, carrier:null,
-    sprite:e.sprite||e.def.sprite, face:e.face||1, supply:e.def.supply||1, name:e.vet?e.vet.name:null, fauna:fauna||undefined }); }
+    sprite:e.sprite||e.def.sprite, face:e.face||1, supply:e.def.supply||1, name:e.vet?e.vet.name:null, fauna:fauna||undefined,
+    look:fauna?undefined:{ type:e.type||Object.keys(UNITS).find(k=>UNITS[k]===e.def)||'trooper', osp:e.faction==='osprey'||!!e.crew } }); }   /* look: how the 3D view dresses the body (33-view3d.js) */
 function burnBody(b){ if(b.dead) return; dropBody(b); b.dead=true; addDecal(b.x,b.y,10,'rgba(20,16,12,.7)');
   for(let i=0;i<10;i++) G.fx.push({k:'ember',x:b.x+rand(-8,8),y:b.y+rand(-4,4),vx:rand(-30,30),vy:rand(-70,-20),t:rand(.5,1),max:1,col:pick(['#ff8a2a','#ffd23f','#8a8f9c'])});
   G.fx.push({k:'text',x:b.x,y:b.y-14,t:1,max:1,txt:'CREMATED',col:'#ffb347'}); }
