@@ -371,7 +371,7 @@ function v3Building(e){
   else if(t==='door'){ g.add(box(mat('#59616f'),0.98,1.2,0.98,0,0.6,0)); g.add(box(yel,1.0,0.1,1.0,0,1.0,0)); top=1.3; }
   else if(t==='membrane') return v3Membrane(e);
   else if(t==='rubble'){ for(let i=0;i<5;i++) g.add(part(GEO.lowball,mat('#4a4a52'),0.25,0.2,0.25,(hash2(e.id,i,1)-0.5)*0.6,0.12,(hash2(e.id,i,2)-0.5)*0.6)); top=0.4; }
-  else if(t==='wreck'){ const W=mat('#3a3f48'); const hull=box(W,1.2,0.6,2.6,0,0.35,0); hull.rotation.set(0.15,0.4,0.2); g.add(hull); const wing=box(W,2.4,0.08,0.7,0.2,0.25,0.2); wing.rotation.set(0,0.4,0.35); g.add(wing); U.smoke=true; top=1; }
+  else if(t==='wreck') return v3Wreck(e);
   else if(t==='medtent'){ const tent=new THREE.Mesh(new THREE.CylinderGeometry(0,1,1,4),mat('#c8d0c0')); tent.scale.set(0.9,1.6,0.9); tent.position.y=0.45; tent.rotation.y=Math.PI/4; tent.castShadow=true; g.add(tent); g.add(box(mat('#e2463a'),0.3,0.08,0.02,0,0.5,0.66)); top=1; }
   else if(t==='terminal'){ g.add(box(metal,0.4,0.7,0.3,0,0.35,0)); g.add(box(glow('#5fe3b0'),0.3,0.22,0.02,0,0.55,0.16)); top=0.8; }
   else if(t==='choirpod'){ g.add(part(GEO.cone,shiny('#5c3e6e'),0.3,0.9,0.3,0,0.45,0)); g.add(ball(glow('#c58cff'),0.1,0.1,0.1,0,0.92,0)); top=1; }
@@ -383,6 +383,116 @@ function v3Building(e){
    mushrooms and spore puffs grow round its foot and spores drift up from them. The heart glows on the front as before.
    Hurt, as in 2D (below 66% and below 33%): roots wither (grey, shrunk, no sap), cracks open in the bulb, and at the worst the
    bulb sags and darkens, the bud dims and the sprout droops. A dying hive (HIVE_DEATH) uses the worst look. */
+/* ---------- the crashed Osprey (Nov 2026): the 3D dropship nose-first in the ground, burnt, broken in two, one wing torn off ----------
+   Smoke as in 2D but in plumes from the crack, the bent pod, the nose and the torn wing; sparks flying up; small open flames out of
+   the bent pod; a flickering glow in the crack that lights the ground. The 2D smoke fx of a wreck are not drawn in 3D (f.wr). */
+const WRECK3D = { smoke:14, smokeLife:4.2, smokeSize:1, embers:7, flames:1, glow:1, light:2.4, lightReach:6 };
+function v3WreckTex(kind){ const k='wreckTex'+kind; if(MAT[k]) return MAT[k];
+  const c=document.createElement('canvas'); c.width=512; c.height=kind>1?256:128; const x=c.getContext('2d'), R=(a,b,s)=>hash2(a,b,s+kind*7), top=kind>1;
+  if(top){ x.translate(0,64); }   /* the top decals: the same drawing, more soot round it */
+  x.fillStyle='#46525f'; x.fillRect(0,top?-64:0,512,top?256:128);                                             /* what is left of the paint */
+  x.fillStyle='#37414d'; for(let i=1;i<6;i++) x.fillRect(i*86,0,2,128); x.fillRect(0,40,512,2); x.fillRect(0,92,512,2);   /* panel lines */
+  for(let i=0;i<40;i++){ x.fillStyle='rgba(30,36,44,.5)'; x.fillRect(R(i,1,1)*512,R(i,2,1)*128,2,2); }   /* rivets */
+  /* hazard stripes along the bottom, half burnt away */
+  for(let i=0;i<14;i++){ x.fillStyle=i%2?'#1c1c1f':'#a8862c'; x.beginPath(); x.moveTo(20+i*16,128); x.lineTo(36+i*16,104); x.lineTo(52+i*16,104); x.lineTo(36+i*16,128); x.fill(); }
+  /* the name: a faded stencil */
+  x.save(); x.globalAlpha=0.62; x.fillStyle='#d8dde2'; x.textBaseline='middle';
+  if(kind===0||kind===2){ x.font='bold 74px Impact, "Arial Black", sans-serif'; x.fillText('OSPREY',150,62); }
+  else { x.font='bold 46px Impact, "Arial Black", sans-serif'; x.fillText('LC-71',300,58); x.font='bold 18px sans-serif'; x.fillText('LUNAR CORPS',304,90); }
+  x.restore(); x.globalCompositeOperation='destination-out'; x.fillStyle='#000';
+  for(let i=0;i<6;i++) x.fillRect(178+i*41,40,3,44);   /* stencil bridges */
+  x.globalCompositeOperation='source-over';
+  if(top){ x.translate(0,-64); for(let i=0;i<6;i++){ const py=i<5?R(i,20,1)*60:196+R(i,20,1)*60, px=R(i,21,1)*512, r=50+R(i,22,1)*50; const g=x.createRadialGradient(px,py,0,px,py,r); g.addColorStop(0,'rgba(12,10,9,.9)'); g.addColorStop(1,'rgba(12,10,9,0)'); x.fillStyle=g; x.fillRect(px-r,py-r,r*2,r*2); } x.translate(0,64); }
+  /* soot and scorch: dark clouds, worst towards the crack (kind 0: the right end, kind 1: the left end) */
+  for(let i=0;i<(top?12:26);i++){ const near=i<(top?4:10), px=near?(kind%2===0?512-R(i,4,2)*150:R(i,4,2)*150):R(i,4,3)*512, py=R(i,5,2)*128, r=26+R(i,6,2)*60;
+    const g=x.createRadialGradient(px,py,0,px,py,r); g.addColorStop(0,`rgba(12,10,9,${near?0.95:top?0.55:0.7})`); g.addColorStop(1,'rgba(12,10,9,0)'); x.fillStyle=g; x.fillRect(px-r,py-r,r*2,r*2); }
+  for(let i=0;i<(top?6:18);i++){ x.strokeStyle='rgba(10,9,8,.6)'; x.lineWidth=2+R(i,7,1)*4; const sx=R(i,8,1)*512; x.beginPath(); x.moveTo(sx,128); x.lineTo(sx+30+R(i,9,1)*60,0); x.stroke(); }   /* streaks blown back */
+  for(let i=0;i<30;i++){ x.fillStyle=`rgba(${120+R(i,10,1)*60|0},${130+R(i,11,1)*60|0},${140+R(i,12,1)*50|0},.5)`; x.fillRect(R(i,13,1)*512,R(i,14,1)*128,3+R(i,15,1)*8,1); }   /* bare metal scratches */
+  const t=new THREE.CanvasTexture(c); t.anisotropy=4;
+  return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
+function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.id,i,s);
+  GEO.plane=GEO.plane||new THREE.PlaneGeometry(1,1);
+  const soot=mat('#19191c'), burnt=mat('#232428'), dark=mat('#0c0c0f'), rib=mat('#34363c'), paint=mat('#3c4753'), dirt=mat('#3d3a38'), dirt2=mat('#24211f'),
+        glass=shiny('#0a1014',{ specular:0x667788, shininess:90 }), yel=mat('#a8862c'), crate=mat('#4f5766');
+  U.own=[]; const emb=new THREE.MeshBasicMaterial({ color:'#ff6a20' }); U.own.push(emb); U.emb=emb;
+  const side=(par,kind,w,h,x,y,z)=>{ for(const s of [-1,1]){ const p=new THREE.Mesh(GEO.plane,v3WreckTex(kind)); p.scale.set(w,h,1); p.position.set(x,y,z*s); if(s<0) p.rotation.y=Math.PI; p.castShadow=false; par.add(p); } };
+  const yaw=0.4+H(1,1)*0.6, W=grp(); W.rotation.y=yaw; g.add(W);   /* W: the crash site, nose along +x */
+  /* the ground: a scorched patch, the furrow it ploughed, the mound thrown up in front of the nose */
+  const scorch=part(GEO.disc,mat('#0a0908',{ transparent:true, opacity:0.6, depthWrite:false }),2.4,1,1.7,-0.2,0.03,0); scorch.castShadow=false; scorch.renderOrder=1; W.add(scorch);
+  const fur=part(GEO.plane,mat('#0e0c0b',{ transparent:true, opacity:0.55, depthWrite:false }),2.4,0.6,1,-2.6,0.035,0); fur.rotation.x=-Math.PI/2; fur.castShadow=false; fur.renderOrder=1; W.add(fur);
+  for(let i=0;i<10;i++){ const s=i%2?1:-1, x=-1.5-i*0.22-H(i,30)*0.2, z=s*(0.3+H(i,31)*0.14)*(1-i/24); W.add(part(GEO.lowball,dirt2,0.05+H(i,32)*0.05,0.03+H(i,33)*0.03,0.05+H(i,34)*0.04,x,0.02,z)); }   /* clods thrown up along the furrow */
+  for(let i=0;i<16;i++){ const a=(i/15-0.5)*2.6, r=1.95+H(i,2)*0.4; W.add(part(GEO.lowball,i%3?dirt:dirt2,0.1+H(i,3)*0.16,0.06+H(i,4)*0.12,0.1+H(i,5)*0.14,Math.cos(a)*r*0.95,0.04,Math.sin(a)*r*0.6)); }   /* the mound in front of the nose */
+  /* the ship: pitched nose-down into the mound, rolled a little */
+  const S=grp(0.05,0.44,0); S.rotation.order='YZX'; S.rotation.set(0.15,0,-0.22); W.add(S); U.ship=S;
+  /* front half: hull, crumpled nose, broken canopy */
+  const F=grp(); S.add(F);
+  F.add(box(soot,1.55,0.7,1.1,0.78,0,0)); F.add(box(burnt,1.25,0.12,0.8,0.8,0.4,0)); side(F,1,1.5,0.66,0.78,0,0.556);
+  const ft=new THREE.Mesh(GEO.plane,v3WreckTex(3)); ft.scale.set(0.95,0.78,1); ft.position.set(0.62,0.465,0); ft.rotation.x=-Math.PI/2; ft.castShadow=false; F.add(ft);
+  const nose=rotZ(part(GEO.cone,soot,0.58,0.62,0.58,1.82,-0.04,0),-Math.PI/2); nose.rotation.y=0.25; nose.scale.set(0.62,0.62,0.5); F.add(nose);
+  F.add(box(dark,0.2,0.62,1.0,1.55,-0.02,0));   /* the crushed bulkhead behind the nose */
+  const can=box(glass,0.5,0.2,0.62,1.38,0.27,0); can.rotation.z=-0.12; F.add(can);
+  for(let i=0;i<4;i++){ const sh=box(glass,0.14,0.02,0.08,1.25+H(i,6)*0.3,0.39,(H(i,7)-0.5)*0.5); sh.rotation.set(H(i,8)*0.8,H(i,9)*3,H(i,10)*0.6); F.add(sh); }   /* shards */
+  F.add(box(dark,0.36,0.04,0.52,1.36,0.38,0));   /* the canopy frame, glass gone */
+  U.nose=grp(1.55,0.32,0.1); F.add(U.nose);
+  /* the crack: frames, cables, embers inside */
+  for(const s of [-1,1]) F.add(box(rib,0.05,0.66,0.05,0.0,0,s*0.5));
+  const top=box(rib,0.05,0.05,0.62,0.0,0.33,0.2); top.rotation.x=0.3; F.add(top);
+  for(let i=0;i<4;i++){ const c=cyl(dark,0.012,0.4+H(i,11)*0.3,0.012,-0.04,0.12-H(i,12)*0.2,(i-1.5)*0.22); c.rotation.z=0.4+H(i,13)*0.6; F.add(c); }
+  F.add(box(emb,0.1,0.3,0.8,0.05,-0.18,0)); U.crack=grp(0,0.3,0); F.add(U.crack);
+  /* rear half: broken off at the keel and sagging, the tail, the ramp hanging open */
+  const R=grp(-0.1,-0.35,0); R.rotation.z=0.16; S.add(R); U.rear=R;
+  R.add(box(soot,1.3,0.7,1.1,-0.68,0.35,0)); R.add(box(burnt,1.1,0.12,0.8,-0.7,0.75,0)); side(R,0,1.28,0.66,-0.68,0.35,0.556);
+  const rt=new THREE.Mesh(GEO.plane,v3WreckTex(2)); rt.scale.set(1.08,0.78,1); rt.position.set(-0.7,0.815,0); rt.rotation.x=-Math.PI/2; rt.castShadow=false; R.add(rt);   /* OSPREY on the roof too: the view is mostly from above */
+  for(const s of [-1,1]) R.add(box(rib,0.05,0.66,0.05,-0.04,0.35,s*0.5));
+  const fin1=box(burnt,0.5,0.6,0.08,-1.15,0.8,0.42), fin2=box(burnt,0.5,0.42,0.08,-1.12,0.74,-0.48); fin2.rotation.x=-0.5; R.add(fin1); R.add(fin2);
+  const ramp=grp(-1.33,0.05,0); ramp.add(box(dark,0.9,0.06,0.8,-0.45,0,0)); ramp.add(box(yel,0.06,0.07,0.8,-0.88,0,0)); ramp.rotation.z=-0.62; ramp.rotation.x=0.08; R.add(ramp);
+  U.rearSmoke=grp(-0.9,0.8,0); R.add(U.rearSmoke);
+  /* legs snapped off */
+  for(const [x,z] of [[0.75,-0.4],[0.75,0.4]]) F.add(cyl(dark,0.05,0.18,0.05,x,-0.42,z));
+  const leg=cyl(dark,0.05,0.5,0.05,-0.7,-0.05,0.55); leg.rotation.x=1.2; R.add(leg);
+  /* the right wing (z-) bent up, its pod snapped upwards and still burning */
+  const RW=grp(-0.2,0.02,-0.5); RW.rotation.x=0.5; S.add(RW);
+  RW.add(box(burnt,1.25,0.1,1.05,0,0,-0.5)); RW.add(box(mat('#2e3742'),0.5,0.105,0.4,0.25,0,-0.45));
+  const pod=grp(0.0,0.05,-1.1); pod.rotation.set(-0.3,0.2,0.95); RW.add(pod);
+  pod.add(rotZ(cyl(soot,0.24,1.4,0.24,0,0,0),Math.PI/2)); pod.add(rotZ(part(GEO.torus,dark,0.2,1,0.2,-0.7,0,0),Math.PI/2));
+  pod.add(rotZ(part(GEO.disc,dark,0.22,1,0.22,0.71,0,0),-Math.PI/2)); pod.add(rotZ(part(GEO.disc,emb,0.14,1,0.14,0.715,0,0),-Math.PI/2));
+  U.pod=grp(0.78,0,0); pod.add(U.pod);
+  /* the left wing (z+): only a torn stub */
+  const stub=grp(-0.2,0.0,0.55); S.add(stub); stub.add(box(burnt,0.9,0.1,0.32,0,0,0.16));
+  for(let i=0;i<4;i++){ const sp=part(GEO.cone,burnt,0.08,0.22+H(i,14)*0.2,0.05,-0.35+i*0.24,0,0.42); sp.rotation.x=Math.PI/2; sp.rotation.z=(H(i,15)-0.5)*0.6; stub.add(sp); }
+  /* the torn wing on the ground, its pod crushed beside it */
+  const TW=grp(-1.0,0.07,2.15); TW.rotation.set(0.06,0.7,-0.04); W.add(TW);
+  TW.add(box(burnt,1.3,0.08,1.0,0,0,0)); TW.add(box(mat('#2e3742'),0.6,0.085,0.35,-0.2,0,0.15)); for(let i=0;i<3;i++){ const sp=part(GEO.cone,burnt,0.08,0.25,0.05,-0.4+i*0.35,0,-0.55); sp.rotation.x=-Math.PI/2; TW.add(sp); }
+  const cp=rotZ(cyl(soot,0.24,1.3,0.24,-0.2,0.14,0.9),Math.PI/2); cp.scale.set(0.24,1.3,0.13); cp.rotation.x=0.3; TW.add(cp); TW.add(part(GEO.torus,dark,0.2,1,0.12,0.45,0.14,0.9));
+  U.wing=grp(-0.2,0.2,0.9); TW.add(U.wing);
+  /* debris all round: plates, a crate, a fuel can, a bit of tail */
+  for(let i=0;i<11;i++){ const a=H(i,16)*Math.PI*2, r=1.5+H(i,17)*1.4, x=Math.cos(a)*r, z=Math.sin(a)*r*0.8; if(x>1.6&&Math.abs(z)<1) continue; const k=i%4;
+    const o=k===0?box(crate,0.3,0.22,0.24,x,0.11,z):k===1?box(i%3?burnt:paint,0.4+H(i,18)*0.3,0.03,0.25+H(i,19)*0.2,x,0.03,z):k===2?rotZ(cyl(rib,0.07,0.28,0.07,x,0.07,z),Math.PI/2):box(dark,0.18,0.1,0.3,x,0.05,z);
+    o.rotation.y=H(i,20)*3; if(k===1) o.rotation.z=(H(i,21)-0.5)*0.4; W.add(o); if(k===0) o.add(box(yel,1.03,0.18,1.03,0,0.3,0)); }
+  g.scale.setScalar(0.95); U.wreck=true; U.top=1.2; U.emit=[[U.crack,0.38,'#1e1c1b'],[U.pod,0.27,'#2a2826'],[U.nose,0.15,'#45413d'],[U.rearSmoke,0.1,'#55514c'],[U.wing,0.1,'#5e5a55']];
+  U.acc=0; U.eacc=0; return g; }
+function v3WreckFx(now,dt,put,lights){ const W=WRECK3D, T=now/1000, w=V3._ww||(V3._ww=new THREE.Vector3());
+  V3.sparks=V3.sparks||[];
+  for(const [e,g] of V3.objs){ const U=g.userData; if(!U.wreck||!g.visible) continue;
+    const fl=0.75+0.15*Math.sin(T*13+e.id)+0.1*Math.sin(T*31)+0.08*Math.random();
+    U.emb.color.setRGB(1,0.3+0.18*fl,0.06);
+    U.acc+=dt*W.smoke; let guard=0;
+    while(U.acc>=1&&guard++<20){ U.acc--; let r=Math.random(), em=U.emit[0]; for(const E of U.emit){ if((r-=E[1])<=0){ em=E; break; } }
+      em[0].getWorldPosition(w); V3.smoke.push({ x:w.x+rand(-0.12,0.12), y:w.y+rand(0,0.1), z:w.z+rand(-0.12,0.12), t:0, sz:rand(0.75,1.25)*W.smokeSize, col:Math.random()<0.5?em[2]:pick(['#2f2d2b','#3d3a37','#4f4b47']), a:0.72, rise:1.6, life:W.smokeLife*rand(0.8,1.15) }); }
+    U.eacc+=dt*W.embers; guard=0;
+    while(U.eacc>=1&&guard++<20){ U.eacc--; (Math.random()<0.6?U.crack:U.pod).getWorldPosition(w);
+      V3.sparks.push({ x:w.x, y:w.y, z:w.z, vx:rand(-0.35,0.35), vy:rand(0.7,1.6), vz:rand(-0.35,0.35), t:0, life:rand(0.9,1.8), col:pick(['#ff8a2a','#ffd23f','#ff6a20']) }); }
+    /* small open flames out of the bent pod: licking upwards */
+    U.pod.getWorldPosition(w);
+    if(W.flames>0) for(let i=0;i<5;i++){ const ph=(T*2.2+i/5+e.id*0.37)%1, s=W.flames*(0.42-ph*0.28)*(0.8+0.4*Math.random());
+      put(w.x+Math.sin(T*7+i*2)*0.06+ph*0.12, w.y+0.05+ph*0.55*W.flames, w.z+Math.cos(T*6+i)*0.06, s, ph<0.3?'#ffe08a':ph<0.65?'#ff8a2a':'#c43c10', (1-ph)*0.9); }
+    const pw={ x:w.x, y:w.y, z:w.z };
+    /* the glow in the crack */
+    U.crack.getWorldPosition(w);
+    if(W.glow>0){ put(w.x,w.y-0.1,w.z,1.1*W.glow*fl,'#ff5a1a',0.35); put(w.x,w.y-0.15,w.z,0.5*W.glow*fl,'#ffb347',0.5); }
+    if(W.light>0){ lights.push({ x:w.x, y:w.y+0.6, z:w.z, i:W.light*fl, c:0xff7a30, d:W.lightReach }); lights.push({ x:pw.x, y:pw.y+0.5, z:pw.z, i:W.light*0.6*fl, c:0xff9a40, d:W.lightReach*0.7 }); } }
+  for(const s of V3.sparks){ s.t+=dt; s.x+=(s.vx+0.2)*dt; s.y+=s.vy*dt; s.z+=s.vz*dt; s.vy-=0.25*dt; const k=s.t/s.life; put(s.x,s.y,s.z,0.06+0.03*Math.sin(s.t*20),s.col,(1-k)*(0.7+0.3*Math.sin(s.t*25))); }
+  V3.sparks=V3.sparks.filter(s=>s.t<s.life); }
 const HIVE3D={ sapSpeed:0.35, sap:2, spores:5, sporeRise:1.6, sway:0.1, sag:0.9 };
 const HIVE3D_COL={ body:'#3a2448', fold:'#5c3e6e', hurt:'#2c2034', root:'#38243f', foldHurt:'#46344f', dead:'#55505a', sap:'#a6ff4a', bud:'#a6ff4a', budWeak:'#56692f', crack:'#2f5a18' };
 /* a tube along points that tapers from r0 to r1 (one mesh: cheap) */
@@ -630,7 +740,7 @@ function v3Shown(e){ const m=G.map;
 /* ---------- frame ---------- */
 function v3Size(){ const w=ui.vw, h=Math.max(100,ui.vh-ui.hudH); if(V3.w!==w||V3.h!==h||V3.dpr!==ui.dpr){ V3.w=w; V3.h=h; V3.dpr=ui.dpr; V3.r.setPixelRatio(Math.min(ui.dpr,1.5)); V3.r.setSize(w,h); V3.cam.aspect=w/h; V3.cam.updateProjectionMatrix(); } }
 function v3Reset(){ if(V3.g) V3.scene.remove(V3.g); V3.g=new THREE.Group(); V3.scene.add(V3.g); V3.objs.clear(); V3.forG=G; V3.mapId=G.map.id;
-  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
+  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.sparks=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
   V3.fxg=new THREE.Group(); V3.g.add(V3.fxg); V3.fxg.add(V3.tracers); V3.fxg.add(V3.ghost); v3BuildTerrain(); }
 function v3Camera(dt){ const V=VIEW3D, tx=(G.cam.x+ui.vw/2)/TILE, tz=(G.cam.y+(ui.vh-ui.hudH)/2)/TILE, ty=Math.max(0,v3H(tx,tz)), sh=(G.shake||0)*0.3;
   let d=V3.yaw*Math.PI/180-(V3.yawR||0); d=Math.atan2(Math.sin(d),Math.cos(d)); V3.yawR=(V3.yawR||0)+d*Math.min(1,dt*8);
@@ -687,7 +797,6 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.turret) U.turret.rotation.y=Math.atan2(Math.cos(e.angle||0),Math.sin(e.angle||0));
   if(U.pulse) U.pulse.scale.set(0.24,0.34*(1+0.06*Math.sin(T*7+e.id)),0.24);
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
-  if(U.smoke&&Math.random()<0.3) V3.smoke.push({x,z,y:y+0.6,t:0});
   if(U.memb) v3PoseMembrane(e,g,T);
   if(e.type==='egg'){ const p=e.openT!=null?1-e.openT/EGG.open:0; g.scale.setScalar(1+Math.sin(T*2+e.id)*0.04+0.15*p); U.opening=p; } }
 /* the Brute: head down when it fights, down hard and the whole body forward when it rams; the bands shift as it walks;
@@ -993,7 +1102,7 @@ function v3Devil(f){ const put=V3.put, A=AMBIENT3D, P=devilPos(f), tt=P.tt, cx=P
     put(cx+lean(p)+Math.cos(a)*r,gy+0.08+p*H*0.9-out*out*H*0.7,cz+Math.sin(a)*r,0.07,'#3e352c',0.9*fade*(1-out*0.6),true); } }   /* grit sucked up, thrown out at the top */
 function render3D(now){
   if(V3.forG!==G||V3.mapId!==G.map.id) v3Reset();
-  const dt=Math.min(0.1,(now-(V3.last||now))/1000); V3.last=now;
+  const dt=clamp((now-(V3.last||now))/1000,0,0.1); V3.last=now;
   v3Size(); v3Camera(dt); paintFog(); v3Fog(); V3.frame++; V3.u.time.value=now/1000;
   const T=now/1000, sel=new Set(G.sel), lights=[];
   for(const e of G.ents){ if(!v3Shown(e)) continue;
@@ -1023,7 +1132,7 @@ function render3D(now){
   for(const f of G.fx){ const a=Math.max(0,f.t/f.max);
     if(f.k==='tracer'&&nt<400){ const x1=f.x1/TILE, z1=f.y1/TILE, x2=f.x2/TILE, z2=f.y2/TILE, c=new THREE.Color('#ffe2a8').multiplyScalar(a);
       P.set([x1,v3H(x1,z1)+0.6,z1,x2,v3H(x2,z2)+0.5,z2],nt*6); Cc.set([c.r,c.g,c.b,c.r,c.g,c.b],nt*6); nt++; continue; }
-    if(f.x==null) continue; const x=f.x/TILE, z=f.y/TILE, gy=v3H(x,z);
+    if(f.x==null||f.wr) continue; const x=f.x/TILE, z=f.y/TILE, gy=v3H(x,z);
     switch(f.k){
       case 'flash': put(x,gy+0.6,z,0.4,'#fff3c4',1); break;
       case 'spark': case 'ember': put(x,gy+0.35+(1-a)*0.5,z,0.13,f.col||'#ffb347',a); break;
@@ -1046,8 +1155,9 @@ function render3D(now){
     if(e.chargeT>0) put(p.x+Math.sin(g.userData.yaw)*0.35,p.y+top*0.75,p.z+Math.cos(g.userData.yaw)*0.35,0.25+0.15*Math.sin(now/40),'#c7f05a',0.9);
     if(e.beam&&!e.beam.dead){ const b=V3.objs.get(e.beam); if(b) for(let k=1;k<6;k++){ const t=((k/6)+now/900)%1; put(p.x+(b.position.x-p.x)*t,p.y+0.6+(b.position.y-p.y)*t,p.z+(b.position.z-p.z)*t,0.12,'#78ffbe',0.8); } } }
   for(const [e,g] of V3.objs) if(g.visible&&g.userData.opening>0){ const p=g.userData.opening; for(let i=0;i<3;i++){ const d=(now/900+i/3+e.id*0.13)%1, a=i*2.4+now/700; put(g.position.x+Math.cos(a)*d*0.4*p,g.position.y+0.4+d*0.8*p,g.position.z+Math.sin(a)*d*0.4*p,0.1,i%2?'#a6ff4a':'#c58cff',(1-d)*0.9); } }   /* an egg breathing out spores */
-  for(const s of V3.smoke){ const k=s.t/2.5, z=s.sz||1, up=s.rise??1.8; put(s.x+k*0.6*z,s.y+k*up*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',(s.a??0.5)*(1-k),true); }   /* s.a, s.rise: a faint trail that hangs (a meteorite's) */   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
-  V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<2.5);
+  v3WreckFx(now,dt,put,lights);
+  for(const s of V3.smoke){ const k=s.t/(s.life||2.5), z=s.sz||1, up=s.rise??1.8; put(s.x+k*0.6*z,s.y+k*up*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',(s.a??0.5)*(1-k),true); }   /* s.a, s.rise: a faint trail that hangs (a meteorite's) */   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
+  V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<(s.life||2.5));   /* s.life: a wreck's plumes hang longer */
   for(const mk of G.markers){ const x=mk.x/TILE, z=mk.y/TILE; put(x,v3H(x,z)+2+Math.sin(now/250)*0.1,z,0.7,mk.col||'#ffb347',0.9); }
   for(const f of G.flareList||[]) if(flareLit(f)){ const x=f.x/TILE, z=f.y/TILE; put(x,v3H(x,z)+0.3,z,1.2,'#ff6040',0.8); }
   v3Ships(now,lights,put); cap=n+140; v3Ambient(now,put,lights);   /* the meteorite and dust devil always get their own room */
