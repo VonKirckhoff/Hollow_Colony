@@ -45,6 +45,10 @@ CASES=[
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;
   v.quiet=true; for(const x of crew()) if(x!==v&&x!==c) x.dead=true; tp(c,36,42); step(0.5); ok(G.api.veiled(v)&&!G.api.veiled(c),'40+ taint: veiled; clean: not');
   const d=makeUnit('drone','swarm',v.x+30,v.y); d.role='hunt'; tp(v,10,40); d.x=v.x+30; d.y=v.y; d.target=null; ok(findTarget(d,6,false)===null,'a drone next to him finds nothing to attack'); ok(!validTarget(d,v),'and cannot keep him as a target');
+  d.order=null; d.think=0; G.swarm.huntT=0; step(1.5); ok(!d.order||Math.hypot(d.order.x-v.x,d.order.y-v.y)>3*TILE,'a hunting drone does not walk after him');
+  { const w=launchWave(40); ok(w.every(u=>!u.order||Math.hypot(u.order.x-v.x,u.order.y-v.y)>3*TILE),'a wave is not sent at him'); for(const u of w) u.dead=true; }
+  tp(v,5,40); tp(d,10,40); d.order=null; d.target=null; d.think=0; step(4); ok(Math.hypot(d.x-v.x,d.y-v.y)>4*TILE,'he walks off: it does not follow ('+(Math.hypot(d.x-v.x,d.y-v.y)/TILE).toFixed(1)+' tiles)');
+  d.x=v.x+30; d.y=v.y; d.order=null; d.target=null;
   tp(c,10,42); ok(findTarget(d,6,false)===c,'but it finds the clean one');
   c.dead=true; const h=hives()[0]; tp(v,Math.floor(h.x/TILE)+3,Math.floor(h.y/TILE)); h.aggroAt=0; const n=G.ents.filter(e=>!e.dead&&e.faction==='swarm').length; step(1); ok(!G.ents.some(e=>!e.dead&&e.faction==='swarm'&&e.target===v),'the hive does not notice him');
   const t=makeUnit('drone','swarm',v.x+40,v.y); fire(v,t); ok(!G.api.veiled(v)&&G.rogue.veilBroken===1,'he fires: the veil is torn'); ok(findTarget(d,30,false)===v||validTarget(d,v),'now they see him');

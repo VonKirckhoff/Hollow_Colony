@@ -78,7 +78,7 @@ function swarmThink(u,dt){
   if(u.role==='guard'||u.role==='boss'){ if(!u.order && !u.target && u.guardAt) u.order={type:'guard',x:u.guardAt.x,y:u.guardAt.y,wait:0}; return; }
   if((u.role==='hunt'||u.role==='wave') && !u.target && (!u.order||u.order.type!=='amove')){
     const vip=G.side==='corps'&&nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&e.def.escort&&!e.downed&&dist(u,e)<SWARM_VIP.hunt*TILE);   /* Dr. Maas first */
-    const t=vip||nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery&&!e.downed&&!deadGen(u,e));   // blast doors and rubble are scenery, not prey
+    const t=vip||nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery&&!e.downed&&!deadGen(u,e)&&!veiled(e));   /* Rogue: a veiled crew member is not prey (Among Them) */   // blast doors and rubble are scenery, not prey
     if(t){ u.order={type:'amove',x:t.x,y:t.y}; setPath(u,t.x,t.y); }
   }
 }
