@@ -137,10 +137,11 @@ function claws(m,n,len,r,spread){ const g=new THREE.Group(); for(let i=0;i<n;i++
 
 /* ---------- soldiers ---------- */
 const ROLE_COL={ trooper:'#86a36e', gunner:'#d0563c', pyro:'#ee8a26', medic:'#f2f4f6', engineer:'#f2c230', scientist:'#d9dee4' };
-const SKIN={ corps:{ armor:'#5a6880', dark:'#262b35', suit:'#3d4556', metal:'#2c2f36' }, osprey:{ armor:'#2e2621', dark:'#15110e', suit:'#3b2f27', metal:'#211d1a', band:'#c0231d' } };
+const SKIN={ corps:{ armor:'#5a6880', dark:'#262b35', suit:'#3d4556', metal:'#2c2f36' }, osprey:{ armor:'#2e2621', dark:'#15110e', suit:'#3b2f27', metal:'#211d1a', band:'#c0231d' },
+  risen:{ armor:'#5f7055', dark:'#1f261c', suit:'#3a4634', metal:'#2a3028', medic:'#a9b89a', skin:'#8fa877', eye:'#9dff6a' } };   /* zombie mode: a mouldy green copy of the Corps kit, as the 2D sprite */
 function v3Soldier(e){
-  const t=e.type, osp=e.faction==='osprey'||!!e.crew, P=osp?SKIN.osprey:SKIN.corps, g=new THREE.Group(), U=g.userData;
-  const A=mat(t==='medic'&&!osp?'#d8dde3':P.armor), D=mat(P.dark), S=mat(P.suit), Mt=shiny(P.metal), R=mat(ROLE_COL[t]||ROLE_COL.trooper), Rs=osp?mat('#4a3a2e'):R, skin=mat('#c99a78');
+  const t=e.type, osp=e.faction==='osprey'||!!e.crew, rz=!osp&&!!(e.vet&&e.vet.risen), P=osp?SKIN.osprey:rz?SKIN.risen:SKIN.corps, g=new THREE.Group(), U=g.userData;
+  const A=mat(t==='medic'&&!osp?(rz?P.medic:'#d8dde3'):P.armor), D=mat(P.dark), S=mat(P.suit), Mt=shiny(P.metal), R=mat(ROLE_COL[t]||ROLE_COL.trooper), Rs=osp?mat('#4a3a2e'):R, skin=mat(rz?P.skin:'#c99a78');
   const bulk=t==='gunner'?1.18:1, last=()=>g.children[g.children.length-1];
   U.legs=[]; U.arms=[];
   /* legs: thigh, shin with knee pad, boot */
@@ -162,7 +163,7 @@ function v3Soldier(e){
   if(t==='scientist'){ g.add(ball(skin,0.1,0.11,0.1,0,0.94,0)); g.add(ball(mat('#5a4632'),0.105,0.07,0.105,0,1.0,-0.01)); }
   else if(t==='engineer'){ g.add(ball(D,0.1,0.1,0.1,0,0.92,0)); g.add(part(GEO.half,Rs,0.13,0.11,0.14,0,0.95,0)); g.add(box(Rs,0.28,0.02,0.3,0,0.95,0.02)); g.add(box(glow('#7ff6ff'),0.14,0.04,0.03,0,0.92,0.1)); }
   else if(t==='pyro'){ g.add(ball(A,0.12,0.11,0.12,0,0.93,0)); for(const k of [-1,1]){ g.add(rotX(cyl(D,0.05,0.07,0.05,k*0.045,0.89,0.1),1.4)); g.add(box(glow('#ffb347'),0.05,0.035,0.02,k*0.04,0.96,0.115)); } }   /* gas mask with two filters */
-  else { g.add(ball(A,0.125,0.11,0.135,0,0.94,-0.005)); g.add(box(shiny(osp?'#ff5040':'#7ff6ff',{ emissive:osp?0x801010:0x2a8a96 }),0.17,0.05,0.04,0,0.92,0.11)); g.add(box(Rs,0.03,0.025,0.24,0,1.045,-0.01)); }
+  else { g.add(ball(A,0.125,0.11,0.135,0,0.94,-0.005)); g.add(rz?box(glow(P.eye),0.17,0.05,0.04,0,0.92,0.11):box(shiny(osp?'#ff5040':'#7ff6ff',{ emissive:osp?0x801010:0x2a8a96 }),0.17,0.05,0.04,0,0.92,0.11)); g.add(box(Rs,0.03,0.025,0.24,0,1.045,-0.01)); }
   if(t==='medic'){ g.add(box(mat('#e2463a'),0.03,0.08,0.02,0,1.0,0.1)); g.add(box(mat('#e2463a'),0.08,0.03,0.02,0,1.0,0.1)); for(const s of [-1,1]) g.add(box(mat('#e2463a'),0.02,0.06,0.02,s*0.27,0.8,0.02)); }
   /* back and weapon: per role */
   const gun=grp(0.07,0.66,0.2); g.add(gun); U.gun=gun;
@@ -179,7 +180,15 @@ function v3Soldier(e){
   else if(t==='scientist'){ g.children.forEach(c=>{ if(c.material===A||c.material===S) c.material=mat('#d9dee4'); }); g.add(box(mat('#d9dee4'),0.3,0.32,0.2,0,0.5,0)); g.add(box(mat('#3a6a8a'),0.14,0.16,0.06,0.12,0.6,0.14)); g.add(box(glow('#7ff6ff'),0.08,0.03,0.065,0.12,0.62,0.14)); g.remove(gun); U.gun=null; }
   else { g.add(box(D,0.22,0.22,0.1,0,0.67,-0.15)); g.add(rotZ(cyl(D,0.05,0.2,0.05,0,0.6,-0.22),Math.PI/2));   /* trooper: pack and bedroll */
     gun.add(box(Mt,0.07,0.1,0.42,0,0,0.08)); gun.add(rotX(cyl(D,0.02,0.18,0.02,0,0.02,0.36),Math.PI/2)); gun.add(box(D,0.05,0.12,0.06,0,-0.09,0.08)); gun.add(rotX(cyl(Mt,0.026,0.16,0.026,0,-0.06,0.24),Math.PI/2)); gun.add(box(R,0.072,0.02,0.1,0,0.06,0.0)); }
+  if(rz) v3Risen(g,U,t);
   void last; U.top=1.1; return g; }
+/* the risen (zombie mode): torn armour with the green showing through, dead green eyes, a pulsing green haze and a shamble (v3Pose) */
+function v3Risen(g,U,t){ const rot=glow(SKIN.risen.eye), D=mat('#141a12');
+  if(t==='scientist'||t==='engineer'||t==='pyro') for(const k of [-1,1]) g.add(ball(rot,0.022,0.022,0.022,k*0.04,0.94,t==='scientist'?0.095:0.11));   /* dead eyes where there is no visor */
+  for(const [x,y,z,w,h] of [[0.07,0.72,0.112,0.07,0.05],[-0.1,0.62,0.09,0.05,0.06],[0.04,0.3,0.07,0.04,0.07]]){ g.add(box(D,w+0.02,h+0.02,0.012,x,y,z)); g.add(box(rot,w,h,0.014,x,y,z+0.002)); }   /* tears in the kit, glowing inside */
+  g.add(box(D,0.12,0.03,0.12,-0.075,0.04,0.01));   /* a scrap of rag at one boot */
+  const haze=v3Sprite(); haze.material.color.set('#7cff52'); haze.scale.set(0.9,1.2,1); haze.position.set(0,0.55,0); haze.userData.noXray=true; haze.raycast=()=>{}; g.add(haze);
+  U.risen=haze; U.lean=0.14; }
 
 /* ---------- creatures ----------
    The Swarm is its own life: lunar fungus and burrowing arthropods, plum flesh with bone plates and green light in the seams.
@@ -472,6 +481,10 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(U.spin&&fight) U.spin.rotation.z+=0.6;
     if(U.pilot) U.pilot.scale.setScalar(0.025*(0.8+Math.random()*0.5)*(fight?2:1));
     if(U.blink) U.blink.visible=Math.floor(T*2+e.id)%2===0;
+    if(U.risen){ const p=0.5+0.5*Math.sin(T*3.8+e.id); U.risen.material.opacity=0.32+0.3*p; U.risen.scale.set(0.85+0.1*p,1.15+0.1*p,1);
+      g.rotation.z=(mv?Math.sin(ph*0.5)*0.16:Math.sin(T*0.9+e.id)*0.05)+U.lean*(e.id%2?1:-1);   /* the shamble: a lurching sway, always leaning to one side */
+      if(U.arms[0]&&!e.downed) U.arms[0].rotation.x=U.arms[0].userData.base*0.3+(mv?Math.sin(ph*0.5)*0.2:0);   /* one arm hangs loose */
+      if(Math.random()<0.05) G.fx.push({k:'spark',x:e.x+rand(-6,6),y:e.y-rand(4,20),vx:rand(-8,8),vy:rand(-40,-20),t:0.8,max:0.8,col:'#9dff6a'}); }
     if(U.weld) U.weld.visible=!!(e.order&&/repair|build/.test(e.order.type))&&Math.random()<0.7;
     if(e.type==='brute') v3PoseBrute(e,U,T,mv,fight,ph); else if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph);
     if(mv) y+=Math.abs(Math.sin(ph))*0.025;
@@ -702,7 +715,7 @@ function render3D(now){
   v3Size(); v3Camera(dt); paintFog(); v3Fog(); V3.frame++; V3.u.time.value=now/1000;
   const T=now/1000, sel=new Set(G.sel), lights=[];
   for(const e of G.ents){ if(!v3Shown(e)) continue;
-    let g=V3.objs.get(e); if(!g){ g=v3Model(e); V3.objs.set(e,g); V3.g.add(g); if(e.faction===G.side&&e.kind==='unit') g.traverse(o=>o.layers.set(1)); }
+    let g=V3.objs.get(e); if(!g){ g=v3Model(e); V3.objs.set(e,g); V3.g.add(g); if(e.faction===G.side&&e.kind==='unit') g.traverse(o=>{ if(!o.userData.noXray) o.layers.set(1); }); }
     g.visible=true; g.userData.f=V3.frame; v3Pose(e,g,T);
     if(e.kind==='unit'&&G.mission.dark&&e.faction===G.side&&e.def.bio&&!e.downed) lights.push({x:g.position.x+Math.sin(g.userData.yaw)*1.4,y:g.position.y+1.1,z:g.position.z+Math.cos(g.userData.yaw)*1.4,i:VIEW3D.lamp,c:0xe4ecff,d:7,lamp:1});
     if(e.kind==='building'&&e.def.generator&&e.powered) lights.push({x:g.position.x,y:g.position.y+1.7,z:g.position.z,i:VIEW3D.genLight*(0.92+0.08*Math.sin(now/90+e.id)),c:0xffd690,d:(e.def.light||8)*1.1}); }
