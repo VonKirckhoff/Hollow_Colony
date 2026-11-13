@@ -339,6 +339,123 @@ function v3Grazer(e,sick){
       body.add(hip); U.legs.push(hip); }
   U.top=sick?1.05:1.0; return g; }
 
+/* ---------- the Sentry Gun (Nov 2026): a tripod with knees, foot plates and ground spikes, an ammo/battery box with a cable, a slewing ring,
+   an armoured turret (slanted plates, rivets, hazard stripe, LC stencil), one heavy barrel with a perforated cooling jacket and a muzzle brake,
+   an ammo drum with a belt, a sensor head with a red lens, a radar dish and an antenna.
+   Moves: unfolds when set up and folds when packed (legs out, turret rises, barrel swings up), recoil, muzzle flash and casings flying out,
+   scans slowly with no target, the dish turns; below plateAt a side plate flies off, below smokeAt it sparks and smokes. ---------- */
+const SENTRY3D = { size:1.15, scan:0.7, scanSpeed:0.55, scanDelay:2, recoil:0.07, flash:1, casings:true, plateAt:0.5, smokeAt:0.25, smoke:5, sparks:4 };
+function v3SentryTex(kind){ const k='sentryTex'+kind; if(MAT[k]) return MAT[k];
+  const c=document.createElement('canvas'), x=c.getContext('2d');
+  if(kind==='jacket'){ c.width=64; c.height=64; x.fillStyle='#363c45'; x.fillRect(0,0,64,64); x.fillStyle='#0b0c0e';
+    for(let j=0;j<6;j++) for(let i=0;i<8;i++){ x.beginPath(); x.arc(4+i*8,5+j*10+(i%2)*5,2.3,0,7); x.fill(); }
+    const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,1); return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
+  /* 'lc': a worn plate with the Lunar Corps stencil */
+  c.width=128; c.height=64; x.fillStyle='#323944'; x.fillRect(0,0,128,64);
+  for(let i=0;i<40;i++){ x.fillStyle=`rgba(${i%2?20:90},${i%2?22:96},${i%2?26:106},.35)`; x.fillRect(hash2(i,1,3)*128,hash2(i,2,3)*64,2+hash2(i,3,3)*10,1); }   /* scratches and grime */
+  x.save(); x.globalAlpha=0.7; x.fillStyle='#b9c0c8'; x.font='bold 40px Impact, "Arial Black", sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LC',64,34); x.restore();
+  x.globalCompositeOperation='destination-out'; x.fillStyle='#000'; x.fillRect(52,14,2,40); x.fillRect(76,14,2,40); x.globalCompositeOperation='source-over';   /* stencil bridges */
+  x.fillStyle='rgba(185,192,200,.55)'; x.fillRect(6,6,116,1); x.fillRect(6,57,116,1);
+  const t=new THREE.CanvasTexture(c); t.anisotropy=4; return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
+function v3Sentry(e){
+  const g=new THREE.Group(), U=g.userData; U.own=[]; GEO.plane=GEO.plane||new THREE.PlaneGeometry(1,1);
+  const hull=mat('#262c34'), plate=mat('#313843'), dark=mat('#121418'), gunM=shiny('#363c45',{ specular:0x4a505a, shininess:45 }), yel=mat('#8a6d22'),
+        brass=shiny('#7a5d1e',{ specular:0x665533, shininess:55 }), rub=mat('#0a0b0c'), lc=v3SentryTex('lc');
+  const S=grp(); S.scale.setScalar(SENTRY3D.size); g.add(S); U.S=S;
+  const L=0.6; U.L=L;
+  /* the ammo/battery box on the ground between two legs, a cable up to the hub */
+  const ba=Math.PI+Math.PI/3, B=grp(Math.sin(ba)*0.34,0,Math.cos(ba)*0.34); B.rotation.y=ba; S.add(B);
+  B.add(box(plate,0.24,0.14,0.16,0,0.07,0)); B.add(box(dark,0.25,0.02,0.17,0,0.145,0)); B.add(box(yel,0.245,0.025,0.165,0,0.1,0));
+  B.add(box(dark,0.1,0.02,0.02,0,0.165,0)); B.add(box(glow('#5fe3b0'),0.02,0.02,0.01,0.08,0.12,0.083)); for(const k of [-1,1]) B.add(box(dark,0.02,0.1,0.17,k*0.12,0.07,0));
+  const bw=new THREE.Vector3(Math.sin(ba)*0.34,0.15,Math.cos(ba)*0.34), V=(x,y,z)=>new THREE.Vector3(x,y,z);
+  const cg=v3Tube([bw,V(bw.x*0.75,0.24,bw.z*0.75),V(bw.x*0.3,0.3,bw.z*0.3),V(0,0.4,0)],0.014,0.014,10,5); U.own.push(cg);
+  U.cable=new THREE.Mesh(cg,rub); U.cable.castShadow=true; S.add(U.cable);
+  /* the hub: legs hang from it, the slewing ring and turret sit on it (its height follows the legs) */
+  const hub=grp(0,0.45,0); S.add(hub); U.hub=hub;
+  hub.add(cyl(dark,0.1,0.14,0.1,0,0.0,0)); hub.add(cyl(hull,0.17,0.05,0.17,0,0.08,0)); hub.add(part(GEO.torus,gunM,0.17,0.5,0.17,0,0.08,0));
+  for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; hub.add(ball(dark,0.012,0.012,0.012,Math.sin(a)*0.15,0.106,Math.cos(a)*0.15)); }   /* bolts on the ring */
+  U.legs=[];
+  for(let i=0;i<3;i++){ const r=grp(); r.rotation.y=Math.PI+i*2*Math.PI/3; hub.add(r); r.add(box(dark,0.07,0.06,0.09,0,-0.02,0.07));
+    const h=grp(0,-0.02,0.1); r.add(h);
+    h.add(box(hull,0.06,L*0.55,0.07,0,-L*0.275,0)); h.add(ball(dark,0.045,0.045,0.045,0,-L*0.55,0)); h.add(box(dark,0.045,L*0.47,0.05,0,-L*0.77,0));
+    h.add(cyl(gunM,0.014,L*0.45,0.014,0,-L*0.3,-0.05)); h.add(box(yel,0.062,0.03,0.072,0,-L*0.12,0));   /* hydraulic piston, a yellow band */
+    const f=grp(0,-L,0); h.add(f); f.add(cyl(dark,0.075,0.025,0.075,0,0.012,0)); f.add(rotX(part(GEO.cone,gunM,0.022,0.09,0.022,0,-0.035,0),Math.PI));
+    U.legs.push({ h, f }); }
+  /* the turret: forward is +z */
+  const T=grp(0,0.11,0); hub.add(T); U.turret=T;
+  T.add(box(dark,0.3,0.04,0.34,0,0.02,0)); T.add(box(hull,0.3,0.22,0.36,0,0.14,0));
+  const gl=box(plate,0.32,0.17,0.05,0,0.16,0.19); gl.rotation.x=-0.55; T.add(gl);   /* slanted front plate */
+  const top=grp(0,0.26,-0.02); top.add(box(plate,0.31,0.03,0.3,0,0,0)); const tl=new THREE.Mesh(GEO.plane,lc); tl.scale.set(0.24,0.12,1); tl.rotation.x=-Math.PI/2; tl.position.set(0,0.016,-0.05); top.add(tl); T.add(top);
+  const side=(k)=>{ const p=grp(k*0.165,0.14,0); p.add(box(plate,0.03,0.2,0.32,0,0,0)); p.rotation.z=-k*0.1;
+    for(const [yy,zz] of [[0.08,0.13],[0.08,-0.13],[-0.08,0.13],[-0.08,-0.13]]) p.add(ball(dark,0.012,0.012,0.012,k*0.016,yy,zz));
+    const s=new THREE.Mesh(GEO.plane,lc); s.scale.set(0.24,0.12,1); s.rotation.y=k*Math.PI/2; s.position.set(k*0.016,0,-0.02); p.add(s); T.add(p); return p; };
+  U.plate=side(-1); side(1);
+  for(let i=0;i<6;i++) T.add(box(i%2?dark:yel,0.05,0.045,0.012,-0.125+i*0.05,0.08,-0.183));   /* hazard stripe on the back */
+  for(const k of [-1,1]) T.add(box(dark,0.02,0.02,0.1,k*0.1,0.1,-0.2));   /* grab handles */
+  /* the gun */
+  const gn=grp(0,0.13,0.17); T.add(gn); U.gun=gn; U.gz=0.17;
+  gn.add(box(dark,0.11,0.11,0.16,0,0,0.02)); gn.add(box(hull,0.115,0.04,0.1,0,0.06,0.0));
+  gn.add(rotX(cyl(v3SentryTex('jacket'),0.048,0.32,0.048,0,0,0.26),Math.PI/2)); gn.add(rotX(cyl(dark,0.052,0.02,0.052,0,0,0.11),Math.PI/2)); gn.add(rotX(cyl(dark,0.052,0.02,0.052,0,0,0.42),Math.PI/2));
+  gn.add(rotX(cyl(gunM,0.024,0.18,0.024,0,0,0.5),Math.PI/2));
+  gn.add(box(dark,0.075,0.055,0.1,0,0,0.62)); for(const k of [-1,1]) gn.add(box(rub,0.077,0.012,0.012,0,k*0.012,0.6+k*0.02));   /* muzzle brake with slots */
+  U.muzzle=grp(0,0,0.68); gn.add(U.muzzle); U.port=grp(0.06,0.02,0.04); gn.add(U.port);
+  /* ammo drum on the right with the belt running into the gun */
+  const dr=grp(0.25,0.13,0.0); T.add(dr); dr.add(rotZ(cyl(hull,0.11,0.1,0.11,0,0,0),Math.PI/2)); dr.add(rotZ(cyl(dark,0.08,0.104,0.08,0,0,0),Math.PI/2)); dr.add(rotZ(part(GEO.torus,gunM,0.11,0.6,0.11,0.05,0,0),Math.PI/2));
+  for(let i=0;i<7;i++){ const t=i/6, x=0.24-t*0.18, y=0.24+Math.sin(t*Math.PI)*0.04-t*0.02, z=0.05+t*0.11; const l=box(brass,0.022,0.012,0.04,x,y,z); l.rotation.y=0.6; T.add(l); }
+  /* sensor head with the red lens, radar dish, antenna */
+  const sh=grp(-0.1,0.31,0.11); T.add(sh); sh.add(box(dark,0.1,0.075,0.09,0,0,0)); sh.add(box(hull,0.11,0.015,0.11,0,0.044,0.01));
+  U.lens=ball(glow('#ff3b2f'),0.026,0.026,0.012,0,0,0.047); sh.add(U.lens); sh.add(rotX(part(GEO.torus,gunM,0.03,0.4,0.03,0,0,0.046),Math.PI/2));
+  U.ext=[];
+  const dm=grp(0.07,0.275,-0.11); T.add(dm); dm.add(cyl(gunM,0.012,0.07,0.012,0,0.035,0)); U.dish=grp(0,0.075,0); dm.add(U.dish);
+  const dish=part(GEO.half,gunM,0.075,0.025,0.075,0,0,0); dish.rotation.x=-1.25; U.dish.add(dish); U.dish.add(cyl(dark,0.006,0.06,0.006,0,0.02,0.02)); U.ext.push(dm);
+  const an=grp(-0.12,0.275,-0.15); T.add(an); an.add(cyl(dark,0.007,0.34,0.007,0,0.17,0)); U.blink=ball(glow('#ff5a4f'),0.016,0.016,0.016,0,0.345,0); an.add(U.blink); U.ext.push(an);
+  U.sentry=true; U.top=1.0*SENTRY3D.size; U.dishA=0; return g; }
+/* u: 0 folded … 1 unfolded */
+function v3PoseSentry(e,U,T){ const C=SENTRY3D;
+  let u=1; if(e.built){ if(e.unfoldT>0) u=1-e.unfoldT/(ANIM.unfold||1); else if(e.packing>0&&e.packing<1) u=1-e.packing; }
+  u=clamp(u,0,1); const s=u*u*(3-2*u), lu=clamp(s/0.6,0,1), gu=clamp((s-0.5)/0.5,0,1), sp=1.45+(0.72-1.45)*lu;
+  U.hub.position.y=U.L*Math.cos(sp)+0.025;
+  for(const l of U.legs){ l.h.rotation.x=-sp; l.f.rotation.x=sp; }
+  U.cable.visible=u>=1; for(const o of U.ext) o.visible=gu>0.8;
+  const dt=Math.min(0.1,Math.max(0,T-(U.lt??T))); U.lt=T;
+  /* aim, or scan slowly with nothing to shoot at */
+  const tg=e.target&&!e.target.dead; if(tg) U.aimT=T; const idle=T-(U.aimT??-99)>C.scanDelay&&u>=1;
+  U.scanW=(U.scanW||0)+((idle?1:0)-(U.scanW||0))*Math.min(1,dt*1.5);
+  const a=e.angle??-Math.PI/2; U.turret.rotation.y=Math.atan2(Math.cos(a),Math.sin(a))+U.scanW*Math.sin(T*C.scanSpeed+e.id)*C.scan;
+  U.dishA+=dt*(idle?1.6:4.5); U.dish.rotation.y=U.dishA;
+  /* barrel: hangs down while folded; recoil; a new shot flashes and throws a casing */
+  const rc=e.recoil>0?e.recoil/0.08:0; U.gun.rotation.x=(1-gu)*0.9; U.gun.position.z=U.gz-C.recoil*rc;
+  if(e.recoil>(U.lastRc||0)+0.005){ U.flashT=0.06; U.shot=true; } U.lastRc=e.recoil>0?e.recoil:0;
+  U.lens.scale.set(0.026*(tg?1.35:1)*(0.85+0.15*Math.sin(T*(tg?9:3)+e.id)),0.026*(tg?1.35:1)*(0.85+0.15*Math.sin(T*(tg?9:3)+e.id)),0.012);
+  /* damage */
+  const f=e.hp/e.maxHp, gone=e.built&&f<C.plateAt;
+  if(U.plateGone==null) U.plateGone=gone;
+  else if(gone&&!U.plateGone){ U.plateGone=true; U.fly=true; }
+  else if(!gone&&U.plateGone&&f>=C.plateAt) U.plateGone=false;
+  U.plate.visible=!U.plateGone; U.burning=e.built&&f<C.smokeAt; }
+function v3SentryFx(now,dt,put,lights){ const C=SENTRY3D, w=V3._sw||(V3._sw=new THREE.Vector3()), w2=V3._sw2||(V3._sw2=new THREE.Vector3());
+  V3.bits=V3.bits||[]; V3.sparks=V3.sparks||[];
+  for(const [e,g] of V3.objs){ const U=g.userData; if(!U.sentry||!g.visible) continue;
+    if(U.flashT>0){ U.flashT-=dt; U.muzzle.getWorldPosition(w); if(C.flash>0){ put(w.x,w.y,w.z,0.38*C.flash*(0.8+Math.random()*0.4),'#fff3c4',1); put(w.x,w.y,w.z,0.7*C.flash,'#ffb347',0.45); }
+      if(ANIM.muzzleLight&&C.flash>0) lights.push({ x:w.x, y:w.y+0.2, z:w.z, i:1.6*C.flash, c:0xffc070, d:3.5 }); }
+    if(U.shot){ U.shot=false; if(C.casings&&V3.bits.length<40){ U.port.getWorldPosition(w); const r=U.turret.getWorldQuaternion(new THREE.Quaternion()), side=new THREE.Vector3(1,0,0).applyQuaternion(r);
+        const o=cyl(MAT.sentryBrass||(MAT.sentryBrass=shiny('#b08a2c',{ specular:0x998855, shininess:60 })),0.014,0.045,0.014,w.x,w.y,w.z); V3.g.add(o);
+        V3.bits.push({ o, vx:side.x*rand(1.0,1.6), vy:rand(1.4,2.0), vz:side.z*rand(1.0,1.6), sx:rand(10,20), sz:rand(5,12), t:0, life:0.9, fade:0.3 }); } }
+    if(U.fly){ U.fly=false; U.plate.getWorldPosition(w); U.plate.getWorldQuaternion(V3._sq||(V3._sq=new THREE.Quaternion()));
+      const o=box(mat('#313843'),0.035,0.23,0.37,w.x,w.y,w.z); o.quaternion.copy(V3._sq); V3.g.add(o); const side=new THREE.Vector3(-1,0,0).applyQuaternion(V3._sq);
+      V3.bits.push({ o, vx:side.x*rand(1.5,2.2), vy:rand(2.2,3), vz:side.z*rand(1.5,2.2), sx:rand(4,8), sz:rand(2,5), t:0, life:6, fade:1.5, flat:true });
+      for(let i=0;i<8;i++) V3.sparks.push({ x:w.x, y:w.y, z:w.z, vx:rand(-0.8,0.8), vy:rand(0.6,1.6), vz:rand(-0.8,0.8), t:0, life:rand(0.4,0.9), col:pick(['#ffd23f','#fff3c4','#ff8a2a']) }); }
+    if(U.burning){ U.acc=(U.acc||0)+dt*C.smoke; U.sacc=(U.sacc||0)+dt*C.sparks; U.turret.getWorldPosition(w2);
+      while(U.acc>=1){ U.acc--; V3.smoke.push({ x:w2.x+rand(-0.1,0.1), y:w2.y+0.25, z:w2.z+rand(-0.1,0.1), t:0, sz:rand(0.6,0.85), col:pick(['#1d1b1a','#2a2725','#3a3633']), a:0.8, rise:1.6, life:rand(2,3) }); }
+      while(U.sacc>=1){ U.sacc--; V3.sparks.push({ x:w2.x+rand(-0.15,0.15), y:w2.y+0.2, z:w2.z+rand(-0.15,0.15), vx:rand(-0.6,0.6), vy:rand(0.5,1.3), vz:rand(-0.6,0.6), t:0, life:rand(0.3,0.7), col:pick(['#fff3c4','#ffd23f','#9fd3ff']) }); }
+      if(Math.random()<dt*3) lights.push({ x:w2.x, y:w2.y+0.4, z:w2.z, i:0.8, c:0x9fd3ff, d:2 }); } }
+  for(const b of V3.bits){ b.t+=dt; const o=b.o; if(!b.rest){ b.vy-=4.5*dt; o.position.x+=b.vx*dt; o.position.y+=b.vy*dt; o.position.z+=b.vz*dt; o.rotation.x+=b.sx*dt; o.rotation.z+=b.sz*dt;
+      const gy=v3H(o.position.x,o.position.z)+(b.flat?0.02:0.01); if(o.position.y<=gy&&b.vy<0){ o.position.y=gy; b.vy*=-0.3; b.vx*=0.5; b.vz*=0.5; b.sx*=0.5; b.sz*=0.5;
+        if(Math.abs(b.vy)<0.4){ b.rest=true; o.rotation.set(0,o.rotation.y,Math.PI/2); } } }   /* lies flat: a plate on its face, a casing on its side */
+    if(b.t>b.life-b.fade) o.position.y-=dt*0.02/b.fade; }   /* sinks into the dust before it goes (the 2D casing stays on the ground layer) */
+  for(const b of V3.bits) if(b.t>=b.life) V3.g.remove(b.o);
+  V3.bits=V3.bits.filter(b=>b.t<b.life); }
+
 /* ---------- buildings, crates, bodies ---------- */
 function v3Billboard(canvas,scale=2){ const tex=new THREE.CanvasTexture(canvas); tex.magFilter=THREE.NearestFilter;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true })), w=canvas.width*scale/TILE, h=canvas.height*scale/TILE; s.scale.set(w,h,1); s.position.y=h/2;
@@ -353,9 +470,7 @@ function v3Building(e){
   else if(t==='relay'){ g.add(box(metal,1.6,0.3,1.6,0,0.15,0)); for(const [x,z] of [[-0.4,-0.4],[0.4,-0.4],[-0.4,0.4],[0.4,0.4]]){ const l=cyl(plate,0.04,2.2,0.04,x*0.6,1.2,z*0.6); l.rotation.z=x*0.12; l.rotation.x=-z*0.12; g.add(l); }
     for(const y of [0.7,1.3,1.9]) g.add(box(plate,0.55,0.04,0.55,0,y,0));
     g.add(rotX(part(GEO.half,steel,0.45,0.15,0.45,0,2.3,0.05),-1.0)); U.blink=box(glow('#ffb347'),0.1,0.1,0.1,0,2.5,0); g.add(U.blink); top=2.6; }
-  else if(t==='sentry'){ for(let i=0;i<3;i++){ const l=limb(dark,0.05,0.42,Math.cos(i*2.1)*0.05,0.4,Math.sin(i*2.1)*0.05); l.rotation.set(Math.sin(i*2.1)*0.6,0,-Math.cos(i*2.1)*0.6); g.add(l); }
-    const tur=grp(0,0.45,0); tur.add(box(plate,0.34,0.24,0.38,0,0,0)); tur.add(box(yel,0.35,0.04,0.39,0,0.1,0)); tur.add(box(glow('#ff5a4f'),0.06,0.03,0.02,0,0.04,0.2)); for(const k of [-1,1]) tur.add(rotX(cyl(steel,0.025,0.45,0.025,k*0.07,0.0,0.32),Math.PI/2));
-    g.add(tur); U.turret=tur; top=0.85; }
+  else if(t==='sentry') return v3Sentry(e);
   else if(t==='barricade'){ g.add(box(mat('#6a6a70'),0.95,0.6,0.42,0,0.3,0)); g.add(box(yel,0.96,0.08,0.43,0,0.46,0)); for(const x of [-0.3,0.3]) g.add(box(dark,0.06,0.62,0.44,x,0.31,0)); top=0.7; }
   else if(t==='hive') return v3Hive(e);
   else if(t==='lz'){ U.lamps=[]; for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ g.add(cyl(dark,0.05,0.3,0.05,x*1.3,0.15,z*1.3)); const l=ball(glow('#ffb347'),0.05,0.05,0.05,x*1.3,0.32,z*1.3); g.add(l); U.lamps.push(l); } top=0.4; }
@@ -740,7 +855,7 @@ function v3Shown(e){ const m=G.map;
 /* ---------- frame ---------- */
 function v3Size(){ const w=ui.vw, h=Math.max(100,ui.vh-ui.hudH); if(V3.w!==w||V3.h!==h||V3.dpr!==ui.dpr){ V3.w=w; V3.h=h; V3.dpr=ui.dpr; V3.r.setPixelRatio(Math.min(ui.dpr,1.5)); V3.r.setSize(w,h); V3.cam.aspect=w/h; V3.cam.updateProjectionMatrix(); } }
 function v3Reset(){ if(V3.g) V3.scene.remove(V3.g); V3.g=new THREE.Group(); V3.scene.add(V3.g); V3.objs.clear(); V3.forG=G; V3.mapId=G.map.id;
-  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.sparks=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
+  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.sparks=[]; V3.bits=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
   V3.fxg=new THREE.Group(); V3.g.add(V3.fxg); V3.fxg.add(V3.tracers); V3.fxg.add(V3.ghost); v3BuildTerrain(); }
 function v3Camera(dt){ const V=VIEW3D, tx=(G.cam.x+ui.vw/2)/TILE, tz=(G.cam.y+(ui.vh-ui.hudH)/2)/TILE, ty=Math.max(0,v3H(tx,tz)), sh=(G.shake||0)*0.3;
   let d=V3.yaw*Math.PI/180-(V3.yawR||0); d=Math.atan2(Math.sin(d),Math.cos(d)); V3.yawR=(V3.yawR||0)+d*Math.min(1,dt*8);
@@ -794,7 +909,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.lamps) U.lamps.forEach((l,i)=>l.visible=Math.floor(T*3-i*0.5)%2===0);
   if(U.heart){ const f=e.hp/e.maxHp; U.heart.scale.setScalar(0.3*(1+0.2*Math.max(0,Math.sin(T*(2+f*2)+e.id)))); g.scale.set(1+0.02*Math.sin(T*2+e.id),1+0.03*Math.sin(T*2+e.id),1); }
   if(U.hive) v3PoseHive(e,g,T);
-  if(U.turret) U.turret.rotation.y=Math.atan2(Math.cos(e.angle||0),Math.sin(e.angle||0));
+  if(U.sentry) v3PoseSentry(e,U,T);
   if(U.pulse) U.pulse.scale.set(0.24,0.34*(1+0.06*Math.sin(T*7+e.id)),0.24);
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
   if(U.memb) v3PoseMembrane(e,g,T);
@@ -1155,7 +1270,7 @@ function render3D(now){
     if(e.chargeT>0) put(p.x+Math.sin(g.userData.yaw)*0.35,p.y+top*0.75,p.z+Math.cos(g.userData.yaw)*0.35,0.25+0.15*Math.sin(now/40),'#c7f05a',0.9);
     if(e.beam&&!e.beam.dead){ const b=V3.objs.get(e.beam); if(b) for(let k=1;k<6;k++){ const t=((k/6)+now/900)%1; put(p.x+(b.position.x-p.x)*t,p.y+0.6+(b.position.y-p.y)*t,p.z+(b.position.z-p.z)*t,0.12,'#78ffbe',0.8); } } }
   for(const [e,g] of V3.objs) if(g.visible&&g.userData.opening>0){ const p=g.userData.opening; for(let i=0;i<3;i++){ const d=(now/900+i/3+e.id*0.13)%1, a=i*2.4+now/700; put(g.position.x+Math.cos(a)*d*0.4*p,g.position.y+0.4+d*0.8*p,g.position.z+Math.sin(a)*d*0.4*p,0.1,i%2?'#a6ff4a':'#c58cff',(1-d)*0.9); } }   /* an egg breathing out spores */
-  v3WreckFx(now,dt,put,lights);
+  v3WreckFx(now,dt,put,lights); v3SentryFx(now,dt,put,lights);
   for(const s of V3.smoke){ const k=s.t/(s.life||2.5), z=s.sz||1, up=s.rise??1.8; put(s.x+k*0.6*z,s.y+k*up*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',(s.a??0.5)*(1-k),true); }   /* s.a, s.rise: a faint trail that hangs (a meteorite's) */   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
   V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<(s.life||2.5));   /* s.life: a wreck's plumes hang longer */
   for(const mk of G.markers){ const x=mk.x/TILE, z=mk.y/TILE; put(x,v3H(x,z)+2+Math.sin(now/250)*0.1,z,0.7,mk.col||'#ffb347',0.9); }
