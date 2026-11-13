@@ -1,5 +1,13 @@
 'use strict';
 /* ---------- 2f. movement ---------- */
+/* heavy beasts (def.heavyTurn: the Brute) have a real heading u.hd that turns at a limited rate with some inertia:
+   they slow down for sharp bends and turn on the spot when the way on lies too far round (the 3D model follows u.hd) */
+const BRUTE_WALK = { turnRate:2.4, turnAccel:7, snap:3, inPlace:1.6, minK:0.15 };
+function heavyTurn(u,want,dt){ const B=BRUTE_WALK; if(u.hd==null) u.hd=want;
+  let err=Math.atan2(Math.sin(want-u.hd),Math.cos(want-u.hd)); const w=Math.max(-B.turnRate,Math.min(B.turnRate,err*B.snap));
+  u.hw=(u.hw||0)+Math.max(-B.turnAccel*dt,Math.min(B.turnAccel*dt,w-(u.hw||0))); u.hd=Math.atan2(Math.sin(u.hd+u.hw*dt),Math.cos(u.hd+u.hw*dt));
+  err=Math.atan2(Math.sin(want-u.hd),Math.cos(want-u.hd)); if(Math.abs(err)>B.inPlace) return 0;
+  const c=Math.max(0,Math.cos(err)); return Math.max(B.minK,c*c); }
 function speedOf(u){ return u.def.speed*(u.carry?(u.def.carrySpeed||0.6):1)*(u.haul?SQUAD.body.haulSpeed:1)*(u.speedMul||1)*(u.suppressT>0?SQUAD.suppress.slow:1)*(u.blindT>0?SWARM_LIGHT.slow:1); }   /* blindT: a Swarm creature in the light (Lights Out) */
 function setPath(u,x,y){ u.path=findPath(u.x,u.y,x,y); u.pi=0; u.goal={x,y}; u.repathAt=G.time+1.2; }
 function stepMove(u,dt){
@@ -8,14 +16,15 @@ function stepMove(u,dt){
   const last=u.pi===u.path.length-1;
   if(d<(last?3:8)){ u.pi++; u.stuckN=0; return u.pi>=u.path.length; }
   const tile=tileAt(G.map,Math.floor(u.x/TILE),Math.floor(u.y/TILE));
-  const pk=u.pack?packPace(u):0, pace=Math.min((u.order&&u.order.pace)||speedOf(u),pk||Infinity); const sp=Math.min(speedOf(u),pace)*(tile==='~'?0.8:1)*dt, k=Math.min(1,sp/d);
+  const pk=u.pack?packPace(u):0, pace=Math.min((u.order&&u.order.pace)||speedOf(u),pk||Infinity); const turnK=u.def.heavyTurn?heavyTurn(u,Math.atan2(dx,dy),dt):1;
+  const sp=Math.min(speedOf(u),pace)*(tile==='~'?0.8:1)*turnK*dt, k=Math.min(1,sp/d);
   if(u.ghostT>0) u.ghostT-=dt;
   moveBy(u,dx*k,dy*k); if(Math.abs(dx)>2) u.face=dx>0?1:-1; u.moving=true;
   // Stuck detection: a walking unit must get closer to its next waypoint. If it has not gained ground for
   // 0.7 s (pressed into a corner, or pushed back by friends), it may squeeze past friends for a moment and
   // re-plans along tile centres; the second time it also steps back to the centre of its tile.
   if(u.wpKey!==u.pi+'/'+u.path.length){ u.wpKey=u.pi+'/'+u.path.length; u.bestD=d; u.stuckT=0; }
-  if(d<u.bestD-2){ u.bestD=d; u.stuckT=0; }
+  if(d<u.bestD-2||turnK<0.5){ u.bestD=Math.min(u.bestD,d); u.stuckT=0; }   /* turning on the spot is not being stuck */
   else { u.stuckT=(u.stuckT||0)+dt;
     if(u.stuckT>0.7){ u.stuckT=0; u.stuckN=(u.stuckN||0)+1; u.ghostT=2; const g=u.path[u.path.length-1];
       if(u.stuckN>=2){ const c={x:(Math.floor(u.x/TILE)+.5)*TILE,y:(Math.floor(u.y/TILE)+.5)*TILE};

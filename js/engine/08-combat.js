@@ -61,7 +61,7 @@ function fire(u,t){
     const dd=dist(u,t), ch=ANIM.spitCharge||0; u.chargeT=ch;   /* its throat swells first: the acid leaves ch seconds later (you can step aside) */
     G.shots.push({k:'acid',sx:mx,sy:my,tx:t.x+rand(-6,6),ty:t.y+rand(-6,6),t:-ch,dur:dd/230+0.15,src:u,dmg:d.damage*dm,splash:(d.splash||0.6)*TILE,faction:u.faction});
   } else {
-    damage(t,d.damage*dm,u); u.lunge=0.12; if(u.faction==='swarm') clawed(t,u);   /* claws on metal */
+    damage(t,d.damage*dm,u); u.lunge=0.12; if(u.def.heavyTurn) u.hd=Math.atan2(t.x-u.x,t.y-u.y); if(u.faction==='swarm') clawed(t,u);   /* claws on metal */
     G.fx.push({k:'slash',x:t.x,y:t.y-8,t:0.16,max:0.16,face:u.face});
   }
 }

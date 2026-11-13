@@ -211,6 +211,12 @@ function legPair(g,U,m,x,y,z,len,w,splay,bend){ for(const s of [-1,1]){ const hi
     const kn=grp(0,-len,0); kn.add(box(m,w*0.8,len*1.1,w*0.8,0,-len*0.55,0)); kn.add(part(GEO.cone,m,w*0.5,len*0.3,w*0.5,0,-len*1.2,0)); kn.rotation.z=-s*bend; hip.add(kn); g.add(hip); U.legs.push(hip); } }
 /* spots of light along a shell */
 function spots(par,n,rx,ry,rz,y0,seed,size=0.03){ for(let i=0;i<n;i++){ const a=i*2.39+seed, b=0.3+((i*0.37+seed)%1)*0.9; par.add(ball(glow(CH.glow),size,size,size,Math.cos(a)*Math.sin(b)*rx,y0+Math.cos(b)*ry,Math.sin(a)*Math.sin(b)*rz)); } }
+/* a cloven goat hoof under a pastern: two glossy dark halves with a split between them, two dewclaws behind (lvl levels it on the ground) */
+function v3Hoof(par,y,sc,lvl=0){ const h=grp(0,y,0); h.rotation.x=lvl; h.userData.hoof=true; par.add(h); const m=shiny('#1d191c',{ specular:0x6a6070, shininess:60 });
+  h.add(ball(mat('#2a1e33'),0.05*sc,0.03*sc,0.05*sc,0,0,0));
+  for(const k of [-1,1]){ const hf=part(GEO.taper,m,0.03*sc,0.065*sc,0.05*sc,k*0.029*sc,-0.035*sc,0.012*sc); hf.rotation.z=-k*0.1; h.add(hf); const toe=part(GEO.cone,m,0.022*sc,0.04*sc,0.02*sc,k*0.03*sc,-0.05*sc,0.055*sc); toe.rotation.x=Math.PI/2+0.3; h.add(toe); }
+  for(const k of [-1,1]){ const dc=part(GEO.cone,m,0.012*sc,0.035*sc,0.012*sc,k*0.025*sc,0.0,-0.045*sc); dc.rotation.x=Math.PI-0.5; h.add(dc); }
+  return h; }
 function v3Creature(e){
   const t=e.type, g=new THREE.Group(), U=g.userData; U.legs=[]; U.arms=[];
   const C=fung(CH.body), Dk=fung(CH.dark), B=fung(CH.bone), L=fung(CH.pale), eye=glow(CH.glow);
@@ -247,8 +253,8 @@ function v3Creature(e){
     U.top=0.85; return g; }
   if(t==='brute'){
     /* an armoured ram: seven overlapping bone bands like an armadillo (knobs on top, plum flesh and a thin green glow in the seams),
-       a flat battering-ram skull plate with cracks, curled ram horns, eyes deep under the plate, two short tusks,
-       club forelegs studded with bone, digitigrade hind legs on hooves, a blunt plate over the rump (no tail).
+       a flat battering-ram skull plate with cracks, curled ram horns, eyes deep under the plate, two curved tusks on the jaw,
+       forelegs with a studded bone club at the wrist, digitigrade hind legs, all four on cloven goat hooves, a short goat tail over the rump plate.
        U.bands break off as it gets hurt (v3Pose: below 50% and 25%), the seams behind them glow brighter. */
     const body=grp(0,0.78,0); g.add(body); U.torso=body; U.bands=[]; U.seams=[];
     body.add(ball(C,0.38,0.33,0.55,0,0,0)); body.add(ball(Dk,0.33,0.2,0.48,0,-0.13,0.02));
@@ -261,6 +267,10 @@ function v3Creature(e){
     spots(body,4,0.36,0.12,0.45,-0.16,2.1,0.03);
     const rump=part(GEO.half,B2,0.25,0.12,0.22,0,-0.04,-0.55); rump.rotation.x=-Math.PI/2; body.add(rump);
     for(let i=0;i<5;i++){ const a=i*1.257+0.3, kn=part(GEO.lowball,B3,0.04,0.04,0.04,Math.cos(a)*0.17,-0.04+Math.sin(a)*0.15,-0.6); body.add(kn); }
+    /* a short goat tail: up and back from the rump, curling over, a bony tuft at the tip (v3PoseBrute flicks it) */
+    { let tl=grp(0,0.06,-0.64); tl.rotation.x=-0.55; body.add(tl); U.tail=tl;
+      for(let i=0;i<4;i++){ const rr=0.055-i*0.01; tl.add(cyl(i%2?C:Dk,rr,0.09,rr,0,0.045,0)); tl.add(part(GEO.torus,B3,rr*1.1,0.6,rr*1.1,0,0.08,0)); const nx=grp(0,0.09,0); nx.rotation.x=-0.38; tl.add(nx); tl=nx; }
+      for(let i=0;i<6;i++){ const a=i*1.05, tf=part(GEO.cone,B3,0.024,0.1,0.024,Math.cos(a)*0.016,0.04,Math.sin(a)*0.016); tf.rotation.set(Math.sin(a)*0.55,0,-Math.cos(a)*0.55); tl.add(tf); } }
     /* the head: skull, ram plate, cracks, brow, sockets with small eyes, jaw with tusks, nostrils (steam comes out here) */
     const head=grp(0,-0.12,0.58); body.add(head); U.head=head;
     head.add(ball(L,0.19,0.16,0.2,0,0,0));
@@ -268,23 +278,27 @@ function v3Creature(e){
     plate.add(ball(B,0.17,0.145,0.06,0,0,0)); plate.add(ball(B2,0.19,0.045,0.07,0,0.12,-0.01)); plate.add(ball(B3,0.13,0.03,0.05,0,-0.13,0.0));
     for(const [x,y,h,r] of [[-0.07,0.03,0.09,0.5],[-0.035,-0.035,0.06,-0.3],[0.08,0.0,0.07,-0.9],[0.04,0.06,0.05,0.2]]){ const ck=box(B3,0.009,h,0.01,x,y,0.058); ck.rotation.z=r; plate.add(ck); }   /* old cracks in the plate */
     for(const k of [-1,1]){ head.add(ball(Dk,0.045,0.035,0.03,k*0.115,-0.06,0.18)); head.add(ball(eye,0.022,0.018,0.015,k*0.115,-0.06,0.2)); }
-    const jaw=grp(0,-0.13,0.06); jaw.add(box(Dk,0.2,0.06,0.2,0,0,0.04)); for(const k of [-1,1]){ const tk=part(GEO.claw,B,0.022,0.022,0.11,k*0.085,0.0,0.12); tk.rotation.x=-0.7; jaw.add(tk); } head.add(jaw); U.jaw=jaw;
+    const jaw=grp(0,-0.13,0.06); jaw.add(box(Dk,0.2,0.06,0.2,0,0,0.04)); head.add(jaw); U.jaw=jaw; U.tusks=[];
+    for(const k of [-1,1]){ let tg=grp(k*0.09,-0.01,0.12); tg.rotation.set(0.6,0,k*0.2); jaw.add(tg); U.tusks.push(tg);   /* two tusks: down and back out of the jaw, then curving forward */
+      for(let i=0;i<4;i++){ const rr=0.032-i*0.0065; tg.add(cyl(i?B:B2,rr,0.058,rr,0,-0.029,0)); const nx=grp(0,-0.058,0); nx.rotation.x=-0.45; tg.add(nx); tg=nx; } }
     for(const k of [-1,1]) head.add(ball(glow('#120c16'),0.02,0.015,0.01,k*0.04,-0.1,0.21));
     const snout=grp(0,-0.1,0.24); head.add(snout); U.snout=snout;
     /* curled ram horns: a chain of ridged segments that grows up and back, then curls down and forward around the side of the head */
     for(const k of [-1,1]){ let seg=grp(k*0.17,0.1,-0.03); seg.rotation.set(-0.5,0,-k*0.6); head.add(seg);
       for(let i=0;i<7;i++){ const rr=0.065-i*0.0065, ln=0.085; seg.add(cyl(i%2?B:B2,rr,ln,rr,0,ln/2,0)); seg.add(part(GEO.torus,B3,rr*1.05,0.6,rr*1.05,0,0.004,0));
         const nx=grp(0,ln,0); nx.rotation.set(-0.72,0,-k*0.07); seg.add(nx); seg=nx; } }
-    /* club forelegs: a thick upper arm under a bone shoulder plate, a forearm, a knuckled bone club with studs */
+    /* forelegs: a thick upper arm under a bone shoulder plate, a forearm with a knuckled, studded bone club at the wrist, a slim pastern on a goat hoof */
+    U.fore=[]; U.hind=[]; U.brute=true;
     for(const k of [-1,1]){ const sh=grp(k*0.33,-0.05,0.3); sh.add(box(Dk,0.17,0.34,0.18,0,-0.16,0)); sh.add(part(GEO.half,B2,0.13,0.1,0.15,k*0.02,0.0,0)); sh.children[1].rotation.z=-k*0.5;
-      const el=grp(0,-0.33,0); el.add(part(GEO.taper,C,0.08,0.3,0.08,0,-0.14,0)); el.children[0].rotation.x=Math.PI; el.add(ball(B,0.13,0.15,0.14,0,-0.31,0.02)); el.add(box(B3,0.17,0.04,0.17,0,-0.25,0.02));
-      for(let i=0;i<6;i++){ const a=i*1.05; el.add(part(GEO.cone,B3,0.025,0.06,0.025,Math.cos(a)*0.13,-0.33+Math.sin(a)*0.05,0.02+Math.sin(a)*0.1)); el.children[el.children.length-1].rotation.set(Math.sin(a)*1.2,0,-Math.cos(a)*1.4); }
-      sh.add(el); sh.rotation.x=-0.15; sh.userData.base=-0.15; body.add(sh); U.arms.push(sh); }
-    /* hind legs: thigh down and forward, shin down and back, an upright foot on a split hoof */
+      const el=grp(0,-0.33,0); el.add(part(GEO.taper,C,0.08,0.24,0.08,0,-0.11,0)); el.children[0].rotation.x=Math.PI; el.add(ball(B,0.115,0.12,0.12,0,-0.22,0.02)); el.add(box(B3,0.15,0.035,0.15,0,-0.17,0.02));
+      for(let i=0;i<6;i++){ const a=i*1.05; el.add(part(GEO.cone,B3,0.022,0.05,0.022,Math.cos(a)*0.11,-0.22+Math.sin(a)*0.04,0.02+Math.sin(a)*0.09)); el.children[el.children.length-1].rotation.set(Math.sin(a)*1.2,0,-Math.cos(a)*1.4); }
+      el.add(cyl(Dk,0.04,0.1,0.04,0,-0.32,0)); v3Hoof(el,-0.36,1.35);
+      sh.add(el); sh.rotation.x=-0.15; body.add(sh); U.fore.push({ sh, el, k, off:k<0?0:Math.PI }); }
+    /* hind legs: thigh down and forward, shin down and back, a long upright pastern on a goat hoof */
     for(const k of [-1,1]){ const hip=grp(k*0.27,0.64,-0.38); hip.rotation.x=-0.45; hip.add(box(Dk,0.17,0.34,0.2,0,-0.16,0));
       const kn=grp(0,-0.32,0); kn.rotation.x=0.95; kn.add(box(C,0.12,0.26,0.13,0,-0.12,0)); kn.add(ball(B3,0.07,0.06,0.07,0,0,0));
-      const ft=grp(0,-0.25,0); ft.rotation.x=-0.5; ft.add(box(Dk,0.09,0.13,0.1,0,-0.06,0)); ft.add(box(B,0.15,0.05,0.17,0,-0.13,0.03)); for(const x of [-0.04,0.04]) ft.add(part(GEO.claw,B3,0.025,0.02,0.07,x,-0.14,0.1));
-      kn.add(ft); hip.add(kn); hip.userData.knee=kn; kn.userData.kb=0.95; g.add(hip); U.legs.push(hip); }
+      const ft=grp(0,-0.25,0); ft.rotation.x=-0.5; ft.add(cyl(Dk,0.045,0.12,0.045,0,-0.05,0)); v3Hoof(ft,-0.1,1.35,0.5);
+      kn.add(ft); hip.add(kn); g.add(hip); U.hind.push({ hip, kn, ft, k, off:k<0?Math.PI:0 }); }
     U.top=1.3; return g; }
   if(t==='bloater') return v3Grazer(e,true);
   if(t==='husk'){ const F=mat('#56614b'), Su=mat('#3d4556'), A=mat('#4a5468'), grow=shiny('#5c3e6e');
@@ -871,6 +885,7 @@ function hidePool(arr,n){ for(let i=n;i<arr.length;i++) arr[i].visible=false; }
 function v3Sprite(){ return new THREE.Sprite(new THREE.SpriteMaterial({ map:V3.glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false })); }
 /* animate one entity's model */
 function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,z);
+  if(e.kind==='unit'&&U.brute) return v3PoseBrute(e,g,U,T,x,y,z);
   if(e.kind==='unit'){ const dx=e.x-U.px, dy=e.y-U.py, tg=e.target&&!e.target.dead?e.target:null, fight=!!tg&&Math.hypot(tg.x-e.x,tg.y-e.y)<(e.def.range||1.5)*TILE+40;
     if(fight) U.want=Math.atan2(tg.x-e.x,tg.y-e.y); else if(Math.hypot(dx,dy)>0.4) U.want=Math.atan2(dx,dy);
     if(U.want!=null){ let d=U.want-U.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); U.yaw+=d*0.25; }
@@ -896,7 +911,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
         b.rotation.set(Math.atan2(b.position.y,1.4/s-b.position.z),0,0); for(const c of b.children){ c.scale.z=len; c.material.opacity=0.26*a*c.userData.op; } }
       U.lampHalo.visible=on&&VIEW3D.beam>0; if(on) U.lampHalo.material.opacity=Math.min(1,0.9*VIEW3D.beam*Math.min(1.5,VIEW3D.lamp)); }
     if(U.weld) U.weld.visible=!!(e.order&&/repair|build/.test(e.order.type))&&Math.random()<0.7;
-    if(e.type==='brute') v3PoseBrute(e,U,T,mv,fight,ph); else if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph);
+    if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph);
     if(mv) y+=Math.abs(Math.sin(ph))*0.025;
     if(e.downed){ g.rotation.x=-Math.PI/2*0.92; y+=0.12; } else if(e.stunT>0) g.rotation.z=Math.sin(T*9)*0.25;
     const lg=e.lunge>0?0.15:0; g.position.set(x+Math.sin(U.yaw)*lg,y,z+Math.cos(U.yaw)*lg);
@@ -915,17 +930,54 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
   if(U.memb) v3PoseMembrane(e,g,T);
   if(e.type==='egg'){ const p=e.openT!=null?1-e.openT/EGG.open:0; g.scale.setScalar(1+Math.sin(T*2+e.id)*0.04+0.15*p); U.opening=p; } }
-/* the Brute: head down when it fights, down hard and the whole body forward when it rams; the bands shift as it walks;
-   a puff of steam from the nostrils now and then; one band breaks off below 50% health, a second below 25% (the seams glow brighter) */
-function v3PoseBrute(e,U,T,mv,fight,ph){
+/* the Brute walks like a heavy beast (BRUTE3D): its heading turns at a limited rate with inertia (and follows u.hd, the heading
+   the movement code gives it, see BRUTE_WALK), its steps come from the distance walked and from turning on the spot, so it never
+   spins on its legs. A diagonal gait (left fore with right hind), the head looks into the turn before the body follows, the body
+   leans into bends and pitches as it speeds up or slows down, the bands ripple, the tail flicks.
+   Fighting: before each blow it lowers its head and paws the ground with a forehoof, the blow is a short charge with the head
+   down. One band breaks off below 50% health, a second below 25% (the seams glow brighter); steam from the nostrils at rest. */
+const BRUTE3D = { turnRate:2.6, turnAccel:8, stride:1.5, turnStride:1.1, swing:0.5, lean:0.09, look:0.9, ramTime:0.7, reach:0.35, windup:0.45 };
+function v3PoseBrute(e,g,U,T,x,y,z){ const ease=k=>k<0?0:k>1?1:k*k*(3-2*k);
+  const B=BRUTE3D, dt=Math.min(0.1,Math.max(0,T-(U.lt??T))); U.lt=T; const s0=U.s0||(U.s0=g.scale.x);
+  const dx=e.x-U.px, dy=e.y-U.py, moved=Math.hypot(dx,dy)/TILE; U.px=e.x; U.py=e.y;
+  const tg=e.target&&!e.target.dead?e.target:null, fight=!!tg&&Math.hypot(tg.x-e.x,tg.y-e.y)<(e.def.range||1.5)*TILE+40, mv=e.moving&&!e.downed;
+  let want=null; if(fight) want=Math.atan2(tg.x-e.x,tg.y-e.y); else if(mv&&e.hd!=null) want=e.hd; else if(moved>0.01) want=Math.atan2(dx,dy);
+  const err=want==null?0:Math.atan2(Math.sin(want-U.yaw),Math.cos(want-U.yaw));
+  const wT=clamp(err*3,-B.turnRate,B.turnRate); U.w=(U.w||0)+clamp(wT-(U.w||0),-B.turnAccel*dt,B.turnAccel*dt); U.yaw+=U.w*dt;
+  if(dt>0) U.v=(U.v||0)+(moved/dt-(U.v||0))*Math.min(1,dt*8);
+  const vmax=(e.def.speed||50)/TILE, vn=clamp((U.v||0)/vmax,0,1), wn=clamp(Math.abs(U.w)/B.turnRate,0,1), turnOnly=wn*(1-vn);
+  U.amp=(U.amp||0)+(clamp(vn*1.05+turnOnly*0.55,0,1)-(U.amp||0))*Math.min(1,dt*6); U.tAmp=(U.tAmp||0)+(turnOnly-(U.tAmp||0))*Math.min(1,dt*6); if(Math.abs(U.w)>0.05) U.tsg=Math.sign(U.w);
+  U.ph=(U.ph??e.id)+((U.v||0)/(B.stride*s0)+Math.abs(U.w)*(1-vn)/B.turnStride)*Math.PI*2*dt;
+  if(U.amp<0.04) U.ph+=(Math.round(U.ph/Math.PI)*Math.PI-U.ph)*Math.min(1,dt*2);   /* settle the legs when it stops */
+  U.look=(U.look||0)+(clamp(err,-0.7,0.7)-(U.look||0))*Math.min(1,dt*5);
+  U.lean=(U.lean||0)+(-U.w*vn*B.lean-(U.lean||0))*Math.min(1,dt*4);
+  const acc=dt>0?((U.v||0)-(U.lv||0))/dt:0; U.lv=U.v; U.pitch=(U.pitch||0)+(clamp(acc*0.035,-0.07,0.07)-(U.pitch||0))*Math.min(1,dt*4);
+  /* the blow: e.lunge is set when it strikes; play a short charge from there. Before the next blow: head down, paw the ground */
+  if(e.lunge>0&&!U.lungeSeen){ U.lungeSeen=true; U.ram=0; } if(!(e.lunge>0)) U.lungeSeen=false;
+  if(U.ram!=null){ U.ram+=dt/B.ramTime; if(U.ram>=1) U.ram=null; }
+  const r=U.ram, hitK=r!=null?(r<0.2?ease(r/0.2):1-ease((r-0.2)/0.8)):0, wind=fight&&r==null&&e.cd<B.windup?1-Math.max(0,e.cd)/B.windup:0;
+  const p=U.ph, a=U.amp, t=U.tAmp*(U.tsg||1);
+  for(const F of U.fore){ const q=p+F.off, lift=Math.max(0,Math.cos(q)); let sx=-0.15-Math.sin(q)*B.swing*a, ex=lift*0.95*a;
+    if(wind&&F.k>0){ const paw=Math.sin(T*16); sx+=(-0.2-paw*0.35)*wind; ex+=Math.max(0,paw)*0.8*wind; }
+    F.sh.rotation.x=sx-hitK*0.5; F.el.rotation.x=ex+hitK*0.55; F.sh.rotation.z=Math.sin(q)*0.22*t; }
+  for(const H of U.hind){ const q=p+H.off, lift=Math.max(0,Math.cos(q));
+    H.hip.rotation.x=-0.45-Math.sin(q)*B.swing*0.85*a+hitK*0.35; H.kn.rotation.x=0.95+lift*0.55*a-hitK*0.2; H.ft.rotation.x=-0.5-lift*0.5*a; H.hip.rotation.z=-Math.sin(q)*0.15*t; }
+  const body=U.torso; body.position.y=0.78-Math.abs(Math.cos(p))*0.045*a+0.02*a-wind*0.05+Math.sin(T*1.7+e.id)*0.008*(1-a);
+  body.rotation.x=-wind*0.06+hitK*0.14+U.pitch; body.rotation.z=Math.sin(p)*0.035*a+U.lean;
+  U.bands.forEach((b,i)=>{ b.position.y=b.userData.by+Math.sin(p*2-i*0.9)*0.013*a+Math.sin(T*1.7-i*0.5)*0.004; });
+  U.head.rotation.y=U.look*B.look; U.head.rotation.x=Math.sin(p*2+0.6)*0.05*a+wind*0.45+hitK*0.55+(e.flash>0?-0.2:0);
+  U.jaw.rotation.x=hitK*0.3+Math.max(0,Math.sin(T*0.9+e.id))*0.05;
+  if(U.tail){ U.tail.rotation.y=Math.sin(T*2.4+e.id)*0.25*(1-a)+Math.sin(p)*0.3*a; U.tail.rotation.x=-0.55-hitK*0.5-wind*0.3+Math.max(0,Math.sin(T*0.7+e.id))**12*0.6; }   /* a flick now and then, up when it charges */
+  /* wounds: bands break off, the seams glow brighter */
   const f=e.hp/e.maxHp, broke=f<0.25?2:f<0.5?1:0;
   if(U.broke!==broke){ const was=U.broke||0; U.broke=broke; const gone=[1+e.id%2,4+e.id%2].slice(0,broke);
     U.bands.forEach((b,i)=>b.visible=!gone.includes(i)); U.seams.forEach(m=>m.material=broke?glow('#a6ff4a'):glow('#3f6a1e'));
     if(broke>was&&V3.smoke){ const w=U.bands[gone[broke-1]].getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); for(let i=0;i<3;i++) V3.smoke.push({x:w.x+rand(-0.2,0.2),z:w.z+rand(-0.2,0.2),y:w.y,t:0,sz:0.3,col:'#8f8268'}); } }
-  U.bands.forEach((b,i)=>{ b.position.y=b.userData.by+(mv?Math.sin(ph-i*0.9)*0.014:0); });
-  const ram=e.lunge>0, hw=ram?0.55:fight?0.22:0; U.head.rotation.x+=(hw-U.head.rotation.x)*0.3; U.torso.rotation.x+=((ram?0.12:0)-U.torso.rotation.x)*0.3;
-  U.jaw.rotation.x=ram?0.25:Math.max(0,Math.sin(T*0.9+e.id))*0.06;
-  if(!mv&&!fight&&V3.smoke&&Math.random()<0.006){ const w=U.snout.getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); for(let i=0;i<2;i++) V3.smoke.push({x:w.x,z:w.z,y:w.y,t:i*0.3,sz:0.16,col:'#b4b4c0'}); } }
+  if(a<0.1&&!fight&&V3.smoke&&Math.random()<0.006){ const w=U.snout.getWorldPosition(V3._w||(V3._w=new THREE.Vector3())); for(let i=0;i<2;i++) V3.smoke.push({x:w.x,z:w.z,y:w.y,t:i*0.3,sz:0.16,col:'#b4b4c0'}); }
+  /* place it: the charge carries it forward along its facing */
+  g.rotation.set(0,U.yaw,0); if(e.stunT>0) g.rotation.z=Math.sin(T*9)*0.25;
+  const lg=hitK*B.reach-wind*0.05; g.position.set(x+Math.sin(U.yaw)*lg,y,z+Math.cos(U.yaw)*lg);
+  const fl=e.flash>0?1.06:1; if(U.fl!==fl){ U.fl=fl; g.scale.setScalar(s0*fl); } }
 /* ---------- The Matron (Wortelhart, the root heart) ----------
    A two-chambered heart of flesh, shingled with bark and bone plates, thick knotted veins that pulse one after another,
    her glowing core showing through a split in the skin. A vertical maw at the front lined with bone hooks, a ring of small

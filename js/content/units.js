@@ -50,7 +50,7 @@ const UNITS = {
     hp:150, speed:58, radius:9, sight:6, range:0.8, damage:13, cooldown:0.9, attack:'melee', armor:0.1,
     biomass:60, founder:true,
     desc:'What the Brood makes of a fallen soldier. It hatches small and molts once on the mycel of its hive. Full grown, it leaves the mycel and hunts: a heavy warrior that screams over every kill, making the soldiers around it flinch.' },
-  brute: { name:'Brute', faction:'swarm', sprite:'brute', role:'Siege beast', scale:2,
+  brute: { name:'Brute', faction:'swarm', sprite:'brute', role:'Siege beast', scale:2, heavyTurn:true,
     hp:280, speed:50, radius:15, sight:6, range:0.9, damage:26, cooldown:1.4, attack:'melee',
     biomass:90, weight:1, unlock:300, desc:'Armoured siege beast that tears through walls.' },
 
