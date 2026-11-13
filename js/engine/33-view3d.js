@@ -486,7 +486,7 @@ function v3Building(e){
     for(const y of [0.7,1.3,1.9]) g.add(box(plate,0.55,0.04,0.55,0,y,0));
     g.add(rotX(part(GEO.half,steel,0.45,0.15,0.45,0,2.3,0.05),-1.0)); U.blink=box(glow('#ffb347'),0.1,0.1,0.1,0,2.5,0); g.add(U.blink); top=2.6; }
   else if(t==='sentry') return v3Sentry(e);
-  else if(t==='barricade'){ g.add(box(mat('#6a6a70'),0.95,0.6,0.42,0,0.3,0)); g.add(box(yel,0.96,0.08,0.43,0,0.46,0)); for(const x of [-0.3,0.3]) g.add(box(dark,0.06,0.62,0.44,x,0.31,0)); top=0.7; }
+  else if(t==='barricade') return v3Barricade(e);
   else if(t==='hive') return v3Hive(e);
   else if(t==='lz'){ U.lamps=[]; for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ g.add(cyl(dark,0.05,0.3,0.05,x*1.3,0.15,z*1.3)); const l=ball(glow('#ffb347'),0.05,0.05,0.05,x*1.3,0.32,z*1.3); g.add(l); U.lamps.push(l); } top=0.4; }
   else if(t==='uplink'){ g.add(box(metal,0.8,0.2,0.8,0,0.1,0)); g.add(cyl(plate,0.06,1.0,0.06,0,0.6,0)); g.add(rotX(part(GEO.half,steel,0.42,0.14,0.42,0,1.1,0.05),-0.8)); top=1.4; }
@@ -507,6 +507,40 @@ function v3Building(e){
   else if(t==='choirpod'){ g.add(part(GEO.cone,shiny('#5c3e6e'),0.3,0.9,0.3,0,0.45,0)); g.add(ball(glow('#c58cff'),0.1,0.1,0.1,0,0.92,0)); top=1; }
   else return null;
   U.top=top; return g; }
+/* ---------- the barricade (Nov 2026): a square steel block that fills its tile, as in 2D, so a row of them closes up into one wall ----------
+   Riveted plate sides with a black/yellow hazard band round the top edge, a riveted top plate with a hatch, angle irons on the
+   four corners with bolt heads, a dark foot. The sides and top are painted on canvas (cheap: one box per block). */
+function v3BarTex(kind){ const k='barTex'+kind; if(MAT[k]) return MAT[k];
+  const W=128, H=kind?128:84, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const rivet=(cx,cy,r=2.6)=>{ x.fillStyle='rgba(0,0,0,.45)'; x.beginPath(); x.arc(cx+0.8,cy+1,r,0,7); x.fill(); x.fillStyle='#9097a3'; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill();
+    x.fillStyle='#c9ced6'; x.beginPath(); x.arc(cx-0.8,cy-0.8,r*0.45,0,7); x.fill(); };
+  x.fillStyle='#6c727e'; x.fillRect(0,0,W,H);
+  for(let i=0;i<260;i++){ x.fillStyle=i%2?'rgba(255,255,255,.05)':'rgba(0,0,0,.07)'; x.fillRect(hash2(i,1,kind+7)*W,hash2(i,2,kind+7)*H,2+hash2(i,3,1)*5,1); }   /* brushed, scuffed steel */
+  if(!kind){   /* a side: hazard band along the top edge, riveted seams, a plate line down the middle */
+    const bt=4, bh=17; x.save(); x.beginPath(); x.rect(0,bt,W,bh); x.clip(); x.fillStyle='#f2c230'; x.fillRect(0,bt,W,bh); x.fillStyle='#17171a';
+    for(let i=-2;i<12;i++){ x.beginPath(); x.moveTo(i*16,bt+bh); x.lineTo(i*16+8,bt+bh); x.lineTo(i*16+8+bh,bt); x.lineTo(i*16+bh,bt); x.fill(); } x.restore();
+    x.fillStyle='#2b2e35'; x.fillRect(0,0,W,bt); x.fillRect(0,bt+bh,W,2); x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(0,bt+bh+2,W,1);
+    x.fillStyle='#4a4f59'; x.fillRect(W/2-1,bt+bh+2,2,H); x.fillStyle='rgba(255,255,255,.12)'; x.fillRect(W/2+1,bt+bh+2,1,H);
+    for(let i=0;i<8;i++){ const cx=8+i*16; rivet(cx,bt+bh+8); rivet(cx,H-8); }
+    for(let y=bt+bh+22;y<H-14;y+=14){ rivet(W/2-6,y,2.2); rivet(W/2+6,y,2.2); }
+    x.fillStyle='rgba(0,0,0,.18)'; x.fillRect(0,H-4,W,4);   /* grime at the foot */
+    for(let i=0;i<5;i++){ x.fillStyle='rgba(60,40,25,.25)'; x.fillRect(hash2(i,4,3)*W,bt+bh+3,2,8+hash2(i,5,3)*30); } }   /* rust runs from the band */
+  else {   /* the top: a framed plate, a hazard band all round the rim, a hatch in the middle */
+    const b=12; x.fillStyle='#f2c230'; x.fillRect(0,0,W,H); x.fillStyle='#17171a';
+    for(let i=-10;i<20;i++){ x.beginPath(); x.moveTo(i*16,0); x.lineTo(i*16+8,0); x.lineTo(i*16+8+H,H); x.lineTo(i*16+H,H); x.fill(); }
+    x.fillStyle='#2b2e35'; x.fillRect(b-2,b-2,W-2*b+4,H-2*b+4); x.fillStyle='#727885'; x.fillRect(b,b,W-2*b,H-2*b);
+    x.fillStyle='#565b66'; x.fillRect(38,38,52,52); x.fillStyle='#7f8592'; x.fillRect(40,40,48,48); x.fillStyle='#3d414a'; x.fillRect(52,61,24,6);   /* the hatch and its grip */
+    for(let i=0;i<6;i++){ const p=b+8+i*((W-2*b-16)/5); rivet(p,b+7); rivet(p,H-b-7); rivet(b+7,p); rivet(W-b-7,p); }
+    rivet(44,44,2); rivet(84,44,2); rivet(44,84,2); rivet(84,84,2); }
+  const tex=new THREE.CanvasTexture(c); tex.anisotropy=4;
+  return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:tex })); }
+function v3Barricade(e){ const g=new THREE.Group(), U=g.userData, S=0.98, Hb=0.66, side=v3BarTex(0), topM=v3BarTex(1), dark=mat('#24272e'), iron=mat('#3a3e47'), bolt=shiny('#8c939f',{ specular:0x777777, shininess:40 });
+  g.add(box(dark,S+0.02,0.06,S+0.02,0,0.03,0));   /* the foot */
+  const b=new THREE.Mesh(GEO.box,[side,side,topM,dark,side,side]); b.scale.set(S,Hb,S); b.position.y=0.06+Hb/2; b.castShadow=true; b.receiveShadow=true; g.add(b);
+  for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const cx=sx*(S/2-0.025), cz=sz*(S/2-0.025);   /* angle irons on the corners, bolted */
+    g.add(box(iron,0.07,Hb+0.04,0.07,cx,0.06+Hb/2+0.01,cz));
+    for(const y of [0.2,0.45,0.66]){ g.add(part(GEO.ball,bolt,0.026,0.026,0.018,cx,y,sz*(S/2+0.012))); g.add(part(GEO.ball,bolt,0.018,0.026,0.026,sx*(S/2+0.012),y,cz)); } }
+  U.top=Hb+0.1; return g; }
 /* ---------- the hive: the root bulb of 2D, in 3D (Nov 2026) ----------
    A folded bulb with a wet shine (folds twist a little as they climb) on a foot of thick, twisting roots that sink into the mycel,
    each with a rootlet. Green sap runs along the roots towards the bulb. A curled sprout sways on top with a glowing bud; small
