@@ -131,7 +131,7 @@ Huidige afstelling: *Burn the Brood* gebruikt de per-hive-instellingen hierboven
 | **L** + klik | Fakkel gooien (met een Trooper, Gunner of Pyro geselecteerd) |
 | **U** / **D** | Engineer: Sentry Gun inpakken / opstellen |
 | **P** / **Esc** | Pauzemenu (Esc annuleert ook plaatsen, inpakken en attack-move) |
-| Knoppen bovenaan | **Follow** (camera), **2D/3D** (en in 3D ⟲ ⟳; in 2D blijft hun plaats leeg, zodat de andere knoppen niet verschuiven), **1×/1.5×/2×** (spelsnelheid), **Menu** (met *Settings*: licht en geluid) |
+| Knoppen bovenaan | **Follow** (camera), **2D/3D**, **− +** (camera hoger/lager) (en in 3D ⟲ ⟳; in 2D blijft hun plaats leeg, zodat de andere knoppen niet verschuiven), **1×/1.5×/2×** (spelsnelheid), **Menu** (met *Settings*: licht en geluid) |
 
 **Trainen bij de Command Post:** T = Trooper, G = Gunner, M = Medic, F = Pyro, E = Engineer.
 **Bouwen met een Engineer:** R = Relay Tower, T = Sentry Gun, B = Barricade.
@@ -450,7 +450,7 @@ De Brood wil Dr. Maas boven alles (`SWARM_VIP` in js/engine/08-combat.js): in ee
 Na een verplaats- of aanvalsbevel schuift de camera mee met je geselecteerde squad. Scroll je zelf, dan stopt het volgen tot je volgende bevel. Aan/uit met **C** of de knop **Follow**; je keuze wordt onthouden.
 
 ### Camerahoogte
-Met **−** gaat de camera hoger (je ziet meer van de kaart, eenheden worden kleiner), met **+** lager, met **0** terug naar normaal. Het punt in het midden van het scherm blijft staan.
+Met **−** (toets of knop in de bovenbalk) gaat de camera hoger (je ziet meer van de kaart, eenheden worden kleiner), met **+** (toets of knop) lager, met **0** terug naar normaal. Het punt in het midden van het scherm blijft staan.
 - **2D:** van 0.5 (twee keer zoveel kaart) tot 1.5 (eenheden half zo groot extra), stappen van ×1.15 (`ZOOM2D`, in het dev-paneel onder Effects). Is de kaart kleiner dan het beeld, dan staat ze in het midden. Bewaard in `hc-zoom`.
 - **3D:** de afstand van de camera (`VIEW3D.dist`, 7 tot 42 tegels, normaal 17); het muiswiel doet hetzelfde. Bewaard in `hc-dist3d`.
 - 2D en 3D hebben elk hun eigen hoogte; bij het omschakelen blijft hetzelfde punt in het midden.

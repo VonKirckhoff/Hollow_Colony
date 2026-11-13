@@ -86,6 +86,7 @@ $('#btn-sound').addEventListener('click',()=>{ uiUsed('sound'); SFX.toggle(); so
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
 function toggleFollow(){ uiUsed('follow'); ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
 $('#btn-follow').addEventListener('click',toggleFollow); followLabel();
+$('#btn-cam-up').addEventListener('click',()=>stepCamHeight(-1)); $('#btn-cam-down').addEventListener('click',()=>stepCamHeight(1));   /* the same as the − and + keys */
 $('#btn-voices').addEventListener('click',()=>toggleVoices());   /* label set at boot (23-main-loop.js) */
 $('#btn-speed').addEventListener('click',()=>{ if(!G) return; uiUsed('speed'+(G.speed===1?'1.5':G.speed===1.5?'2':'1')); G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
 function showTip(e){ const tip=$('#tooltip'); const el=e.target.closest&&e.target.closest('[data-tip]'); if(!el){ tip.hidden=true; return; }

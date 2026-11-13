@@ -24,6 +24,10 @@ button{font:inherit;color:inherit;}
 #topbar b{font-family:var(--f-display);font-size:16px;font-weight:400;color:var(--corps);font-variant-numeric:tabular-nums;}
 #topbar b.warn{color:var(--danger);}
 #topbar .spacer{flex:1;}
+#topbar .tb-cam{display:flex;gap:4px;}   /* − + ⟲ ⟳ as one group, so the top bar still fits at 1024 wide */
+#topbar .tb-cam .tb-btn{padding:5px 8px;}
+@media (max-width:1180px){ #topbar{gap:14px;} }
+@media (max-width:1100px){ #topbar{gap:10px;} #topbar .res{gap:6px;} }
 #clock{font-family:var(--f-display);color:var(--dim);font-variant-numeric:tabular-nums;}
 .tb-btn{background:var(--panel-2);border:1px solid var(--line);padding:5px 10px;font-family:var(--f-display);font-size:11px;letter-spacing:.08em;cursor:pointer;}
 .tb-btn:hover,.tb-btn:focus-visible{border-color:var(--corps);outline:none;}
