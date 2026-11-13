@@ -22,9 +22,9 @@ const VIEW3D = {
 /* the mycel in 3D (Nov 2026): a crusty dark skin with fine veinlets, raised light veins from every nest with green pulses running out,
    spots that glow up under the skin and go out again (each on its own clock), a low slow mist and spores that drift up */
 const MYCEL3D = {
-  crust:1, veinlets:0.55, spots:1.1, spotSize:1,                                 /* the skin: 0/1, how strong the fine veinlets are, how bright the glowing spots are (0 = none), their size */
-  veins:true, branches:12, veinWidth:0.075, branchChance:0.09, pulseSpeed:2.4, pulseGap:6, pulse:1.5,   /* raised veins: main veins per nest, thickness (tiles), chance to fork per step, pulse speed (tiles/s), gap between pulses (tiles), pulse brightness */
-  mist:0.45, mistSpeed:1, spores:260, sporeRise:0.32, sporeSize:0.2               /* mist: how thick (0 = none), drift speed; spores: how many at once (0 = none), rise (tiles/s), size */
+  crust:0.5, veinlets:0.35, spots:0.65, spotSize:1,                             /* the skin: how much it covers the ground (0 = the ground shows through, 1 = fully), how strong the fine veinlets are, how bright the glowing spots are (0 = none), their size */
+  veins:true, branches:12, veinWidth:0.06, branchChance:0.09, pulseSpeed:2.4, pulseGap:6, pulse:0.9, veinAlpha:0.6,   /* raised veins: main veins per nest, thickness (tiles), chance to fork per step, pulse speed (tiles/s), gap between pulses (tiles), pulse brightness, how solid (0..1) */
+  mist:0.28, mistSpeed:1, spores:180, sporeRise:0.32, sporeSize:0.17              /* mist: how thick (0 = none), drift speed; spores: how many at once (0 = none), rise (tiles/s), size */
 };
 VIEW3D.dist=clamp(store.get('hc-dist3d',VIEW3D.dist),VIEW3D.minDist,VIEW3D.maxDist);   /* the camera height you chose last time (+ / − / wheel) */
 const V3 = { on:store.get('hc-view3d',false), ok:false, g:null, mapId:null, objs:new Map(), dying:new Map(), frame:0, yaw:0 };
@@ -72,7 +72,7 @@ function v3Fogify(m,decal){
  #endif
  gl_FragColor.rgb*=1.0-v3f.a;`); };
   return m; }
-/* the mycel on the ground (only in the terrain shader): v3Myc = (crust on, spot brightness, spot size, veinlet strength) */
+/* the mycel on the ground (only in the terrain shader): v3Myc = (crust cover, spot brightness, spot size, veinlet strength) */
 const V3_MYC_GLSL=`
 uniform vec4 v3Myc;
 float v3h1(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
@@ -81,11 +81,11 @@ float v3vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(m
 float v3fbm(vec2 p){ float s=0.0,a=0.5; for(int i=0;i<4;i++){ s+=a*v3vn(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return s; }
 vec3 v3Worley(vec2 p){ vec2 i=floor(p); float best=9.0; vec2 id=vec2(0); for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){ vec2 c=i+vec2(x,y); float d=length(c+v3h2(c)-p); if(d<best){ best=d; id=c; } } return vec3(best,id); }
 vec3 v3Mycel(vec3 col,vec2 p,float cr){
-  float m=smoothstep(0.22,0.55,cr+(v3fbm(p*0.9)-0.5)*0.35); if(m<=0.0) return col;
+  float m=smoothstep(0.18,0.75,cr+(v3fbm(p*0.9)-0.5)*0.35); if(m<=0.0) return col;
   float lum=dot(col,vec3(0.3,0.5,0.2));
   float f=v3fbm(p*2.5), crack=smoothstep(0.07,0.0,abs(v3fbm(p*1.6+3.1)-0.5)), vl=smoothstep(0.03,0.0,abs(v3fbm(p*3.4+7.7)-0.5))*v3Myc.w;
   vec3 crust=mix(vec3(0.15,0.09,0.17),vec3(0.31,0.21,0.29),f); crust=mix(crust,vec3(0.05,0.025,0.06),crack*0.85); crust=mix(crust,vec3(0.46,0.24,0.5),vl);
-  crust*=0.4+1.5*lum;
+  crust*=0.4+1.5*lum; crust=mix(crust,col*vec3(0.78,0.68,0.84),0.3);   /* keeps a little of the ground's own colour */
   vec3 c=mix(col,crust,m*v3Myc.x);
   /* glowing spots under the skin: each cell has its own clock */
   vec2 q=p*0.9/max(0.2,v3Myc.z); vec3 w=v3Worley(q); float ph=v3h1(w.yz)*6.283, sp=0.35+0.5*v3h1(w.yz+4.0);
@@ -166,11 +166,12 @@ function v3MycShader(vs,fs,uni){ return new THREE.ShaderMaterial({ uniforms:Obje
 function v3MycSetup(){ const M=V3.myc={ veins:new Map() };
   M.veinMat=v3MycShader(`attribute float aS; attribute float aPh; varying float vS; varying float vPh; varying vec3 vN;
     void main(){ vS=aS; vPh=aPh; vN=normal; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
-    `uniform vec3 uP; varying float vS; varying float vPh; varying vec3 vN;
+    `uniform vec3 uP; uniform float uA; varying float vS; varying float vPh; varying vec3 vN;
     void main(){ vec4 f=texture2D(v3Fog,vW.xz/v3Size); if(f.r<0.3) discard;
       float d=max(dot(normalize(vN),normalize(vec3(0.4,0.9,0.3))),0.0); vec3 c=vec3(0.2,0.075,0.24)*(0.4+0.8*d);
       float x=fract((vS-v3Time*uP.x)/uP.y+vPh); x=min(x,1.0-x)*uP.y; c+=vec3(0.55,1.0,0.25)*exp(-x*x*7.0)*uP.z;
-      gl_FragColor=vec4(c*(1.0+0.2*f.g)*(1.0-f.a),1.0); }`,{ uP:{ value:new THREE.Vector3(2.4,6,1.5) } });
+      gl_FragColor=vec4(c*(1.0+0.2*f.g)*(1.0-f.a),uA*smoothstep(0.3,0.7,f.r)); }`,{ uP:{ value:new THREE.Vector3(2.4,6,1.5) }, uA:{ value:0.6 } });
+  M.veinMat.transparent=true; M.veinMat.depthWrite=false;
   const mistVs=`uniform float uLift; void main(){ vec3 p=position; p.y+=uLift; vec4 w=modelMatrix*vec4(p,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`;
   const mistFs=`uniform float uL; uniform vec2 uM;
     float h1(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
@@ -202,9 +203,9 @@ function v3NestVeins(h){ const C=MYCEL3D, R=Math.max(3,hiveOpt(h,'creep',CREEP.m
   const B=Math.max(1,C.branches|0); for(let i=0;i<B;i++){ const a=i/B*Math.PI*2+rnd()*0.5; grow(hx+Math.cos(a)*0.6,hz+Math.sin(a)*0.6,a,Math.ceil(R/0.32),C.veinWidth,0,0.6,rnd()); }
   g.userData={ geos, key:v3VeinKey(h) }; return g; }
 function v3Mycel3D(T,dt){ const C=MYCEL3D; if(!V3.myc) v3MycSetup(); const M=V3.myc;
-  V3.u.myc.value.set(C.crust?1:0,C.spots,C.spotSize,C.veinlets);
+  V3.u.myc.value.set(clamp(C.crust,0,1),C.spots,C.spotSize,C.veinlets);
   /* veins: one network per nest, dropped when the nest is gone */
-  M.veinMat.uniforms.uP.value.set(C.pulseSpeed,Math.max(0.5,C.pulseGap),C.pulse);
+  M.veinMat.uniforms.uP.value.set(C.pulseSpeed,Math.max(0.5,C.pulseGap),C.pulse); M.veinMat.uniforms.uA.value=clamp(C.veinAlpha,0,1);
   const live=new Set(C.veins&&G.creep&&G.creepAny?nests():[]);
   for(const [h,g] of M.veins) if(!live.has(h)||g.userData.key!==v3VeinKey(h)){ V3.fxg.remove(g); for(const q of g.userData.geos) q.dispose(); M.veins.delete(h); }
   for(const h of live) if(!M.veins.has(h)){ const g=v3NestVeins(h); M.veins.set(h,g); V3.fxg.add(g); }
@@ -221,7 +222,7 @@ function v3Mycel3D(T,dt){ const C=MYCEL3D; if(!V3.myc) v3MycSetup(); const M=V3.
         P[i*3]=x; P[i*3+1]=v3H(x,z)+0.15; P[i*3+2]=z; l.t=0; l.max=4+Math.random()*5; l.v=C.sporeRise*(0.5+Math.random()); break; }
       if(!l.max){ l.t=-Math.random()*2; continue; } }   /* nothing found: try again a little later */
     P[i*3+1]+=l.v*dt; P[i*3]+=Math.sin(T*0.7+l.ph)*0.12*dt; P[i*3+2]+=Math.cos(T*0.5+l.ph)*0.12*dt;
-    const k=l.t/l.max, a=Math.min(1,k*4)*Math.min(1,(1-k)*3)*0.85; Cc[i*3]=0.78*a; Cc[i*3+1]=1.0*a; Cc[i*3+2]=0.48*a; }
+    const k=l.t/l.max, a=Math.min(1,k*4)*Math.min(1,(1-k)*3)*0.85; Cc[i*3]=0.6*a; Cc[i*3+1]=0.8*a; Cc[i*3+2]=0.4*a; }
   M.spores.geometry.attributes.position.needsUpdate=true; M.spores.geometry.attributes.color.needsUpdate=true; }
 
 /* ---------- model parts ---------- */

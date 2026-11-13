@@ -1,6 +1,6 @@
 # The mycel in 3D (Nov 2026): a dark crusty skin with veinlets and spots that glow up and go out (terrain shader), raised light veins
 # from every nest with pulses running out (only where there is mycel), a low mist and spores that drift up from mycel your units see.
-# Veins go when the nest goes; MYCEL3D is in the dev panel with help. --shots for screenshots.
+# The skin only partly covers the ground and the veins are see-through, so the mycel blends in (Nov 2026). Veins go when the nest goes; MYCEL3D is in the dev panel with help. --shots for screenshots.
 import sys
 from playwright.sync_api import sync_playwright
 errs=[]; ok=True
@@ -31,11 +31,11 @@ with sync_playwright() as p:
     check('veins stay inside the mycel radius and on walkable ground', r[1]<=r[2]+0.5 and r[1]>r[2]*0.5 and r[3], r)
     check('vein distance runs outward from the nest (pulses go out)', r[4]<1.5 and r[5]>4, r)
     # pulses move outward over time: the pulse uniform keeps its speed and time advances
-    r=J(pg,"()=>{ const u=V3.myc.veinMat.uniforms; return [u.uP.value.x, u.uP.value.y, u.uP.value.z, u.v3Fog.value===V3.u.fog.value]; }")
-    check('pulse speed, gap and brightness come from MYCEL3D; veins read the fog texture', r[0]==2.4 and r[1]==6 and r[2]==1.5 and r[3], r)
+    r=J(pg,"()=>{ const u=V3.myc.veinMat.uniforms; return [u.uP.value.x==MYCEL3D.pulseSpeed, u.uP.value.y==MYCEL3D.pulseGap, u.uP.value.z==MYCEL3D.pulse, u.v3Fog.value===V3.u.fog.value, u.uA.value==MYCEL3D.veinAlpha, V3.myc.veinMat.transparent]; }")
+    check('pulse speed, gap, brightness and see-through come from MYCEL3D; veins read the fog texture', all(r), r)
     # the ground shader: crust + spots, no more sheen wave
-    r=J(pg,"""()=>{ const src=V3.r.info.programs.map(p=>p.name+'').length; const m=V3.terrain.material; return [V3.u.myc.value.toArray(), typeof V3_MYC_GLSL, V3_MYC_GLSL.includes('v3Worley'), /wet sheen/.test(v3Fogify.toString())]; }""")
-    check('terrain shader carries the crust and glowing spots, the sheen wave is gone', r[0]==[1,1.1,1,0.55] and r[2] and not r[3], r)
+    r=J(pg,"""()=>{ const src=V3.r.info.programs.map(p=>p.name+'').length; const m=V3.terrain.material; return [V3.u.myc.value.toArray().join()==[MYCEL3D.crust,MYCEL3D.spots,MYCEL3D.spotSize,MYCEL3D.veinlets].join() && MYCEL3D.crust<1, typeof V3_MYC_GLSL, V3_MYC_GLSL.includes('v3Worley'), /wet sheen/.test(v3Fogify.toString())]; }""")
+    check('terrain shader carries the crust and glowing spots, the sheen wave is gone', r[0] and r[2] and not r[3], r)
     # spores: spawned only on mycel that is seen, rising
     r=J(pg,"""()=>{ const M=V3.myc, G=__hc.G, live=[]; for(let i=0;i<M.life.length;i++) if(M.life[i].max>0) live.push(i);
       const on=live.filter(i=>{ const x=M.sp[i*3], z=M.sp[i*3+2], k=Math.floor(z)*G.map.w+Math.floor(x); return (G.creep[k]||0)>0.2; }).length/live.length>0.9;
@@ -50,7 +50,7 @@ with sync_playwright() as p:
     check('no new spores where nobody sees', r==0, r)
     J(pg,"()=>{ __hc.G.devReveal=true; computeFog(); }")
     # dev panel knobs
-    r=J(pg,"()=>{ MYCEL3D.mist=0; MYCEL3D.spores=0; MYCEL3D.spots=0; _T+=50; render(_T); const M=V3.myc; const r=[M.mist.every(o=>!o.visible), M.life.every(l=>l.max<=0), V3.u.myc.value.y]; MYCEL3D.mist=0.45; MYCEL3D.spores=260; MYCEL3D.spots=1.1; return r; }")
+    r=J(pg,"()=>{ MYCEL3D.mist=0; MYCEL3D.spores=0; MYCEL3D.spots=0; _T+=50; render(_T); const M=V3.myc; const r=[M.mist.every(o=>!o.visible), M.life.every(l=>l.max<=0), V3.u.myc.value.y]; MYCEL3D.mist=0.28; MYCEL3D.spores=180; MYCEL3D.spots=0.65; return r; }")
     check('mist, spores and spots can be switched off', r[0] and r[1] and r[2]==0, r)
     r=J(pg,"()=>{ const n0=V3.myc.veins.get(_h).children.length; MYCEL3D.branches=20; _T+=50; render(_T); const n1=V3.myc.veins.get(_h).children.length; MYCEL3D.branches=12; _T+=50; render(_T); return [n0,n1]; }")
     check('more branches regrow the network', r[1]>r[0], r)
