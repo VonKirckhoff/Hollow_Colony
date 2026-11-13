@@ -1,7 +1,7 @@
 'use strict';
 /* Hollow Colony: the Intel screen (campaign and main menu). Which units and structures are shown on each tab,
    plus a short field note per entry. The numbers themselves come straight from UNITS and BUILDINGS.
-   extras: entries that are no unit or building of their own (a case, a pad, a crate, her heart, the raiders), from INTEL_EXTRA.
+   extras: entries that are no unit or building of their own (a case, a pad, a crate, her Seed, the raiders), from INTEL_EXTRA.
    Every entry moves in Intel: a little looping scene per key, in js/engine/21b-intel-anim.js (INTEL_SCENES). */
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
@@ -60,8 +60,8 @@ const INTEL_EXTRA = {
     desc:'A cold case of Dr. Maas\'s stabilizer, one in front of each tent of the Kappa field hospital.',
     note:'The raiders want them: one of them only has to stand at a case for a moment and it is gone. Keep a soldier between the cases and the dark.',
     stats:()=>{ const m=MISSIONS.find(x=>x.id==='night-shift'); return [['Taken in',((m&&m.job.nsGrab)||2.5)+' s'],['Cases','3']]; } },
-  heart:{ name:'Her Heart', role:'Mission object · Mother\'s Heart', faction:'swarm',
-    desc:'One of the Matron\'s hearts. Badly hurt, she tore it loose and crawled into the deep. It still beats, and its blood carries the strain at its strongest.',
+  heart:{ name:'Her Seed', role:'Mission object · The Matron\'s Seed', faction:'swarm',
+    desc:'A knot as big as a man, ripped out of the Matron\'s roots when she tore herself free and burrowed into the deep. Under its hard rind the core still pulses, and its sap carries the strain at its strongest.',
     note:'Burn it before the Osprey crew drains it. A Pyro next to it does it fastest; without their Medic the crew drains it at half speed.',
     stats:()=>{ const m=MISSIONS.find(x=>x.id==='mothers-heart'), J=(m&&m.job)||{}; return [['Pyro burns it',(J.mhBurn||10)+' s'],['Anyone else',(J.mhSmash||25)+' s'],['Drained in',((J.mhTap&&J.mhTap.normal)||210)+' s']]; } },
   /* the Osprey crew as Dust meets them: nameless until Night Shift is won */

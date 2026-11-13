@@ -66,10 +66,7 @@ function iaHive(c,t){ const y=IA_GROUND, x=24, beat=Math.max(0,Math.sin(t*3.2))*
 function iaEgg(c,t){ const cy=iaCyc(t,3.5), open=cy.p<0.5?0:Math.sin((cy.p-0.5)*2*Math.PI); iaShadow(c,24,IA_GROUND,8);
   if(open>0) iaGlow(c,24,IA_GROUND-10,8+open*6,'rgba(166,255,74,'+(0.3+open*0.4)+')'); iaArt(c,'egg',24,IA_GROUND,26,{ sx:1+open*0.15, sy:1-open*0.1 });
   if(open>0.5) for(let i=0;i<3;i++){ const q=(t*1.5+i/3)%1; iaDot(c,20+i*4,IA_GROUND-14+q*12,'rgba(166,255,74,.8)'); } }
-function iaHeart(c,t){ const x=24, y=IA_GROUND-12, b=1+0.12*Math.max(0,Math.sin(t*5.5))**8+0.06*Math.max(0,Math.sin(t*5.5+0.6))**8, r=10*b;
-  iaGlow(c,x,y,22,'rgba(195,139,255,.4)'); c.fillStyle='#2a0f22'; c.beginPath(); c.ellipse(x,y,r+2,r*0.85+2,0,0,Math.PI*2); c.fill(); c.fillStyle='#8a2f6a'; c.beginPath(); c.ellipse(x,y,r,r*0.85,0,0,Math.PI*2); c.fill();
-  c.fillStyle='#c38bff'; c.fillRect(Math.round(x-r*0.5),Math.round(y-3),3,3); c.strokeStyle='#a6ff4a'; c.beginPath(); c.moveTo(x-r,y+2); c.quadraticCurveTo(x,y-8,x+r,y); c.stroke();
-  for(let i=0;i<3;i++){ const q=(t*0.7+i/3)%1; c.globalAlpha=1-q; iaDot(c,x-6+i*6,y+r*0.8+q*10,'#8a2f6a',2); } c.globalAlpha=1; }
+function iaHeart(c,t){ drawMatronSeed(c,24,IA_GROUND,t); }   /* the Matron's Seed (31-rogue.js) */
 function iaGrazer(c,t){ const per=7, ph=(t%per)/per, walk=ph<0.35, x=walk?12+ph/0.35*20:32, y=IA_GROUND, graze=!walk&&Math.sin(t*4)>0;
   iaShadow(c,x,y,8); iaSprite(c,'grazer',x,y-(walk?Math.floor(t*6)%2:0),iaUnitScale('grazer',22),1,{ sy:graze?0.94:1 }); }
 /* the Osprey crew in a wedge; now and then the last one breaks off in a cloud of smoke */

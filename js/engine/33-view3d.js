@@ -1030,6 +1030,31 @@ function v3PoseMembrane(e,g,T){ const U=g.userData, weak=!e.invuln, f=clamp(e.hp
     for(const t of h.userData.tears) t.visible=f<t.userData.at; }
   U.bud.scale.setScalar(0.04*(1+(weak?0.1:0.5)*Math.max(0,Math.sin(T*2.4+U.phase)))); if(U.bud.material!==vm) U.bud.material=vm;
   g.rotation.z=hit?Math.sin(T*55)*0.015:0; }
+/* ---------- The Matron's Seed (Nov 2026; crate flag `heart`) ----------
+   A knot as big as a man, torn out of her roots: a bulb that narrows upward under a rind of bark plates, purple sap glowing
+   through zigzag cracks, a bent tip with a green bud, torn root fibres splayed over the ground with beads of sap, a purple haze.
+   It does not bob (it is rooted); the core pulses with the same double thump as in 2D (seedBeat in 31-rogue.js). */
+function v3Seed(e){ const g=new THREE.Group(), U=g.userData, V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0), Z=V(0,0,1);
+  const seg=(m,r,a,b)=>{ const d=b.clone().sub(a), L=d.length(), o=part(GEO.cyl,m,r,L,r,0,0,0); o.position.copy(a).addScaledVector(d,0.5); o.quaternion.setFromUnitVectors(UP,d.normalize()); return o; };
+  const rind=mat('#4a3322'), rind2=mat('#5e4129'), dark=mat('#1e140d'), sap=glow('#c38bff'), RX=0.3, RY=0.34, CY=0.36;
+  const body=new THREE.Group(); body.position.y=CY; g.add(body); U.body=body;
+  body.add(ball(rind,RX,RY,RX,0,0,0)); body.add(ball(rind,0.17,0.2,0.17,0.01,0.28,0));   /* the bulb and its narrowing neck */
+  const onSkin=(a,h,out)=>{ const q=Math.sqrt(Math.max(0,1-(h/RY)**2)), n=V(Math.cos(a)*q/RX,h/RY**2,Math.sin(a)*q/RX).normalize(); return { p:V(Math.cos(a)*RX*q*out,h*out,Math.sin(a)*RX*q*out), n }; };
+  for(let i=0;i<11;i++){ const s=onSkin(i*2.4+0.3,-0.22+((i*7)%11)/11*0.42,1.0), o=part(GEO.lowball,i%3?rind2:dark,0.1+0.03*(i%2),0.12,0.04,s.p.x,s.p.y,s.p.z); o.quaternion.setFromUnitVectors(Z,s.n); body.add(o); }   /* bark plates */
+  U.cracks=[];
+  for(const a of [0.4,1.9,3.3,4.8]){ let prev=null; for(let j=0;j<5;j++){ const s=onSkin(a+(j%2?0.13:-0.08),0.24-j*0.11,1.02); if(prev){ const c=seg(sap,0.016,prev,s.p); body.add(c); U.cracks.push(c); } prev=s.p; } }   /* sap through the cracks */
+  const tip=new THREE.Group(); tip.position.set(0.02,0.44,0); tip.rotation.z=-0.45; body.add(tip);
+  tip.add(part(GEO.cone,rind,0.08,0.24,0.08,0,0.1,0)); U.bud=ball(glow('#a6ff4a'),0.035,0.035,0.035,0,0.23,0); tip.add(U.bud);
+  U.beads=[];
+  for(let i=0;i<7;i++){ const a=i*0.9+0.2, L=0.5+0.14*(i%3), w=(i%2?1:-1)*0.07, at=(f,y,o)=>V(Math.cos(a+o)*L*f,y,Math.sin(a+o)*L*f);
+    const p0=at(0.2,0.04,0), p1=at(0.55,0.02,w), p2=at(0.82,0.015,-w*0.4), p3=at(1,0.01,w*0.6);
+    g.add(seg(dark,0.035,p0,p1)); g.add(seg(dark,0.024,p1,p2)); g.add(seg(dark,0.014,p2,p3)); const bd=ball(sap,0.02,0.02,0.02,p1.x,p1.y+0.02,p1.z); g.add(bd); U.beads.push(bd); }   /* torn root fibres with beads of sap */
+  U.halo=ball(glow('#c38bff',{ transparent:true, opacity:0.08, depthWrite:false }),0.45,0.42,0.45,0,CY,0); U.halo.castShadow=false; g.add(U.halo);
+  U.seed=true; U.top=0.95; return g; }
+function v3PoseSeed(U,T){ const k=seedBeat(T);
+  U.body.scale.setScalar(1+0.03*k); U.halo.scale.set(0.45*(1+0.15*k),0.42*(1+0.15*k),0.45*(1+0.15*k));
+  for(const c of U.cracks) c.scale.x=c.scale.z=0.016*(1+1.1*k);
+  for(const b of U.beads) b.scale.setScalar(0.02*(1+0.6*k)); U.bud.scale.setScalar(0.035*(1+0.2*Math.sin(T*1.3))); }
 function v3Small(e){
   const g=new THREE.Group();
   if(e.kind==='body'&&e.fauna){ /* a grazer carcass: the grazer on its back, legs stiff in the air, head lolling to one side (as in 2D) */
@@ -1043,7 +1068,7 @@ function v3Small(e){
     g.add(cyl(glow(col),0.065,0.26,0.065,0,0.15,0)); g.add(cyl(mat('#d8eef4',{ transparent:true, opacity:0.35 }),0.085,0.36,0.085,0,0.2,0));
     g.add(cyl(shiny('#cfd8e0'),0.095,0.07,0.095,0,0.41,0)); g.add(box(glow('#e8ffd0'),0.018,0.12,0.01,-0.03,0.19,0.07));
     g.scale.setScalar(1.35); g.userData.top=0.75; g.userData.bob=true; return g; }   /* a bit bigger than true size, so it reads from the camera */
-  if(e.rogue&&e.heart){ g.add(ball(shiny('#8a2f6a'),0.24,0.2,0.24,0,0.24,0)); g.add(ball(glow('#c38bff'),0.06,0.06,0.06,-0.1,0.3,0.18)); g.userData.top=0.5; g.userData.bob=true; return g; }
+  if(e.rogue&&e.heart) return v3Seed(e);   /* the Matron's Seed */
   if(e.rogue){ /* a stabilizer case (blue with a cyan cross) or a loot case (brown with an orange cross), as in 2D */
     const c=e.stab?'#7fdfff':'#ffb347'; g.add(box(mat(e.stab?'#3a6f86':'#6b5a3a'),0.42,0.24,0.3,0,0.12,0));
     g.add(box(glow(c),0.07,0.02,0.24,0,0.245,0)); g.add(box(glow(c),0.26,0.02,0.07,0,0.245,0)); g.add(box(glow(c),0.07,0.16,0.01,0,0.12,0.151)); g.add(box(glow(c),0.2,0.05,0.01,0,0.13,0.151));
@@ -1193,6 +1218,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     const s0=U.s0||(U.s0=g.scale.x), fl=e.flash>0?1.06:1; if(U.fl!==fl){ U.fl=fl; g.scale.setScalar(s0*fl); } return; }
   if(U.fallen) return v3PoseFallen(e,g,T,x,z);
   if(e.kind!=='building'&&U.bob) y+=0.05+Math.sin(T*3+e.id)*0.04;
+  if(U.seed) v3PoseSeed(U,T);
   g.position.set(x,y,z);
   if(e.kind!=='building') return;
   g.scale.y=(!e.built&&e.progress!=null)?Math.max(0.08,e.progress):1;

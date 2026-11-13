@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 32. The Osprey crew as the enemy (Lunar Corps campaign) ----------
-   In three Corps missions (Night Shift, Kill Order, Mother's Heart) Squad Dust runs into the Osprey crew: the deserters of the
+   In three Corps missions (Night Shift, Kill Order, The Matron's Seed) Squad Dust runs into the Osprey crew: the deserters of the
    Rogue Strain campaign, now played by the computer (faction 'osprey'). They wear the crew's black and brown with the red armband.
    - The Swarm leaves them alone and they leave the Swarm alone (truce): the strain in their blood.
    - The creep heals them.
@@ -8,7 +8,7 @@
      nearest way out (g.ospreyExits) and is gone. That way the crew is never killed in a Corps mission and still alive in the next one.
    - Breaking one off is worth XP to the soldier who did it.
    - g.ospreyReturn(seconds): one who got away comes back out of a way out that much later, healed (the strain knits him), until
-     g.ospreyWithdraw() ends it. Kill Order and Mother's Heart use it, so the crew keeps coming as long as it has a reason to.
+     g.ospreyWithdraw() ends it. Kill Order and The Matron's Seed use it, so the crew keeps coming as long as it has a reason to.
    - g.ospreyHeal(true) (Night Shift): one who breaks off runs to the nearest living hive instead, still out of reach, and the hive
      heals him (OSPREY.hiveHeal). Healed (OSPREY.healTo) he waits there, guarding it, until the mission sends them in again
      (g.ospreyReady()). Burn the hives and they have nowhere to heal: then they run for a way out and are gone.

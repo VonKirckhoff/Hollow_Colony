@@ -13,7 +13,7 @@ with sync_playwright() as p:
           const S=INTEL_TABS.find(t=>t.id==='struct'), W=INTEL_TABS.find(t=>t.id==='swarm'), O=INTEL_TABS.find(t=>t.id==='other');
           for(const k of ['medtent','terminal','uplink','chargesite','door','wreck','rubble']) ok(S.buildings.includes(k),'Structures: '+k);
           for(const k of ['relaypad','salvage','stabcase']) ok(S.extras.includes(k)&&INTEL_EXTRA[k],'Structures: '+k);
-          ok(W.buildings.includes('shaft')&&W.extras.includes('heart'),'Swarm: Mine Shaft and Her Heart'); ok(O.extras.includes('raiders'),'Other: the raiders');
+          ok(W.buildings.includes('shaft')&&W.extras.includes('heart'),'Swarm: Mine Shaft and Her Seed'); ok(O.extras.includes('raiders'),'Other: the raiders');
           ok(ROGUE_INTEL.some(x=>x.id==='choirpod'),'Rogue Strain: the Choir Pod');
           for(const T of INTEL_TABS){ intelTab=T.id; const n=()=>document.querySelectorAll('#intel-list [data-isel]').length; intelSel[T.id]=0; buildIntel(); const N=n();
             for(let i=0;i<N;i++){ intelSel[T.id]=i; buildIntel(); }

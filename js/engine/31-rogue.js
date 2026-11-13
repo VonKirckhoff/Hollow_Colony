@@ -24,7 +24,7 @@ function saveRogue(){ store.set(ROGUE_KEY,rogueStore()); }
 function resetRogue(){ ui.rogue=null; try{ localStorage.removeItem(ROGUE_KEY); }catch(e){} rogueStore(); saveRogue(); }
 /* the Rogue side opens once the whole Lunar Corps campaign is won on Normal or Hard (Easy does not count): only then is the Osprey story told */
 const ROGUE_UNLOCK_DIFF='normal';
-/* Nov 2026 the Corps campaign grew from 8 to 11 missions (Night Shift, Kill Order, Mother's Heart). Whoever had already won the
+/* Nov 2026 the Corps campaign grew from 8 to 11 missions (Night Shift, Kill Order, The Matron's Seed). Whoever had already won the
    8 old ones on Normal or Hard keeps the Rogue campaign open; a new player only reaches the old missions through the new ones. */
 const ROGUE_LEGACY=['dust-landing','hold-kappa','burn-the-brood','hollow-colony','blackout','dead-signal','brood-mother','high-ground'];
 const wonFor=id=>{ const r=resultOf(id); return !!r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; };
@@ -134,7 +134,7 @@ function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
     if(v.taint>=T.warn&&!u.taintWarned) taintWarning(u);
     if(v.taint>=T.feral) goFeral(u); }
   /* samples: walk over them; they rot away after a while */
-  for(const c of G.ents){ if(c.dead||!c.rogue||c.heart) continue; c.t-=dt; if(c.t<=0){ c.dead=true; continue; }   /* c.heart: the Brood Mother's heart (job 6), the mission decides */
+  for(const c of G.ents){ if(c.dead||!c.rogue||c.heart) continue; c.t-=dt; if(c.t<=0){ c.dead=true; continue; }   /* c.heart: the Matron's Seed (job 8), the mission decides */
     const u=G.ents.find(e=>e.kind==='unit'&&!e.dead&&!e.downed&&e.crew&&!e.feral&&dist(e,c)<e.r+12); if(!u) continue; c.dead=true;
     if(c.dna){ G.rogue.dna[c.dna]=(G.rogue.dna[c.dna]||0)+1; SFX.play('pickup'); G.fx.push({k:'text',x:c.x,y:c.y-10,t:1.2,max:1.2,txt:`+1 ${STRAINS[c.dna].from} DNA`,col:'#9dff6a'});
       if(!G.saidDna){ G.saidDna=true; say('Devreese','Got it, a clean sample. Keep them coming: every strain I can bottle, I can put into one of us between jobs.','crew'); } }
@@ -340,12 +340,41 @@ function drawTaintRing(u,now){ if(!taintWarn(u)) return; const p=0.5+0.5*Math.si
   ctx.strokeStyle=`rgba(255,70,60,${0.45+0.4*p})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(u.x,u.y+3,u.r+4+p*3,(u.r+4+p*3)*0.45,0,0,Math.PI*2); ctx.stroke(); ctx.lineWidth=1; }
 /* the selection panel: a red, blinking frame round a soldier who is about to snap */
 const taintWarnCls=e=>taintWarn(e)?(blinkOn()?' taint-warn':' taint-warn dim'):'';
+/* The Matron's Seed (Nov 2026; crate flag `heart`), drawn on the map and in Intel: a knot as big as a man, torn out of her roots.
+   Torn root fibres splayed over the ground with beads of sap, a bark rind in plates, purple sap glowing through the cracks
+   with a double thump, and a bent tip with a green bud. (x, gy) = where it sits on the ground; t in seconds. */
+function seedBeat(t){ return Math.max(0,Math.sin(t*5.5))**8+0.5*Math.max(0,Math.sin(t*5.5+0.6))**8; }   /* 0 … 1.5 */
+function drawMatronSeed(cx,x,gy,t){ const k=seedBeat(t), sw=1+0.03*k;
+  cx.globalCompositeOperation='lighter'; const gl=cx.createRadialGradient(x,gy-12,2,x,gy-12,26+6*k); gl.addColorStop(0,`rgba(195,139,255,${0.3+0.25*k})`); gl.addColorStop(1,'rgba(195,139,255,0)');
+  cx.fillStyle=gl; cx.fillRect(x-34,gy-46,68,68); cx.globalCompositeOperation='source-over';
+  cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(x,gy-1,13,3.5,0,0,Math.PI*2); cx.fill();
+  /* the torn root fibres */
+  const roots=[[-1,-16,3],[-0.6,-12,6],[-0.2,-5,7],[0.3,7,6],[0.7,13,5],[1,17,2]];
+  cx.lineCap='round';
+  for(const [a,dx,dy] of roots){ const sx=x+a*8, sy=gy-3;
+    cx.strokeStyle='#1e140d'; cx.lineWidth=2.4; cx.beginPath(); cx.moveTo(sx,sy); cx.quadraticCurveTo(sx+dx*0.6,sy+dy*0.2,x+dx,gy-3+dy*0.5); cx.stroke();
+    cx.strokeStyle='#5e4129'; cx.lineWidth=1; cx.beginPath(); cx.moveTo(sx,sy-0.5); cx.quadraticCurveTo(sx+dx*0.6,sy+dy*0.2-0.5,x+dx,gy-3.5+dy*0.5); cx.stroke();
+    cx.fillStyle=`rgba(195,139,255,${0.45+0.4*k})`; cx.fillRect(Math.round(sx+dx*0.55),Math.round(gy-3+dy*0.3),2,2); }
+  cx.lineCap='butt';
+  cx.save(); cx.translate(x,gy-3); cx.scale(sw,sw);
+  /* the bent tip, behind the body */
+  cx.fillStyle='#3b2a1c'; cx.beginPath(); cx.moveTo(-3,-23); cx.quadraticCurveTo(0,-31,7,-33); cx.quadraticCurveTo(3,-28,3,-22); cx.closePath(); cx.fill();
+  cx.fillStyle='#a6ff4a'; cx.fillRect(6,-35,2,2); cx.fillStyle='rgba(166,255,74,.5)'; cx.fillRect(5,-36,1,1);
+  /* the body: a bulb that narrows upward, dark outline, bark rind, a lit side */
+  const bulb=(e)=>{ cx.beginPath(); cx.moveTo(0,-25-e); cx.bezierCurveTo(6+e,-21-e,12+e,-13,11+e,-5); cx.bezierCurveTo(10+e,1+e,-10-e,1+e,-11-e,-5); cx.bezierCurveTo(-12-e,-13,-6-e,-21-e,0,-25-e); cx.closePath(); };
+  cx.fillStyle='#140d08'; bulb(1.2); cx.fill(); cx.fillStyle='#4a3322'; bulb(0); cx.fill();
+  cx.fillStyle='#6b4a30'; cx.beginPath(); cx.ellipse(-5,-12,3,7,0.2,0,Math.PI*2); cx.fill();
+  /* bark plates */
+  cx.strokeStyle='#2a1d14'; cx.lineWidth=1;
+  for(const [px,py,r,a0,a1] of [[-3,-16,6,0.3,2.2],[5,-9,6,-0.6,1.6],[-6,-4,5,0.2,2.4],[3,-19,4,-1,1.2],[7,-2,4,0.6,2.6]]){ cx.beginPath(); cx.arc(px,py,r,a0,a1); cx.stroke(); }
+  /* the cracks: purple sap shows through, brightest on the beat */
+  cx.strokeStyle=`rgba(195,139,255,${0.5+0.45*Math.min(1,k)})`; cx.lineWidth=1.4;
+  for(const c of [[[1,-22],[-1,-17],[2,-13],[0,-8]],[[7,-14],[5,-10],[8,-6]],[[-7,-15],[-5,-11],[-8,-7],[-6,-3]]]){ cx.beginPath(); cx.moveTo(c[0][0],c[0][1]); for(const p of c.slice(1)) cx.lineTo(p[0],p[1]); cx.stroke(); }
+  cx.fillStyle=`rgba(239,217,255,${0.4+0.5*Math.min(1,k)})`; cx.fillRect(0,-14,2,2); cx.fillRect(6,-10,1,1); cx.fillRect(-7,-11,1,1);
+  cx.restore(); }
 /* a sample (a pulsing vial of ichor), a stabilizer case or a loot case */
 function drawRogueCrate(c,now){ const bob=Math.sin(now/280+c.seed)*1.5, x=Math.round(c.x), y=Math.round(c.y+bob);
-  if(c.heart){ const b=1+0.12*Math.max(0,Math.sin(now/180))**8+0.06*Math.max(0,Math.sin(now/180+0.6))**8, r=10*b;   /* it still beats: a double thump */
-    ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(c.x,c.y-6,2,c.x,c.y-6,34); g.addColorStop(0,'rgba(195,139,255,.55)'); g.addColorStop(1,'rgba(195,139,255,0)'); ctx.fillStyle=g; ctx.fillRect(c.x-36,c.y-42,72,72); ctx.globalCompositeOperation='source-over';
-    ctx.fillStyle='#2a0f22'; ctx.beginPath(); ctx.ellipse(c.x,c.y-6,r+2,r*0.85+2,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#8a2f6a'; ctx.beginPath(); ctx.ellipse(c.x,c.y-6,r,r*0.85,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#c38bff'; ctx.fillRect(Math.round(c.x-r*0.5),Math.round(c.y-9),3,3); ctx.strokeStyle='#a6ff4a'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(c.x-r,c.y-4); ctx.quadraticCurveTo(c.x,c.y-14,c.x+r,c.y-6); ctx.stroke(); return; }
+  if(c.heart){ drawMatronSeed(ctx,c.x,c.y+8,now/1000); return; }   /* the Matron's Seed (crate flag heart): rooted, it does not bob */
   if(c.dna){ const fade=c.t<10?(0.4+0.6*Math.abs(Math.sin(now/120))):1; ctx.globalAlpha=fade;
     ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y-4,1,x,y-4,12); g.addColorStop(0,'rgba(150,255,90,.45)'); g.addColorStop(1,'rgba(150,255,90,0)'); ctx.fillStyle=g; ctx.fillRect(x-12,y-16,24,24); ctx.globalCompositeOperation='source-over';
     ctx.fillStyle='#0a0b10'; ctx.fillRect(x-3,y-11,7,12); ctx.fillStyle='#cfd8e0'; ctx.fillRect(x-2,y-12,5,2); ctx.fillStyle=c.dna==='hive'?'#c38bff':'#8dff4a'; ctx.fillRect(x-2,y-8,5,8); ctx.fillStyle='#e8ffd0'; ctx.fillRect(x-1,y-7,1,3); ctx.globalAlpha=1; return; }
