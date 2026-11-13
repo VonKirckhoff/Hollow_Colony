@@ -22,7 +22,7 @@ const ANIM = { prints:80, printLife:7, casings:40, casingLife:5, melt:1.8, glint
    lowGravity: how fast debris of an explosion falls back (pixels/s², the game's normal is 180): on the moon it hangs in the air */
 
 /* ---- shared helpers ---- */
-function animOnScreen(x,y,pad=60){ return G&&x>G.cam.x-pad&&x<G.cam.x+ui.vw+pad&&y>G.cam.y-pad&&y<G.cam.y+ui.vh+pad; }
+function animOnScreen(x,y,pad=60){ return G&&x>G.cam.x-pad&&x<G.cam.x+viewW()+pad&&y>G.cam.y-pad&&y<G.cam.y+viewH()+pad; }
 function animSeen(x,y){ const k=Math.floor(y/TILE)*G.map.w+Math.floor(x/TILE); return !!(G.seen&&G.seen[k]); }
 const animRnd=s=>{ s=Math.sin(s*127.1)*43758.5453; return s-Math.floor(s); };
 let animCan=null, animCtx=null;   /* a scratch canvas to tint sprites */
@@ -89,7 +89,7 @@ function drawPrints(){ for(const p of G.prints||[]){ if(!animOnScreen(p.x,p.y)) 
 /* ---- meteorites: now and then one comes down where you can see it (harmless) ---- */
 function meteorTick(dt){ if(!(ANIM.meteorEvery>0)) return; G.meteorT=(G.meteorT??rand(8,ANIM.meteorEvery))-dt; if(G.meteorT>0) return;
   G.meteorT=ANIM.meteorEvery*rand(0.6,1.4);
-  for(let i=0;i<20;i++){ const x=G.cam.x+rand(60,ui.vw-60), y=G.cam.y+rand(80,ui.vh-(ui.hudH||0)-40), tx=Math.floor(x/TILE), ty=Math.floor(y/TILE);
+  for(let i=0;i<20;i++){ const x=G.cam.x+rand(60,viewW()-60), y=G.cam.y+rand(80,viewPlayH()-40), tx=Math.floor(x/TILE), ty=Math.floor(y/TILE);
     if(tx<0||ty<0||tx>=G.map.w||ty>=G.map.h||!walkableT(tx,ty)||!animSeen(x,y)) continue;
     G.fx.push({k:'meteor',x,y,t:1.6,max:1.6,dx:rand(-1,1)<0?-1:1}); SFX.play('meteor',x,y); return; } }   /* the whistle starts with the streak, the thud lands with it */
 function meteorFx(f){ const tt=f.max-f.t; if(tt>=0.55&&!f.hit){ f.hit=true; addDecal(f.x,f.y,7,'rgba(16,16,20,.6)');
@@ -182,7 +182,7 @@ function drawBulge(f){ if(!animSeen(f.x,f.y)) return; const k=1-f.t/f.max, R=f.r
 /* heavy damage to your side: the screen edge glows red on the side the attack comes from */
 function hurtNote(t,amt,src){ if(!(ANIM.hurtEdge>0)) return; G.hurtAcc=(G.hurtAcc||0)+amt; const p=src&&src.x!=null&&!src.dead?src:t; G.hurtAt={x:p.x,y:p.y}; }
 function drawHurtEdge(){ const v=G.hurtAcc||0; if(!(ANIM.hurtEdge>0)||v<ANIM.hurtEdge*0.5||!G.hurtAt) return; const k=Math.min(1,(v-ANIM.hurtEdge*0.5)/ANIM.hurtEdge);
-  const top=40, bot=ui.vh-(ui.hudH||0), cx=ui.vw/2, cy=(top+bot)/2, a=Math.atan2(G.hurtAt.y-G.cam.y-cy,G.hurtAt.x-G.cam.x-cx), W=80, pulse=0.75+0.25*Math.sin(performance.now()/120);
+  const top=40, bot=ui.vh-(ui.hudH||0), cx=ui.vw/2, cy=(top+bot)/2, a=Math.atan2((G.hurtAt.y-G.cam.y)*zoom2()-cy,(G.hurtAt.x-G.cam.x)*zoom2()-cx), W=80, pulse=0.75+0.25*Math.sin(performance.now()/120);
   const side=Math.abs(Math.cos(a))*(bot-top)>Math.abs(Math.sin(a))*ui.vw?(Math.cos(a)>0?'r':'l'):(Math.sin(a)>0?'b':'t');
   const [x0,y0,x1,y1,rx,ry,rw,rh]=side==='r'?[ui.vw,0,ui.vw-W,0,ui.vw-W,top,W,bot-top]:side==='l'?[0,0,W,0,0,top,W,bot-top]:side==='b'?[0,bot,0,bot-W,0,bot-W,ui.vw,W]:[0,top,0,top+W,0,top,ui.vw,W];
   const g=ctx.createLinearGradient(x0,y0,x1,y1); g.addColorStop(0,`rgba(226,70,58,${0.55*k*pulse})`); g.addColorStop(1,'rgba(226,70,58,0)'); ctx.fillStyle=g; ctx.fillRect(rx,ry,rw,rh); }
@@ -200,7 +200,7 @@ const lampOn=u=>ANIM.lamps&&G.mission.dark&&u.kind==='unit'&&u.faction==='corps'
 /* The beams are drawn together on one layer where overlapping beams do not add up (the brightest wins), so a whole squad
    is no brighter than one soldier; that layer is laid over the map at ANIM.lampGlow strength. */
 let lampCan=null, lampCtx=null;
-function drawLamps(){ if(!ANIM.lamps||!G.mission.dark||!(ANIM.lampGlow>0)) return; const W=Math.ceil(ui.vw), H=Math.ceil(ui.vh), cx=G.cam.x, cy=G.cam.y;
+function drawLamps(){ if(!ANIM.lamps||!G.mission.dark||!(ANIM.lampGlow>0)) return; const W=Math.ceil(viewW()), H=Math.ceil(viewH()), cx=G.cam.x, cy=G.cam.y;
   if(!lampCan){ lampCan=document.createElement('canvas'); lampCtx=lampCan.getContext('2d'); } if(lampCan.width!==W||lampCan.height!==H){ lampCan.width=W; lampCan.height=H; }
   const c=lampCtx; c.globalCompositeOperation='source-over'; c.clearRect(0,0,W,H); c.globalCompositeOperation='lighten'; let any=false;
   for(const u of G.ents){ if(!lampOn(u)||!animOnScreen(u.x,u.y,200)||(u.faction!==G.side&&!isVisible(u))) continue; any=true; const a=u.head??0, L=(ANIM.lampRange+2)*TILE, x=u.x-cx, y=u.y-10-cy;
@@ -231,7 +231,7 @@ function sentryUnfolds(b){ if(b.type==='sentry'&&ANIM.unfold>0) b.unfoldT=ANIM.u
 
 /* ---- surroundings ---- */
 function devilTick(dt){ if(!(ANIM.devilEvery>0)) return; G.devilT=(G.devilT??rand(10,ANIM.devilEvery))-dt; if(G.devilT>0) return; G.devilT=ANIM.devilEvery*rand(0.6,1.4);
-  for(let i=0;i<20;i++){ const x=G.cam.x+rand(40,ui.vw*0.6), y=G.cam.y+rand(80,ui.vh-(ui.hudH||0)-40), k=Math.floor(y/TILE)*G.map.w+Math.floor(x/TILE), c=G.map.tiles[k];
+  for(let i=0;i<20;i++){ const x=G.cam.x+rand(40,viewW()*0.6), y=G.cam.y+rand(80,viewPlayH()-40), k=Math.floor(y/TILE)*G.map.w+Math.floor(x/TILE), c=G.map.tiles[k];
     if((c!=='.'&&c!==',')||!animSeen(x,y)||(G.creep&&G.creep[k]>0.1)) continue; G.fx.push({k:'devil',x,y,vx:rand(18,30),vy:0,t:7,max:7,seed:Math.random()*99,rest:true}); return; } }
 /* a dust devil that crosses units whips dust up off them (drawn in 2D and 3D: f.lift = how high it rises in 3D, tiles) */
 function devilDustTick(dt){ if(!(ANIM.devilDust>0)) return;

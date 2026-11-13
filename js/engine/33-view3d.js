@@ -19,6 +19,7 @@ const VIEW3D = {
   beam:0.5,                                                                      /* how well you see the helmet lamp beam itself (0 = not at all) */
   unitScale:1.3, xray:0.4, shadows:true, groundAnims:true
 };
+VIEW3D.dist=clamp(store.get('hc-dist3d',VIEW3D.dist),VIEW3D.minDist,VIEW3D.maxDist);   /* the camera height you chose last time (+ / − / wheel) */
 const V3 = { on:store.get('hc-view3d',false), ok:false, g:null, mapId:null, objs:new Map(), dying:new Map(), frame:0, yaw:0 };
 
 /* ---------- setup ---------- */
@@ -1373,7 +1374,8 @@ function v3Active(){ return v3Want()&&V3.ok; }
 function v3Label(){ const b=$('#btn-view'); if(b) b.textContent=V3.on?'3D':'2D'; for(const id of ['btn-turn-l','btn-turn-r']){ const t=$('#'+id); if(t){ t.style.display=''; t.style.visibility=V3.on?'':'hidden'; } }   /* hidden, not removed: the top bar keeps its places */ }
 function toggleView3D(){
   if(!V3.on&&!v3Init()){ toast('3D view is not available in this browser (no WebGL).'); return; }
-  V3.on=!V3.on; store.set('hc-view3d',V3.on); v3Label(); if(G) clampCam(); toast(V3.on?'3D view. Middle mouse turns the camera, the wheel zooms, F3 back to 2D.':'2D view.',true); }
+  const c=G?viewCenter():null; V3.on=!V3.on; store.set('hc-view3d',V3.on); v3Label(); if(G) centerOn(c.x,c.y);   /* the same spot stays in the middle */
+  toast(V3.on?'3D view. Middle mouse turns the camera, the wheel or + and − zoom, F3 back to 2D.':'2D view.',true); }
 function turnView3D(deg){ if(!v3Active()) return; V3.yaw=(V3.yaw+deg)%360; }
 const render2D=render;
 render=function(now){ const on=v3Want()&&v3Init();
@@ -1415,7 +1417,7 @@ window.addEventListener('pointerup',e=>{ if(V3.rot){ V3.rot=null; return; } if(!
   const x0=Math.min(d.x0,d.x1), x1=Math.max(d.x0,d.x1), y0=Math.min(d.y0,d.y1), y1=Math.max(d.y0,d.y1);
   const inBox=G.ents.filter(en=>{ if(en.dead||en.faction!==G.side) return false; const g=V3.objs.get(en), p=v3Screen(en.x,en.y,g?(g.userData.top||1)*0.5:0.4); return p.ok&&p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1; });
   const units=inBox.filter(en=>en.kind==='unit'); selectEntities(units.length?units:inBox.filter(en=>en.kind==='building').slice(0,1),d.shift); },true);
-cv.addEventListener('wheel',e=>{ if(!v3Active()) return; e.preventDefault(); VIEW3D.dist=clamp(VIEW3D.dist*(e.deltaY>0?1.1:1/1.1),VIEW3D.minDist,VIEW3D.maxDist); },{ passive:false });
+cv.addEventListener('wheel',e=>{ if(!v3Active()) return; e.preventDefault(); VIEW3D.dist=clamp(VIEW3D.dist*(e.deltaY>0?1.1:1/1.1),VIEW3D.minDist,VIEW3D.maxDist); store.set('hc-dist3d',VIEW3D.dist); },{ passive:false });
 window.addEventListener('keydown',e=>{ if(e.key==='F3'){ e.preventDefault(); if(ui.mode==='game'||ui.mode==='pause') toggleView3D(); }
   else if(e.key==='Home'&&v3Active()){ e.preventDefault(); V3.yaw=0; VIEW3D.pitch=56; } });
 { const b=$('#btn-view'); if(b) b.addEventListener('click',toggleView3D);

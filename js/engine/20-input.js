@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 2s. input ---------- */
-function toWorld(sx,sy){ return {x:sx+Math.round(G.cam.x), y:sy+Math.round(G.cam.y)}; }
+function toWorld(sx,sy){ const z=zoom2(); return {x:Math.round(sx/z+G.cam.x), y:Math.round(sy/z+G.cam.y)}; }
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 $('#hud').addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{
@@ -34,10 +34,10 @@ function attackMoveAt(wx,wy){ if(G.side==='swarm'){ sendWave(wx,wy); return; } c
 window.addEventListener('pointermove',e=>{
   ui.mouse.x=e.clientX; ui.mouse.y=e.clientY; ui.mouse.inWin=true;
   if(G){ const w=toWorld(e.clientX,e.clientY); ui.mouse.wx=w.x; ui.mouse.wy=w.y; }
-  if(ui.pan&&G){ stopFollow(); G.cam.x=ui.pan.cam.x-(e.clientX-ui.pan.x); G.cam.y=ui.pan.cam.y-(e.clientY-ui.pan.y); clampCam(); }
+  if(ui.pan&&G){ stopFollow(); G.cam.x=ui.pan.cam.x-(e.clientX-ui.pan.x)/zoom2(); G.cam.y=ui.pan.cam.y-(e.clientY-ui.pan.y)/zoom2(); clampCam(); }
   if(ui.rdrag){ ui.rdrag.x1=e.clientX; ui.rdrag.y1=e.clientY; }
   if(ui.drag){ ui.drag.x1=e.clientX; ui.drag.y1=e.clientY;
-    if(ui.drag.touch){ if(Math.hypot(ui.drag.x1-ui.drag.x0,ui.drag.y1-ui.drag.y0)>10) ui.drag.panning=true; if(ui.drag.panning&&G){ stopFollow(); G.cam.x=ui.drag.cam.x-(ui.drag.x1-ui.drag.x0); G.cam.y=ui.drag.cam.y-(ui.drag.y1-ui.drag.y0); clampCam(); } }
+    if(ui.drag.touch){ if(Math.hypot(ui.drag.x1-ui.drag.x0,ui.drag.y1-ui.drag.y0)>10) ui.drag.panning=true; if(ui.drag.panning&&G){ stopFollow(); G.cam.x=ui.drag.cam.x-(ui.drag.x1-ui.drag.x0)/zoom2(); G.cam.y=ui.drag.cam.y-(ui.drag.y1-ui.drag.y0)/zoom2(); clampCam(); } }
     else if(Math.abs(ui.drag.x1-ui.drag.x0)+Math.abs(ui.drag.y1-ui.drag.y0)>6) ui.drag.box=true; }
   if(mmDrag) minimapPointer(e);
   showTip(e);
@@ -60,7 +60,7 @@ window.addEventListener('pointerup',e=>{
     if(!hit){ if(!d.shift) selectEntities([],false); return; }
     const now=performance.now();
     if(hit.faction===G.side && ui.lastClick.id===hit.id && now-ui.lastClick.t<350){
-      const same=G.ents.filter(e=>!e.dead&&e.faction===G.side&&e.type===hit.type&&e.x>G.cam.x&&e.x<G.cam.x+ui.vw&&e.y>G.cam.y&&e.y<G.cam.y+ui.vh); selectEntities(same,d.shift);
+      const same=G.ents.filter(e=>!e.dead&&e.faction===G.side&&e.type===hit.type&&e.x>G.cam.x&&e.x<G.cam.x+viewW()&&e.y>G.cam.y&&e.y<G.cam.y+viewH()); selectEntities(same,d.shift);
     } else if(d.shift && hit.faction===G.side){ if(G.sel.includes(hit)){ G.sel=G.sel.filter(x=>x!==hit); G.selDirty=true; uiUsed('shiftdel'); } else { selectEntities([hit],true); uiUsed('shiftadd'); } }
     else selectEntities([hit],false);
     ui.lastClick={id:hit.id,t:now};
@@ -119,16 +119,25 @@ window.addEventListener('keydown',e=>{
     return; }
   if(e.key===' '){ e.preventDefault(); if(G.side==='swarm'&&batchReleaseAll()) return; if(G.alert) centerOn(G.alert.x,G.alert.y); return; }   /* Swarm: Space hatches the batches now */
   if(e.ctrlKey||e.metaKey||e.altKey) return;
+  const zk=camHeightKey(e); if(zk){ e.preventDefault(); stepCamHeight(zk); return; }
   if(k==='n'&&G.mission.training){ G.vars.skip=true; toast('Step skipped.',true); return; }   /* training: skip a step */
   const c=CMDS.find(c=>c.key.toLowerCase()===k); if(c){ e.preventDefault(); c.act(e); G.selDirty=true; }
 });
 window.addEventListener('keyup',e=>{ ui.keys[e.key]=false; });
+/* Camera height (+ closer, − higher up, 0 back to normal). The point in the middle of the screen stays put. */
+function camHeightKey(e){ const c=e.code||'';
+  if(e.key==='+'||e.key==='='||c==='NumpadAdd') return 1;   /* by the character, so QWERTY and (Belgian) AZERTY both work */
+  if(e.key==='-'||e.key==='_'||c==='NumpadSubtract') return -1;
+  if(c==='Digit0'||c==='Numpad0') return 'reset'; return 0; }
+function stepCamHeight(d){ if(!G) return; uiUsed('zoom');
+  if(typeof v3Active==='function'&&v3Active()){ const V=VIEW3D; V.dist=d==='reset'?17:clamp(V.dist*(d>0?1/1.12:1.12),V.minDist,V.maxDist); store.set('hc-dist3d',V.dist); return; }
+  const c=viewCenter(); ui.zoom=d==='reset'?1:clamp(zoom2()*(d>0?ZOOM2D.step:1/ZOOM2D.step),ZOOM2D.min,ZOOM2D.max); store.set('hc-zoom',ui.zoom); centerOn(c.x,c.y); }
 /* Camera follow: after a move or attack order the camera glides along with the selected squad.
    Scrolling the map yourself pauses following until your next order. Toggle with C or the Follow button. */
 function startFollow(){ endShowcase(); if(ui.follow&&G) G.following=true; }
 function stopFollow(){ if(G){ G.following=false; endShowcase(); } }
 function updateCamera(dt){
-  if(!G||!(ui.mode==='game'||ui.mode==='end'&&afterDefeat())) return; let vx=0, vy=0; const sp=760*dt, edge=10;
+  if(!G||!(ui.mode==='game'||ui.mode==='end'&&afterDefeat())) return; let vx=0, vy=0; const sp=760*dt/zoom2(), edge=10;   /* higher up, the same swipe crosses more map */
   if(ui.keys.ArrowLeft) vx-=sp; if(ui.keys.ArrowRight) vx+=sp; if(ui.keys.ArrowUp) vy-=sp; if(ui.keys.ArrowDown) vy+=sp;
   if(ui.mouse.inWin && !ui.overDev && !ui.drag && !ui.pan && !mmDrag && matchMedia('(pointer:fine)').matches){ if(ui.mouse.x<edge) vx-=sp; if(ui.mouse.x>ui.vw-edge) vx+=sp; if(ui.mouse.y<edge) vy-=sp; if(ui.mouse.y>ui.vh-edge) vy+=sp; }
   if(vx||vy){ stopFollow(); G.cam.x+=vx; G.cam.y+=vy; clampCam(); }
@@ -136,7 +145,7 @@ function updateCamera(dt){
   else if(G.following && !G.paused){
     const us=G.side==='swarm'?(G.avatar&&!G.avatar.dead&&G.avatar.kind==='unit'?[G.avatar]:selSwarm()):myUnits(); if(!us.length){ stopFollow(); return; }
     const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length;
-    const tx=cx-ui.vw/2, ty=cy-(ui.vh-ui.hudH)/2, k=Math.min(1,dt*3.5);
+    const tx=cx-viewW()/2, ty=cy-viewPlayH()/2, k=Math.min(1,dt*3.5);
     G.cam.x+=(tx-G.cam.x)*k; G.cam.y+=(ty-G.cam.y)*k; clampCam();
   }
   const w=toWorld(ui.mouse.x,ui.mouse.y); ui.mouse.wx=w.x; ui.mouse.wy=w.y;
@@ -155,7 +164,7 @@ function showcaseStep(dt){ const S=SHOWCASE;
   if(sh.phase==='hold'){ if(sh.t>=S.hold){ if(G.showQ.length){ G.show=null; return; } sh.phase='back'; sh.t=0; } return; }
   let tx, ty; if(sh.phase==='go'){ tx=sh.p.x; ty=sh.p.y; }
   else { const us=myUnits(); if(!us.length){ G.show=null; return; } tx=us.reduce((s,u)=>s+u.x,0)/us.length; ty=us.reduce((s,u)=>s+u.y,0)/us.length; }
-  const x0=G.cam.x, y0=G.cam.y, k=Math.min(1,dt*S.glide); G.cam.x+=(tx-ui.vw/2-G.cam.x)*k; G.cam.y+=(ty-(ui.vh-ui.hudH)/2-G.cam.y)*k; clampCam();
+  const x0=G.cam.x, y0=G.cam.y, k=Math.min(1,dt*S.glide); G.cam.x+=(tx-viewW()/2-G.cam.x)*k; G.cam.y+=(ty-viewPlayH()/2-G.cam.y)*k; clampCam();
   if(Math.hypot(G.cam.x-x0,G.cam.y-y0)<0.6||sh.t>4){
     if(sh.phase==='go'){ sh.phase='hold'; sh.t=0; G.pings.push({x:sh.p.x,y:sh.p.y,t:0,col:sh.p.col||'#ffb347'}); }
     else { G.show=null; G.showQ=[]; if(ui.follow) G.following=true; } } }

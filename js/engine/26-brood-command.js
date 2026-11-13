@@ -215,7 +215,7 @@ function corpsRaid(g,n,who,text){ const q=ptWorld('Q')||{x:0,y:0}, h=hives().sor
    HIVE_SENSE: range = tiles it reaches · alone / aloneMax = what counts as easy prey · size = radius on screen (px). */
 const HIVE_SENSE = { range:30, alone:6, aloneMax:2, size:64 };
 function senseRef(){ const us=selSwarm(); if(us.length) return { x:us.reduce((s,u)=>s+u.x,0)/us.length, y:us.reduce((s,u)=>s+u.y,0)/us.length };
-  if(G.swarm.rally) return G.swarm.rally; return { x:G.cam.x+ui.vw/2, y:G.cam.y+(ui.vh-ui.hudH)/2 }; }
+  if(G.swarm.rally) return G.swarm.rally; return viewCenter(); }
 /* a soldier who is easy prey: lured out of a drill ring, or alone / in a small knot */
 function easyPrey(e){ if(e.drill&&e.drill.r&&Math.hypot(e.x-e.drill.x,e.y-e.drill.y)>e.drill.r) return true;
   if(e.drill) return false;   /* inside his ring he cannot fall */

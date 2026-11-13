@@ -18,7 +18,7 @@ const SQUAD = {
 function trackerRef(){
   const us=G.sel.filter(e=>e.kind==='unit'&&e.faction===G.side&&!e.dead);
   if(us.length) return { x:us.reduce((s,u)=>s+u.x,0)/us.length, y:us.reduce((s,u)=>s+u.y,0)/us.length };
-  return { x:G.cam.x+ui.vw/2, y:G.cam.y+(ui.vh-ui.hudH)/2 };
+  return viewCenter();
 }
 function trackerContacts(ref){
   const R=SQUAD.tracker.range*TILE, out=[];

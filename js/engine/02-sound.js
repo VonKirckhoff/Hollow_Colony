@@ -69,7 +69,7 @@ const SFX=(()=>{
     if(!ac||muted||!DEF[name]) return; const now=ac.currentTime, [gap,fn]=DEF[name];
     if(last[name]!==undefined && now-last[name]<gap) return;
     let v=1;
-    if(x!==undefined && G){ const cx=G.cam.x+ui.vw/2, cy=G.cam.y+(ui.vh-ui.hudH)/2, R=Math.max(ui.vw,ui.vh)*0.9, d=Math.hypot(x-cx,y-cy); if(d>R) return; v=clamp(1-d/R,0.12,1); }
+    if(x!==undefined && G){ const {x:cx,y:cy}=viewCenter(), R=Math.max(viewW(),viewH())*0.9, d=Math.hypot(x-cx,y-cy); if(d>R) return; v=clamp(1-d/R,0.12,1); }
     last[name]=now; try{ fn(v); }catch(e){}
   }
   /* the intercom line under the briefing voice: mains hum, line hiss and a crackle now and then (o = INTERCOM) */

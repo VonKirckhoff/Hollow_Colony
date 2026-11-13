@@ -10,8 +10,19 @@ function resize(){
 }
 function sizeMinimap(){ const wrap=$('#minimap-wrap').getBoundingClientRect(); const box=Math.max(60,Math.min(wrap.width,wrap.height)-6);
   const s=Math.min(box/G.map.w,box/G.map.h); mm.width=Math.floor(G.map.w*s); mm.height=Math.floor(G.map.h*s); mm.style.width=mm.width+'px'; mm.style.height=mm.height+'px'; G.mmScale=s; }
-function centerOn(x,y){ G.cam.x=x-ui.vw/2; G.cam.y=y-(ui.vh-ui.hudH)/2; clampCam(); }
-function clampCam(){ const W=G.map.w*TILE, H=G.map.h*TILE; G.cam.x=clamp(G.cam.x,-40,Math.max(-40,W-ui.vw+40)); G.cam.y=clamp(G.cam.y,-60,Math.max(-60,H-(ui.vh-ui.hudH)+20)); }
+/* Camera height: + and − (numpad too) raise or lower the camera, 0 puts it back; remembered in hc-zoom (2D) and hc-dist3d (3D).
+   In 2D the map is drawn at scale ui.zoom (1 = normal, below 1 = higher up, more map, smaller units). G.cam stays the top-left
+   corner in map pixels; viewW/viewH/viewPlayH are how much map the screen shows. In 3D the camera distance (VIEW3D.dist) does it. */
+const ZOOM2D = { min:0.5, max:1.5, step:1.15 };
+ui.zoom=store.get('hc-zoom',1);
+function zoom2(){ return (typeof v3Active==='function'&&v3Active())?1:clamp(ui.zoom||1,ZOOM2D.min,ZOOM2D.max); }
+function viewW(){ return ui.vw/zoom2(); }
+function viewH(){ return ui.vh/zoom2(); }
+function viewPlayH(){ return (ui.vh-ui.hudH)/zoom2(); }   /* the part above the HUD */
+function viewCenter(){ return { x:G.cam.x+viewW()/2, y:G.cam.y+viewPlayH()/2 }; }
+function centerOn(x,y){ G.cam.x=x-viewW()/2; G.cam.y=y-viewPlayH()/2; clampCam(); }
+function clampCam(){ const W=G.map.w*TILE, H=G.map.h*TILE, vw=viewW(), vh=viewPlayH();
+  G.cam.x=W+80<=vw?(W-vw)/2:clamp(G.cam.x,-40,W-vw+40); G.cam.y=H+80<=vh?(H-vh)/2:clamp(G.cam.y,-60,Math.max(-60,H-vh+20)); }   /* a map smaller than the view sits in the middle */
 function drawShadow(x,y,rx,ry){ ctx.fillStyle='rgba(0,0,0,.38)'; ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill(); }
 
 function render(now){
@@ -20,9 +31,10 @@ function render(now){
   if(ui.mode==='menu'||!G){ renderMenuBg(now); return; }
   const sh=(G.shake||0)*10, cam={x:Math.round(G.cam.x+(sh?rand(-sh,sh):0)),y:Math.round(G.cam.y+(sh?rand(-sh,sh):0))}, m=G.map;
   drawStars(cam);
+  const Z=zoom2(); ctx.save(); ctx.scale(Z,Z);   /* the map at the chosen camera height */
   ctx.drawImage(m.ground,0,0,m.ground.width,m.ground.height,-cam.x,-cam.y,m.w*TILE,m.h*TILE);
   ctx.save(); ctx.translate(-cam.x,-cam.y);
-  const vx0=cam.x-64, vy0=cam.y-64, vx1=cam.x+ui.vw+64, vy1=cam.y+ui.vh+64;
+  const vx0=cam.x-64, vy0=cam.y-64, vx1=cam.x+viewW()+64, vy1=cam.y+viewH()+64;
   const inView=e=>e.x>vx0&&e.x<vx1&&e.y>vy0&&e.y<vy1;
   drawCreep(now,vx0,vy0,vx1,vy1); drawCreepLife(now,vx0,vy0,vx1,vy1);   /* the living carpet around the hives */
   // decals
@@ -91,10 +103,10 @@ function render(now){
     ctx.fillStyle='#0a0b10'; ctx.beginPath(); ctx.moveTo(mk.x,y-11); ctx.lineTo(mk.x+11,y); ctx.lineTo(mk.x,y+11); ctx.lineTo(mk.x-11,y); ctx.fill();
     ctx.fillStyle=mc; ctx.beginPath(); ctx.moveTo(mk.x,y-8); ctx.lineTo(mk.x+8,y); ctx.lineTo(mk.x,y+8); ctx.lineTo(mk.x-8,y); ctx.fill();
     ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(mk.label.toUpperCase(),mk.x+1,y-15); ctx.fillStyle='#ffe2a8'; ctx.fillText(mk.label.toUpperCase(),mk.x,y-16); }
-  ctx.restore();
+  ctx.restore(); ctx.restore();
   // arrows at the screen edge pointing to off-screen markers
   const top=48, bottom=ui.vh-ui.hudH-12;
-  for(const mk of G.markers){ const sx=mk.x-cam.x, sy=mk.y-cam.y; if(sx>0&&sx<ui.vw&&sy>top&&sy<bottom) continue;
+  for(const mk of G.markers){ const sx=(mk.x-cam.x)*Z, sy=(mk.y-cam.y)*Z; if(sx>0&&sx<ui.vw&&sy>top&&sy<bottom) continue;
     const cx=ui.vw/2, cy=(top+bottom)/2, a=Math.atan2(sy-cy,sx-cx);
     const k=Math.min((ui.vw/2-30)/Math.abs(Math.cos(a)||1e-6),((bottom-top)/2-30)/Math.abs(Math.sin(a)||1e-6));
     const ax=cx+Math.cos(a)*k, ay=cy+Math.sin(a)*k;
@@ -213,7 +225,8 @@ function renderMinimap(){
   for(const mk of G.markers){ const on=Math.floor(performance.now()/400)%2; mctx.fillStyle=on?(mk.col||'#ffb347'):'#fff'; mctx.fillRect(Math.round(mk.x/TILE*s)-3,Math.round(mk.y/TILE*s)-3,6,6); }
   if(ui.hover){ const on=Math.floor(performance.now()/250)%2; mctx.strokeStyle=on?'#ffd23f':'#fff'; mctx.lineWidth=1;   /* hovered soldier(s) on the minimap too */
     for(const e of G.sel){ if(e.dead||e.kind!=='unit'||!(ui.hover.id===e.id||ui.hover.type===e.type)) continue; mctx.strokeRect(Math.round(e.x/TILE*s)-3.5,Math.round(e.y/TILE*s)-3.5,7,7); } }
-  mctx.strokeStyle='#fff'; mctx.lineWidth=1; mctx.strokeRect(Math.round(G.cam.x/TILE*s)+.5,Math.round(G.cam.y/TILE*s)+.5,Math.round(ui.vw/TILE*s),Math.round((ui.vh-ui.hudH)/TILE*s));
+  { const x0=clamp(Math.round(G.cam.x/TILE*s),0,mm.width-1), y0=clamp(Math.round(G.cam.y/TILE*s),0,mm.height-1), x1=clamp(Math.round((G.cam.x+viewW())/TILE*s),x0+1,mm.width-1), y1=clamp(Math.round((G.cam.y+viewPlayH())/TILE*s),y0+1,mm.height-1);   /* the view frame, kept inside the minimap when you look from high up */
+    mctx.strokeStyle='#fff'; mctx.lineWidth=1; mctx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0); }
 }
 
 /* a soldier hovered in the selection panel: yellow ring on the ground, a bouncing marker above, and a brighter sprite */

@@ -50,7 +50,7 @@ function tutorialTick(g,steps){ const V=g.vars; G.tutSteps=steps;
   if(V.tutState==='run'){ let ok=false; try{ ok=!!V.skip||!!st.done(g); }catch(e){ ok=false; } V.skip=false;
     if(!ok) return;
     g.unmark('tut'); tutHighlight(null); if(st.after) try{ st.after(g); }catch(e){}
-    SFX.play('complete'); G.fx.push({k:'text',x:G.cam.x+ui.vw/2,y:G.cam.y+(ui.vh-ui.hudH)/2-40,t:1.2,max:1.2,txt:'✓',col:'#5fe3b0'});
+    SFX.play('complete'); G.fx.push({k:'text',x:viewCenter().x,y:viewCenter().y-40,t:1.2,max:1.2,txt:'✓',col:'#5fe3b0'});
     V.stepDone=true; V.tutState='wait'; tutRefresh();
     /* tick it off in the objectives list: the last three finished steps stay visible, checked */
     const idx=G.objectives.findIndex(o=>o.id==='tut'); if(idx>=0){ G.objectives.splice(idx,0,{ id:'tutd'+(++V.doneN||(V.doneN=1)), text:st.obj||'', state:'done' });

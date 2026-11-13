@@ -24,7 +24,7 @@ function updateDemo(dt){ const D=G.demo; if(!D||!D.on||G.over) return; const V=G
     else if(st.demo){ D.nudgeT-=dt; if(D.nudgeT<=0){ D.nudgeT=DEMO.nudge; try{ st.demo(G.api,D); }catch(e){ console.error('demo step',V.tutI,e); } } } }
   /* the camera glides to what the step is about */
   const f=D.focus&&(D.focus.dead?null:D.focus);
-  if(f&&f.x!=null){ G.following=false; const cx=G.cam.x+ui.vw/2, cy=G.cam.y+(ui.vh-ui.hudH)/2, k=Math.min(1,dt*DEMO.pan); centerOn(cx+(f.x-cx)*k,cy+(f.y-cy)*k); } }
+  if(f&&f.x!=null){ G.following=false; const {x:cx,y:cy}=viewCenter(), k=Math.min(1,dt*DEMO.pan); centerOn(cx+(f.x-cx)*k,cy+(f.y-cy)*k); } }
 /* ---- helpers for the steps' demo(g,D) ---- */
 function demoLook(D,t){ if(t) D.focus=t; }
 function demoTap(p){ if(p) G.pings.push({x:p.x,y:p.y,t:0,col:'#ffffff'}); }
