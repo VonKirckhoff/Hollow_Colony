@@ -154,6 +154,10 @@ function v3BuildTerrain(){
 function v3H(x,z){ const NX=V3.NX, NZ=V3.NZ; if(!V3.hv) return 0;
   const gx=clamp((x+V3B)*V3S,0,NX-1.001), gz=clamp((z+V3B)*V3S,0,NZ-1.001), i=Math.floor(gx), j=Math.floor(gz), fx=gx-i, fz=gz-j, h=V3.hv;
   return (h[j*NX+i]*(1-fx)+h[j*NX+i+1]*fx)*(1-fz)+(h[(j+1)*NX+i]*(1-fx)+h[(j+1)*NX+i+1]*fx)*fz; }
+/* how high the mycel crust lifts the ground (the decal shader: +R*0.16) at its highest within rad of x,z: rings lie on top of it, not in it */
+function v3CreepLift(x,z,rad){ const d=V3.fogData, m=G.map; if(!d||!G.creep) return 0; let r=0;
+  for(let j=Math.floor(z-rad-1);j<=Math.ceil(z+rad);j++) for(let i=Math.floor(x-rad-1);i<=Math.ceil(x+rad);i++){ if(i<0||j<0||i>=m.w||j>=m.h) continue; r=Math.max(r,d[(j*m.w+i)*4]); }
+  return r/255*0.16; }
 /* fog texture: R creep, G seen right now, A darkness */
 function v3Fog(){ const m=G.map, d=V3.fogData, seenA=Math.min(250,Math.round((G.mission.dark?232:140)*(ui.fogDark??1))), C=G.creep;
   for(let i=0;i<m.w*m.h;i++){ d[i*4]=C?Math.min(255,(C[i]||0)*300):0; d[i*4+1]=G.vis[i]?255:0; d[i*4+3]=G.vis[i]?0:(G.seen[i]?seenA:250); }
@@ -1587,7 +1591,7 @@ function render3D(now){
   let n=0; const ring=pool(V3.ringPool,()=>{ const r=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, opacity:0.9, depthWrite:false })); r.renderOrder=2; return r; });
   for(const e of sel){ if(e.dead||!v3Shown(e)||e.def&&e.def.ground) continue; const r=ring(n++), rad=e.kind==='building'?(e.size||1)*0.72:(e.r/TILE)*1.5+0.12, x=e.x/TILE, z=e.y/TILE;
     const hv=isHovered(e), pu=0.5+0.5*Math.sin(now/140), k=hv?1.35+pu*0.25:1;   /* hovered in the selection panel: a bigger, pulsing yellow ring, as in 2D */
-    r.scale.set(rad*k,1,rad*k); r.position.set(x,v3H(x,z)+0.04,z); r.material.color.set(hv?(Math.floor(now/250)%2?'#ffd23f':'#fff3b0'):e.faction===G.side?'#5fe3b0':'#ff5a4f'); r.material.opacity=hv?1:0.9; }
+    r.scale.set(rad*k,1,rad*k); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad*k)+0.04,z); r.material.color.set(hv?(Math.floor(now/250)%2?'#ffd23f':'#fff3b0'):e.faction===G.side?'#5fe3b0':'#ff5a4f'); r.material.opacity=hv?1:0.9; }
   hidePool(V3.ringPool,n);
   n=0; const ping=pool(V3.pingPool,()=>new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, depthWrite:false })));
   for(const p of G.pings){ const r=ping(n++), rad=(10+p.t*28)/TILE, x=p.x/TILE, z=p.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set(p.col); r.material.opacity=Math.max(0,1-p.t/3); }

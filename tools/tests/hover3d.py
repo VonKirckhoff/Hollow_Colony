@@ -20,6 +20,13 @@ with sync_playwright() as p:
     r=J(pg,"()=>{ const u=__hc.G.ents.find(e=>e.id==="+str(uid)+"); render(performance.now()); const rs=V3.ringPool.filter(r=>r.visible); const yl=rs.filter(r=>['ffd23f','fff3b0'].includes(r.material.color.getHexString())); return [isHovered(u), yl.length, rs.length]; }")
     check('one yellow ring in 3D', r[0] and r[1]==1, r)
     pg.screenshot(path='/home/claude/scratch/hover3d.png')
+    # on thick mycel: the crust lifts the ground up to 0.16 in the shader; every ring must lie above it
+    r=J(pg,"""()=>{ const G=__hc.G, m=G.map, u=G.ents.find(e=>e.id===UID); if(!G.creep) G.creep=new Float32Array(m.w*m.h);
+      const tx=Math.floor(u.x/TILE), ty=Math.floor(u.y/TILE); for(let j=-3;j<=3;j++) for(let i=-3;i<=3;i++) G.creep[(ty+j)*m.w+tx+i]=1;
+      render(performance.now()); const x=u.x/TILE, z=u.y/TILE, rs=V3.ringPool.filter(r=>r.visible&&['ffd23f','fff3b0'].includes(r.material.color.getHexString()));
+      return rs.length? [+(rs[0].position.y-v3H(x,z)).toFixed(3)] : [null]; }""".replace('UID',str(uid)))
+    check('ring above the mycel crust', r[0] is not None and r[0]>0.16, r)
+    pg.wait_for_timeout(300); pg.screenshot(path='/home/claude/scratch/hover3d-mycel.png')
     pg.mouse.move(600,300); pg.wait_for_timeout(300)
     r=J(pg,"()=>{ render(performance.now()); return [ui.hover, V3.ringPool.filter(r=>r.visible&&['ffd23f','fff3b0'].includes(r.material.color.getHexString())).length]; }")
     check('gone when the mouse leaves', r[0] is None and r[1]==0, r)
