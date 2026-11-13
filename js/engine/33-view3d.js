@@ -471,6 +471,154 @@ function v3SentryFx(now,dt,put,lights){ const C=SENTRY3D, w=V3._sw||(V3._sw=new 
   for(const b of V3.bits) if(b.t>=b.life) V3.g.remove(b.o);
   V3.bits=V3.bits.filter(b=>b.t<b.life); }
 
+/* ---------- the Command Post (Nov 2026): a two-storey steel block in the style of the barricade ----------
+   A dark foot painted all round with black/yellow hazard stripes; riveted plate walls with a hazard band along their top edges and on
+   the rim of each roof (painted on canvas: one box per storey); angle irons with bolt heads on the corners; a sloping control
+   console on the front (screen, gauges, keys, lamps that blink); louvred vent grilles on the sides and back; a roof fan that turns;
+   pipes up the right side and along the back with flanges, brackets and a red valve wheel; the dome, a window slit and the antenna
+   with its red blinking light.
+   Two searchlights on the front corners: in dark missions they throw a beam that sweeps slowly over the ground and light it.
+   Damage (as the Sentry Gun): below HQ3D.plateAt a riveted cover plate flies off the left wall (wires behind it) and a pipe joint
+   leaks steam; below HQ3D.smokeAt it smokes from the roof and sparks from the hole, the screen and the searchlights flicker.
+   Repaired above it: whole again. */
+const HQ3D = { lamps:1, reach:4.2, sweep:0.45, sweepSpeed:0.35, light:1.6, beam:0.6, fan:4, plateAt:0.5, steam:7, smokeAt:0.25, smoke:5, sparks:4 };
+function v3HqTex(kind){ const k='hqTex'+kind; if(MAT[k]) return MAT[k];
+  const W=256, H=kind==='top'?256:kind==='upper'?88:kind==='foot'?24:kind==='console'?128:82, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const rivet=(cx,cy,r=2.6)=>{ x.fillStyle='rgba(0,0,0,.45)'; x.beginPath(); x.arc(cx+0.8,cy+1,r,0,7); x.fill(); x.fillStyle='#9097a3'; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill();
+    x.fillStyle='#c9ced6'; x.beginPath(); x.arc(cx-0.8,cy-0.8,r*0.45,0,7); x.fill(); };
+  const stripes=(y0,h,step=16)=>{ x.save(); x.beginPath(); x.rect(0,y0,W,h); x.clip(); x.fillStyle='#f2c230'; x.fillRect(0,y0,W,h); x.fillStyle='#17171a';
+    for(let i=-4;i<W/step+4;i++){ x.beginPath(); x.moveTo(i*step,y0+h); x.lineTo(i*step+step/2,y0+h); x.lineTo(i*step+step/2+h,y0); x.lineTo(i*step+h,y0); x.fill(); } x.restore(); };
+  const steel=(s)=>{ x.fillStyle='#646b78'; x.fillRect(0,0,W,H); for(let i=0;i<420;i++){ x.fillStyle=i%2?'rgba(255,255,255,.05)':'rgba(0,0,0,.07)'; x.fillRect(hash2(i,1,s)*W,hash2(i,2,s)*H,2+hash2(i,3,s)*6,1); } };
+  if(kind==='foot'){ stripes(0,H,20); x.fillStyle='rgba(0,0,0,.35)'; x.fillRect(0,H-3,W,3); x.fillStyle='rgba(0,0,0,.5)'; x.fillRect(0,0,W,2); }
+  else if(kind==='side'||kind==='upper'){   /* a wall: hazard band along the top, riveted seams, two plate seams with rivet columns, grime at the foot */
+    const up=kind==='upper', bt=3, bh=up?13:15, s=up?11:12; steel(s);
+    stripes(bt,bh); x.fillStyle='#2b2e35'; x.fillRect(0,0,W,bt); x.fillRect(0,bt+bh,W,2); x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(0,bt+bh+2,W,1);
+    for(const sx of [W/3,2*W/3]){ x.fillStyle='#454a54'; x.fillRect(sx-1,bt+bh+2,2,H); x.fillStyle='rgba(255,255,255,.12)'; x.fillRect(sx+1,bt+bh+2,1,H);
+      for(let y=bt+bh+10;y<H-6;y+=11){ rivet(sx-5,y,2); rivet(sx+5,y,2); } }
+    for(let i=0;i<16;i++){ rivet(8+i*16,bt+bh+7,2.2); rivet(8+i*16,H-6,2.2); }
+    x.fillStyle='rgba(0,0,0,.2)'; x.fillRect(0,H-4,W,4);
+    for(let i=0;i<9;i++){ x.fillStyle='rgba(70,45,25,.25)'; x.fillRect(hash2(i,4,s)*W,bt+bh+3,2,6+hash2(i,5,s)*24); }   /* rust runs from the band */
+    if(!up){ x.save(); x.globalAlpha=0.55; x.fillStyle='#c9ced6'; x.font='bold 15px Impact, "Arial Black", sans-serif'; x.textBaseline='middle'; x.fillText('LC  CP-01',W/3+14,H-22); x.restore(); } }
+  else if(kind==='top'){   /* a roof: hazard rim, riveted plate grid */
+    const b=18; stripes(0,H,22); x.fillStyle='#2b2e35'; x.fillRect(b-3,b-3,W-2*b+6,H-2*b+6); x.fillStyle='#6c7381'; x.fillRect(b,b,W-2*b,H-2*b);
+    for(let i=0;i<300;i++){ x.fillStyle=i%2?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)'; x.fillRect(b+hash2(i,1,21)*(W-2*b),b+hash2(i,2,21)*(H-2*b),2+hash2(i,3,21)*6,1); }
+    for(const p of [W/3,2*W/3]){ x.fillStyle='#4a505b'; x.fillRect(p-1,b,2,H-2*b); x.fillRect(b,p-1,W-2*b,2); }
+    for(let i=0;i<12;i++){ const p=b+8+i*((W-2*b-16)/11); rivet(p,b+7); rivet(p,H-b-7); rivet(b+7,p); rivet(W-b-7,p); } }
+  else {   /* the console face: a screen, two gauges, rows of keys, a hazard strip along the bottom */
+    x.fillStyle='#2a2f38'; x.fillRect(0,0,W,H); x.fillStyle='#1a1d23'; x.fillRect(4,4,W-8,H-8);
+    x.fillStyle='#0b1a12'; x.fillRect(12,12,104,62); x.strokeStyle='#59616f'; x.lineWidth=2; x.strokeRect(11,11,106,64);
+    x.fillStyle='#5fe3b0'; for(let i=0;i<6;i++) x.fillRect(18,20+i*9,20+hash2(i,7,3)*70,3);
+    for(const [gx,gy] of [[146,40],[200,40]]){ x.fillStyle='#d8dccf'; x.beginPath(); x.arc(gx,gy,20,0,7); x.fill(); x.strokeStyle='#17171a'; x.lineWidth=3; x.stroke();
+      x.lineWidth=1; for(let a=0;a<9;a++){ const t=Math.PI*0.8+a*Math.PI*1.4/8; x.beginPath(); x.moveTo(gx+Math.cos(t)*14,gy+Math.sin(t)*14); x.lineTo(gx+Math.cos(t)*18,gy+Math.sin(t)*18); x.stroke(); }
+      x.strokeStyle='#d0563c'; x.lineWidth=2; x.beginPath(); x.moveTo(gx,gy); const t=Math.PI*(1.1+hash2(gx,1,2)*0.9); x.lineTo(gx+Math.cos(t)*15,gy+Math.sin(t)*15); x.stroke(); }
+    for(let r=0;r<2;r++) for(let i=0;i<14;i++){ x.fillStyle=['#3d4454','#525c70','#3d4454','#7a5d1e'][(i+r*3)%4]; x.fillRect(12+i*17,84+r*14,13,10); x.fillStyle='rgba(255,255,255,.15)'; x.fillRect(12+i*17,84+r*14,13,2); }
+    x.save(); x.beginPath(); x.rect(4,H-12,W-8,8); x.clip(); x.fillStyle='#f2c230'; x.fillRect(0,H-12,W,8); x.fillStyle='#17171a'; for(let i=0;i<30;i++){ x.beginPath(); x.moveTo(i*12,H-4); x.lineTo(i*12+6,H-4); x.lineTo(i*12+14,H-12); x.lineTo(i*12+8,H-12); x.fill(); } x.restore(); }
+  const tex=new THREE.CanvasTexture(c); tex.anisotropy=4;
+  return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:tex })); }
+/* a louvred vent grille, facing +z of its group */
+function v3Grille(w,h,dark,frame){ const g=grp(); g.add(box(dark,w,h,0.03,0,0,-0.005)); for(const k of [-1,1]){ g.add(box(frame,w+0.04,0.035,0.05,0,k*(h/2+0.0),0.01)); g.add(box(frame,0.035,h+0.04,0.05,k*(w/2),0,0.01)); }
+  const n=Math.max(3,Math.round(h/0.06)); for(let i=0;i<n;i++){ const s=box(frame,w-0.02,0.012,0.045,0,-h/2+(i+0.5)*h/n,0.012); s.rotation.x=0.5; g.add(s); } return g; }
+function v3Hq(e){ const g=new THREE.Group(), U=g.userData; U.own=[];
+  const dark=mat('#24272e'), iron=mat('#3a3e47'), bolt=shiny('#8c939f',{ specular:0x777777, shininess:40 }), plate=mat('#5a616e'), frame=mat('#4a505b'),
+        pipe=shiny('#6d7480',{ specular:0x555555, shininess:35 }), rust=mat('#7a5034'), red=mat('#b8332a'), steel=shiny('#8a95a6'), side=v3HqTex('side'), upper=v3HqTex('upper'), roof=v3HqTex('top'), foot=v3HqTex('foot');
+  const V=(x,y,z)=>new THREE.Vector3(x,y,z), tube=(pts,r,m)=>{ const geo=v3Tube(pts,r,r,24,8); U.own.push(geo); const o=new THREE.Mesh(geo,m); o.castShadow=true; g.add(o); return o; };
+  /* the foot with its hazard stripes, the two storeys */
+  const ft=new THREE.Mesh(GEO.box,[foot,foot,dark,dark,foot,foot]); ft.scale.set(2.8,0.16,2.8); ft.position.y=0.08; ft.receiveShadow=true; g.add(ft);
+  const B=1.25, Bh=0.8, b0=0.16, Uw=0.875, Uh=0.6, u0=b0+Bh;
+  const lo=new THREE.Mesh(GEO.box,[side,side,roof,dark,side,side]); lo.scale.set(2*B,Bh,2*B); lo.position.y=b0+Bh/2; lo.castShadow=true; lo.receiveShadow=true; g.add(lo);
+  const hi=new THREE.Mesh(GEO.box,[upper,upper,roof,dark,upper,upper]); hi.scale.set(2*Uw,Uh,2*Uw); hi.position.y=u0+Uh/2; hi.castShadow=true; hi.receiveShadow=true; g.add(hi);
+  const top=u0+Uh;
+  /* angle irons on the corners of both storeys, bolted */
+  for(const [S,y0,h] of [[B,b0,Bh],[Uw,u0,Uh]]) for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const cx=sx*(S-0.03), cz=sz*(S-0.03);
+    g.add(box(iron,0.09,h+0.04,0.09,cx,y0+h/2+0.01,cz));
+    for(let y=y0+0.12;y<y0+h-0.05;y+=0.22){ g.add(part(GEO.ball,bolt,0.028,0.028,0.018,cx,y,sz*(S+0.017))); g.add(part(GEO.ball,bolt,0.018,0.028,0.028,sx*(S+0.017),y,cz)); } }
+  /* the control console on the front (+z) */
+  const cn=grp(-0.2,b0+0.36,B); g.add(cn);
+  cn.add(box(dark,1.2,0.5,0.08,0,0,0.04)); const face=grp(0,0.06,0.16); face.rotation.x=-0.5; cn.add(face);
+  face.add(box(plate,1.16,0.5,0.06,0,0,-0.035)); const fm=new THREE.Mesh(GEO.plane||(GEO.plane=new THREE.PlaneGeometry(1,1)),v3HqTex('console')); fm.scale.set(1.08,0.44,1); fm.position.z=0.0; face.add(fm);
+  cn.add(box(plate,1.2,0.06,0.24,0,-0.22,0.12)); for(const k of [-1,1]) cn.add(box(iron,0.05,0.5,0.26,k*0.62,0,0.12));
+  U.screen=box(glow('#5fe3b0',{ transparent:true, opacity:0.35 }),0.44,0.25,0.01,-0.31,0.07,0.006); face.add(U.screen);
+  U.btns=[]; for(let i=0;i<6;i++){ const l=box(glow(['#ff5a4f','#5fe3b0','#ffb347','#9fd3ff','#5fe3b0','#ff5a4f'][i]),0.035,0.025,0.012,0.08+i*0.075,-0.14,0.006); face.add(l); U.btns.push(l); }
+  /* the window slit on the upper storey, a door on the right of the console */
+  g.add(box(iron,1.0,0.17,0.04,0,u0+0.33,Uw+0.01)); g.add(box(glow('#9fd3ff'),0.9,0.1,0.02,0,u0+0.33,Uw+0.03));
+  const dr=grp(0.75,b0,B+0.01); g.add(dr); dr.add(box(iron,0.42,0.62,0.04,0,0.31,0)); dr.add(box(plate,0.36,0.56,0.03,0,0.31,0.02)); dr.add(box(dark,0.04,0.12,0.04,0.13,0.3,0.05));
+  for(let i=0;i<5;i++) dr.add(box(i%2?dark:mat('#f2c230'),0.072,0.05,0.035,-0.144+i*0.072,0.66,0.0));   /* a striped lintel */
+  /* vent grilles: two on each side of the ground floor, one on the back, one on the right of the upper storey */
+  for(const sx of [-1,1]) for(const z of [-0.55,0.45]){ const v=v3Grille(0.5,0.32,dark,frame); v.position.set(sx*(B+0.02),b0+0.4,z); v.rotation.y=sx*Math.PI/2; g.add(v); }
+  { const v=v3Grille(0.7,0.3,dark,frame); v.position.set(-0.55,b0+0.42,-B-0.02); v.rotation.y=Math.PI; g.add(v); }
+  { const v=v3Grille(0.42,0.26,dark,frame); v.position.set(Uw+0.02,u0+0.3,-0.35); v.rotation.y=Math.PI/2; g.add(v); }
+  /* the cover plate on the left of the upper storey (flies off when hurt) and the hole behind it */
+  U.hole=grp(-Uw-0.005,u0+0.28,0.25); g.add(U.hole); U.hole.add(box(mat('#0d0e11'),0.02,0.3,0.44,0,0,0));
+  for(let i=0;i<4;i++){ const w=box(mat(['#c0231d','#f2c230','#3a7bd5','#5fe3b0'][i]),0.02,0.24-i*0.03,0.018,-0.012,-0.03,-0.14+i*0.09); w.rotation.x=0.3*(i%2?1:-1); U.hole.add(w); }
+  U.hole.visible=false;
+  U.plate=grp(-Uw-0.02,u0+0.28,0.25); g.add(U.plate); U.plate.add(box(plate,0.03,0.36,0.5,0,0,0));
+  for(const [yy,zz] of [[0.14,0.21],[0.14,-0.21],[-0.14,0.21],[-0.14,-0.21],[0.14,0],[-0.14,0]]) U.plate.add(part(GEO.ball,bolt,0.014,0.022,0.022,-0.018,yy,zz));
+  /* pipes: two up the right wall and over onto the upper storey, one along the back; flanges, brackets, a valve wheel */
+  const px=B+0.08;
+  tube([V(px,0.05,0.62),V(px,0.75,0.62),V(px-0.02,1.0,0.62),V(B-0.1,u0+0.08,0.62),V(Uw+0.12,u0+0.12,0.62),V(Uw+0.07,u0+0.25,0.62),V(Uw+0.05,u0+0.45,0.62)],0.05,pipe);
+  tube([V(px,0.05,0.36),V(px,0.8,0.36),V(px-0.03,0.98,0.36),V(B-0.15,u0+0.05,0.36),V(Uw+0.1,u0+0.09,0.36),V(Uw+0.04,u0+0.2,0.36)],0.034,rust);
+  tube([V(B-0.15,0.05,-B-0.08),V(B-0.15,0.32,-B-0.09),V(B-0.35,0.42,-B-0.09),V(-B+0.3,0.42,-B-0.09),V(-B+0.12,0.38,-B-0.09),V(-B+0.02,0.32,-B-0.06)],0.045,pipe);
+  for(const [y,z,r] of [[0.28,0.62,0.07],[0.56,0.62,0.07],[0.3,0.36,0.05],[0.62,0.36,0.05]]){ g.add(cyl(iron,r,0.04,r,px,y,z)); g.add(box(dark,0.1,0.03,r*1.5,px-0.05,y+0.06,z)); }   /* flanges and wall brackets */
+  for(const x of [0.4,-0.1,-0.6]){ g.add(rotZ(cyl(iron,0.065,0.04,0.065,x,0.42,-B-0.09),Math.PI/2)); g.add(box(dark,0.03,0.08,0.1,x+0.08,0.42,-B-0.04)); }
+  const vw=grp(px+0.1,0.45,0.62); vw.rotation.z=Math.PI/2; g.add(vw); vw.add(cyl(iron,0.015,0.1,0.015,0,-0.05,0)); vw.add(part(GEO.torus,red,0.09,0.6,0.09,0,0,0)); for(const a of [0,Math.PI/2]){ const s=box(red,0.17,0.014,0.014,0,0,0); s.rotation.y=a; vw.add(s); }
+  U.leak=grp(px+0.05,0.75,0.62); g.add(U.leak);
+  /* the roof: dome with a ring, the fan in its housing, the antenna */
+  g.add(part(GEO.half,shiny('#5d6f83'),0.55,0.42,0.55,0.1,top,0.1)); g.add(part(GEO.torus,iron,0.56,0.5,0.56,0.1,top+0.01,0.1));
+  const fa=grp(-0.52,top,-0.52); g.add(fa); fa.add(cyl(iron,0.24,0.14,0.24,0,0.07,0)); fa.add(cyl(dark,0.2,0.145,0.2,0,0.07,0));
+  U.fan=grp(0,0.12,0); fa.add(U.fan); for(let i=0;i<4;i++){ const bl=box(plate,0.36,0.01,0.07,0,0,0); bl.rotation.y=i*Math.PI/4; bl.rotation.x=0.35; U.fan.add(bl); } U.fan.add(cyl(dark,0.04,0.03,0.04,0,0,0));
+  for(let i=0;i<5;i++) fa.add(box(frame,0.44,0.015,0.02,0,0.15,-0.18+i*0.09));   /* the guard over it */
+  fa.add(part(GEO.torus,frame,0.23,0.4,0.23,0,0.15,0));
+  const an=grp(0.62,top,-0.62); g.add(an); an.add(box(iron,0.14,0.08,0.14,0,0.04,0)); an.add(cyl(steel,0.03,1.05,0.03,0,0.6,0)); for(const y of [0.55,0.8]) an.add(box(steel,0.26,0.02,0.02,0,y,0));
+  U.blink=box(glow('#ff5a4f'),0.08,0.08,0.08,0,1.15,0); an.add(U.blink);
+  /* searchlights on posts at the two front corners */
+  U.spots=[];
+  for(const sx of [-1,1]){ const cx=sx*(B-0.08), cz=B-0.08, base=Math.atan2(sx*0.55,1);
+    g.add(cyl(iron,0.04,0.55,0.04,cx,u0+0.27,cz)); g.add(box(iron,0.14,0.04,0.14,cx,u0+0.02,cz));
+    const yaw=grp(cx,u0+0.6,cz); g.add(yaw); yaw.add(box(dark,0.18,0.04,0.06,0,-0.02,0)); for(const k of [-1,1]) yaw.add(box(iron,0.02,0.14,0.04,k*0.09,0.05,0));
+    const tilt=grp(0,0.08,0); yaw.add(tilt); tilt.add(rotX(cyl(plate,0.08,0.18,0.08,0,0,0),Math.PI/2)); tilt.add(rotX(cyl(iron,0.09,0.03,0.09,0,0,0.09),Math.PI/2));
+    for(let i=0;i<3;i++) tilt.add(rotX(cyl(dark,0.065,0.012,0.065,0,0,-0.03+i*0.035),Math.PI/2));   /* cooling fins */
+    const lensOff=glow('#5a5e66'), lens=part(GEO.ball,lensOff,0.07,0.07,0.02,0,0,0.1); tilt.add(lens);
+    const beam=grp(0,0,0.1); beam.userData.noXray=true;
+    for(const [r,o] of [[0.32,1],[0.6,0.45]]){ const m=new THREE.MeshBasicMaterial({ color:0xfff0c8, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide });
+      const c=new THREE.Mesh(V3.beamGeo||(V3.beamGeo=new THREE.ConeGeometry(1,1,18,1,true).translate(0,-0.5,0).rotateX(-Math.PI/2)),m); c.scale.set(r,r,1); c.userData.op=o; c.raycast=()=>{}; c.castShadow=false; beam.add(c); U.own.push(m); }
+    beam.visible=false; tilt.add(beam);
+    U.spots.push({ yaw, tilt, lens, lensOff, beam, base, side:sx, on:false }); }
+  U.hq=true; U.top=2.7; return g; }
+function v3PoseHq(e,U,T){ const C=HQ3D, dt=Math.min(0.1,Math.max(0,T-(U.lt??T))); U.lt=T;
+  const f=clamp(e.hp/e.maxHp,0,1), alive=e.built!==false&&!e.dead, bad=alive&&f<C.smokeAt;
+  U.fan.rotation.y+=dt*C.fan*(alive?1:0)*(bad?0.4+0.6*Math.random():1);
+  U.screen.visible=alive&&(!bad||Math.random()>0.25); U.screen.material.opacity=0.28+0.1*Math.sin(T*9+e.id);
+  U.btns.forEach((b,i)=>b.visible=alive&&hash2(Math.floor(T*(1.2+i*0.37)),i,e.id)>0.4);
+  /* searchlights: on in dark missions, sweeping slowly; they flicker when the post is badly hurt */
+  const on=!!G.mission.dark&&alive&&C.lamps>0;
+  for(const s of U.spots){ s.on=on&&(!bad||Math.random()>0.18);
+    s.yaw.rotation.y=s.base+(on?Math.sin(T*C.sweepSpeed+(s.side>0?Math.PI:0)+e.id)*C.sweep:0);
+    const h=s.yaw.position.y+0.08+0.16, d=C.reach; s.tilt.rotation.x=on?Math.atan2(h,d):0.25; s.len=Math.hypot(h,d)*1.02;
+    s.lens.material=s.on?(MAT.hqLampOn||(MAT.hqLampOn=glow('#fff6dc'))):s.lensOff;
+    s.beam.visible=s.on&&C.beam>0; if(s.beam.visible) for(const c of s.beam.children){ c.scale.z=s.len; c.material.opacity=0.22*C.beam*c.userData.op; } }
+  /* damage, as the Sentry Gun: the plate flies off once, comes back when repaired */
+  const gone=alive&&f<C.plateAt;
+  if(U.plateGone==null) U.plateGone=gone;
+  else if(gone&&!U.plateGone){ U.plateGone=true; U.fly=true; }
+  else if(!gone&&U.plateGone) U.plateGone=false;
+  U.plate.visible=!U.plateGone; U.hole.visible=U.plateGone; U.leaking=U.plateGone; U.burning=bad; }
+function v3HqFx(now,dt,put,lights){ const C=HQ3D, w=V3._hw||(V3._hw=new THREE.Vector3()), d=V3._hd||(V3._hd=new THREE.Vector3()), q=V3._hq||(V3._hq=new THREE.Quaternion());
+  V3.bits=V3.bits||[]; V3.sparks=V3.sparks||[];
+  for(const [e,g] of V3.objs){ const U=g.userData; if(!U.hq||!g.visible) continue;
+    for(const s of U.spots) if(s.on){ s.beam.getWorldPosition(w); s.beam.getWorldQuaternion(q); d.set(0,0,1).applyQuaternion(q);
+      const k=(w.y-v3H(w.x,w.z))/Math.max(0.15,-d.y), sx=w.x+d.x*k, sz=w.z+d.z*k, gy=v3H(sx,sz); s.spot={x:sx,z:sz};
+      put(sx,gy+0.08,sz,1.8,'#fff0c8',0.3*C.beam); lights.push({ x:sx, y:gy+1.2, z:sz, i:C.light, c:0xfff0c8, d:C.reach*0.9+1.5 }); }
+    if(U.fly){ U.fly=false; U.plate.getWorldPosition(w); U.plate.getWorldQuaternion(q);
+      const o=box(mat('#5a616e'),0.03,0.36,0.5,w.x,w.y,w.z); o.quaternion.copy(q); V3.g.add(o); const out=new THREE.Vector3(-1,0,0).applyQuaternion(q);
+      V3.bits.push({ o, vx:out.x*rand(1.5,2.2), vy:rand(2.2,3), vz:out.z*rand(1.5,2.2), sx:rand(4,8), sz:rand(2,5), t:0, life:6, fade:1.5, flat:true, hq:true });
+      for(let i=0;i<10;i++) V3.sparks.push({ x:w.x, y:w.y, z:w.z, vx:out.x*rand(0.3,1)+rand(-0.4,0.4), vy:rand(0.6,1.6), vz:out.z*rand(0.3,1)+rand(-0.4,0.4), t:0, life:rand(0.4,0.9), col:pick(['#ffd23f','#fff3c4','#ff8a2a']) }); }
+    if(U.leaking&&C.steam>0){ U.lacc=(U.lacc||0)+dt*C.steam; U.leak.getWorldPosition(w);
+      while(U.lacc>=1){ U.lacc--; V3.smoke.push({ x:w.x+rand(0,0.08), y:w.y+rand(-0.03,0.03), z:w.z+rand(-0.05,0.05), t:0, sz:rand(0.22,0.34), col:pick(['#c9d0d6','#dfe4e8','#b7bec6']), a:0.4, rise:1.2, life:rand(1,1.6), steam:true }); } }
+    if(U.burning){ U.acc=(U.acc||0)+dt*C.smoke; U.sacc=(U.sacc||0)+dt*C.sparks;
+      while(U.acc>=1){ U.acc--; U.fan.getWorldPosition(w); V3.smoke.push({ x:w.x+rand(-0.15,0.15), y:w.y+0.2, z:w.z+rand(-0.15,0.15), t:0, sz:rand(0.8,1.1), col:pick(['#1d1b1a','#2a2725','#3a3633']), a:0.8, rise:1.8, life:rand(2.2,3.2) }); }
+      while(U.sacc>=1){ U.sacc--; U.hole.getWorldPosition(w); V3.sparks.push({ x:w.x-0.05, y:w.y+rand(-0.1,0.1), z:w.z+rand(-0.15,0.15), vx:rand(-0.8,-0.2), vy:rand(0.4,1.2), vz:rand(-0.4,0.4), t:0, life:rand(0.3,0.7), col:pick(['#fff3c4','#ffd23f','#9fd3ff']) }); }
+      if(Math.random()<dt*3){ U.hole.getWorldPosition(w); lights.push({ x:w.x-0.3, y:w.y, z:w.z, i:0.8, c:0x9fd3ff, d:2.5 }); } } } }
+
 /* ---------- buildings, crates, bodies ---------- */
 function v3Billboard(canvas,scale=2){ const tex=new THREE.CanvasTexture(canvas); tex.magFilter=THREE.NearestFilter;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true })), w=canvas.width*scale/TILE, h=canvas.height*scale/TILE; s.scale.set(w,h,1); s.position.y=h/2;
@@ -478,10 +626,7 @@ function v3Billboard(canvas,scale=2){ const tex=new THREE.CanvasTexture(canvas);
 function v3Building(e){
   const t=e.type, s=e.size||1, g=new THREE.Group(), U=g.userData; let top=1;
   const metal=mat('#3d4454'), plate=mat('#525c70'), dark=mat('#262a33'), yel=mat('#f2c230'), steel=shiny('#8a95a6');
-  if(t==='hq'){ g.add(box(dark,2.7,0.25,2.7,0,0.12,0)); g.add(box(metal,2.4,0.75,2.4,0,0.62,0)); g.add(box(plate,1.7,0.55,1.7,0,1.25,0));
-    for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]]) g.add(box(plate,0.35,1.1,0.35,x*1.1,0.6,z*1.1));
-    g.add(part(GEO.half,shiny('#5d6f83'),0.62,0.5,0.62,0,1.52,0)); g.add(cyl(steel,0.03,1.4,0.03,0.95,1.9,-0.95)); U.blink=box(glow('#ff5a4f'),0.1,0.1,0.1,0.95,2.62,-0.95); g.add(U.blink);
-    g.add(box(glow('#9fd3ff'),0.9,0.12,0.02,0,0.85,1.21)); for(let i=0;i<9;i++) g.add(box(i%2?dark:yel,0.25,0.12,0.04,-1.0+i*0.25,0.3,1.21)); top=2.7; }
+  if(t==='hq') return v3Hq(e);
   else if(t==='relay'){ g.add(box(metal,1.6,0.3,1.6,0,0.15,0)); for(const [x,z] of [[-0.4,-0.4],[0.4,-0.4],[-0.4,0.4],[0.4,0.4]]){ const l=cyl(plate,0.04,2.2,0.04,x*0.6,1.2,z*0.6); l.rotation.z=x*0.12; l.rotation.x=-z*0.12; g.add(l); }
     for(const y of [0.7,1.3,1.9]) g.add(box(plate,0.55,0.04,0.55,0,y,0));
     g.add(rotX(part(GEO.half,steel,0.45,0.15,0.45,0,2.3,0.05),-1.0)); U.blink=box(glow('#ffb347'),0.1,0.1,0.1,0,2.5,0); g.add(U.blink); top=2.6; }
@@ -960,6 +1105,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.heart){ const f=e.hp/e.maxHp; U.heart.scale.setScalar(0.3*(1+0.2*Math.max(0,Math.sin(T*(2+f*2)+e.id)))); g.scale.set(1+0.02*Math.sin(T*2+e.id),1+0.03*Math.sin(T*2+e.id),1); }
   if(U.hive) v3PoseHive(e,g,T);
   if(U.sentry) v3PoseSentry(e,U,T);
+  if(U.hq) v3PoseHq(e,U,T);
   if(U.pulse) U.pulse.scale.set(0.24,0.34*(1+0.06*Math.sin(T*7+e.id)),0.24);
   if(U.core) U.core.visible=!!e.powered&&Math.random()>0.03;
   if(U.memb) v3PoseMembrane(e,g,T);
@@ -1357,7 +1503,7 @@ function render3D(now){
     if(e.chargeT>0) put(p.x+Math.sin(g.userData.yaw)*0.35,p.y+top*0.75,p.z+Math.cos(g.userData.yaw)*0.35,0.25+0.15*Math.sin(now/40),'#c7f05a',0.9);
     if(e.beam&&!e.beam.dead){ const b=V3.objs.get(e.beam); if(b) for(let k=1;k<6;k++){ const t=((k/6)+now/900)%1; put(p.x+(b.position.x-p.x)*t,p.y+0.6+(b.position.y-p.y)*t,p.z+(b.position.z-p.z)*t,0.12,'#78ffbe',0.8); } } }
   for(const [e,g] of V3.objs) if(g.visible&&g.userData.opening>0){ const p=g.userData.opening; for(let i=0;i<3;i++){ const d=(now/900+i/3+e.id*0.13)%1, a=i*2.4+now/700; put(g.position.x+Math.cos(a)*d*0.4*p,g.position.y+0.4+d*0.8*p,g.position.z+Math.sin(a)*d*0.4*p,0.1,i%2?'#a6ff4a':'#c58cff',(1-d)*0.9); } }   /* an egg breathing out spores */
-  v3WreckFx(now,dt,put,lights); v3SentryFx(now,dt,put,lights);
+  v3WreckFx(now,dt,put,lights); v3SentryFx(now,dt,put,lights); v3HqFx(now,dt,put,lights);
   for(const s of V3.smoke){ const k=s.t/(s.life||2.5), z=s.sz||1, up=s.rise??1.8; put(s.x+k*0.6*z,s.y+k*up*z,s.z,(0.4+k*1.2)*z,s.col||'#3a3a3a',(s.a??0.5)*(1-k),true); }   /* s.a, s.rise: a faint trail that hangs (a meteorite's) */   /* s.sz, s.col: small puffs (a Brute's breath, a band breaking off) */
   V3.smoke=V3.smoke.filter(s=>(s.t+=dt)<(s.life||2.5));   /* s.life: a wreck's plumes hang longer */
   for(const mk of G.markers){ const x=mk.x/TILE, z=mk.y/TILE; put(x,v3H(x,z)+2+Math.sin(now/250)*0.1,z,0.7,mk.col||'#ffb347',0.9); }
