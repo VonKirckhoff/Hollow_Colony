@@ -132,7 +132,7 @@ function drawUnit(u){
   const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
   const now=performance.now(), risen=u.vet&&u.vet.risen;
   if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew){ drawTaint(u,now); drawTaintRing(u,now); drawVeil(u,now); }
-  const hov=ui.hover&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)));
+  const hov=isHovered(u);
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);
   if(u.carry){ const a=ARTC[BUILDINGS[u.carry.type].art]; ctx.drawImage(a,Math.round(u.x-u.face*9-9),y+2,18,18); }
@@ -229,6 +229,8 @@ function renderMinimap(){
     mctx.strokeStyle='#fff'; mctx.lineWidth=1; mctx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0); }
 }
 
+/* is this soldier hovered in the selection panel (his own row, or the header of his group)? Used by 2D and 3D */
+function isHovered(u){ return !!(ui.hover&&u.kind==='unit'&&u.faction==='corps'&&(ui.hover.id===u.id||(ui.hover.type===u.type&&G.sel.includes(u)))); }
 /* a soldier hovered in the selection panel: yellow ring on the ground, a bouncing marker above, and a brighter sprite */
 function drawHover(u,now,w,h,sp){
   const p=0.5+0.5*Math.sin(now/140), R=u.r+9+p*4;

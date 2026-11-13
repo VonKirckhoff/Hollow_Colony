@@ -1586,7 +1586,8 @@ function render3D(now){
   /* selection rings */
   let n=0; const ring=pool(V3.ringPool,()=>{ const r=new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, opacity:0.9, depthWrite:false })); r.renderOrder=2; return r; });
   for(const e of sel){ if(e.dead||!v3Shown(e)||e.def&&e.def.ground) continue; const r=ring(n++), rad=e.kind==='building'?(e.size||1)*0.72:(e.r/TILE)*1.5+0.12, x=e.x/TILE, z=e.y/TILE;
-    r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.04,z); r.material.color.set(e.faction===G.side?'#5fe3b0':'#ff5a4f'); }
+    const hv=isHovered(e), pu=0.5+0.5*Math.sin(now/140), k=hv?1.35+pu*0.25:1;   /* hovered in the selection panel: a bigger, pulsing yellow ring, as in 2D */
+    r.scale.set(rad*k,1,rad*k); r.position.set(x,v3H(x,z)+0.04,z); r.material.color.set(hv?(Math.floor(now/250)%2?'#ffd23f':'#fff3b0'):e.faction===G.side?'#5fe3b0':'#ff5a4f'); r.material.opacity=hv?1:0.9; }
   hidePool(V3.ringPool,n);
   n=0; const ping=pool(V3.pingPool,()=>new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, depthWrite:false })));
   for(const p of G.pings){ const r=ping(n++), rad=(10+p.t*28)/TILE, x=p.x/TILE, z=p.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set(p.col); r.material.opacity=Math.max(0,1-p.t/3); }
@@ -1693,6 +1694,9 @@ function v3Overlay(now){
   for(const [e,g] of V3.objs){ if(!g.visible||e.kind!=='unit') continue; const p=v3Screen(e.x,e.y,(g.userData.top||1)+0.25); if(!p.ok) continue;
     if(e.vet&&e.vet.rank>0&&RANKS[e.vet.rank].mark) label(RANKS[e.vet.rank].mark,e.vet.rank>=5?'#ffd23f':'#e8ecf2',{x:p.x,y:p.y-4});
     if(e.vet&&e.vet.hero){ ctx.fillStyle='#000'; ctx.fillRect(Math.round(p.x)-3,p.y-21,7,7); ctx.fillStyle='#ffd23f'; ctx.fillRect(Math.round(p.x)-1,p.y-20,3,5); }
+    if(isHovered(e)){ const b=Math.round(p.y-30-(0.5+0.5*Math.sin(now/140))*6), x=Math.round(p.x);   /* hovered in the selection panel: the bouncing yellow marker above his head, as in 2D */
+      ctx.fillStyle='#000'; ctx.beginPath(); ctx.moveTo(x-10,b-2); ctx.lineTo(x+10,b-2); ctx.lineTo(x,b+12); ctx.fill();
+      ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.moveTo(x-8,b); ctx.lineTo(x+8,b); ctx.lineTo(x,b+9); ctx.fill(); }
     if(G.sel.includes(e)){ if(e.order&&e.order.type==='hold'){ ctx.fillStyle='#ffb347'; ctx.fillRect(Math.round(p.x)-3,p.y+6,6,2); } if(e.stance==='attack'){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(p.x)-3,p.y+6,6,2); } if(e.quiet){ ctx.fillStyle='#9fd3ff'; ctx.fillRect(Math.round(p.x)-3,p.y+9,6,2); } } }
   for(const e of G.ents){ if(e.dead||!e.status) continue; const g=V3.objs.get(e); if(!g||!g.visible) continue; const p=v3Screen(e.x,e.y,(g.userData.top||1)+0.7); if(p.ok) label(e.status.txt,e.status.col,p); }
   for(const e of G.ents){ if(e.dead||!e.label||!e.def||!e.def.capture) continue; const p=v3Screen(e.x,e.y,0); if(p.ok) label(e.label.toUpperCase(),'#ffe2a8',{x:p.x,y:p.y+30}); }
