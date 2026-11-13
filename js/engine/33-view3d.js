@@ -1707,11 +1707,13 @@ function v3Overlay(now){
   for(const f of G.fx){ if(f.k!=='text') continue; const a=Math.max(0,f.t/f.max), p=v3Screen(f.x,f.y,1+(1-a)*0.6); if(p.ok) label(f.txt,f.col,p); }
   /* barks: speech bubbles over the soldier's head */
   ctx.font='11px "Chakra Petch", sans-serif';
-  for(const b of G.barks){ const u=b.u, g=V3.objs.get(u); if(!g||!g.visible) continue; const p=v3Screen(u.x,u.y,(g.userData.top||1)+0.55); if(!p.ok) continue;
+  for(const b of G.barks){ const u=b.u, g=V3.objs.get(u); if(!g||!g.visible) continue; const p=v3Screen(u.x,u.y,(g.userData.top||1)+(u.downed?0.25:0.55)); if(!p.ok) continue; if(u.downed) p.y-=62;   /* a fallen soldier's bark goes above his marks */
     const y=Math.round(p.y), w=Math.ceil(ctx.measureText(b.text).width)+12, x=Math.round(p.x-w/2), a=Math.min(1,b.t/0.4);
     ctx.globalAlpha=a; ctx.fillStyle='rgba(10,12,18,.85)'; ctx.fillRect(x,y-13,w,18); ctx.fillStyle='#5fe3b0'; ctx.fillRect(x,y-13,2,18);
     ctx.beginPath(); ctx.moveTo(p.x-4,y+5); ctx.lineTo(p.x+4,y+5); ctx.lineTo(p.x,y+10); ctx.fillStyle='rgba(10,12,18,.85)'; ctx.fill();
     ctx.fillStyle='#e8ecf2'; ctx.fillText(b.text,p.x+1,y); ctx.globalAlpha=1; }
+  for(const [e,g] of V3.objs){ if(!g.visible||e.kind!=='unit'||!e.downed||e.dead) continue; const p=v3Screen(e.x,e.y,(g.userData.top||1)+0.25); if(!p.ok) continue; p.y-=16;   /* just above his health bar. A fallen soldier: the same bleed-out ring, Medic ring, red cross and heart line as in 2D */
+    ctx.save(); try{ drawDownedMark(e,Math.round(p.x),Math.round(p.y),now); }catch(err){} ctx.restore(); }
   ctx.font='10px Silkscreen, monospace';
   /* markers: a label over the spot, or an arrow at the screen edge when it is off screen */
   const top=48, bottom=ui.vh-ui.hudH-12;
