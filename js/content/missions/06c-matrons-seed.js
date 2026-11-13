@@ -1,9 +1,9 @@
 'use strict';
-/* Corps mission 9: The Matron's Seed (the Corps side of Rogue job 8, Mother's Blood; the mission id stayed 'mothers-heart')
+/* Corps mission 9: The Matron's Seed (the Corps side of Rogue job 8, The Matron's Blood; the mission id stayed 'mothers-heart')
    Maw Depths. Seismic picked up a scream under the Maw: something wounded the Matron, and she tore free and burrowed into the deep.
    What she left behind in her lair, her Seed (a knot torn out of her roots, still pulsing), is being tapped by the Osprey crew. Dust goes down light
    and fast: reach the lair and burn the Seed before they have drawn it dry. The crew never dies: they break off and run, and once the
-   Seed is gone they all slip away down her tunnel. (In code the Seed is still the crate flag `heart`.) The Brood Mother lives: Corps mission 10 (Brood Mother) goes after her.
+   Seed is gone they all slip away down her tunnel. (In code the Seed is still the crate flag `heart`.) The Matron lives: Corps mission 10 (Matron) goes after her.
    job: the numbers of this mission (dev panel, "This mission"). */
 MISSIONS.push(
   {

@@ -16,7 +16,7 @@ with sync_playwright() as p:
       for(let i=0;i<30*40;i++){ __hc.update(1/30); if(G.ents.some(e=>e.type==='cocoon'&&!e.dead)||G.ents.some(e=>e.def&&e.def.grafter&&!e.dead)) break; }
       return [!!body, G.ents.some(e=>!e.dead&&(e.type==='egg'||e.type==='cocoon'||(e.def&&e.def.grafter)))]; }""")
     check('HG body turns at a shaft', r==[True,True], r)
-    # B. downed: splash no longer finishes him; the Brood Mother still can
+    # B. downed: splash no longer finishes him; the Matron still can
     J(pg,"()=>{ startMission(MISSIONS.find(m=>m.id==='hold-kappa')); for(const e of __hc.G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; }"); pg.wait_for_timeout(300)
     r=J(pg,"""()=>{ const G=__hc.G, hq=G.ents.find(e=>e.type==='hq'), t=makeUnit('trooper','corps',hq.x+4*TILE,hq.y+3*TILE), d=makeUnit('drone','swarm',t.x+60,t.y);
       goDown(t,d); const t0=t.downed.t; for(let i=0;i<20;i++) damage(t,200,{faction:'swarm',dead:true,acid:true}); const left=t.downed&&t.downed.t;

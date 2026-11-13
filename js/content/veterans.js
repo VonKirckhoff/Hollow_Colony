@@ -1,7 +1,7 @@
 'use strict';
 /* Hollow Colony — veteran ranks, XP and soldier names. */
 /* 1d2. VETERANS — every soldier has a name and earns XP; ranks give bonuses.
-   XP: Swarm kill 1 (Spitter 2, Brute 4), hive or chamber 5, Brood Mother 10.
+   XP: Swarm kill 1 (Spitter 2, Brute 4), hive or chamber 5, Matron 10.
    Medics earn 1 XP per 60 HP healed, Engineers 1 XP per finished building or 250 HP repaired.
    Survivors with XP go into the campaign roster and come back in the next campaign mission. */
 const RANKS = [

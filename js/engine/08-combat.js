@@ -6,7 +6,7 @@ function isVisible(e){ if(e.faction===G.side) return true; if(e.def&&e.def.cloak
 /* the Swarm leaves a generator alone once it is off: there is nothing left in it to break (it cannot be destroyed) */
 function deadGen(u,t){ return u.faction==='swarm' && t.def && t.def.generator && !t.powered; }
 /* Line of fire: a rock wall (#, high rock ^, crystal *, cliff %) and a Swarm membrane stop gunfire, acid, flame, either way.
-   Low rock does not: you shoot over a crater rim ( ) ). Lobbed things (grenades, the Brood Mother's eggs and acid rain) fly over.
+   Low rock does not: you shoot over a crater rim ( ) ). Lobbed things (grenades, the Matron's eggs and acid rain) fly over.
    The thing you aim at itself never blocks (you can shoot the membrane). Membrane tiles are gathered once per frame. */
 const FIRE_BLOCK = { '#':1, '^':1, '*':1, '%':1 };
 function membraneTiles(){ if(G._membT===G.time&&G._memb) return G._memb; const S=new Set(); for(const e of G.ents) if(!e.dead&&e.type==='membrane') S.add(e.ty*G.map.w+e.tx); G._memb=S; G._membT=G.time; return S; }
@@ -16,7 +16,7 @@ function fireBlocked(u,t){ const m=G.map, W=m.w, S=membraneTiles(), dx=t.x-u.x, 
     if(own&&tx>=own.tx&&tx<own.tx+own.size&&ty>=own.ty&&ty<own.ty+own.size) continue;   /* the structure you aim at */
     if(FIRE_BLOCK[m.tiles[k]]||(S.has(k)&&t.type!=='membrane')) return true; } return false; }
 function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(u.spare&&t===u.spare) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t) && !(t.crew&&u.faction==='swarm'&&veiled(t)); }   /* Rogue: the veil (Among Them) */
-/* the Swarm (except the Brood Mother) leaves a downed soldier alone: it wants the body */
+/* the Swarm (except the Matron) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 /* the Swarm wants the escort (Dr. Maas) above all: in a fight it picks her over a soldier up to pull tiles closer, and hunters within hunt tiles of her go for her */
 const SWARM_VIP = { pull:3, hunt:22 };
@@ -35,7 +35,7 @@ function findTarget(u,rangeTiles,unitsOnly){
   return best;
 }
 function fire(u,t){
-  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Brood Mother's screech */ const dm=(u.dmgMul||1)*(u.blindT>0?SWARM_LIGHT.dmg:1)*(u.crew?feverOf(u)*(u.feral>0?1.3:1):1);   /* Rogue: taint is fever, feral hits harder */
+  const d=u.def; u.cd=d.cooldown*rand(0.9,1.1)/(u.enrage||1)/(u.rateMul||1)/(u.auraT>0?AURA.rate:1)*(u.waverT>0?AURA.waver.rate:1)*(u.dazeT>0?(UNITS.broodmother.screechSlow||1):1);   /* dazeT: the Matron's screech */ const dm=(u.dmgMul||1)*(u.blindT>0?SWARM_LIGHT.dmg:1)*(u.crew?feverOf(u)*(u.feral>0?1.3:1):1);   /* Rogue: taint is fever, feral hits harder */
   if(u.crew) breakVeil(u);   /* Rogue: a shot tears the veil (Among Them) */
   if(u.type==='trooper'&&hasPerk(u)&&t.kind==='unit') throwGrenade(u,t);
   if(u.faction==='corps'&&u.kind==='unit'){ if(G.time-(G.lastFight||-99)>8) bark(u,u.crew&&t.faction==='loyal'?'loyal':'contact'); G.lastFight=G.time; }

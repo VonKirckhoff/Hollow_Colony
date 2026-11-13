@@ -85,7 +85,7 @@ function swarmThink(u,dt){
   }
 }
 function nearestOf(from,filter){ let best=null, bd=Infinity; for(const e of G.ents){ if(e.dead||!filter(e)) continue; const d=dist(from,e); if(d<bd){ bd=d; best=e; } } return best; }
-/* The Brood Mother: wakes when your troops come close, lays eggs, sprays acid, calls her brood at
+/* The Matron: wakes when your troops come close, lays eggs, sprays acid, calls her brood at
    75/50/25% health (and gets faster each time) and regenerates when nobody has hurt her for a while. */
 function layEgg(x,y,type){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE); if(!walkableT(tx,ty)) return;
   const c=makeBuilding('cocoon','swarm',tx,ty,true); c.x=x; c.y=y; c.r=9; c.hatchT=4; c.hatchType=type; }
@@ -294,8 +294,8 @@ function repairSpot(u,b,o,reach,dt){ o.spotT=(o.spotT||0)-dt; if(o.spot&&o.spotT
   if(best&&(!o.spot||Math.hypot(best.x-o.spot.x,best.y-o.spot.y)>4)) o.spotWalk=0;
   o.spot=best; return best; }
 
-/* the spot of your biggest group (for the Brood Mother's burrowing) */
+/* the spot of your biggest group (for the Matron's burrowing) */
 function bossCluster(us){ let best=null, bn=-1; for(const e of us){ const n=us.filter(o=>Math.hypot(o.x-e.x,o.y-e.y)<2*TILE).length; if(n>bn){ bn=n; best=e; } } return best; }
-/* thrown back by the Brood Mother breaking out: up to 1.5 tiles away from her (not into rock), then dazed on the ground */
+/* thrown back by the Matron breaking out: up to 1.5 tiles away from her (not into rock), then dazed on the ground */
 function bossKnock(e,u,t){ const a=Math.atan2(e.y-u.y,e.x-u.x); for(let s=1.5;s>0;s-=0.25){ const x=e.x+Math.cos(a)*s*TILE, y=e.y+Math.sin(a)*s*TILE; if(walkableP(x,y)){ e.x=x; e.y=y; break; } }
   e.stunT=t; e.path=null; e.target=null; soldierFalls(e); }

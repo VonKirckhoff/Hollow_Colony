@@ -60,7 +60,7 @@ const UNITS = {
 
 
 
-  broodmother: { name:'The Matron', faction:'swarm', sprite:'broodmother', role:'Mother of the Brood', scale:4,
+  broodmother: { name:'The Matron', faction:'swarm', sprite:'broodmother', role:'Matron of the Brood', scale:4,
     hp:14000, speed:18, radius:44, sight:9, range:1.4, damage:36, cooldown:1.7, attack:'melee', armor:0.25,
     boss:true, regen:20, eggEvery:15, chargeEvery:10, chargeTime:3, chargeSpeed:2.8, rootSpeed:0.25, spitEvery:7, eggs:2, spit:4, spitDamage:8,
     lairEvery:0.3, lairTimes:2, lairHeal:0.12, lairRegen:110, lairTime:25, lairGuard:4, fleeSpeed:4, fleeArmor:0.5, coverBrood:4, stalkSpeed:0.8, kiteTime:5, lobEggs:3,

@@ -1,4 +1,4 @@
-# Brood Mother: kept at a distance she creeps after you and flings eggs; twice she goes back to her lair to heal;
+# Matron: kept at a distance she creeps after you and flings eggs; twice she goes back to her lair to heal;
 # whoever follows her in breaks it off.
 from playwright.sync_api import sync_playwright
 errs=[]; ok=True

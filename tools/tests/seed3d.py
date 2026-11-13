@@ -1,4 +1,4 @@
-# The Matron's Seed (Nov 2026; crate flag `heart`): what she leaves behind in The Matron's Seed and Mother's Blood.
+# The Matron's Seed (Nov 2026; crate flag `heart`): what she leaves behind in The Matron's Seed and The Matron's Blood.
 # 2D: drawn by drawMatronSeed (root fibres, bark rind, glowing cracks, bent tip), also in Intel; 3D: v3Seed (bark plates,
 # 16 crack pieces, 7 root fibres with beads of sap, a bud and a haze), it does not bob and it pulses (seedBeat). Must end with ALL OK.
 import sys
@@ -44,7 +44,7 @@ with sync_playwright() as p:
     r=J(pg,"()=>{ const c=document.createElement('canvas'); c.width=c.height=48; const x=c.getContext('2d'); try{ INTEL_SCENES.heart(x,0.3); return true; }catch(e){ return String(e); } }")
     check('Intel: the moving picture draws the Seed', r is True, r)
     r=J(pg,"()=>{ const m=ROGUE_MISSIONS.find(x=>x.id==='rogue-mothers-blood'); return m.summary+' '+m.briefing.join(' '); }")
-    check("Mother's Blood speaks of her Seed, not her hearts", 'Seed' in r and 'heart' not in r.lower(), r[:120])
+    check("The Matron's Blood speaks of her Seed, not her hearts", 'Seed' in r and 'heart' not in r.lower(), r[:120])
     b.close()
 print('errors',errs)
 print('ALL OK' if ok and not errs else 'SOME FAILED')

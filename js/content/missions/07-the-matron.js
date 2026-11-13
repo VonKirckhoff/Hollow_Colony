@@ -1,5 +1,5 @@
 'use strict';
-/* Mission 7: Brood Mother */
+/* Mission 7: Matron */
 MISSIONS.push(
   {
     id:'brood-mother', title:'The Matron', map:'depths',
@@ -26,7 +26,7 @@ MISSIONS.push(
           g.wall('8',2.3,'lair');
           g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.boss(g.vars.mother,'The Matron');
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); } },
-      { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to the Maw Depths. Three egg chambers, one mother. Dig in at the cave mouth first.') },
+      { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to the Maw Depths. Three egg chambers, one Matron. Dig in at the cave mouth first.') },
       { when:g=>g.time>14, do:g=>g.say('Sgt. Kessler','Six sentries max down here. Relay pads in the side tunnels will keep the salvage flowing.') },
       { when:g=>g.time>26, do:g=>{ g.say('Dropship Kestrel','Kestrel on station. Fifteen boots on the ground max. Select the Landing Zone to order replacements.'); g.ping({x:17,y:45}); } },
       { when:g=>g.time>45, do:g=>g.say('Dr. Maas','The membrane at the lair is fed by the chambers. Kill all three and it will rot away.') },

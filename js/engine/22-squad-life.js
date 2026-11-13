@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- 2v. squad life: motion tracker, acid blood, voices, cover, suppression, flares, obituaries ---------- */
 const SQUAD = {
-  downed:{ time:15, hp:0.35, patch:4, reviveHp:0.3, hitTime:10, minLeft:6 },   // seconds to bleed out / health while down (× max, only the Brood Mother can still finish him) / seconds of Medic work / health after revive (× max)
+  downed:{ time:15, hp:0.35, patch:4, reviveHp:0.3, hitTime:10, minLeft:6 },   // seconds to bleed out / health while down (× max, only the Matron can still finish him) / seconds of Medic work / health after revive (× max)
                                                                      // hitTime: seconds of bleeding a hit of his full max health costs him · minLeft: hits never bring his clock below this (only bleeding does)
   body:{ time:35, fetch:8, infect:3, seek:8, guard:1.6, burn:1.2, escorts:2, haulSpeed:0.7, biomass:20, heal:0.1, huskHatch:1.6 },   // seconds a body lies / seconds a Grafter needs to infect it / tiles a Swarm unit comes from (×1.8 when you play the Swarm) / tiles a soldier guards it / seconds a Pyro needs to burn it / Swarm guards per body / carrier speed / biomass and share of hive health when a body is brought home / Husk cocoon takes this × longer   // a body never rots away: time only fades it in; fetch = seconds a body lies unclaimed before the nearest nest sends a Crawler for it, wherever it lies
   medic:{ leash:4, downedLeash:8 },                                  // tiles a Medic without orders goes from his place (in the formation, or where you left him) to heal someone; further for a downed soldier

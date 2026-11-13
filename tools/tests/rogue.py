@@ -79,7 +79,7 @@ CASES=[
 ('mothers blood: the membrane knows its own, ascension','''resetRogue(); const G=start(5); step(1); calm(); const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt); u.vet.taint=65; u.invuln=true; tp(u,61,13); for(let i=0;i<8&&!G.vars.open;i++){ tp(u,61,13); step(1); }
   ok(G.vars.open&&!G.ents.some(e=>!e.dead&&e.type==='membrane'&&e.tag==='lair'),'60+ taint at the membrane: it opens'); const m=G.vars.mother; m.invuln=false; ok(m.maxHp<UNITS.broodmother.hp*0.5,'the Mother is weaker for seven'); damage(m,1e8,u); step(1);
   ok(G.vars.heart&&G.timer&&G.timer.label==='Dust in the Maw','her Seed pulses; Dust is coming'); const h=G.vars.heart; const c=crew().find(x=>x.vet.capt); c.invuln=true; for(let i=0;i<10&&!G.over;i++){ tp(c,Math.floor(h.x/TILE),Math.floor(h.y/TILE)); step(1); }
-  ok(G.over&&G.over.win&&rogueStore().ending==='ascend','Ascension'); ok(rogueStore().crew.every(v=>v.strains.includes('mother')),'the Mother strain in all of them');'''),
+  ok(G.over&&G.over.win&&rogueStore().ending==='ascend','Ascension'); ok(rogueStore().crew.every(v=>v.strains.includes('mother')),'the Matron strain in all of them');'''),
 ('mothers blood: ashes and the trophies','''resetRogue(); for(const m of ROGUE_MISSIONS) recordWin(m.id,'normal',100,false); const T=trophies(); for(const t of ROGUE_TROPHIES) delete T[t.id]; store.set('hc-trophies',T);
   const G=start(5); step(1); calm(); for(const h of hives()){ h.invuln=false; kill(h,null); } step(1); ok(G.vars.open,'three chambers gone: the lair opens');
   const m=G.vars.mother; m.invuln=false; damage(m,1e8,null); step(1); const py=crew().find(x=>x.type==='pyro'); py.invuln=true; const h=G.vars.heart; for(let i=0;i<9&&!G.over;i++){ tp(py,Math.floor(h.x/TILE)+1,Math.floor(h.y/TILE)); step(1); }

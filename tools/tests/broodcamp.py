@@ -20,7 +20,7 @@ CASES={
    const brood=[]; for(const b of bs) for(let i=0;i<2;i++){ const u=makeUnit('crawler','swarm',b.x+i*10,b.y+20); u.role='brood'; u.mine=true; u.invuln=true; u.post={x:u.x,y:u.y}; u.order={type:'hold'}; brood.push(u); }
    step(18); ok(bs.every(b=>!b.owned),'brood on all three: they go quiet'); step(30); const o=G.objectives.find(o=>o.id==='quiet'); ok(/to go/.test(o.text),'the hold clock counts ('+o.text+')');
    step(35); ok(G.over&&G.over.win,'win after holding all three for a minute');''',
- 'swarm-mother':'''step(1); const m=G.vars.mother; ok(m&&Math.abs(m.hp/m.maxHp-0.45)<0.02,'the Mother lies wounded (45%)'); ok(G.ents.some(e=>!e.dead&&e.type==='membrane'&&e.tag==='lair'),'the living wall stands');
+ 'swarm-mother':'''step(1); const m=G.vars.mother; ok(m&&Math.abs(m.hp/m.maxHp-0.45)<0.02,'the Matron lies wounded (45%)'); ok(G.ents.some(e=>!e.dead&&e.type==='membrane'&&e.tag==='lair'),'the living wall stands');
    calm(); m.invuln=false; step(62); ok(G.vars.raids>=1,'a fire team came down the tunnels'); for(const h of hives()) h.dead=true; step(1); ok(!G.ents.some(e=>!e.dead&&e.type==='membrane'&&e.tag==='lair'),'all chambers gone: the wall opens');
    G.timer.end=G.time+0.5; step(1); ok(G.over&&G.over.win,'win when the clock runs out with her alive');''',
  'swarm-seed':'''step(1); ok(hives().length===3,'three nests'); ok(G.ents.filter(e=>!e.dead&&e.oldEgg).length===3,'three old eggs'); ok(G.swarm.cfg.seedMax===5,'up to five Seedling nests');
@@ -31,7 +31,7 @@ LOSE={
  'swarm-lights':"step(1); for(const h of hives()) h.dead=true; step(1); ok(G.over&&!G.over.win,'lose when every nest burns');",
  'swarm-choir':"step(1); for(const h of hives()) h.dead=true; step(1); ok(G.over&&!G.over.win,'lose when every nest burns');",
  'swarm-signal':"step(1); G.timer.end=G.time+0.5; step(1); ok(G.over&&!G.over.win,'lose when the fleet arrives');",
- 'swarm-mother':"step(1); damage(G.vars.mother,1e8,null); step(1); ok(G.over&&!G.over.win,'lose when the Mother dies');",
+ 'swarm-mother':"step(1); damage(G.vars.mother,1e8,null); step(1); ok(G.over&&!G.over.win,'lose when the Matron dies');",
  'swarm-seed':"step(1); for(const h of hives()) h.dead=true; step(1); ok(G.over&&!G.over.win,'lose when every nest burns');",
 }
 res=[]

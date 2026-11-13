@@ -1,6 +1,6 @@
 'use strict';
 /* Swarm mission 8: Seed the Moon — Tycho Maw, seen from the hives.
-   The Mother lives. Now the Brood must spread across the crater before the Lunar Corps sterilises it from orbit.
+   The Matron lives. Now the Brood must spread across the crater before the Lunar Corps sterilises it from orbit.
    From SEED_RAIN.first seconds on, a strike from orbit falls every SEED_RAIN.every seconds: a red circle and a SCORCH countdown
    (scorchAt in 26b-brood-missions.js), mostly on a nest (the one hit longest ago), sometimes on the thickest part of the brood.
    Grow new nests from Seedlings (up to SEED_RAIN.seeds of them) and from the three old eggs on the crater floor.
@@ -12,7 +12,7 @@ SWARM_MISSIONS.push(
     id:'swarm-seed', side:'swarm', title:'Seed the Moon', map:'maw',
     summary:'Fire falls from the sky. Spread over the crater faster than it can burn us.',
     briefing:[
-      'The Mother lives, and the soft ones know they cannot reach her. So they will burn the crater from the sky instead: every nest, every egg, everything.',
+      'The Matron lives, and the soft ones know they cannot reach her. So they will burn the crater from the sky instead: every nest, every egg, everything.',
       'Fire falls in a red circle. You see it coming: the circle counts down before it burns. Nests cannot run. Brood can.',
       `We must be in more places than they can burn. Root Seedlings, wake the old eggs in the crater, and have <b>${SEED_RAIN.goal} nests alive</b> when the fire stops.`,
       'Their camp lies in the south of the crater. They will send hunters for the nests nearest to it.'
@@ -32,7 +32,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.time>0.1, do:g=>{ swarmBrood(); g.place('sentry','P',-3,-2); g.place('sentry','P',4,-2);
           for(const u of g.corps()){ u.order={type:'hold'}; u.stance='hold'; u.home={x:u.x,y:u.y}; }
           g.setTimer(900,'Fire stops'); g.vars.rainAt=SEED_RAIN.first; } },
-      { when:g=>g.time>1, do:g=>g.brood_say('The Mother lives. Now they want to burn the whole crater. Spread out: root Seedlings, wake the old eggs. Be everywhere.') },
+      { when:g=>g.time>1, do:g=>g.brood_say('The Matron lives. Now they want to burn the whole crater. Spread out: root Seedlings, wake the old eggs. Be everywhere.') },
       { when:g=>g.time>5, do:g=>g.say('Cmdr. Varga','Orbital sterilisation is cleared. Strikes on every nest in Tycho Maw, starting in ninety seconds.') },
       { when:g=>g.time>40, do:g=>g.brood_say('Three old eggs lie in the crater: west, east and in the middle. Stand by one and it wakes into a nest.') },
       { when:g=>g.time>SEED_RAIN.first-12, do:g=>g.brood_say('Fire from the sky soon. When the red circle appears, run out of it. A nest cannot run: have more of them.') },

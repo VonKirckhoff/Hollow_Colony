@@ -12,7 +12,7 @@ HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 CASES=[
 ('campaign order','''const ids=MISSIONS.map(m=>m.id); ok(ids.length===11,'eleven Corps missions');
-  ok(ids[4]==='night-shift'&&ids[7]==='kill-order'&&ids[8]==='mothers-heart'&&ids[9]==='brood-mother'&&ids[10]==='high-ground','Night Shift 5, Kill Order 8, Mother\\'s Heart 9, Brood Mother 10, High Ground 11');
+  ok(ids[4]==='night-shift'&&ids[7]==='kill-order'&&ids[8]==='mothers-heart'&&ids[9]==='brood-mother'&&ids[10]==='high-ground','Night Shift 5, Kill Order 8, Mother\\'s Heart 9, Matron 10, High Ground 11');
   for(const m of MISSIONS) recordWin(m.id,'normal',500,false); ok(rogueUnlocked(),'all eleven won: Rogue open');
   const P=ui.progress; for(const id of ['night-shift','kill-order','mothers-heart']) delete (P.results||P)[id]; ok(rogueUnlocked(),'the eight old ones won before Nov 2026: Rogue stays open');
   for(const id of ['brood-mother']) delete (P.results||P)[id]; ok(!rogueUnlocked()||devUnlock,'one old one missing and the new ones not won: locked'); for(const m of MISSIONS) recordWin(m.id,'normal',500,false);'''),
@@ -74,14 +74,14 @@ CASES=[
   step(G.mission.job.koRethink+1); ok(G.vars.teams.some(t=>t.list.includes(b)),'he joins a team');'''),
 ('kill order: lost','''let G=start('kill-order'); step(1); calm(); for(const s of dust()) s.invuln=true; G.timer.end=G.time+0.2; step(1); ok(G.over&&!G.over.win&&/Magpie/.test(G.over.text),'a beacon not yours: the hauler lands');
   G=start('kill-order'); step(1); calm(); kill(G.vars.kessler,null); step(1); ok(G.over&&!G.over.win&&obj('kessler')==='failed','Kessler dead: lost');'''),
-("the Matron's Seed: burn it",'''const G=start('mothers-heart'); step(1); ok(G.vars.sac&&G.vars.sac.heart,'her Seed, still pulsing'); ok(osp().length===7,'seven of them'); ok(!G.ents.some(e=>!e.dead&&e.type==='broodmother'),'no Brood Mother: she fled');
+("the Matron's Seed: burn it",'''const G=start('mothers-heart'); step(1); ok(G.vars.sac&&G.vars.sac.heart,'her Seed, still pulsing'); ok(osp().length===7,'seven of them'); ok(!G.ents.some(e=>!e.dead&&e.type==='broodmother'),'no Matron: she fled');
   calm(); for(const u of osp()) u.invuln=true; for(const s of dust()) s.invuln=true; step(5); ok(G.vars.tap>0,'they drain it ('+(G.vars.tap*100).toFixed(1)+'%)'); ok(G.timer&&G.timer.label==='Seed drained','the clock shows how long');
   const py=dust().find(s=>s.type==='pyro'); const h=G.vars.sac; for(let i=0;i<G.mission.job.mhBurn+3&&!G.vars.done;i++){ tp(py,Math.floor(h.x/TILE)-1,Math.floor(h.y/TILE)); step(1); }
-  ok(G.vars.done==='burnt'&&obj('blood')==='done','a Pyro burns it'); ok(osp().every(u=>u.ospBroke),'they all run'); for(let i=0;i<40&&!G.over;i++) step(1); ok(G.over&&G.over.win&&/alive/.test(G.over.text),'won: and the Mother lives');'''),
+  ok(G.vars.done==='burnt'&&obj('blood')==='done','a Pyro burns it'); ok(osp().every(u=>u.ospBroke),'they all run'); for(let i=0;i<40&&!G.over;i++) step(1); ok(G.over&&G.over.win&&/alive/.test(G.over.text),'won: and the Matron lives');'''),
 ("the Matron's Seed: drained",'''const G=start('mothers-heart'); step(1); calm(); for(const u of osp()) u.invuln=true; G.vars.tap=0.995; step(3); ok(G.over&&!G.over.win&&obj('blood')==='failed','they drain it: lost');'''),
 ("mother's blood: she tears free",'''resetRogue(); __hc.startMission(ROGUE_MISSIONS.find(m=>m.id==='rogue-mothers-blood')); const G=__hc.G; step(1); const m=G.vars.mother; m.invuln=false; damage(m,1e8,null); step(1);
   ok(m.dead&&G.vars.heart&&G.vars.heart.heart,'she tears her Seed loose and is gone'); ok(G.msgs.some(x=>/scream/.test(x.text)),'Varga: something hurt her'); ok(/blood trail/.test(ROGUE_MISSIONS.find(x=>x.id==='rogue-mothers-blood').triggers.map(t=>String(t.do)).join('')),'no dead queen any more');
-  ok(/lived through/.test(MISSIONS.find(x=>x.id==='brood-mother').briefing[0]),'Brood Mother: she lived through it');'''),
+  ok(/lived through/.test(MISSIONS.find(x=>x.id==='brood-mother').briefing[0]),'Matron: she lived through it');'''),
 ('save and load, dev panel','''let G=start('night-shift'); step(1); calm(); step(G.mission.job.nsArrive+G.mission.job.nsSneak+1); G.vars.dl=0.3; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); G=__hc.G; step(0.5);
   ok(osp().length===7&&osp().every(u=>u.truce==='swarm'&&u.sprite==='crew_'+u.type),'the raiders come back as they were'); ok(G.vars.dl>=0.29&&G.vars.term,'and the download'); goMenu('menu');
   for(const k of ['OSPREY|demoPlant','OSPREY|demoFuse','OSPREY|demoDmg','OSPREY|nadeEvery','OSPREY|nadeDmg','M|job.nsUnder','M|job.nsBrute','OSPREY|hiveHeal','OSPREY|healTo','OSPREY|spacing','OSPREY|contact','OSPREY|calm','M|job.nsHold','M|job.nsEvery','OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload','M|job.koShip','M|job.mhTap.normal','M|job.mhBurn']) ok(!!devHelp(k),'dev help: '+k);''')

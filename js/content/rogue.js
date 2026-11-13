@@ -89,7 +89,7 @@ const ospreyLost=()=>[{ title:crewTitle(ROGUE_CREW[0]), role:UNITS[ROGUE_CREW[0]
 const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Kerckhoffs' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [
-  { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Mother strain' },
+  { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Matron strain' },
   { id:'rogue:ashes',  name:'Ashes',        what:'End the Rogue campaign by burning the Seed' },
   { id:'rogue:full',   name:'Full Strain',  what:'One crew member carries all six strains' },
   { id:'rogue:cold',   name:'Cold Blood',   what:'Win every Rogue mission without a crew member ever going feral' },
