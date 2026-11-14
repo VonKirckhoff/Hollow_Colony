@@ -348,7 +348,7 @@ function showEnd(){
   $('#e-text').textContent=o.text;
   if(o.win && m.id!=='skirmish'){ const r=resultOf(m.id), pb=G.prevBest, up=pb&&DIFF_RANK[G.diffKey]>DIFF_RANK[pb.diff];
     $('#e-text').textContent+=` Completed on ${DIFFICULTY[G.diffKey].label}.${up?' New best difficulty!':pb&&pb.diff!==G.diffKey?` Your best remains ${DIFFICULTY[r.diff].label}.`:''}`; 
-    if(G.rogueOpened) $('#e-text').textContent+=' A new campaign is open: Rogue Strain. The Osprey was never lost.'; }
+    if(G.rogueOpened) $('#e-text').textContent+=' A new campaign is open: Rogue Strain. Containment Order 10 has your name on it.'; }
   const ev=$('#e-vets'); const rr=G.rosterResult, promoted=(rr&&rr.promoted)||[], hero=heroOf();
   const fallenAll=(rr&&(rr.fallenAll||rr.fallen))||[];
   if(o.win && m.rogue){ ev.hidden=false; ev.innerHTML=rogueEndHtml(); }

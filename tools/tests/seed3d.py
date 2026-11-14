@@ -1,4 +1,4 @@
-# The Matron's Seed (Nov 2026; crate flag `heart`): what she leaves behind in The Matron's Blood (Rogue job 8), and its split husk
+# The Matron's Seed (Nov 2026; crate flag `heart`): what she leaves behind in The Seed Wakes (Rogue job 8, The Matron's Blood until Nov 2026), and its split husk
 # (flags heart+husk) that Dust finds in The Matron (Corps 9; the Corps mission The Matron's Seed was cut, the campaign has 10 missions).
 # 2D: drawn by drawMatronSeed (root fibres, bark rind, glowing cracks, bent tip), also in Intel; 3D: v3Seed (bark plates,
 # 16 crack pieces, 7 root fibres with beads of sap, a bud and a haze), it does not bob and it pulses (seedBeat). Must end with ALL OK.
@@ -48,11 +48,11 @@ with sync_playwright() as p:
     if shots: pg.wait_for_timeout(200); pg.screenshot(path='/tmp/seed3d.png', timeout=90000)
     pg.keyboard.press('F3'); pg.wait_for_timeout(300)
     r=J(pg,"()=>{ const e=INTEL_EXTRA.heart; return [e.name, e.role, e.desc]; }")
-    check('Intel: Her Seed, The Matron\'s Blood', r[0]=='Her Seed' and "The Matron's Blood" in r[1] and 'heart' not in r[2].lower(), r)
+    check('Intel: Her Seed, The Seed Wakes', r[0]=='Her Seed' and "The Seed Wakes" in r[1] and 'heart' not in r[2].lower(), r)
     r=J(pg,"()=>{ const c=document.createElement('canvas'); c.width=c.height=48; const x=c.getContext('2d'); try{ INTEL_SCENES.heart(x,0.3); return true; }catch(e){ return String(e); } }")
     check('Intel: the moving picture draws the Seed', r is True, r)
     r=J(pg,"()=>{ const m=ROGUE_MISSIONS.find(x=>x.id==='rogue-mothers-blood'); return m.summary+' '+m.briefing.join(' '); }")
-    check("The Matron's Blood speaks of her Seed, not her hearts", 'Seed' in r and 'heart' not in r.lower(), r[:120])
+    check("The Seed Wakes speaks of her Seed, not her hearts", 'Seed' in r and 'heart' not in r.lower(), r[:120])
     b.close()
 print('errors',errs)
 print('ALL OK' if ok and not errs else 'SOME FAILED')

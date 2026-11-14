@@ -135,7 +135,7 @@ const INTEL_SCENES = {
   crawler:(c,t)=>iaRunner(c,t,'crawler',{ per:1.6, range:14 }), drone:(c,t)=>iaRunner(c,t,'drone',{ per:2.6, lunge:true }), grafter:(c,t)=>iaRunner(c,t,'grafter',{ per:1.9, range:13 }),
   spitter:iaSpitter, brute:iaBrute, seedling:(c,t)=>iaPulse(c,t,'seedling',{ amp:0.07, speed:2 }), bloater:(c,t)=>iaPulse(c,t,'bloater',{ amp:0.08, speed:1.6, max:28 }),
   husk:(c,t)=>{ const tw=iaHash(Math.floor(t*6),1)>0.8; iaShadow(c,24,IA_GROUND,8); iaSprite(c,'husk',24+(tw?(iaHash(Math.floor(t*6),2)-0.5)*3:0),IA_GROUND,iaUnitScale('husk'),Math.sin(t*0.7)>0?1:-1); },
-  broodmother:iaBroodMother, grazer:iaGrazer,
+  broodmother:iaBroodMother, heir:iaBroodMother, grazer:iaGrazer,
   hq:iaHq, relay:iaRelay, sentry:iaSentry, barricade:iaBarricade, lz:iaLz, uplink:iaUplink, generator:iaGenerator, chargesite:iaChargeSite, charge:iaCharge,
   medtent:iaTent, terminal:iaTerminal, door:iaDoor, wreck:iaWreck, rubble:iaRubble,
   hive:iaHive, egg:iaEgg, cocoon:(c,t)=>iaPulse(c,t,'cocoon',{ amp:0.1*Math.max(0,Math.sin(t*4.5))**4+0.02, speed:4.5, fit:22 }), membrane:iaMembrane, shaft:iaShaft, choirpod:iaChoir,

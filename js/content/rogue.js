@@ -1,8 +1,9 @@
 'use strict';
 /* Hollow Colony — the third campaign: Rogue Strain.
-   The crew of the Osprey, the first rescue ship that crashed outside Dr. Maas's lab, is listed as killed in action.
-   They are not dead. They found her samples, they saw what Swarm DNA can do to a body, and they stopped answering the radio.
-   You play the crew: seven named soldiers, no base, no dropship, hunted by the Swarm and by the Lunar Corps they left behind.
+   A sequel to the Corps campaign (Nov 2026). After High Ground, Tycho issues Containment Order 10: everyone exposed in the Matron's
+   lair, and every patient at Kappa, is to be contained (burnt). Your own soldier (Squad Dust, infected in her lair) runs and joins the
+   Osprey crew, the deserters Dust fought in Night Shift and Kill Order. They carry the Matron's Seed, taken from her lair before she died.
+   You play the crew: seven named soldiers (Kerckhoffs, five of his own, and you), no base, no dropship, hunted by the Brood and the Corps.
    Unlocked once every Lunar Corps campaign mission is won on Normal or Hard. The engine lives in js/engine/31-rogue.js. */
 const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-… (with r01b and r05b in between), in the order of their <script> lines */
 
@@ -17,8 +18,8 @@ const ROGUE_CREW = [
   { id:'osp-cnudde',      name:'Cnudde',        type:'engineer', rank:0, xp:3,  bio:'Crew chief. Can crack any freezer, lock or sentry the Corps ever built.' },
   { id:'osp-vanwesemael', name:'Van Wesemael',  type:'trooper',  rank:0, xp:1,  bio:'Youngest of the crew. First to volunteer for the needle.' },
   /* your own soldier (Nov 2026, in Braet's old place): name and sex come from the Lunar Corps roster (ui.roster.self), see selfCrew in 31-rogue.js */
-  { id:'osp-self',        name:'Braet',         type:'trooper',  rank:0, xp:2,  self:true, bio:'Came over from Lunar Corps Squad Dust. Knows how the Corps hunts, because #he was the one hunting.',
-    intel:'Squad Dust, until the day #he was not. #He fought the Brood across Kappa, Tycho Maw and the Highlands, and met the Osprey crew down the barrel of a rifle. Then #he crossed over. Kerckhoffs never asked why, and #he never told him.<br><br>The Corps has #his name on a list somewhere: not the Cenotaph, the other one.' }
+  { id:'osp-self',        name:'Braet',         type:'trooper',  rank:0, xp:2,  taint:25, self:true, bio:'Squad Dust, until Containment Order 10. Stood in the Matron\'s lair when she died and breathed what she bled. Knows how the Corps hunts, because #he was the one hunting.',
+    intel:'Squad Dust from the first landing to High Ground. #He burned the Matron\'s egg chambers and watched her die, and #his blood has not been #his own since. When Tycho\'s order came down, #he did not wait to be contained. Kerckhoffs met #him in the dark under Hollow Colony and asked one question: "Can you still shoot straight?"<br><br>The Corps has #his name on a list somewhere: not the Cenotaph, the other one.' }
 ];
 
 /* STRAINS: what a splice of Swarm DNA does to a soldier. A soldier carries every strain at most once.
@@ -55,7 +56,7 @@ const ROGUE = {
   loyal:{ help:12, hp:{ easy:0.85, normal:1, hard:1.2 }, dmg:{ easy:0.85, normal:1, hard:1.15 }, xp:2 }
 };
 /* Corps voices heard over the radio in a Rogue mission: shown as an intercept */
-const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Kestrel','Dr. Maas','Lt. Okafor','Corps patrol','Outpost Kappa','Corps radio'];
+const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Kestrel','Dr. Maas','Lt. Van Der Planck','Corps patrol','Outpost Kappa','Corps radio'];
 /* ROGUE_VOICE: what the Osprey crew says instead of the Corps lines (VOICE in veterans.js). Kinds the crew lacks fall back to VOICE.
    Extra kinds: loyal (first shots at the loyal Corps), taint (said now and then from 85% taint), seizure, feral, stab (the Medic doses someone), sorry (back to his senses after a feral fit).
    The voice itself is lower and slower than the Corps, and drops further as the taint climbs (ROGUE_VOICE_TONE). */
@@ -83,7 +84,7 @@ const ROGUE_VOICE = {
 /* how the crew sounds: pitch and rate for the browser's speech voice. taint 0 → base, taint 100 → base − drop. feral: pitch/rate below. */
 const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDrop:0.25, feralPitch:0.1, feralRate:0.62, taintChance:0.3 };
 /* in a Rogue job, the engine's own warnings (hives, husks, the hunt) come from the crew instead of these advisors */
-/* the Osprey's pilot: died in the crash ("Pilot's gone", Osprey Down). Not crew you play, but his name is on the Cenotaph with theirs. */
+/* the Osprey's pilot: died in the crash, before Rogue Strain's story starts. Not crew you play, but his name is on the Cenotaph with theirs. */
 const OSPREY_PILOT = { name:'Van Haviksburg', rank:4, role:'Pilot' };
 /* everyone the Corps lists as lost with the Osprey, in the order of the stone: the Captain, the pilot, then the crew */
 const ospreyLost=()=>[{ title:crewTitle(ROGUE_CREW[0]), role:UNITS[ROGUE_CREW[0].type].name }, { title:`${RANKS[OSPREY_PILOT.rank].abbr} ${OSPREY_PILOT.name}`, role:OSPREY_PILOT.role },
@@ -91,7 +92,7 @@ const ospreyLost=()=>[{ title:crewTitle(ROGUE_CREW[0]), role:UNITS[ROGUE_CREW[0]
 const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Kerckhoffs' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [
-  { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Matron strain' },
+  { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Seed into your blood' },
   { id:'rogue:ashes',  name:'Ashes',        what:'End the Rogue campaign by burning the Seed' },
   { id:'rogue:full',   name:'Full Strain',  what:'One crew member carries all six strains' },
   { id:'rogue:cold',   name:'Cold Blood',   what:'Win every Rogue mission without a crew member ever going feral' },

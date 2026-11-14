@@ -72,6 +72,11 @@ const UNITS = {
     hp:40, speed:28, radius:9, sight:4, range:0, bio:true, passive:true,
     desc:'Docile lunar fauna. The Brood will infect it if it can.' }
 };
+/* The Heir (Nov 2026, Rogue job 8 The Seed Wakes): the young Matron grown from her Seed in the lair where she died.
+   The Matron's body and behaviour at 60% of her size, 30% faster, with half her health (the job's tough.heir scales it further). */
+UNITS.heir = { ...UNITS.broodmother, name:'The Heir', role:'Grown from the Matron\'s Seed', scale:UNITS.broodmother.scale*0.6, radius:Math.round(UNITS.broodmother.radius*0.6),
+  hp:Math.round(UNITS.broodmother.hp*0.5), speed:UNITS.broodmother.speed*1.3, chargeSpeed:UNITS.broodmother.chargeSpeed*1.3,
+  desc:'What grew out of the Matron\'s Seed, rooted in the lair where she died. Smaller than her mother and faster, and already laying.' };
 
 /* 1d. BUILDINGS. size is in tiles (square). */
 const BUILDINGS = {

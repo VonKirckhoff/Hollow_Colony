@@ -8,7 +8,7 @@ ROGUE_MISSIONS.push(
     id:'rogue-cold-harvest', title:'Cold Harvest', map:'mare', rogue:true,
     summary:'Harvest three hives in a dark town the Corps has lit up.',
     briefing:[
-      'Devreese has the first strains working in our blood, but she needs more: whole hives, not scraps. Mare Colony has four, and the Corps has the town.',
+      'Devreese has the first strains working in our blood, yours included, but she needs more: whole hives, not scraps. Mare Colony has four, and the Corps has the town.',
       'They got the generators running. The streets they light are theirs: walk into the light and every soldier at that generator sees you. In the dark they see as little as we do. Night Eyes helps.',
       'Kill three hives without fire. A burnt hive is worth nothing. When we have three, we leave through the old mine shaft in the south-west.'
     ],
@@ -36,6 +36,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','Mare Colony. Look at it, lit up like a parade ground. Stay in the dark, stay off their streets.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','Four hives. I need three, whole. Mortier, that means your flamer stays off the nests. Burn what comes at us if you must, never the hive.') },
       { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','Flares (L) light us up as well as them. Use them on the nests, not on the streets.') },
+      { when:g=>g.time>26, do:g=>g.crewSay(selfName(),'I turned these lights back on, in the Blackout job. Did not think I would ever be hiding from them.') },
       /* the light: anyone of the crew in the glow of a running generator is seen by every Corps soldier near it */
       { repeat:true, when:g=>g.time>1&&!!g.vars.gens, do:g=>{ for(const gen of g.vars.gens){ if(gen.dead||!gen.powered) continue;
           const lit=g.crew().find(u=>!u.downed&&Math.hypot(u.x-gen.x,u.y-gen.y)<gen.def.light*TILE*0.8); if(!lit) continue;
@@ -49,7 +50,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.harvested()>=1, do:g=>g.crewSay('Devreese','One! Do not touch the samples with bare hands. Do not lick your fingers, Van Wesemael.') },
       { repeat:true, when:g=>g.vars.harvestDone&&!g.vars.won&&g.isDone('harvest'), do:g=>g.setText('escape',`Everyone down the old mine shaft in the south-west, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
       { when:g=>g.isDone('harvest')&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); if(!g.vars.lightSaid) g.complete('dark');
-          g.win(g.vars.lightSaid?'In the morning the Corps finds three dead hives with their hearts cut out, and the tracks of seven boots going down a mine shaft.':'In the morning the Corps finds three dead hives with their hearts cut out. Not one sentry saw a thing.'); } },
+          g.win(g.vars.lightSaid?'In the morning the Corps finds three dead hives with their hearts cut out, and the tracks of seven boots going down a mine shaft. One set of prints is Dust issue.':'In the morning the Corps finds three dead hives with their hearts cut out. Not one sentry saw a thing.'); } },
       { when:g=>g.time>2&&g.crew().length===0&&!g.out(), do:g=>g.lose('The crew dies in the dark streets of Mare Colony.') }
     ]
   }

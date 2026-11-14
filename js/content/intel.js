@@ -60,9 +60,9 @@ const INTEL_EXTRA = {
     desc:'A cold case of Dr. Maas\'s stabilizer, one in front of each tent of the Kappa field hospital.',
     note:'The raiders want them: one of them only has to stand at a case for a moment and it is gone. Keep a soldier between the cases and the dark.',
     stats:()=>{ const m=MISSIONS.find(x=>x.id==='night-shift'); return [['Taken in',((m&&m.job.nsGrab)||2.5)+' s'],['Cases','3']]; } },
-  heart:{ name:'Her Seed', role:'Mission object · The Matron\'s Blood', faction:'swarm',
-    desc:'A knot as big as a man, ripped out of the Matron\'s roots when she tore herself free and burrowed into the deep. Under its hard rind the core still pulses, and its sap carries the strain at its strongest.',
-    note:'Rogue job 8: stand one of the crew on it and Devreese puts it in your blood (Ascension), or let Mortier burn it (Ashes), before Dust comes down. In The Matron, Dust finds only its split husk.',
+  heart:{ name:'Her Seed', role:'Mission object · The Seed Wakes', faction:'swarm',
+    desc:'A knot as big as a man, ripped out of the Matron\'s roots when the Osprey crew bled her, days before Dust killed her. Under its hard rind the core still pulses, and its sap carries the strain at its strongest. It slept in a freezer case until it went home to her lair and rooted there.',
+    note:'In The Matron, Dust finds only its split husk. In Rogue job 8 the Heir grows out of it and leaves it behind when she flees: stand one of the crew on it and Devreese puts it in your blood (Ascension), or let Mortier burn it (Ashes), before Dust comes down.',
     stats:()=>[['Into the blood','8 s'],['Mortier burns it','6 s'],['Dust comes down in','150 s']] },
   /* the Osprey crew as Dust meets them: nameless until Night Shift is won */
   raiders:()=>{ const known=typeof isDone==='function'&&isDone('night-shift'), O=typeof OSPREY!=='undefined'?OSPREY:{hp:{normal:2.5},breakAt:0.25,hiveHeal:6};

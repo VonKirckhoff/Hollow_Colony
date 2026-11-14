@@ -54,9 +54,10 @@ ROGUE_MISSIONS.push(
           g.setText('calm',`Keep ${c.vet.name} next to a living hive for 20 seconds (0/20)`);
           const sq=[...g.loyal('trooper','9',2),...g.loyal('gunner','9',1),...g.loyal('pyro','9',1),...g.loyal('medic','9',1),...g.loyal('engineer','9',1)];
           for(const u of sq){ u.sweep=true; u.home=null; } g.vars.sweepI=0; g.vars.sweepAt=g.time+25; } },
+      { when:g=>g.time>4&&g.vars.pt&&g.vars.pt.vet.id==='osp-self', do:g=>g.crewSay(selfName(),'It is the Matron. I can hear her, even dead. Get me to a hive.') },
       { when:g=>g.time>1, do:g=>g.crewSay('Devreese',`${g.vars.pt.vet.name} is at ${Math.round(g.vars.pt.vet.taint)} and climbing. The doses only buy a minute. We need a living hive, Captain. Any hive.`) },
       { when:g=>g.time>9, do:g=>g.crewSay('Capt. Kerckhoffs','Closest nest is north-east of the landing. Everyone around him. And keep that flamer cold.') },
-      { when:g=>g.time>28, do:g=>g.say('Lt. Okafor','Sweep team, Okafor. First nest is the south-east one. Burn it and move on, we have five to do before dark.') },
+      { when:g=>g.time>28, do:g=>g.say('Lt. Van Der Planck','Sweep team, Van Der Planck. First nest is the south-east one. Burn it and move on, we have five to do before dark.') },
       { when:g=>g.time>34, do:g=>g.crewSay('Cnudde','They are burning the hives! If they get them all, we have nothing.') },
       /* the fever: his taint keeps climbing until a hive has quieted it */
       { repeat:true, when:g=>!g.vars.cured&&g.vars.pt&&!g.vars.pt.dead, do:g=>{ const u=g.vars.pt, dt=g.time-g.vars.ft; g.vars.ft=g.time; if(!(u.feral>0)&&!u.downed) u.vet.taint=Math.min(ROGUE.taint.feral,u.vet.taint+0.45*dt);
@@ -71,8 +72,8 @@ ROGUE_MISSIONS.push(
       { when:g=>g.vars.pt&&g.vars.pt.dead&&!g.vars.cured, do:g=>{ g.fail('calm'); g.lose(`${g.vars.pt.vet.name} is dead, and with nothing to quiet it, the strain does not let ${pron(g.vars.pt.vet,'him')} come back.`); } },
       /* the sweep team goes from hive to hive */
       { repeat:true, when:g=>g.time>g.vars.sweepAt, do:g=>{ g.vars.sweepAt=g.time+0.5; sweepTick(g); } },
-      /* the sweep team wiped out: Okafor sends a second one (once) */
-      { when:g=>g.time>40&&!g.vars.cured&&!g.loyals().some(u=>u.sweep), do:g=>{ g.vars.team2=g.time+35; g.say('Lt. Okafor','Sweep team one is gone. Team two, you are up. Same orders: burn every nest.'); } },
+      /* the sweep team wiped out: Van Der Planck sends a second one (once) */
+      { when:g=>g.time>40&&!g.vars.cured&&!g.loyals().some(u=>u.sweep), do:g=>{ g.vars.team2=g.time+35; g.say('Lt. Van Der Planck','Sweep team one is gone. Team two, you are up. Same orders: burn every nest.'); } },
       { when:g=>g.vars.team2&&g.time>g.vars.team2&&!g.vars.cured, do:g=>{ const sq=[...g.loyal('trooper','9',2),...g.loyal('gunner','9',1),...g.loyal('pyro','9',1),...g.loyal('medic','9',1)]; for(const u of sq){ u.sweep=true; u.home=null; } g.vars.sweepAt=g.time; } },
       { repeat:true, when:g=>g.isDone('calm')&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old mine shaft in the south, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
       { when:g=>g.isDone('calm')&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit');

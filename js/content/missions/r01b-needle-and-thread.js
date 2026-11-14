@@ -1,7 +1,7 @@
 'use strict';
 /* Rogue 2: Needle and Thread
-   Kappa Basin, a week after Osprey Down. The Corps turned the relay station Squad Dust held into a field hospital, and the
-   shipment Dr. Maas sent to Tycho (her stabilizer and her files) never got further than Kappa. Devreese has to stand at the records
+   Kappa Basin, a week after Dead Man's Frequency: the crew hits the field hospital a second time (the first raid was Corps mission Night Shift,
+   which your own soldier helped to hold). Tycho is emptying the tents under Containment Order 10; Maas's stabilizer and her files go out on the next transport. Devreese has to stand at the records
    terminal for a while to pull the files off it; the moment she starts (or the moment anyone sees the crew) the hospital calls Tycho,
    and once the ring round the camp has lost job.lostFor men, a relief squad lands on the pad just south of the camp, under its Relay Tower,
    and fills the ring back up (never past its first strength; job.waves drops at most). Take the three cases of stabilizer from the tents and leave by the north shaft.
@@ -15,10 +15,10 @@ const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.8, leash:7.5 };   /* 
 ROGUE_MISSIONS.push(
   {
     id:'rogue-needle-and-thread', title:'Needle and Thread', map:'kappa', rogue:true,
-    summary:'Rob a Corps field hospital of Dr. Maas\'s stabilizer, and of her formula.',
+    summary:'Hit the Kappa field hospital a second time, for Maas\'s stabilizer and her formula.',
     briefing:[
-      'One case of stabilizer from Maas\'s freezer, and it is half gone. Devreese says it will not last the month. Without it, the strain takes us one by one.',
-      'Maas sent the rest to Tycho: her stabilizer and every file she had on it. It never got further than Kappa Basin. The Corps turned the relay station Squad Dust held last month into a field hospital, and the shipment sits in its tents.',
+      'One case of stabilizer from Maas\'s freezer, and it is half gone. Devreese says it will not last the month. Without it, the strain takes us one by one, and you first: you have had it the shortest.',
+      'The crew hit Kappa\'s field hospital once before. You were on the other side that night, holding the line until dawn. Now Tycho is emptying the tents under Containment Order 10, and Maas\'s stabilizer and her files go out on the next transport.',
       'Three cases of stabilizer, one in each tent. And the records terminal: if Devreese can stand at it long enough, she pulls Maas\'s formula off it, and we never have to steal a dose again. The moment she starts, the hospital calls for help. Then out through the old shaft in the north wall.'
     ],
     job:{ download:50, lostFor:3, call:15, waves:3, squad:4 },
@@ -46,7 +46,8 @@ ROGUE_MISSIONS.push(
           g.pad(NT_PAD,'relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
           g.marker('term',{x:20,y:18},'Records terminal');
           g.reveal({x:20,y:20},6,1e6); } },   /* the hospital is lit all night: the crew can watch it from afar */
-      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','Kappa Basin. Last time I was here we were holding it for Dust. Now it is a hospital full of our own. Shoot what shoots back, nothing else.') },
+      { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs',`Kappa Basin again. Last time they held us off till dawn. ${selfName()}, you were in that ring. Tell me where it is thin.`) },
+      { when:g=>g.time>5, do:g=>g.crewSay(selfName(),'West side, by the tents. The Medics stand inside the ring, the patrol walks wide. And they will call Tycho the moment they see us.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','The terminal in the middle of the tents. Get me there and keep them off me. It takes time to find her files, and they will hear me looking.') },
       { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','That pad south of the camp, under their tower, is a relief pad. Once the hospital shouts for help, Tycho lands its people right on their doorstep.') },
       { when:g=>g.time>27, do:g=>g.crewSay('Van Wesemael','Hold fire (Q) till we are close, Captain. The longer they do not see us, the longer before the first dropship.') },
@@ -62,7 +63,7 @@ ROGUE_MISSIONS.push(
           g.setText('records',`Pull Dr. Maas's files off the records terminal (a Medic stands at it)${g.vars.dl>0?` ${Math.floor(g.vars.dl*100)}%`:''}`);
           if(g.vars.dl>=0.5&&!g.vars.half){ g.vars.half=true; g.crewSay('Devreese','Half of it. Her formula is split over three files, and Command has the third one locked. Give me a little longer.'); }
           if(g.vars.dl>=1){ g.vars.dlDone=true; g.complete('records'); g.unmark('term'); g.formula(); SFX.play('complete');
-            g.crewSay('Devreese','Got it. All of it. Maas\'s formula: I can brew this myself now, a dose before every job. ...And a memo. Command knew what she had found before they sent us in. Remember that, Captain.'); } } },
+            g.crewSay('Devreese','Got it. All of it. Maas\'s formula: I can brew this myself now, a dose before every job. ...And a memo. Containment Order 10 was written before the Matron died. They knew, Captain. They always knew.'); } } },
       /* the stabilizer cases */
       { repeat:true, when:g=>!!g.vars.cases&&!g.vars.stabDone, do:g=>{ const n=g.vars.cases.filter(c=>c.dead).length; g.setText('stab',`Take the stabilizer from the three hospital tents (${n}/3)`);
           if(n>=3){ g.vars.stabDone=true; g.complete('stab'); g.crewSay('Mortier','Three cases. Cold as ice. Somebody at Tycho is going to have a very bad morning.'); } } },
@@ -78,10 +79,10 @@ ROGUE_MISSIONS.push(
           const J=G.mission.job, most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), n=Math.max(1,Math.min(most,ntMissing(g))), k=g.vars.sent++;
           const sq=[...g.loyal(k===2&&n>1?'medic':'trooper',NT_PAD,1)]; if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2));
           ntRing(g,sq);
-          g.say(['Lt. Okafor','Sgt. Brandt','Lt. Okafor'][k]||'Corps radio',[
+          g.say(['Lt. Van Der Planck','Sgt. Brandt','Lt. Van Der Planck'][k]||'Corps radio',[
             'Relief squad on the ground at Kappa. Into the ring, all of you. Weapons free, mind the tents.',
-            'Second squad down. Close up the ring with Okafor\'s people. Flamer on the line, keep them out of the tents.',
-            'This is Okafor again, last squad Tycho can spare. Whoever you are, you are not leaving Kappa.'][k]||'Relief squad down.');
+            'Second squad down. Close up the ring with Van Der Planck\'s people. Flamer on the line, keep them out of the tents.',
+            'This is Van Der Planck again, last squad Tycho can spare. And if Dust\'s deserter is with them: you are not leaving Kappa.'][k]||'Relief squad down.');
           if(g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
       /* the sirens wake the basin */
       { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.wave(45,{x:20,y:18}); g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
@@ -90,7 +91,7 @@ ROGUE_MISSIONS.push(
           g.crewSay('Capt. Kerckhoffs','That is what we came for. North wall, the old shaft. Nobody stays behind.'); } },
       { repeat:true, when:g=>g.vars.escape&&!g.vars.won, do:g=>g.setText('escape',`Everyone into the old shaft in the north wall, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
       { when:g=>g.vars.escape&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); g.clearTimer();
-          g.win(g.vars.sent?'Kappa\'s field hospital counts three empty cases and a wiped terminal. Okafor\'s report says raiders in Corps armour. Devreese says nothing; she is already mixing the first dose in the dark.'
+          g.win(g.vars.sent?'Kappa\'s field hospital counts three empty cases and a wiped terminal. Van Der Planck\'s report names one raider: Squad Dust, listed as contained. Devreese says nothing; she is already mixing the first dose in the dark.'
             :'Kappa\'s field hospital wakes to three empty cases and a terminal that says nobody touched it. In a tunnel under the basin, Devreese mixes the first dose of a medicine she can now make herself.'); } },
       /* the files need a Medic: if the crew has none left (dead, not just down), the job cannot be done */
       { when:g=>g.time>2&&!g.vars.dlDone&&!g.crew().some(u=>u.def.heal), do:g=>{ g.fail('records'); g.lose('Devreese is dead, and nobody else in the crew knows what to look for in Maas\'s files. The formula stays at Kappa.'); } },

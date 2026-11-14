@@ -412,7 +412,7 @@ function v3Creature(e){
   if(t==='seedling'){ const pod=grp(0,0.95,0); pod.add(ball(shiny('#5c3e6e'),0.3,0.36,0.3,0,0,0)); for(let i=0;i<5;i++) pod.add(ball(glow('#c58cff'),0.05,0.05,0.05,Math.cos(i*1.26)*0.27,0.08,Math.sin(i*1.26)*0.27)); g.add(pod); U.sac=pod;
     for(let i=0;i<4;i++){ const a=i*Math.PI/2+0.4, hip=grp(Math.cos(a)*0.18,0.85,Math.sin(a)*0.18); hip.rotation.set(Math.sin(a)*0.5,0,-Math.cos(a)*0.5); hip.add(box(C,0.04,0.85,0.04,0,-0.42,0)); g.add(hip); U.legs.push(hip); }
     U.top=1.35; return g; }
-  if(t==='broodmother') return v3Matron(e);
+  if(t==='broodmother'||t==='heir') return v3Matron(e);   /* the Heir: the same model, smaller (scale below) */
   if(t==='grazer') return v3Grazer(e,false);
   return null; }
 
@@ -1134,7 +1134,7 @@ function v3Model(e){
   let g=null;
   if(e.kind==='unit'){ const f=UNITS[e.type]&&UNITS[e.type].faction; g=(f==='corps'&&e.type!=='husk')?v3Soldier(e):v3Creature(e);
     if(!g){ const sp=SPR[e.sprite||e.def.sprite]; g=v3Billboard(sp.img,e.def.scale||2); }
-    else { const sc=(e.type==='broodmother'||e.type==='brute'?1.1:(e.def.radius||9)/9)*VIEW3D.unitScale; g.scale.setScalar(sc); g.userData.top*=sc; } }
+    else { const sc=(e.type==='broodmother'||e.type==='brute'?1.1:e.type==='heir'?0.66:(e.def.radius||9)/9)*VIEW3D.unitScale; g.scale.setScalar(sc); g.userData.top*=sc; } }
   else if(e.kind==='building'){ g=v3Building(e); if(!g&&e.def&&ARTC[e.def.art]) g=v3Billboard(ARTC[e.def.art],2); }
   else g=v3Small(e);
   if(!g) g=v3Small(e);
@@ -1215,7 +1215,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     if(U.tail) U.tail.rotation.y=Math.sin(T*2.2+e.id)*0.35;
     if(U.feelers) U.feelers.forEach((f,i)=>f.rotation.z=Math.sin(T*2+i)*0.25);
     if(U.head&&!mv) U.head.rotation.y=Math.sin(T*0.7+e.id*1.3)*0.3;
-    if(U.sac){ const beat=e.type==='broodmother'?Math.pow(Math.max(0,Math.sin(T*3.2)),12)*0.07:0.05*Math.sin(T*(e.chargeT>0?14:3)+e.id); U.sac.scale.setScalar(1+beat); }
+    if(U.sac){ const beat=(e.type==='broodmother'||e.type==='heir')?Math.pow(Math.max(0,Math.sin(T*3.2)),12)*0.07:0.05*Math.sin(T*(e.chargeT>0?14:3)+e.id); U.sac.scale.setScalar(1+beat); }
     if(U.torso){ const b=U.torso.userData.by??(U.torso.userData.by=U.torso.position.y); U.torso.position.y=b+Math.sin(T*2+e.id)*0.01; }
     if(U.spin&&fight) U.spin.rotation.z+=0.6;
     if(U.pilot) U.pilot.scale.setScalar(0.025*(0.8+Math.random()*0.5)*(fight?2:1));

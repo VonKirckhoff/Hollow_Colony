@@ -57,7 +57,8 @@ MISSIONS.push(
       { when:g=>g.vars.upload>=315, do:g=>{ g.say('Cmdr. Varga','Almost there. One last push is coming at the centre mesa!'); g.wave(110,'3'); } },
       { when:g=>g.has('hq')===0, do:g=>{ g.fail('hq'); g.lose('The Command Post has fallen.'); } },
       { when:g=>g.vars.done, do:g=>{ g.complete('upload'); g.complete('hq');
-          g.win('The upload is complete. Earth now knows what lives beneath the moon. For the first time, the Lunar Corps holds the high ground.'); } }
+          g.say('Cmdr. Varga','All Dust elements exposed in the Maw, report to medical for screening. That is an order.');   /* the hint for Rogue Strain's Containment Order 10 */
+          g.win('The upload is complete. Earth now knows what lives beneath the moon. For the first time, the Lunar Corps holds the high ground. Then the radio again: all Dust elements exposed in the Maw, report to medical for screening.'); } }
     ]
   }
 );

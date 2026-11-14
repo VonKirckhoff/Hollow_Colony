@@ -17,13 +17,13 @@ CASES=[
   recordWin(MISSIONS[MISSIONS.length-1].id,'hard',500,false); goMenu('campaign'); ok(!rb().classList.contains('locked')&&!document.querySelector('#s-campaign').classList.contains('rogue-locked'),'unlocked once every Corps mission is won on Normal or Hard'); ok(!itab()&&!!document.querySelector('[data-itab=rogue]'),'the Rogue Intel tab loses its lock'); goMenu('campaign');
   ui.campSide='rogue'; goMenu('campaign'); ok(document.querySelectorAll('.crow').length===7,'seven crew in the splice lab'); ok(/Rogue Strain/.test(document.getElementById('camp-title').textContent),'campaign title');
   const R=rogueStore(); ok(R.crew.find(v=>v.capt).rank===5,'Kerckhoffs is the Captain'); ok(splice('osp-self','drone')!==null,'no samples: no splice');
-  R.dna.drone=3; ok(splice('osp-self','drone')===null&&R.crew.find(v=>v.id==='osp-self').taint===10&&R.dna.drone===0,'splice: strain in, taint up, samples spent');
+  R.dna.drone=3; ok(splice('osp-self','drone')===null&&R.crew.find(v=>v.id==='osp-self').taint===35&&R.dna.drone===0,'splice: strain in, taint up, samples spent');
   ok(splice('osp-self','drone')!==null,'a strain only once'); R.crew[2].taint=90; R.dna.hive=3; ok(/taint/.test(splice(R.crew[2].id,'hive')||''),'no splice past '+SPLICE_MAX);
   R.stab=1; ok(stabilizeCrew(R.crew[2].id)===null&&R.crew[2].taint===55&&R.stab===0,'a dose in the lab: -35'); resetRogue();'''),
-('osprey down: freezer, samples, escape, settle','''resetRogue(); const G=start(0); step(1); ok(crew().length===7,'the crew is on the field'); ok(crew().every(u=>u.hp<u.maxHp),'everyone hurt from the crash');
+('osprey down: freezer, samples, escape, settle','''resetRogue(); const G=start(0); step(1); ok(crew().length===7,'the crew is on the field'); ok(crew().every(u=>u.hp<u.maxHp),'everyone hurt from the weeks in the tunnels');
   calm(); const eng=crew().find(u=>u.def.builder); tp(eng,53,9); step(13); ok(G.objectives.find(o=>o.id==='freezer').state==='done','the Engineer cracks the freezer');
   const vials=G.ents.filter(e=>!e.dead&&e.rogue&&e.dna==='hive'); ok(vials.length+(G.rogue.dna.hive||0)===2,'two hive samples in the freezer'); for(const v of vials){ tp(eng,Math.floor(v.x/TILE),Math.floor(v.y/TILE)); step(0.3); }
-  ok(G.rogue.dna.hive===2,'picked up'); step(7); ok(G.timer&&G.timer.label==='Dust lands','the radio: Dust is coming');
+  ok(G.rogue.dna.hive===2,'picked up'); step(7); ok(G.timer&&G.timer.label==='Clean-up team','the radio: the clean-up team is coming');
   G.rogue.dna.drone=4; step(1); ok(G.objectives.find(o=>o.id==='escape'),'six samples: the way out opens');
   const st=G.rogue.stab; const ex=G.ents.find(e=>e.exit), sp=exitSpot(ex); for(const u of crew()) tp(u,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); step(1); ok(G.over&&G.over.win,'into the tunnel: won');
   const R=rogueStore(); ok(R.dna.hive===2&&R.dna.drone===4,'samples in the lab'); ok(R.crew.every(v=>v.missions===1),'one job for everyone'); ok(R.stab===st,'unused doses are kept ('+R.stab+')');

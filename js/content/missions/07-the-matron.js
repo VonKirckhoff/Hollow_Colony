@@ -1,6 +1,6 @@
 'use strict';
 /* Corps mission 9: The Matron (since Nov 2026 the Corps campaign has 10 missions: The Matron's Seed was cut).
-   Before it, in Rogue job 8 (The Matron's Blood), the Osprey crew bled her and she tore her Seed loose; here Dust finds only its
+   Before it (off screen: Rogue Strain is a sequel and starts after High Ground) the Osprey crew bled her and she tore her Seed loose; here Dust finds only its
    split husk at the back of her lair (a crate with flags heart+husk, drawn by drawSeedHusk / v3SeedHusk), and Kessler says so. */
 MISSIONS.push(
   {
