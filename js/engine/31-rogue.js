@@ -20,13 +20,11 @@ function loadRogue(){ const r=store.get(ROGUE_KEY,null)||{}; r.crew=Array.isArra
 /* your own soldier in the crew: his name and sex are the ones you enlisted with on the Lunar Corps side (fixed for good). Before you enlist, the place keeps the name Braet. */
 function selfCrew(r){ const me=typeof selfOf==='function'&&ui.roster?selfOf():null, v=r.crew.find(x=>x.id==='osp-self'); if(!v) return;
   if(me){ v.name=me.name; v.sex=me.sex==='f'?'f':undefined; v.self=true; } else { v.name=crewDef('osp-self').name; v.sex=undefined; }
-  /* the role: the one he first finished the Corps campaign with; once more roles have finished it, you pick (r.selfRole) */
-  const roles=me?rogueRoles():[crewDef('osp-self').type]; if(!roles.includes(r.selfRole)) r.selfRole=roles[0]; v.type=r.selfRole; }
+  v.type=SELF_TYPE; delete r.selfRole; }   /* always a Trooper, as in the Corps (Nov 2026; the role pick in the splice lab is gone) */
 /* your own soldier in the jobs' lines: his name and his rank + name (Rogue Strain is a sequel to the Corps campaign: he came over from Squad Dust) */
 const selfV=()=>rogueStore().crew.find(x=>x.id==='osp-self')||null;
 const selfName=()=>(selfV()||{name:'Braet'}).name;
 const selfRankName=()=>{ const v=selfV(); return v?`${RANKS[v.rank].name} ${v.name}`:'Private Braet'; };
-function setSelfRole(t){ const r=rogueStore(); if(!rogueRoles().includes(t)) return 'Win the whole Corps campaign in that role first.'; r.selfRole=t; selfCrew(r); saveRogue(); return null; }
 /* #he / #He / #his / #His / #him in a crew text, for that crew member's sex */
 const crewText=(v,t)=>String(t||'').replace(/#(He|he|His|his|him)\b/g,(m,f)=>{ const w=pron(v,f.toLowerCase()); return f[0]==='H'?w[0].toUpperCase()+w.slice(1):w; });
 /* the Osprey crew on the Cenotaph: the Corps lists them as lost once it has found the wreck at Hollow Colony (Corps mission 4) */
@@ -442,19 +440,13 @@ function buildCrew(el=$('#hero-card')){ const R=rogueStore(); if(!crewSel||!R.cr
     <div class="dna-row">${dna}<span class="dchip stab" title="Stabilizer doses: take one into the next mission, or use one here">✚ Stabilizer <b>${R.stab}</b></span></div>
     <div class="crew-list">${R.crew.map(c=>`<button type="button" class="crow ${c.id===crewSel?'on':''}" data-crew="${c.id}"><img alt="" src="${SPR['crew_'+c.type].url}"><span class="cn">${c.capt?'✪ ':''}${crewTitle(c)}<small>${UNITS[c.type].name}${c.missions?` · ${c.missions} job${c.missions>1?'s':''}`:''}</small></span>${taintBar(c.taint)}<span class="cs">${c.strains.map(k=>k==='mother'?'<b title="Matron strain" class="ms">♛</b>':`<b title="${STRAINS[k]?STRAINS[k].name:k}">${STRAINS[k]?STRAINS[k].glyph:'?'}</b>`).join('')}</span></button>`).join('')}</div>
     <div class="crew-detail"><p class="lede" style="margin:0"><b>${crewTitle(v)}</b>, ${UNITS[v.type].name}${v.sex==='f'?' (she)':''}. ${crewText(v,d.bio)} Taint <b>${Math.round(v.taint)}%</b>${v.taint>=T.seizure?': seizures, close to going feral.':v.taint>=T.mend?': the mycel heals '+pron(v,'him')+'.':v.taint>=T.scent?': the hunt passes '+pron(v,'him')+' by.':'.'}</p>
-      ${v.id==='osp-self'&&selfOf()?selfRoleRow(v):''}
       <div class="splice-row">${STRAIN_ORDER.map(k=>{ const S=STRAINS[k], has=v.strains.includes(k), err=has?null:canSplice(v,k);
         return `<button type="button" class="splice ${has?'has':''}" data-splice="${k}" ${has||err?'disabled':''} title="${S.name}: ${S.text}${err&&!has?' · '+err:''}"><span class="g">${S.glyph}</span><b>${S.name}</b><small>${has?'carries it':`${S.cost} ${S.from} · +${S.taint} taint`}</small></button>`; }).join('')}
         <button type="button" class="splice stabb" data-stabcrew="1" ${R.stab<1||v.taint<1?'disabled':''} title="A stabilizer dose: −${ROGUE.stab.amount} taint"><span class="g">✚</span><b>Stabilize</b><small>1 dose · −${ROGUE.stab.amount} taint</small></button></div>
       <p class="rdim" style="margin:0;font-size:12px">Taint: from ${T.scent}% the hunt passes ${pron(v,'him')} by, from ${T.mend}% the mycel heals ${pron(v,'him')}, from ${T.seizure}% seizures, at ${T.feral}% ${pron(v,'he')} goes feral for ${T.feralTime} s. Every point of taint adds ${(T.fever*100).toFixed(1)}% damage. After every won job ${T.rest} taint fades. A fallen crew member comes back with +${T.fallen}.</p></div>`; }
-/* your own soldier's role in the crew: the roles that finished the Corps campaign; one button each once there is more than one */
-function selfRoleRow(v){ const roles=rogueRoles();
-  if(roles.length<2) return `<p class="rdim" style="margin:0;font-size:12px">${UNITS[v.type].name}: the role you first won the Corps campaign with. Win it in another role and you can pick that one here.</p>`;
-  return `<div class="hrow self-role" role="group" aria-label="Role in the crew"><span class="rdim" style="font-size:12px">Role in the crew:</span>${roles.map(t=>`<button type="button" class="htype ${t===v.type?'on':''}" data-selfrole="${t}" aria-pressed="${t===v.type}"><img alt="" src="${SPR['crew_'+t].url}">${UNITS[t].name}</button>`).join('')}</div>`; }
 /* the same lab on the campaign screen (Rogue side) and in the briefing of a Rogue job */
 function labClick(e,el,after){
   const c=e.target.closest('[data-crew]'); if(c){ crewSel=c.dataset.crew; buildCrew(el); return; }
-  const sr=e.target.closest('[data-selfrole]'); if(sr){ const err=setSelfRole(sr.dataset.selfrole); if(err){ toast(err); return; } buildCrew(el); after(); toast(`${rogueStore().crew.find(x=>x.id==='osp-self').name} goes dark as ${UNITS[sr.dataset.selfrole].name}.`,true); return; }
   const s=e.target.closest('[data-splice]'); if(s&&!s.disabled){ const v=rogueStore().crew.find(x=>x.id===crewSel), k=s.dataset.splice, err=splice(crewSel,k); if(err){ toast(err); return; }
     SFX.play('squelch'); buildCrew(el); after(); toast(`${v.name} takes the ${STRAINS[k].name} strain.`,true); return; }
   const b=e.target.closest('[data-stabcrew]'); if(b&&!b.disabled){ const err=stabilizeCrew(crewSel); if(err){ toast(err); return; } SFX.play('heal'); buildCrew(el); after(); toast('One dose of stabilizer.',true); } }
