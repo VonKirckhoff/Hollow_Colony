@@ -8,7 +8,7 @@ const INTEL_TABS = [
   { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','uplink','generator','chargesite','charge','medtent','terminal','door','wreck','rubble'], extras:['relaypad','salvage','stabcase'] },
   { id:'swarm',  name:'Brood',       units:['crawler','drone','spitter','brute','seedling','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane','shaft'], extras:['heart'] },
   { id:'other',  name:'Other',       units:['grazer'], extras:['raiders'] },
-  { id:'rogue',  name:'Rogue Strain', rogue:true },   /* the Osprey crew, strains and taint (31-rogue.js); always shown, with a lock until the Rogue campaign is open */
+  { id:'rogue',  name:'Rogue Strain', rogue:true },   /* the Osprey crew, strains and taint (31-rogue.js); always shown; until the Rogue campaign is open it holds only a lock, no entries */
   { id:'relics', name:'Relics',      relics:true }
 ];
 const INTEL_NOTES = {

@@ -1073,6 +1073,127 @@ function v3PoseSeed(U,T){ const k=seedBeat(T);
   U.body.scale.setScalar(1+0.03*k); U.halo.scale.set(0.45*(1+0.15*k),0.42*(1+0.15*k),0.45*(1+0.15*k));
   for(const c of U.cracks) c.scale.x=c.scale.z=0.016*(1+1.1*k);
   for(const b of U.beads) b.scale.setScalar(0.02*(1+0.6*k)); U.bud.scale.setScalar(0.035*(1+0.2*Math.sin(T*1.3))); }
+/* ---------- relics in 3D (Nov 2026; crates with `relic`, js/content/relics.js) ----------
+   Every hidden item has its own small model, after its 2D sprite: the orange Flight Recorder with its reflective bands, the
+   Station Chief's mug with frozen coffee, the scorched Survey Scuttler Core with its red eye, the half-rolled Colony Charter with
+   its wax seal, Mira's plush rabbit with its name tag, the Convoy Cassette, the Fossil Shard with the claw pressed in, and the
+   bleached Expedition Flag. They lie still on the ground (a little bigger than true size, so they read from the camera) and a
+   glint flashes on them now and then, only while a soldier can see the spot. The flag and the rabbit's tag move in the wind.
+   The four ancient eggs share a shape but each has its own stone, cracks and inner light (the colours of their 2D sprites); they
+   beat slowly, faster and brighter while the Brood is hatching one, and two rings on the ground show how far a soldier has
+   secured it (gold) and how far the Brood has hatched it (green), as in 2D. Tunables in RELIC3D. */
+const RELIC3D = { scale:1.4, eggScale:1.0, glintEvery:3.2, glintTime:0.4, glintSize:0.55, wind:1, ringSecure:0.62, ringHatch:0.74 };
+const RELIC_EGG3D = {
+  'egg-maw':   { stone:'#5b544a', lit:'#776e60', glow:'#c97a24', core:'#ffd23f', crack:'#2a2620', seams:3 },
+  'egg-mare':  { stone:'#4a4038', lit:'#62564a', glow:'#8a5a2a', core:'#e8a640', crack:'#211b16', seams:2, cupboard:true },
+  'egg-convoy':{ stone:'#6a4a3a', lit:'#86604a', glow:'#ff5a1a', core:'#ffb347', crack:'#ff8a2a', seams:4, hot:true },
+  'egg-depths':{ stone:'#2e2836', lit:'#43394f', glow:'#4fae22', core:'#a6ff4a', crack:'#120e16', seams:5, veins:true } };
+function v3RelicHash(id,k){ let h=2166136261; const s=id+':'+k; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return ((h>>>0)%1000)/1000; }
+function v3StarTex(){ if(V3.starTex) return V3.starTex; const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
+  const gr=x.createRadialGradient(32,32,0,32,32,14); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=gr; x.fillRect(0,0,64,64);
+  x.fillStyle='rgba(255,250,220,.95)'; x.beginPath(); x.moveTo(32,2); x.lineTo(35,29); x.lineTo(62,32); x.lineTo(35,35); x.lineTo(32,62); x.lineTo(29,35); x.lineTo(2,32); x.lineTo(29,29); x.closePath(); x.fill();
+  return V3.starTex=new THREE.CanvasTexture(c); }
+/* a part of an item: the model is built at true size around the origin, the group is scaled up by RELIC3D.scale */
+function v3RelicItem(r,U){ const g=new THREE.Group(), H=k=>v3RelicHash(r.id,k), K=mat('#121418'), V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0);
+  const seg=(m,rad,a,b)=>{ const d=b.clone().sub(a), L=d.length(), o=part(GEO.cyl,m,rad,L,rad,0,0,0); o.position.copy(a).addScaledVector(d,0.5); o.quaternion.setFromUnitVectors(UP,d.normalize()); return o; };
+  switch(r.id){
+  case 'blackbox': { /* the orange box with white reflective bands and a carry handle, dented, lying a little on its side */
+    const b=new THREE.Group(); b.rotation.z=0.12; b.position.y=0.02; g.add(b); const or=mat('#e2661a'), wh=shiny('#eef0ee',{ specular:0xffffff, shininess:90 });
+    b.add(box(or,0.3,0.2,0.2,0,0.1,0)); for(const x of [-0.08,0.08]) b.add(box(wh,0.04,0.205,0.205,x,0.1,0));
+    b.add(box(mat('#b84a0a'),0.05,0.03,0.01,0.1,0.06,0.101)); b.add(box(mat('#b84a0a'),0.04,0.04,0.01,-0.11,0.14,-0.101));   /* dents */
+    b.add(box(K,0.31,0.02,0.21,0,0.01,0));
+    for(const x of [-0.06,0.06]) b.add(box(mat('#3a3f48'),0.02,0.06,0.03,x,0.23,0)); b.add(box(mat('#3a3f48'),0.14,0.02,0.03,0,0.26,0));   /* the handle */
+    break; }
+  case 'mug': { /* a white mug, red slogan band, coffee frozen on top with frost, the handle on the side */
+    const wh=shiny('#f2f0ea',{ specular:0xffffff, shininess:60 }); g.add(cyl(wh,0.08,0.18,0.08,0,0.09,0)); g.add(cyl(mat('#c8322a'),0.082,0.05,0.082,0,0.1,0));
+    g.add(cyl(mat('#3a2216'),0.07,0.01,0.07,0,0.176,0)); g.add(cyl(shiny('#9fb4c0',{ transparent:true, opacity:0.45, specular:0xffffff, shininess:120 }),0.05,0.004,0.05,0.01,0.18,-0.01)); for(let i=0;i<4;i++){ const a=i*1.6; g.add(ball(mat('#c8d6de'),0.006,0.003,0.006,Math.cos(a)*0.05,0.181,Math.sin(a)*0.05)); }   /* frost on the frozen coffee */
+    const hd=new THREE.Mesh(GEO.torus,wh); hd.scale.set(0.045,0.045,0.06); hd.rotation.set(0,0,Math.PI/2); hd.position.set(0.09,0.1,0); hd.castShadow=true; g.add(hd);
+    g.rotation.y=H('r')*6.3; break; }
+  case 'drone': { /* a scorched metal sphere, half dug in, a red camera eye, two antennae (one bent), an ember */
+    const s=new THREE.Group(); s.position.y=0.1; g.add(s); s.add(ball(shiny('#7d8ea2',{ specular:0xaab4bf, shininess:50 }),0.15,0.15,0.15,0,0,0));
+    for(let i=0;i<5;i++){ const a=i*1.7, y=-0.05+((i*3)%5)*0.04; s.add(ball(mat('#2a2e34'),0.045,0.04,0.045,Math.cos(a)*0.118,y,Math.sin(a)*0.118)); }   /* scorch marks */
+    s.add(rotX(cyl(K,0.06,0.03,0.06,0,0.02,0.135),Math.PI/2)); const eye=ball(glow('#e2463a'),0.035,0.035,0.02,0,0.02,0.155); s.add(eye); U.eye=eye;
+    s.add(seg(mat('#aab4bf'),0.007,V(-0.07,0.11,0),V(-0.1,0.27,0))); s.add(seg(mat('#aab4bf'),0.007,V(0.07,0.11,0),V(0.11,0.2,0))); s.add(seg(mat('#aab4bf'),0.007,V(0.11,0.2,0),V(0.2,0.22,0.02)));
+    U.ember=ball(glow('#ff8a2a'),0.015,0.015,0.015,0.1,-0.06,0.1); s.add(U.ember); g.rotation.y=H('r')*6.3; break; }
+  case 'charter': { /* rolled parchment, half open, lines of writing, a red wax seal with two ribbon tails */
+    const pa=mat('#d8c79a'), pa2=mat('#bfae82'); const roll=cyl(pa,0.045,0.3,0.045,0,0.045,-0.1); roll.rotation.z=Math.PI/2; g.add(roll);
+    g.add(rotZ(cyl(pa2,0.02,0.302,0.02,0,0.045,-0.1),Math.PI/2)); g.add(box(pa,0.28,0.006,0.2,0,0.004,0.01));
+    for(let j=0;j<4;j++) g.add(box(mat('#8a7a5a'),j===3?0.12:0.2,0.002,0.008,-0.02-(j===3?0.04:0),0.009,-0.04+j*0.035));
+    g.add(cyl(mat('#b02a20'),0.03,0.012,0.03,0.08,0.012,0.07)); g.add(cyl(glow('#e2463a'),0.014,0.004,0.014,0.08,0.02,0.07));
+    for(const k of [-1,1]){ const rb=box(mat('#b02a20'),0.012,0.003,0.06,0.08+k*0.012,0.006,0.115); rb.rotation.y=k*0.3; g.add(rb); }
+    g.rotation.y=H('r')*6.3; break; }
+  case 'rabbit': { /* a worn white toy rabbit, sitting: long ears (one flopped), pink nose, button eyes, a paper tag on a string */
+    const F=mat('#e4e0d8'), S=mat('#b8b2a6'), P=mat('#e8a0a8'); g.add(ball(F,0.1,0.11,0.09,0,0.1,0)); g.add(ball(mat('#ffffff'),0.06,0.07,0.03,0,0.1,0.07));
+    g.add(ball(F,0.075,0.07,0.07,0,0.24,0.01)); g.add(ball(P,0.012,0.01,0.01,0,0.24,0.08)); for(const x of [-0.03,0.03]) g.add(ball(K,0.011,0.011,0.008,x,0.26,0.066));
+    for(const x of [-0.04,0.04]) g.add(ball(S,0.012,0.004,0.004,x*1.2,0.235,0.07));   /* whisker stitches */
+    const e1=grp(-0.03,0.3,0); e1.add(ball(F,0.025,0.1,0.02,0,0.08,0)); e1.add(ball(P,0.012,0.07,0.01,0,0.08,0.012)); e1.rotation.z=0.15; g.add(e1);
+    const e2=grp(0.035,0.3,0); e2.add(ball(F,0.025,0.1,0.02,0,0.08,0)); e2.rotation.set(0.3,0,-1.4); g.add(e2);   /* the flopped ear */
+    for(const x of [-0.07,0.07]) g.add(ball(F,0.03,0.03,0.04,x,0.04,0.06)); for(const x of [-0.05,0.05]) g.add(ball(F,0.035,0.03,0.05,x,0.02,0.08));   /* paws and feet */
+    const tag=grp(0.05,0.17,0.06); tag.add(seg(S,0.003,V(0,0,0),V(0,-0.06,0))); tag.add(box(mat('#e8d6a8'),0.05,0.035,0.004,0,-0.08,0)); tag.add(box(mat('#3a3020'),0.03,0.004,0.005,0,-0.08,0)); g.add(tag); U.tag=tag;
+    g.rotation.y=H('r')*6.3; break; }
+  case 'cassette': { /* a black tape: two reels behind a window, a hand-written label, a loop of tape pulled out */
+    const c=new THREE.Group(); c.rotation.set(0.05,0,0.08); c.position.y=0.02; g.add(c); c.add(box(mat('#1c1d22'),0.26,0.03,0.17,0,0.015,0));
+    c.add(box(mat('#e8dcc0'),0.22,0.004,0.06,0,0.032,-0.045)); c.add(box(mat('#2a3a7a'),0.16,0.002,0.006,-0.01,0.035,-0.05));   /* the label, HOLLOW LIGHT in pen */
+    c.add(box(mat('#3a3e46'),0.13,0.004,0.05,0,0.032,0.035)); for(const x of [-0.04,0.04]){ c.add(cyl(mat('#e8e8e4'),0.022,0.006,0.022,x,0.034,0.035)); c.add(cyl(K,0.008,0.008,0.008,x,0.036,0.035)); }
+    const tp=mat('#5a3a22'); c.add(seg(tp,0.004,V(-0.06,0.01,0.085),V(-0.1,0.003,0.18))); c.add(seg(tp,0.004,V(-0.1,0.003,0.18),V(0.02,0.003,0.2))); c.add(seg(tp,0.004,V(0.02,0.003,0.2),V(0.06,0.01,0.085)));
+    g.rotation.y=H('r')*6.3; break; }
+  case 'fossil': { /* a broken slab of rock with a long hooked claw pressed into it, and a smaller one beside it */
+    const st=mat('#7a7166'), dk=mat('#2a2620'); const sl=part(GEO.lowball,st,0.2,0.07,0.15,0,0.05,0); sl.rotation.y=0.4; g.add(sl); g.add(part(GEO.lowball,mat('#958b7c'),0.12,0.04,0.1,0.06,0.08,-0.03));
+    const c1=part(GEO.claw,dk,0.025,0.02,0.18,-0.06,0.1,-0.04); c1.rotation.set(-0.15,0.5,0); g.add(c1); const c2=part(GEO.claw,dk,0.018,0.015,0.1,0.07,0.1,0.05); c2.rotation.set(-0.15,0.9,0); g.add(c2);
+    g.add(part(GEO.lowball,mat('#d8cfbd'),0.02,0.01,0.02,-0.1,0.1,0.05)); g.add(part(GEO.lowball,mat('#d8cfbd'),0.015,0.01,0.015,0.03,0.105,0.0));   /* pale chips */
+    for(const [x,z,a] of [[-0.02,0.08,0.3],[0.1,-0.05,1.2],[-0.12,-0.06,2.1]]){ const c=box(mat('#3d3830'),0.004,0.012,0.07,x,0.09,z); c.rotation.y=a; g.add(c); }   /* cracks in the slab */
+    for(let i=0;i<3;i++){ const a=i*2.1+0.5; g.add(part(GEO.lowball,i%2?st:mat('#5e564c'),0.04,0.025,0.035,Math.cos(a)*0.24,0.015,Math.sin(a)*0.2)); }   /* broken-off bits round it */
+    g.rotation.y=H('r')*6.3; break; }
+  case 'flag': { /* a bent pole, the cloth torn and bleached almost white, two bullet holes; the cloth moves in the wind */
+    const pm=mat('#9aa0a8'); g.add(seg(pm,0.012,V(0,0,0),V(0.02,0.42,0))); g.add(seg(pm,0.012,V(0.02,0.42,0),V(0.09,0.62,0)));
+    const cl=[mat('#ece8dc',{ side:THREE.DoubleSide }),mat('#d8d0c0',{ side:THREE.DoubleSide }),mat('#c9a8a0',{ side:THREE.DoubleSide })]; U.cloth=[];
+    let parent=grp(0.07,0.56,0); parent.rotation.z=0.35; g.add(parent);   /* the cloth hangs from the bent top, as strips that each turn a little */
+    for(let i=0;i<5;i++){ const w=0.07, h=i===4?0.13:0.21-(i===2?0.03:0), p=grp(i?w:0,0,0); p.add(box(cl[i===1?2:i%2],w,h,0.004,w/2,-h/2,0));
+      if(i===1||i===3) p.add(box(K,0.012,0.012,0.006,w/2,-0.06-i*0.01,0)); parent.add(p); U.cloth.push(p); parent=p; }
+    g.rotation.y=H('r')*6.3; break; }
+  default: g.add(box(mat('#3a3f48'),0.2,0.14,0.2,0,0.07,0)); g.add(ball(glow('#9ff0ff'),0.05,0.05,0.05,0,0.17,0)); }
+  return g; }
+/* an ancient egg: an upright stone oval, a lit side, cracks, glowing seams and an inner light; the mare egg stands in the
+   miners' cupboard, the depths egg has lit veins */
+function v3RelicEgg(r,U){ const O=RELIC_EGG3D[r.id]||RELIC_EGG3D['egg-maw'], g=new THREE.Group(), H=k=>v3RelicHash(r.id,k), V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0);
+  const RX=0.2, RY=0.31, CY=0.31, seg=(m,rad,a,b)=>{ const d=b.clone().sub(a), L=d.length(), o=part(GEO.cyl,m,rad,L,rad,0,0,0); o.position.copy(a).addScaledVector(d,0.5); o.quaternion.setFromUnitVectors(UP,d.normalize()); return o; };
+  const onSkin=(a,h)=>{ const q=Math.sqrt(Math.max(0,1-(h/RY)**2)); return V(Math.cos(a)*RX*q*1.02,CY+h*1.02,Math.sin(a)*RX*q*1.02); };
+  const body=new THREE.Group(); g.add(body); U.body=body;
+  body.add(ball(mat(O.stone),RX,RY,RX,0,CY,0)); body.add(ball(mat(O.lit),RX*0.8,RY*0.86,RX*0.8,-0.03,CY+0.04,0.035));   /* the stone and its lit side */
+  body.add(ball(mat(O.crack),0.24,0.04,0.24,0,0.03,0));   /* where it sits in the dust */
+  for(let i=0;i<6;i++){ let prev=null; const a=i*1.05+H('c'+i)*0.6; for(let j=0;j<3;j++){ const p=onSkin(a+(j%2?0.12:-0.06),0.18-i%3*0.06-j*0.07); if(prev) body.add(seg(mat(O.crack),0.008,prev,p)); prev=p; } }   /* dark cracks */
+  U.seams=[]; const sm=glow(O.core,{ transparent:true, opacity:0.8 });
+  for(let i=0;i<O.seams;i++){ let prev=null; const a=i*2.3+0.4; for(let j=0;j<4;j++){ const p=onSkin(a+(j%2?0.1:-0.08),0.1-j*0.07); if(prev){ const s=seg(sm,0.007,prev,p); body.add(s); U.seams.push(s); } prev=p; } }   /* seams with the inner light behind them */
+  if(O.veins) for(let i=0;i<5;i++){ const a=i*1.25; let prev=onSkin(a,-0.24); for(let j=1;j<4;j++){ const p=onSkin(a+Math.sin(j*2+i)*0.2,-0.24+j*0.12); const s=seg(sm,0.006,prev,p); body.add(s); U.seams.push(s); prev=p; } }
+  U.core=ball(glow(O.core,{ transparent:true, opacity:0.9 }),0.05,0.05,0.03,0.02,CY-0.08,RX*0.92); body.add(U.core);
+  U.halo=ball(glow(O.glow,{ transparent:true, opacity:0.12, depthWrite:false }),0.34,0.44,0.34,0,CY,0); U.halo.castShadow=false; g.add(U.halo);
+  if(O.cupboard){ const wd=mat('#3a2a18'), wl=mat('#6b4c2c');   /* the miners' cupboard round its foot: back, sides, a shelf and a broken door */
+    g.add(box(wd,0.56,0.3,0.03,0,0.15,-0.26)); for(const x of [-0.28,0.28]) g.add(box(wl,0.03,0.26,0.52,x,0.13,0)); g.add(box(wd,0.56,0.04,0.52,0,0.02,0));
+    for(const x of [-0.28,0.28]) g.add(box(wd,0.04,0.32,0.04,x,0.16,-0.26)); g.add(box(wl,0.5,0.02,0.03,0,0.29,-0.26));
+    const dr=grp(0.28,0,0.26); dr.add(box(wl,0.26,0.24,0.02,0.13,0.12,0)); dr.add(box(wd,0.26,0.02,0.025,0.13,0.18,0)); dr.rotation.y=-1.0; g.add(dr); }   /* the door hangs open */
+  if(O.hot){ U.heat=[]; for(let i=0;i<3;i++){ const h=ball(glow('#ffb347',{ transparent:true, opacity:0, depthWrite:false }),0.06,0.06,0.06,0,0.6,0); h.castShadow=false; g.add(h); U.heat.push(h); } }   /* warm air rising: the drivers' stove */
+  U.rings=[]; for(const [col,r] of [['#ffd23f',RELIC3D.ringSecure],['#a6ff4a',RELIC3D.ringHatch]]){ const m=new THREE.Mesh(GEO.ring,glow(col,{ transparent:true, opacity:0.9, depthWrite:false })); m.scale.setScalar(r); m.position.y=0.04; m.visible=false; m.castShadow=false; g.add(m); U.rings.push(m); }
+  U.coreOp=0.9; g.rotation.y=H('r')*6.3; return g; }
+function v3Relic(e){ const r=relicDef(e.relic)||{ id:'?', kind:e.egg?'egg':'item' }, g=new THREE.Group(), U=g.userData;
+  const m=e.egg?v3RelicEgg(r,U):v3RelicItem(r,U); m.scale.setScalar(e.egg?RELIC3D.eggScale:RELIC3D.scale); g.add(m); U.inner=m;
+  if(!e.egg){ const s=new THREE.Sprite(new THREE.SpriteMaterial({ map:v3StarTex(), transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, color:0xfff2c0 })); s.visible=false; s.position.y=0.35; g.add(s); U.glint=s; U.glintAt=v3RelicHash(r.id,'g')*RELIC3D.glintEvery; }
+  U.relic=r.id; U.relicEgg=!!e.egg; U.top=e.egg?0.75:0.55; return g; }
+/* per frame: the glint (only while the spot is in sight), the wind, the eye and the ember; an egg's beat, its seams and rings */
+function v3PoseRelic(e,U,T){ const R=RELIC3D;
+  if(U.glint){ const i=Math.floor(e.y/TILE)*G.map.w+Math.floor(e.x/TILE), t=(T+U.glintAt)%R.glintEvery, on=!!G.vis[i]&&t<R.glintTime;
+    U.glint.visible=on; if(on){ const k=Math.sin(t/R.glintTime*Math.PI); U.glint.scale.setScalar(R.glintSize*k); U.glint.material.rotation=t*2; U.glint.position.x=0.06*Math.sin(U.glintAt*7); } }
+  if(U.cloth) U.cloth.forEach((p,i)=>{ p.rotation.y=R.wind*(0.25+0.08*i)*Math.sin(T*3.1-i*0.9); p.rotation.x=R.wind*0.06*Math.sin(T*2.3-i*0.7); });
+  if(U.tag) U.tag.rotation.z=R.wind*0.35*Math.sin(T*2.2)+0.1*Math.sin(T*5.3);
+  if(U.eye) U.eye.visible=Math.sin(T*1.7)>-0.6||Math.random()<0.3;
+  if(U.ember) U.ember.scale.setScalar(0.015*(0.6+0.6*Math.abs(Math.sin(T*4.1))));
+  if(!U.relicEgg) return;
+  const hatch=e.hatch||0, per=hatch>0?0.5:4, b=0.5+0.5*Math.sin(T*Math.PI*2/per), k=0.35+0.65*Math.max(b,hatch);
+  U.body.scale.setScalar(1+0.015*b+0.03*hatch);
+  for(const s of U.seams){ s.material.opacity=0.35+0.65*k; } U.core.material.opacity=0.5+0.5*k; U.core.scale.set(0.05*(1+0.4*k),0.05*(1+0.4*k),0.03);
+  U.halo.material.opacity=0.06+0.14*k+0.12*hatch; U.halo.scale.set(0.36*(1+0.1*b),0.42*(1+0.1*b),0.36*(1+0.1*b));
+  if(U.heat) U.heat.forEach((h,i)=>{ const f=((T*0.5+i/3)%1); h.position.y=0.55+f*0.6; h.material.opacity=0.12*Math.sin(f*Math.PI); h.scale.setScalar(0.05+f*0.08); });
+  const vals=[e.secure||0,hatch]; U.rings.forEach((m,i)=>{ const v=vals[i]; m.visible=v>0.002; if(!m.visible) return; const n=Math.max(1,Math.round(v*48)), key='relarc'+n;
+    m.geometry=GEO[key]||(GEO[key]=new THREE.RingGeometry(0.86,1,48,1,Math.PI/2-Math.PI*2*n/48,Math.PI*2*n/48).rotateX(-Math.PI/2)); m.rotation.y=-U.inner.rotation.y; }); }
 function v3Small(e){
   const g=new THREE.Group();
   if(e.kind==='body'&&e.fauna){ /* a grazer carcass: the grazer on its back, legs stiff in the air, head lolling to one side (as in 2D) */
@@ -1092,7 +1213,7 @@ function v3Small(e){
     const c=e.stab?'#7fdfff':'#ffb347'; g.add(box(mat(e.stab?'#3a6f86':'#6b5a3a'),0.42,0.24,0.3,0,0.12,0));
     g.add(box(glow(c),0.07,0.02,0.24,0,0.245,0)); g.add(box(glow(c),0.26,0.02,0.07,0,0.245,0)); g.add(box(glow(c),0.07,0.16,0.01,0,0.12,0.151)); g.add(box(glow(c),0.2,0.05,0.01,0,0.13,0.151));
     g.userData.top=0.4; g.userData.bob=true; return g; }
-  if(e.relic){ g.add(box(mat('#3a3f48'),0.3,0.2,0.3,0,0.1,0)); g.add(ball(glow('#c58cff'),0.09,0.09,0.09,0,0.3,0)); g.userData.top=0.5; g.userData.bob=true; return g; }
+  if(e.relic) return v3Relic(e);   /* its own model, or one of the four ancient eggs */
   g.add(box(mat(e.supply?'#3a6a8a':'#5a4632'),0.36,0.26,0.28,0,0.13,0)); g.add(box(mat('#f2c230'),0.37,0.05,0.29,0,0.2,0)); g.userData.top=0.4; g.userData.bob=true; return g; }
 /* ---------- a fallen soldier ----------
    The soldier's own model (role, kit, Osprey colours) laid on his back: arms flung out, one knee bent, the head turned aside,
@@ -1238,6 +1359,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
   if(U.fallen) return v3PoseFallen(e,g,T,x,z);
   if(e.kind!=='building'&&U.bob) y+=0.05+Math.sin(T*3+e.id)*0.04;
   if(U.seed) v3PoseSeed(U,T);
+  if(U.relic) v3PoseRelic(e,U,T);
   g.position.set(x,y,z);
   if(e.kind!=='building') return;
   g.scale.y=(!e.built&&e.progress!=null)?Math.max(0.08,e.progress):1;

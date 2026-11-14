@@ -42,7 +42,7 @@ function buildCampaign(){
   if(devUnlock) $('#camp-progress').textContent+=' · DEV: all missions open'; $('#s-campaign').classList.toggle('dev-open',devUnlock);
   const trs=rg?[]:trainingsOf(sw?'swarm':'corps');
   $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=!rLock&&isUnlocked(i);
-    return `<button class="mission" type="button" data-mission="${i}" ${un?'':rLock?`aria-disabled="true" data-rlock="1" title="Playable after the Corps campaign"`:`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
+    return `<button class="mission" type="button" data-mission="${i}" ${un?'':rLock?`aria-disabled="true" data-rlock="1" title="Playable after the Corps campaign"`:`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${rLock?'Classified':m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
 /* Your own soldier (Nov 2026): name and man/woman are picked once and never change. He is always a Trooper, in the Corps and in the Osprey crew. */
 let heroSex=null;
@@ -200,7 +200,7 @@ function intelCard(img,name,role,fac,desc,note,st,tags,perk,anim){
   return `<article class="icard f-${fac}"><div class="pic"${anim?` data-anim="${anim}"`:''}>${img?`<img alt="" src="${img}">`:''}</div><h3>${name}</h3><div class="role">${role||''}</div>
     <p>${desc||''}</p>${note?`<p class="note">${note}</p>`:''}<dl>${st.join('')}</dl><div class="tags">${tags.filter(Boolean).map(x=>`<span>${x}</span>`).join('')}${perk}</div></article>`; }
 function buildIntel(){
-  const TABS=INTEL_TABS; if(!TABS.some(t=>t.id===intelTab)) intelTab=TABS[0].id;   /* every tab always, Rogue Strain too (with a lock until the campaign opens) */
+  const TABS=INTEL_TABS; if(!TABS.some(t=>t.id===intelTab)) intelTab=TABS[0].id;   /* every tab always; Rogue Strain shows only a lock until the campaign opens (buildRogueIntelLock, 31-rogue.js) */
   $('#intel-tabs').innerHTML=TABS.map(t=>`<button type="button" role="tab" class="${t.id==='swarm'?'swarm':t.rogue?'rogue':''}" data-itab="${t.id}" aria-selected="${t.id===intelTab}"${t.rogue&&!rogueUnlocked()?' title="Playable after the Corps campaign"':''}>${t.rogue&&!rogueUnlocked()?'🔒 ':''}${t.name}</button>`).join('');
   const T=TABS.find(t=>t.id===intelTab)||TABS[0];
   if(T.relics){ buildRelicIntel(); intelFit(); intelAnimMount(); return; }

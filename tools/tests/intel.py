@@ -15,6 +15,8 @@ with sync_playwright() as p:
           for(const k of ['relaypad','salvage','stabcase']) ok(S.extras.includes(k)&&INTEL_EXTRA[k],'Structures: '+k);
           ok(W.buildings.includes('shaft')&&W.extras.includes('heart'),'Swarm: Mine Shaft and Her Seed'); ok(O.extras.includes('raiders'),'Other: the raiders');
           ok(ROGUE_INTEL.some(x=>x.id==='choirpod'),'Rogue Strain: the Choir Pod');
+          { const keep=devUnlock; devUnlock=false; intelTab='rogue'; buildIntel(); const g=document.querySelector('#intel-grid').textContent;
+            ok(document.querySelectorAll('#intel-list [data-isel]').length===0&&/Classified/.test(g)&&!/Order 10|Heir|Kerckhoffs/.test(g),'Rogue Strain locked: only a lock, nothing of the story'); devUnlock=true; }
           for(const T of INTEL_TABS){ intelTab=T.id; const n=()=>document.querySelectorAll('#intel-list [data-isel]').length; intelSel[T.id]=0; buildIntel(); const N=n();
             for(let i=0;i<N;i++){ intelSel[T.id]=i; buildIntel(); }
             const L=document.querySelector('#intel-list').getBoundingClientRect(), C=document.querySelector('#intel-grid').getBoundingClientRect();

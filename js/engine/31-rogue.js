@@ -487,7 +487,14 @@ const ROGUE_INTEL=[
 ];
 /* your own soldier shows up in Intel only once he is one of the crew: the Corps campaign done and the first Rogue job (Dead Man's Frequency) won */
 function selfJoined(){ return rogueUnlocked()&&isDone(ROGUE_MISSIONS[0].id); }
-function buildRogueIntel(){ const R=rogueStore(), items=[...R.crew.filter(v=>v.id!=='osp-self'||selfJoined()).map(v=>({crew:v})),...STRAIN_ORDER.map(k=>({strain:k})),...ROGUE_INTEL.map(x=>({info:x}))];
+/* before the Corps campaign is won the Rogue tab shows only a lock: its crew, strains and Containment Order 10 would give the story away */
+function buildRogueIntelLock(){ const n=rogueUnlockCount(), N=MISSIONS.length, D=DIFFICULTY[ROGUE_UNLOCK_DIFF].label;
+  $('#intel-list').innerHTML='';
+  $('#intel-grid').innerHTML=`<article class="icard f-rogue rintel-lock"><h3>🔒 Classified</h3><div class="role">Rogue Strain · playable after the Corps campaign</div>
+    <p>These files open once every Lunar Corps mission is won on ${D} or Hard. Until then, what is in them stays sealed.</p>
+    <div class="rlock-bar" title="${n} of ${N} Corps missions won on ${D} or Hard"><span style="width:${Math.round(n/Math.max(1,N)*100)}%"></span></div>
+    <p class="note">Lunar Corps: ${n} / ${N} missions won on ${D} or Hard.</p></article>`; }
+function buildRogueIntel(){ if(!rogueUnlocked()){ buildRogueIntelLock(); return; } const R=rogueStore(), items=[...R.crew.filter(v=>v.id!=='osp-self'||selfJoined()).map(v=>({crew:v})),...STRAIN_ORDER.map(k=>({strain:k})),...ROGUE_INTEL.map(x=>({info:x}))];
   const sel=Math.min(intelSel.rogue||0,items.length-1);
   $('#intel-list').innerHTML=items.map((it,i)=>{ const pic=it.crew?SPR['crew_'+it.crew.type].url:it.strain?rogueArt('vial',it.strain==='hive'?'#c38bff':'#8dff4a'):it.info.art();
     const nm=it.crew?crewTitle(it.crew):it.strain?STRAINS[it.strain].name:it.info.name, sub=it.crew?UNITS[it.crew.type].name+(it.crew.capt?' · Captain':''):it.strain?`Strain · from the ${STRAINS[it.strain].from}`:it.info.role;
