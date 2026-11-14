@@ -24,7 +24,7 @@ function saveRogue(){ store.set(ROGUE_KEY,rogueStore()); }
 function resetRogue(){ ui.rogue=null; try{ localStorage.removeItem(ROGUE_KEY); }catch(e){} rogueStore(); saveRogue(); }
 /* the Rogue side opens once the whole Lunar Corps campaign is won on Normal or Hard (Easy does not count): only then is the Osprey story told */
 const ROGUE_UNLOCK_DIFF='normal';
-/* Nov 2026 the Corps campaign grew from 8 to 11 missions (Night Shift, Kill Order, The Matron's Seed). Whoever had already won the
+/* Nov 2026 the Corps campaign grew from 8 to 10 missions (Night Shift, Kill Order; The Matron's Seed was added and cut again). Whoever had already won the
    8 old ones on Normal or Hard keeps the Rogue campaign open; a new player only reaches the old missions through the new ones. */
 const ROGUE_LEGACY=['dust-landing','hold-kappa','burn-the-brood','hollow-colony','blackout','dead-signal','brood-mother','high-ground'];
 const wonFor=id=>{ const r=resultOf(id); return !!r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; };
@@ -340,6 +340,31 @@ function drawTaintRing(u,now){ if(!taintWarn(u)) return; const p=0.5+0.5*Math.si
   ctx.strokeStyle=`rgba(255,70,60,${0.45+0.4*p})`; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(u.x,u.y+3,u.r+4+p*3,(u.r+4+p*3)*0.45,0,0,Math.PI*2); ctx.stroke(); ctx.lineWidth=1; }
 /* the selection panel: a red, blinking frame round a soldier who is about to snap */
 const taintWarnCls=e=>taintWarn(e)?(blinkOn()?' taint-warn':' taint-warn dim'):'';
+/* The Seed's split husk (Nov 2026; crate flags heart+husk): what Dust finds at the back of the Matron's lair in The Matron.
+   The same knot as drawMatronSeed, but dead: torn open from the top into three curled-back shards of rind, hollow and dark
+   inside, its root fibres withered, a dried purple crust where the sap ran out. Nothing glows or pulses. */
+function drawSeedHusk(cx,x,gy){
+  cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(x,gy-1,13,3.5,0,0,Math.PI*2); cx.fill();
+  cx.fillStyle='rgba(110,60,140,.45)'; cx.beginPath(); cx.ellipse(x+5,gy,9,2.5,0.1,0,Math.PI*2); cx.fill();   /* the dried sap */
+  cx.lineCap='round';
+  for(const [a,dx,dy] of [[-1,-14,3],[-0.5,-10,6],[0.2,6,6],[0.8,13,4]]){ const sx=x+a*8, sy=gy-3;
+    cx.strokeStyle='#2a2119'; cx.lineWidth=1.6; cx.beginPath(); cx.moveTo(sx,sy); cx.quadraticCurveTo(sx+dx*0.5,sy+dy*0.3,x+dx,gy-3+dy*0.5); cx.stroke(); }
+  cx.lineCap='butt';
+  cx.save(); cx.translate(x,gy-3);
+  /* the hollow inside, seen through the split */
+  cx.fillStyle='#120c08'; cx.beginPath(); cx.ellipse(0,-9,8,6,0,0,Math.PI*2); cx.fill();
+  cx.fillStyle='rgba(120,70,150,.5)'; cx.fillRect(-3,-8,2,1); cx.fillRect(2,-6,3,1);
+  /* the bottom of the bulb, still whole */
+  cx.fillStyle='#140d08'; cx.beginPath(); cx.moveTo(-12,-9); cx.bezierCurveTo(-12,1,12,1,12,-9); cx.lineTo(9,-6); cx.lineTo(4,-9); cx.lineTo(0,-5); cx.lineTo(-4,-9); cx.lineTo(-9,-6); cx.closePath(); cx.fill();
+  cx.fillStyle='#3d2f22'; cx.beginPath(); cx.moveTo(-11,-8); cx.bezierCurveTo(-11,0,11,0,11,-8); cx.lineTo(8,-5); cx.lineTo(4,-8); cx.lineTo(0,-4); cx.lineTo(-4,-8); cx.lineTo(-8,-5); cx.closePath(); cx.fill();
+  cx.strokeStyle='#241a12'; cx.lineWidth=1; cx.beginPath(); cx.arc(-3,-2,5,0.3,2.2); cx.stroke(); cx.beginPath(); cx.arc(5,-3,4,-0.4,1.6); cx.stroke();
+  /* three shards of rind, curled back outward */
+  for(const [px,py,rx,ry,rot] of [[-10,-13,4,8,-0.9],[10,-14,4,8,0.9],[1,-19,3.5,7,0.15]]){
+    cx.save(); cx.translate(px,py); cx.rotate(rot);
+    cx.fillStyle='#140d08'; cx.beginPath(); cx.ellipse(0,0,rx+1,ry+1,0,Math.PI*0.05,Math.PI*1.1); cx.fill();
+    cx.fillStyle='#4a3a2b'; cx.beginPath(); cx.ellipse(0,0,rx,ry,0,Math.PI*0.05,Math.PI*1.1); cx.fill();
+    cx.fillStyle='#2a2018'; cx.fillRect(-1,-ry+2,1,ry); cx.restore(); }
+  cx.restore(); }
 /* The Matron's Seed (Nov 2026; crate flag `heart`), drawn on the map and in Intel: a knot as big as a man, torn out of her roots.
    Torn root fibres splayed over the ground with beads of sap, a bark rind in plates, purple sap glowing through the cracks
    with a double thump, and a bent tip with a green bud. (x, gy) = where it sits on the ground; t in seconds. */
@@ -374,6 +399,7 @@ function drawMatronSeed(cx,x,gy,t){ const k=seedBeat(t), sw=1+0.03*k;
   cx.restore(); }
 /* a sample (a pulsing vial of ichor), a stabilizer case or a loot case */
 function drawRogueCrate(c,now){ const bob=Math.sin(now/280+c.seed)*1.5, x=Math.round(c.x), y=Math.round(c.y+bob);
+  if(c.husk){ drawSeedHusk(ctx,c.x,c.y+8); return; }   /* its split husk (The Matron): dead, it does not bob or pulse */
   if(c.heart){ drawMatronSeed(ctx,c.x,c.y+8,now/1000); return; }   /* the Matron's Seed (crate flag heart): rooted, it does not bob */
   if(c.dna){ const fade=c.t<10?(0.4+0.6*Math.abs(Math.sin(now/120))):1; ctx.globalAlpha=fade;
     ctx.globalCompositeOperation='lighter'; const g=ctx.createRadialGradient(x,y-4,1,x,y-4,12); g.addColorStop(0,'rgba(150,255,90,.45)'); g.addColorStop(1,'rgba(150,255,90,0)'); ctx.fillStyle=g; ctx.fillRect(x-12,y-16,24,24); ctx.globalCompositeOperation='source-over';

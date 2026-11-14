@@ -1034,6 +1034,20 @@ function v3PoseMembrane(e,g,T){ const U=g.userData, weak=!e.invuln, f=clamp(e.hp
     for(const t of h.userData.tears) t.visible=f<t.userData.at; }
   U.bud.scale.setScalar(0.04*(1+(weak?0.1:0.5)*Math.max(0,Math.sin(T*2.4+U.phase)))); if(U.bud.material!==vm) U.bud.material=vm;
   g.rotation.z=hit?Math.sin(T*55)*0.015:0; }
+/* The Seed's split husk (Nov 2026; crate flags heart+husk), at the back of the Matron's lair in The Matron: the bottom half of
+   the bulb, hollow and dark inside, three shards of rind curled back outward, withered roots and a dried purple crust.
+   Nothing glows, pulses or bobs. */
+function v3SeedHusk(e){ const g=new THREE.Group(), U=g.userData, V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0);
+  const seg=(m,r,a,b)=>{ const d=b.clone().sub(a), L=d.length(), o=part(GEO.cyl,m,r,L,r,0,0,0); o.position.copy(a).addScaledVector(d,0.5); o.quaternion.setFromUnitVectors(UP,d.normalize()); return o; };
+  const rind=mat('#3d2f22'), rind2=mat('#4a3a2b'), dark=mat('#120c08'), crust=mat('#5a3a6a'), dead=mat('#2a2119');
+  g.add(ball(rind,0.3,0.16,0.3,0,0.12,0));   /* the bottom of the bulb */
+  g.add(ball(dark,0.24,0.06,0.24,0,0.27,0));   /* the hollow inside */
+  for(const [a,tilt] of [[0.3,0.9],[2.4,1.0],[4.4,0.85]]){ const sh=new THREE.Group(); sh.position.set(Math.cos(a)*0.22,0.26,Math.sin(a)*0.22); sh.rotation.y=-a; g.add(sh);
+    const p=part(GEO.lowball,rind2,0.06,0.26,0.16,0,0.12,0); p.rotation.z=-tilt; sh.add(p); }   /* the shards, curled back */
+  g.add(ball(crust,0.32,0.012,0.22,0.16,0.012,0.06));   /* dried sap on the ground */
+  for(let i=0;i<5;i++){ const a=i*1.25+0.4, L=0.42+0.08*(i%2), p0=V(Math.cos(a)*0.2,0.04,Math.sin(a)*0.2), p1=V(Math.cos(a+0.1)*L,0.012,Math.sin(a+0.1)*L);
+    g.add(seg(dead,0.022,p0,p1)); }   /* withered roots */
+  U.top=0.5; return g; }
 /* ---------- The Matron's Seed (Nov 2026; crate flag `heart`) ----------
    A knot as big as a man, torn out of her roots: a bulb that narrows upward under a rind of bark plates, purple sap glowing
    through zigzag cracks, a bent tip with a green bud, torn root fibres splayed over the ground with beads of sap, a purple haze.
@@ -1072,6 +1086,7 @@ function v3Small(e){
     g.add(cyl(glow(col),0.065,0.26,0.065,0,0.15,0)); g.add(cyl(mat('#d8eef4',{ transparent:true, opacity:0.35 }),0.085,0.36,0.085,0,0.2,0));
     g.add(cyl(shiny('#cfd8e0'),0.095,0.07,0.095,0,0.41,0)); g.add(box(glow('#e8ffd0'),0.018,0.12,0.01,-0.03,0.19,0.07));
     g.scale.setScalar(1.35); g.userData.top=0.75; g.userData.bob=true; return g; }   /* a bit bigger than true size, so it reads from the camera */
+  if(e.rogue&&e.heart&&e.husk) return v3SeedHusk(e);   /* its split husk (The Matron) */
   if(e.rogue&&e.heart) return v3Seed(e);   /* the Matron's Seed */
   if(e.rogue){ /* a stabilizer case (blue with a cyan cross) or a loot case (brown with an orange cross), as in 2D */
     const c=e.stab?'#7fdfff':'#ffb347'; g.add(box(mat(e.stab?'#3a6f86':'#6b5a3a'),0.42,0.24,0.3,0,0.12,0));

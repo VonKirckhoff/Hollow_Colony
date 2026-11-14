@@ -1,11 +1,14 @@
 'use strict';
-/* Mission 7: Matron */
+/* Corps mission 9: The Matron (since Nov 2026 the Corps campaign has 10 missions: The Matron's Seed was cut).
+   Before it, in Rogue job 8 (The Matron's Blood), the Osprey crew bled her and she tore her Seed loose; here Dust finds only its
+   split husk at the back of her lair (a crate with flags heart+husk, drawn by drawSeedHusk / v3SeedHusk), and Kessler says so. */
 MISSIONS.push(
   {
     id:'brood-mother', title:'The Matron', map:'depths',
     summary:'Descend beneath Tycho Maw, burn three egg chambers and kill the Matron.',
     briefing:[
-      'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs. The Matron lived through what the Osprey crew did to her: she crawled back to her lair, sealed it again, and lays faster than ever.',
+      'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs.',
+      'Twelve days ago the seismographs caught a scream under Tycho Maw. By the time Kestrel got a team down, her lair stood open and empty: the Osprey crew had been there first, and they were gone, along with whatever she tore out of herself. The Matron lived. She crawled back, sealed her lair again, and lays faster than ever.',
       'Three egg chambers feed a sealed lair in the north-east. Living membrane closes the only tunnel into the lair, and it will not die while its chambers live.',
       'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Matron. Do not let her get away to heal.'
     ],
@@ -25,6 +28,7 @@ MISSIONS.push(
       { when:g=>g.time>0.3, do:g=>{
           g.wall('8',2.3,'lair');
           g.vars.mother=g.spawn('broodmother','9',1,{order:'boss'})[0]; g.boss(g.vars.mother,'The Matron');
+          const hk={ id:NEXT_ID++, kind:'crate', rogue:true, heart:true, husk:true, x:85.5*TILE, y:14.5*TILE, r:12, faction:'none', t:1e9, seed:2 }; G.ents.push(hk); g.vars.husk=hk;   /* the Seed's split husk, by the tunnel she fled down */
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to the Maw Depths. Three egg chambers, one Matron. Dig in at the cave mouth first.') },
       { when:g=>g.time>14, do:g=>g.say('Sgt. Kessler','Six sentries max down here. Relay pads in the side tunnels will keep the salvage flowing.') },
@@ -37,6 +41,8 @@ MISSIONS.push(
       { when:g=>g.vars.burned>=3, do:g=>{ g.complete('chambers'); g.openWall('lair');
           g.say('Dr. Maas','The membrane is dissolving. The lair is open. She is in there, and she is enormous.');
           g.addObjective('mother','Kill the Matron'); g.marker('queen','9','The Matron'); } },
+      { when:g=>g.vars.burned>=3&&g.vars.husk&&G.ents.some(u=>!u.dead&&u.kind==='unit'&&u.faction==='corps'&&Math.hypot(u.x-g.vars.husk.x,u.y-g.vars.husk.y)<TILE*4), do:g=>{
+          g.say('Sgt. Kessler','This is where they were. Whatever she left them, they took it or burned it.'); } },
       { when:g=>g.vars.mother && g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.say('Sgt. Kessler','Contact! By God, look at the size of her!'); } },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=1, do:g=>g.say('Dr. Maas','She is calling her brood! Burn the eggs before they hatch, and do not let her rest or she will heal.') },
       { when:g=>g.vars.mother && g.vars.mother.bossState && g.vars.mother.bossState.phase>=2, do:g=>g.say('Dr. Maas','She is weakening. Keep the pressure on, and keep the Pyro on her eggs.') },

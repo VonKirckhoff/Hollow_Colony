@@ -42,7 +42,7 @@ ROGUE_MISSIONS.push(
             g.crewSay(n>=3?'Capt. Kerckhoffs':'Devreese',n>=3?'The membrane is rotting away. She is in there. Everyone, on me.':'It opened for him. God help us, it opened for him. She is in there.'); } } },
       { when:g=>g.vars.mother&&g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.crewSay('Braet','Look at the size of her.'); } },
       { when:g=>g.vars.mother&&g.vars.mother.bossState&&g.vars.mother.bossState.lairs>=1, do:g=>g.crewSay('Devreese','She is crawling back to heal! Go in after her!') },
-      /* bled out: she tears her Seed loose and burrows into the deep. She lives; the Corps goes after her in Matron (Corps 10) */
+      /* bled out: she tears her Seed loose and burrows into the deep. She lives; the Corps goes after her in The Matron (Corps 9), and finds only the Seed's husk */
       { when:g=>g.vars.mother&&!g.vars.mother.dead&&g.vars.mother.hp<=1.5, do:g=>{ const m=g.vars.mother; m.dead=true; m.hp=0; G.boss=null;
           dustPuff(m.x,m.y,40); SFX.play('huskroar',m.x,m.y); G.shake=Math.max(G.shake||0,0.6); addDecal(m.x,m.y,30,'rgba(60,20,70,.6)');
           G.fx.push({k:'text',x:m.x,y:m.y-70,t:2,max:2,txt:'SHE TEARS FREE',col:'#c38bff'}); g.crewSay('Braet','She is going into the ground! She tore something out of her roots... it is still pulsing.'); } },

@@ -60,10 +60,10 @@ const INTEL_EXTRA = {
     desc:'A cold case of Dr. Maas\'s stabilizer, one in front of each tent of the Kappa field hospital.',
     note:'The raiders want them: one of them only has to stand at a case for a moment and it is gone. Keep a soldier between the cases and the dark.',
     stats:()=>{ const m=MISSIONS.find(x=>x.id==='night-shift'); return [['Taken in',((m&&m.job.nsGrab)||2.5)+' s'],['Cases','3']]; } },
-  heart:{ name:'Her Seed', role:'Mission object · The Matron\'s Seed', faction:'swarm',
+  heart:{ name:'Her Seed', role:'Mission object · The Matron\'s Blood', faction:'swarm',
     desc:'A knot as big as a man, ripped out of the Matron\'s roots when she tore herself free and burrowed into the deep. Under its hard rind the core still pulses, and its sap carries the strain at its strongest.',
-    note:'Burn it before the Osprey crew drains it. A Pyro next to it does it fastest; without their Medic the crew drains it at half speed.',
-    stats:()=>{ const m=MISSIONS.find(x=>x.id==='mothers-heart'), J=(m&&m.job)||{}; return [['Pyro burns it',(J.mhBurn||10)+' s'],['Anyone else',(J.mhSmash||25)+' s'],['Drained in',((J.mhTap&&J.mhTap.normal)||210)+' s']]; } },
+    note:'Rogue job 8: stand one of the crew on it and Devreese puts it in your blood (Ascension), or let Mortier burn it (Ashes), before Dust comes down. In The Matron, Dust finds only its split husk.',
+    stats:()=>[['Into the blood','8 s'],['Mortier burns it','6 s'],['Dust comes down in','150 s']] },
   /* the Osprey crew as Dust meets them: nameless until Night Shift is won */
   raiders:()=>{ const known=typeof isDone==='function'&&isDone('night-shift'), O=typeof OSPREY!=='undefined'?OSPREY:{hp:{normal:2.5},breakAt:0.25,hiveHeal:6};
     return { name:known?'The Osprey crew':'Unidentified raiders', role:known?'Hostile · Containment Order 9':'Hostile · no IFF', faction:'rogue',
