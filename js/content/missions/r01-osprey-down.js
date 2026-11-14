@@ -29,7 +29,7 @@ ROGUE_MISSIONS.push(
           g.marker('fz','1','Sample freezer'); g.vars.fz=0; g.vars.fzT=g.time; } },
       { when:g=>g.time>1.5, do:g=>g.crewSay('Capt. Kerckhoffs','Sound off. ...Six. Seven. Good. Pilot\'s gone. Everyone else on your feet, we are not staying in this wreck.') },
       { when:g=>g.time>7, do:g=>g.say('Cmdr. Varga','Osprey, Osprey, this is Tycho Command. Do you copy? ...Osprey, respond.') },
-      { when:g=>g.time>12, do:g=>g.crewSay('Capt. Kerckhoffs','Leave it, Braet. Radio stays off. Cnudde, the lab is north-east. Find me that freezer.') },
+      { when:g=>g.time>12, do:g=>g.crewSay('Capt. Kerckhoffs','Leave it, Van Wesemael. Radio stays off. Cnudde, the lab is north-east. Find me that freezer.') },
       { when:g=>g.time>20, do:g=>g.crewSay('Devreese','Captain. Before we left I read what Maas sent Command. She was splicing their blood into lab rats. The rats healed. Whatever we kill here, shoot it, do not burn it. I want samples.') },
       { when:g=>g.time>34, do:g=>g.crewSay('Mortier','No fire. Wonderful. I will just carry this thing around then.') },
       /* Maas behind her door: she will not open it */

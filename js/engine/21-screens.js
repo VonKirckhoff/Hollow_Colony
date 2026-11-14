@@ -44,25 +44,29 @@ function buildCampaign(){
   $('#mission-list').innerHTML=trs.map((tr,k)=>{ const trRes=ui.progress.results[tr.id]; return `<button class="mission training" type="button" data-mission="${-1-k}"><span class="num">${trs.length>1?'T'+(k+1):'00'}</span><span><div class="mt">${tr.title}</div><div class="ms">${tr.summary}</div></span><span class="st ${trRes?'done':''}">${trRes?'DONE':'TRAINING'}</span></button>`; }).join('')+L.map((m,i)=>{ const res=resultOf(m.id), done=!!res, un=!rLock&&isUnlocked(i);
     return `<button class="mission" type="button" data-mission="${i}" ${un?'':rLock?`aria-disabled="true" data-rlock="1" title="Playable after the Corps campaign"`:`aria-disabled="true" title="Finish the previous mission first (Shift-click to play anyway)"`}><span class="num">${String(i+1).padStart(2,'0')}</span><span><div class="mt">${m.title}</div><div class="ms">${m.summary} · ${MAPS[m.map].name}</div></span><span class="st ${done?'done':''}">${done?`COMPLETE<span class="badge d-${res.diff}">${DIFFICULTY[res.diff].label}</span>${res.time!=null?`<span class="best">${fmtTime(res.time)}</span>`:''}`:un?'READY':'LOCKED'}</span></button>`; }).join('');
 }
-/* Your own soldier: create him (name + type) on the campaign screen; rename him any time, change type until his first mission. */
-let heroEdit=false, heroType=null, heroSex=null;
+/* Your own soldier (Nov 2026): name and man/woman are picked once and never change. Under that name he has five careers, one per role,
+   each with its own rank, missions and trophy runs; you pick on the campaign screen which career goes on the next mission. */
+let heroType=null, heroSex=null;
+function careerBtn(t){ const v=careerOf(t), on=ui.roster.career===t;
+  return `<button type="button" class="htype career ${on?'on':''}" data-career="${t}" aria-pressed="${on}" title="${v?`${RANKS[v.rank].name} · ${v.missions||0} mission${v.missions===1?'':'s'} · ${v.kills||0} kills`:'A new career: starts as Private'}"><img alt="" src="${iconUrl(t)}">${UNITS[t].name}<small>${v?`${RANKS[v.rank].abbr} · ${v.missions||0} m.`:'new'}</small></button>`; }
 function buildHero(){
-  const el=$('#hero-card'), h=heroOf(), o=null;
-  if(h && !heroEdit){ el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><img alt="" src="${iconUrl(h.type)}" style="width:28px;height:28px;image-rendering:pixelated"><span class="hname">★ ${RANKS[h.rank].abbr} ${h.name}</span><span class="rdim">${h.sex==='f'?'♀ Woman':'♂ Man'} · ${UNITS[h.type].name} · ${h.missions||0} mission${h.missions===1?'':'s'} · ${h.kills||0} kills</span><span style="flex:1"></span><button class="btn" type="button" id="hero-edit">Edit</button></div>`; return; }
-  heroType=heroType||(h?h.type:o&&HERO_TYPES.includes(o.type)?o.type:'trooper'); heroSex=heroSex||(h&&h.sex)||(o&&o.sex)||'m'; const locked=h&&(h.missions||0)>0, P=f=>pron({sex:heroSex},f);
-  el.innerHTML=`<div class="lbl">${h?'Edit your soldier':'Enlist your own soldier'}</div>
-    <p class="lede" style="margin:0">${h?`Rename ${P('him')} any time. ${P('his').replace(/^./,c=>c.toUpperCase())} type is fixed once ${P('he')} has been on a mission.`:`Give ${P('him')} a name, pick man or woman (that sets the voice) and pick ${P('his')} job. ${P('He')} goes on every campaign mission, marked with a gold star, and earns rank like any veteran. If ${P('he')} falls, you can enlist a new one.`}</p>
-    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" value="${h?h.name:o?o.name:''}" aria-label="Soldier name">
+  const el=$('#hero-card'), me=selfOf();
+  if(me){ const h=heroOf();
+    el.innerHTML=`<div class="lbl">Your soldier</div><div class="hrow"><span class="hname">★ ${me.name}</span><span class="rdim">${me.sex==='f'?'♀ Woman':'♂ Man'}${h?` · next mission as ${RANKS[h.rank].abbr} ${UNITS[h.type].name}`:''}</span></div>
+      <div class="hrow" role="group" aria-label="Career for the next mission">${HERO_TYPES.map(careerBtn).join('')}</div>`; return; }
+  heroType=heroType||'trooper'; heroSex=heroSex||'m'; const P=f=>pron({sex:heroSex},f);
+  el.innerHTML=`<div class="lbl">Enlist your own soldier</div>
+    <p class="lede" style="margin:0">Pick a name and man or woman (that sets the voice). <b>Both are for good: they cannot be changed later.</b> You play every campaign mission under this name, marked with a gold star, in any of the five roles: each role is a career of its own with its own rank and trophy runs. Pick the role to start with.</p>
+    <div class="hrow"><input type="text" id="hero-name" maxlength="18" placeholder="Name" aria-label="Soldier name">
       <span class="hsex" role="group" aria-label="Man or woman"><button type="button" class="htype ${heroSex==='m'?'on':''}" data-hsex="m" aria-pressed="${heroSex==='m'}">♂ Man</button><button type="button" class="htype ${heroSex==='f'?'on':''}" data-hsex="f" aria-pressed="${heroSex==='f'}">♀ Woman</button></span></div>
-    <div class="hrow">${HERO_TYPES.map(t=>`<button type="button" class="htype ${t===heroType?'on':''}" data-htype="${t}" ${locked&&t!==h.type?'disabled':''}><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</button>`).join('')}</div>
-    <div class="hrow"><button class="btn primary" type="button" id="hero-save">${h?'Save':'Enlist'}</button>${h?'<button class="btn" type="button" id="hero-cancel">Cancel</button>':''}</div>`;
+    <div class="hrow">${HERO_TYPES.map(t=>`<button type="button" class="htype ${t===heroType?'on':''}" data-htype="${t}"><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</button>`).join('')}</div>
+    <div class="hrow"><button class="btn primary" type="button" id="hero-save">Enlist</button></div>`;
 }
 $('#hero-card').addEventListener('click',e=>{ if(ui.campSide==='rogue') return;   /* the Rogue side: the splice lab (31-rogue.js) */
-  if(e.target.closest('#hero-edit')){ heroEdit=true; heroType=null; heroSex=null; buildHero(); const i=$('#hero-name'); if(i) i.focus(); return; }
-  if(e.target.closest('#hero-cancel')){ heroEdit=false; buildHero(); return; }
+  const cb=e.target.closest('[data-career]'); if(cb){ const err=pickCareer(cb.dataset.career); if(err){ toast(err); return; } buildHero(); const h=heroOf(); toast(`${h.name} goes on the next mission as ${UNITS[h.type].name}.`,true); return; }
   const sx=e.target.closest('[data-hsex]'); if(sx){ heroSex=sx.dataset.hsex; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; voiceSample(heroSex); return; }
-  const t=e.target.closest('[data-htype]'); if(t&&!t.disabled){ heroType=t.dataset.htype; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; return; }
-  if(e.target.closest('#hero-save')){ const err=setHero($('#hero-name').value,heroType||'trooper',heroSex); if(!err){ heroType=null; heroSex=null; } if(err){ toast(err); return; } heroEdit=false; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
+  const t=e.target.closest('[data-htype]'); if(t){ heroType=t.dataset.htype; const v=$('#hero-name').value; buildHero(); $('#hero-name').value=v; return; }
+  if(e.target.closest('#hero-save')){ const err=enlistSelf($('#hero-name').value,heroSex,heroType||'trooper'); if(err){ toast(err); return; } heroType=null; heroSex=null; buildHero(); buildCampaign(); toast('Your soldier is on the roster.',true); }
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return;
@@ -82,7 +86,8 @@ function buildVeterans(){
 let vetArm=null;
 $('#btn-reset-vets').addEventListener('click',()=>{ const b=$('#btn-reset-vets');
   if(!vetArm){ b.classList.add('armed'); b.textContent='Click again to erase all veterans'; vetArm=setTimeout(()=>{ vetArm=null; b.classList.remove('armed'); b.textContent='Reset veterans'; },4000); return; }
-  clearTimeout(vetArm); vetArm=null; ui.roster=emptyRoster(); saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased.',true); });
+  clearTimeout(vetArm); vetArm=null; const own=ui.roster; ui.roster=emptyRoster(); if(own.self){ ui.roster.self=own.self; ui.roster.career=own.career; ui.roster.active=own.active.filter(v=>v.hero); }   /* your own soldier and his careers stay */
+  saveRoster(); b.classList.remove('armed'); b.textContent='Reset veterans'; buildVeterans(); toast('All veterans and the Cenotaph erased. Your own soldier stays.',true); });
 /* The Cenotaph: every fallen veteran's name in stone. In zombie mode (Halloween) the fallen can be raised again. */
 function buildCenotaph(){
   const R=ui.roster, z=ui.zombie;
@@ -113,7 +118,7 @@ const tDate=w=>new Date(w.at||w).toLocaleDateString();
 /* the Trophy wall in tabs: Lunar Corps, Swarm, Rogue Strain, Relics. The text on the left follows the tab; the count covers the whole wall. */
 let trophTab='corps';
 const TROPH_TABS=[
-  { id:'corps', name:'Lunar Corps', text:'One trophy for every role and every difficulty. To earn it, one soldier of your own must start at mission 1 and win every campaign mission in order, in that role, walking out of each one alive. Progress belongs to that soldier: if they fall, the run is over. A soldier enlisted later never qualifies. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Hollow Light, the grand trophy, takes every one of them. A win on Hard also counts for Normal and Easy.' },
+  { id:'corps', name:'Lunar Corps', text:'One trophy for every role and every difficulty. Your own soldier has one name and five careers, one per role; pick the career on the campaign screen. To earn a trophy, that career must win every campaign mission in order, from mission 1, walking out of each one alive. A mission where your soldier falls does not count: play it again. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Hollow Light, the grand trophy, takes every one of them. A win on Hard also counts for Normal and Easy.' },
   { id:'swarm', name:'The Brood', text:'Three trophies for the Brood campaign, one per difficulty: win every Brood mission on it. A win on Hard also counts for Normal and Easy, so each mission only needs its hardest win.' },
   { id:'rogue', name:'Rogue Strain', text:'The Osprey crew went rogue. Three trophies for winning every Rogue job on a difficulty (a win on Hard also counts for Normal and Easy), two for the ways the story can end, two for how far you take the strain, and one for walking among them unseen.' },
   { id:'relics', name:'Relics', text:'Hidden in the Lunar Corps campaign: relics of the old colony and ancient eggs. Take every relic, and every egg before the Brood wakes it. Read what you found in Intel, tab Relics.' } ];
@@ -122,7 +127,7 @@ function trophyTabs(){ const T=trophies(), hero=heroOf(), gs=grandStatus(), rs=r
   /* Lunar Corps: the role grid, Flawless and Hollow Light */
   const head=`<div class="trow thead"><span></span>${TROPHY_COLS.map(c=>`<span>${c.label}</span>`).join('')}</div>`;
   const roles=HERO_TYPES.map(t=>`<div class="trow"><span class="trole"><img alt="" src="${iconUrl(t)}">${UNITS[t].name}</span>${TROPHY_COLS.map(c=>{
-      const list=T[t+':'+c.key]||[], mine=hero&&hero.type===t, p=mine?trophyProgress(hero,c.key):0, tip=`${UNITS[t].name} · ${c.label}`;
+      const list=T[t+':'+c.key]||[], cv=careerOf(t), mine=!!cv, p=mine?trophyProgress(cv,c.key):0, tip=`${UNITS[t].name} · ${c.label}`;
       if(list.length) return tPlaque(c.key,true,list[0].name,`${tDate(list[0])}${list.length>1?` · +${list.length-1} more`:''}`,null,tip);
       return tPlaque(mine&&p?'run':'',false,'',mine?`${p} / ${MISSIONS.length}`:'not yet',mine?p/MISSIONS.length:null,tip); }).join('')}</div>`).join('');
   const flaw=`<div class="trow"><span class="trole flawless">Flawless</span>${FLAWLESS_COLS.map(c=>{ const w=T['flawless:'+c.key], n=flawlessCount(c.key);
@@ -147,7 +152,7 @@ function buildTrophies(){
   if(!TROPH_TABS.some(t=>t.id===trophTab)) trophTab='corps';
   const total=TROPH_TABS.reduce((s,t)=>s+tabs[t.id].need,0), earned=TROPH_TABS.reduce((s,t)=>s+tabs[t.id].have,0);
   $('#troph-lede').textContent=TROPH_TABS.find(t=>t.id===trophTab).text;
-  $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name}</span> <span>${hero.tp&&hero.tp.void?'<span class="tvoid">Not on a trophy run: this soldier did not start at mission 1.</span>':TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
+  $('#troph-hero').innerHTML=hero?`<b>★ ${hero.name}</b> <span class="rdim"><img alt="" src="${iconUrl(hero.type)}">${UNITS[hero.type].name} career</span> <span>${TROPHY_COLS.map(c=>`${c.label} <b>${trophyProgress(hero,c.key)}/${MISSIONS.length}</b>`).join(' · ')}</span> <span class="tcount">${earned} / ${total} trophies</span>`
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
   $('#troph-tabs').innerHTML=TROPH_TABS.map(t=>`<button type="button" role="tab" class="${t.id}" data-ttab="${t.id}" aria-selected="${t.id===trophTab}">${t.name} <small>${tabs[t.id].have}/${tabs[t.id].need}</small></button>`).join('');
   $('#trophy-wall').className='trophies tab-'+trophTab; $('#trophy-wall').innerHTML=tabs[trophTab].html;
@@ -241,7 +246,7 @@ $('#btn-reset').addEventListener('click',()=>{ const b=$('#btn-reset');
     try{ const s=savedInfo(); if(s&&ROGUE_MISSIONS.some(m=>m.id===s.missionId)) localStorage.removeItem('hc-save'); }catch(e){} if(typeof refreshContinue==='function') refreshContinue();
     b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('The Osprey crew starts over: jobs, strains, taint and samples erased.',true); return; }
   ui.progress={results:{}}; store.set('hc-progress',ui.progress);
-  ui.roster=emptyRoster(); saveRoster(); resetRogue();
+  const own=ui.roster.self; ui.roster=emptyRoster(); if(own){ ui.roster.self=own; pickCareer(HERO_TYPES[0]); }   /* the name stays for good; the careers start over */ saveRoster(); resetRogue();
   try{ localStorage.removeItem('hc-save'); }catch(e){}   /* the saved mission goes too */
   if(typeof refreshContinue==='function') refreshContinue();
   b.classList.remove('armed'); b.textContent='Reset campaign'; buildCampaign(); toast('Campaign progress and the saved game erased.',true); });
@@ -352,7 +357,7 @@ function showEnd(){
     const byRank=list=>{ const m2=new Map(); for(const v of list){ if(!m2.has(v.rank)) m2.set(v.rank,[]); m2.get(v.rank).push(v.name); }
       return [...m2.entries()].sort((a,b)=>b[0]-a[0]).map(([r,ns])=>`<div class="vrow"><span class="vrank">${RANKS[r].mark||'·'} ${RANKS[r].name}</span><span>${ns.sort((a,b)=>a.localeCompare(b)).map(n=>star(n)+n).join(', ')}</span></div>`).join(''); };
     const fallen=fallenAll.slice().sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
-    const tw=(rr&&rr.trophies)||[], run=o.win&&hero&&hero.tp?`<div class="vsec"><span class="lbl">Trophy run</span><div>★ ${hero.name} · ${UNITS[hero.type].name}: ${hero.tp.void?'not on a trophy run (did not start at mission 1).':TROPHY_COLS.map(c=>`${c.label} ${trophyProgress(hero,c.key)}/${MISSIONS.length}`).join(' · ')}</div></div>`:'';
+    const tw=(rr&&rr.trophies)||[], run=o.win&&hero&&(hero.tp||rr&&rr.heroDown)?`<div class="vsec"><span class="lbl">Trophy run</span><div>★ ${hero.name} · ${UNITS[hero.type].name}: ${TROPHY_COLS.map(c=>`${c.label} ${trophyProgress(hero,c.key)}/${MISSIONS.length}`).join(' · ')}</div>${rr&&rr.heroDown?`<div>${hero.name} went down in this mission, so it does not count for the ${UNITS[hero.type].name} career. Play it again.</div>`:''}</div>`:'';
     ev.innerHTML=(tw.length?`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${tw.map(w=>`<div>${w.name}: ${UNITS[w.type].name} · ${TROPHY_COLS.find(c=>c.key===w.col).label}. It hangs on the Trophy wall.</div>`).join('')}</div>`:'')+run+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
       (rr&&rr.joined.length?`<div class="vsec"><span class="lbl">New on the roster</span>${byRank(rr.joined)}</div>`:'')+
       (fallen.length?`<div class="vsec fallen"><span class="lbl">Fallen</span>${fallen.map(v=>`<div class="vrow"><span class="vrank">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'<span class="vstar">★</span> ':''}${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}</i></span></div>`).join('')}</div>`:''); }

@@ -16,7 +16,9 @@ const ROGUE_CREW = [
   { id:'osp-devreese',    name:'Devreese',      type:'medic',    rank:1, xp:6,  sex:'f', bio:'Flight medic. She read Maas\'s notes first, and she is the one holding the needle.' },
   { id:'osp-cnudde',      name:'Cnudde',        type:'engineer', rank:0, xp:3,  bio:'Crew chief. Can crack any freezer, lock or sentry the Corps ever built.' },
   { id:'osp-vanwesemael', name:'Van Wesemael',  type:'trooper',  rank:0, xp:1,  bio:'Youngest of the crew. First to volunteer for the needle.' },
-  { id:'osp-braet',       name:'Braet',         type:'trooper',  rank:0, xp:2,  bio:'Quiet. Keeps a tally of every Corps soldier they have had to shoot.' }
+  /* your own soldier (Nov 2026, in Braet's old place): name and sex come from the Lunar Corps roster (ui.roster.self), see selfCrew in 31-rogue.js */
+  { id:'osp-self',        name:'Braet',         type:'trooper',  rank:0, xp:2,  self:true, bio:'Came over from Lunar Corps Squad Dust. Knows how the Corps hunts, because #he was the one hunting.',
+    intel:'Squad Dust, until the day #he was not. #He fought the Brood across Kappa, Tycho Maw and the Highlands, and met the Osprey crew down the barrel of a rifle. Then #he crossed over. Kerckhoffs never asked why, and #he never told him.<br><br>The Corps has #his name on a list somewhere: not the Cenotaph, the other one.' }
 ];
 
 /* STRAINS: what a splice of Swarm DNA does to a soldier. A soldier carries every strain at most once.
@@ -85,7 +87,7 @@ const ROGUE_VOICE_TONE = { pitch:0.66, pitchF:0.98, rate:0.95, drop:0.45, rateDr
 const OSPREY_PILOT = { name:'Van Haviksburg', rank:4, role:'Pilot' };
 /* everyone the Corps lists as lost with the Osprey, in the order of the stone: the Captain, the pilot, then the crew */
 const ospreyLost=()=>[{ title:crewTitle(ROGUE_CREW[0]), role:UNITS[ROGUE_CREW[0].type].name }, { title:`${RANKS[OSPREY_PILOT.rank].abbr} ${OSPREY_PILOT.name}`, role:OSPREY_PILOT.role },
-  ...ROGUE_CREW.slice(1).map(c=>({ title:crewTitle(c), role:UNITS[c.type].name }))];
+  ...ROGUE_CREW.slice(1).filter(c=>!c.self).map(c=>({ title:crewTitle(c), role:UNITS[c.type].name }))];   /* your own soldier was never on the Osprey */
 const ROGUE_ADVISORS = { 'Dr. Maas':'Devreese', 'Sgt. Kessler':'Capt. Kerckhoffs' };
 /* the trophies of the Rogue campaign (a row on the Trophy wall) */
 const ROGUE_TROPHIES = [

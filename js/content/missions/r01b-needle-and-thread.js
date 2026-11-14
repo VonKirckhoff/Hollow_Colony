@@ -49,7 +49,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs','Kappa Basin. Last time I was here we were holding it for Dust. Now it is a hospital full of our own. Shoot what shoots back, nothing else.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','The terminal in the middle of the tents. Get me there and keep them off me. It takes time to find her files, and they will hear me looking.') },
       { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','That pad south of the camp, under their tower, is a relief pad. Once the hospital shouts for help, Tycho lands its people right on their doorstep.') },
-      { when:g=>g.time>27, do:g=>g.crewSay('Braet','Hold fire (Q) till we are close, Captain. The longer they do not see us, the longer before the first dropship.') },
+      { when:g=>g.time>27, do:g=>g.crewSay('Van Wesemael','Hold fire (Q) till we are close, Captain. The longer they do not see us, the longer before the first dropship.') },
       /* seen before the download starts: the hospital calls Tycho early */
       { when:g=>!g.vars.alarm&&!!g.spotted(), do:g=>{ const s=g.spotted(); ntAlarm(g,'Contact at the perimeter! Corps armour, no IFF! Kappa medical to Tycho, we need a relief squad, now!'); if(s) G.alert={x:s.x,y:s.y}; } },
       /* the download: a Medic of the crew stands at the terminal; she stops if she walks away, goes down or goes feral */

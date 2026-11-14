@@ -46,7 +46,7 @@ ROGUE_MISSIONS.push(
           if(n>=3){ g.vars.harvestDone=true; g.complete('harvest'); g.addObjective('escape','Everyone down the old mine shaft in the south-west (right-click it)'); g.exitMark('exit'); g.openExit();
             g.crewSay('Devreese','Three hives. My bags are heavy and wet. Get us out of here.'); }
           else if(g.hives()+n<3){ g.vars.harvestDone=true; g.fail('harvest'); g.lose('Too many hives burnt. There is nothing left in Mare Colony worth harvesting.'); } } },
-      { when:g=>g.harvested()>=1, do:g=>g.crewSay('Devreese','One! Do not touch the samples with bare hands. Do not lick your fingers, Braet.') },
+      { when:g=>g.harvested()>=1, do:g=>g.crewSay('Devreese','One! Do not touch the samples with bare hands. Do not lick your fingers, Van Wesemael.') },
       { repeat:true, when:g=>g.vars.harvestDone&&!g.vars.won&&g.isDone('harvest'), do:g=>g.setText('escape',`Everyone down the old mine shaft in the south-west, right-click it (${g.out()}/${g.out()+g.crewUp()})`) },
       { when:g=>g.isDone('harvest')&&g.allOut(), do:g=>{ g.vars.won=true; g.complete('escape'); g.unmark('exit'); if(!g.vars.lightSaid) g.complete('dark');
           g.win(g.vars.lightSaid?'In the morning the Corps finds three dead hives with their hearts cut out, and the tracks of seven boots going down a mine shaft.':'In the morning the Corps finds three dead hives with their hearts cut out. Not one sentry saw a thing.'); } },

@@ -13,13 +13,19 @@ const isRogue=()=>!!(G&&G.mission&&G.mission.rogue);
 function freshCrew(c){ return { id:c.id, name:c.name, type:c.type, rank:c.rank, xp:c.xp, kills:0, missions:0, healed:0, repaired:0, sex:c.sex||undefined, capt:c.capt||undefined, strains:[], taint:0 }; }
 function loadRogue(){ const r=store.get(ROGUE_KEY,null)||{}; r.crew=Array.isArray(r.crew)?r.crew:[];
   for(const v of r.crew) if(v.id==='osp-haesaert'){ v.id='osp-kerckhoffs'; v.name='Kerckhoffs'; }   /* the Captain was Haesaert before Nov 2026: keep his strains and taint */
+  for(const v of r.crew) if(v.id==='osp-braet') v.id='osp-self';   /* Braet's place went to your own soldier (Nov 2026): his rank, strains and taint carry over */
   for(const c of ROGUE_CREW) if(!r.crew.some(v=>v.id===c.id)) r.crew.push(freshCrew(c));
   r.crew=r.crew.filter(v=>ROGUE_CREW.some(c=>c.id===v.id)); for(const v of r.crew){ v.strains=v.strains||[]; v.taint=v.taint||0; }
-  r.dna=r.dna||{}; r.flags=r.flags||{}; r.stab=r.stab||0; return r; }
+  r.dna=r.dna||{}; r.flags=r.flags||{}; r.stab=r.stab||0; selfCrew(r); return r; }
+/* your own soldier in the crew: his name and sex are the ones you enlisted with on the Lunar Corps side (fixed for good). Before you enlist, the place keeps the name Braet. */
+function selfCrew(r){ const me=typeof selfOf==='function'&&ui.roster?selfOf():null, v=r.crew.find(x=>x.id==='osp-self'); if(!v) return;
+  if(me){ v.name=me.name; v.sex=me.sex==='f'?'f':undefined; v.self=true; } else { v.name=crewDef('osp-self').name; v.sex=undefined; } }
+/* #he / #He / #his / #His / #him in a crew text, for that crew member's sex */
+const crewText=(v,t)=>String(t||'').replace(/#(He|he|His|his|him)\b/g,(m,f)=>{ const w=pron(v,f.toLowerCase()); return f[0]==='H'?w[0].toUpperCase()+w.slice(1):w; });
 /* the Osprey crew on the Cenotaph: the Corps lists them as lost once it has found the wreck at Hollow Colony (Corps mission 4) */
 function markOspreyLost(){ if(ui.progress.ospreyLost) return; ui.progress.ospreyLost=Date.now(); store.set('hc-progress',ui.progress); }
 function ospreyOnStone(){ return !!ui.progress.ospreyLost||isDone('hollow-colony'); }
-function rogueStore(){ if(!ui.rogue) ui.rogue=loadRogue(); return ui.rogue; }
+function rogueStore(){ if(!ui.rogue) ui.rogue=loadRogue(); else selfCrew(ui.rogue); return ui.rogue; }
 function saveRogue(){ store.set(ROGUE_KEY,rogueStore()); }
 function resetRogue(){ ui.rogue=null; try{ localStorage.removeItem(ROGUE_KEY); }catch(e){} rogueStore(); saveRogue(); }
 /* the Rogue side opens once the whole Lunar Corps campaign is won on Normal or Hard (Easy does not count): only then is the Osprey story told */
@@ -428,7 +434,7 @@ function buildCrew(el=$('#hero-card')){ const R=rogueStore(); if(!crewSel||!R.cr
   el.innerHTML=`<div class="lbl">The Osprey crew · splice lab${el.id==='b-lab'?' · before you go dark':''}</div>
     <div class="dna-row">${dna}<span class="dchip stab" title="Stabilizer doses: take one into the next mission, or use one here">✚ Stabilizer <b>${R.stab}</b></span></div>
     <div class="crew-list">${R.crew.map(c=>`<button type="button" class="crow ${c.id===crewSel?'on':''}" data-crew="${c.id}"><img alt="" src="${SPR['crew_'+c.type].url}"><span class="cn">${c.capt?'✪ ':''}${crewTitle(c)}<small>${UNITS[c.type].name}${c.missions?` · ${c.missions} job${c.missions>1?'s':''}`:''}</small></span>${taintBar(c.taint)}<span class="cs">${c.strains.map(k=>k==='mother'?'<b title="Matron strain" class="ms">♛</b>':`<b title="${STRAINS[k]?STRAINS[k].name:k}">${STRAINS[k]?STRAINS[k].glyph:'?'}</b>`).join('')}</span></button>`).join('')}</div>
-    <div class="crew-detail"><p class="lede" style="margin:0"><b>${crewTitle(v)}</b>, ${UNITS[v.type].name}${v.sex==='f'?' (she)':''}. ${d.bio||''} Taint <b>${Math.round(v.taint)}%</b>${v.taint>=T.seizure?': seizures, close to going feral.':v.taint>=T.mend?': the mycel heals '+pron(v,'him')+'.':v.taint>=T.scent?': the hunt passes '+pron(v,'him')+' by.':'.'}</p>
+    <div class="crew-detail"><p class="lede" style="margin:0"><b>${crewTitle(v)}</b>, ${UNITS[v.type].name}${v.sex==='f'?' (she)':''}. ${crewText(v,d.bio)} Taint <b>${Math.round(v.taint)}%</b>${v.taint>=T.seizure?': seizures, close to going feral.':v.taint>=T.mend?': the mycel heals '+pron(v,'him')+'.':v.taint>=T.scent?': the hunt passes '+pron(v,'him')+' by.':'.'}</p>
       <div class="splice-row">${STRAIN_ORDER.map(k=>{ const S=STRAINS[k], has=v.strains.includes(k), err=has?null:canSplice(v,k);
         return `<button type="button" class="splice ${has?'has':''}" data-splice="${k}" ${has||err?'disabled':''} title="${S.name}: ${S.text}${err&&!has?' · '+err:''}"><span class="g">${S.glyph}</span><b>${S.name}</b><small>${has?'carries it':`${S.cost} ${S.from} · +${S.taint} taint`}</small></button>`; }).join('')}
         <button type="button" class="splice stabb" data-stabcrew="1" ${R.stab<1||v.taint<1?'disabled':''} title="A stabilizer dose: −${ROGUE.stab.amount} taint"><span class="g">✚</span><b>Stabilize</b><small>1 dose · −${ROGUE.stab.amount} taint</small></button></div>
@@ -482,7 +488,7 @@ function buildRogueIntel(){ const R=rogueStore(), items=[...R.crew.map(v=>({crew
   if(it.crew){ const v=it.crew, d=UNITS[v.type], st=[['HP',d.hp],['Rank',RANKS[v.rank].name],['Taint',Math.round(v.taint)+'%'],['Jobs',v.missions||0],['Kills',v.kills||0]].map(([k,x])=>intelStat(k,x));
     if(d.damage) st.splice(1,0,intelStat('Damage/s',fmt1(d.damage/d.cooldown)));
     const tags=(v.strains||[]).map(k=>k==='mother'?'♛ Matron strain':STRAINS[k]?`${STRAINS[k].glyph} ${STRAINS[k].name}`:k);
-    html=intelCard(SPR['crew_'+v.type].url,crewTitle(v),`${d.name} of the Osprey${v.capt?' · Captain, leads the squad':''}`,'rogue',crewDef(v.id).intel||crewDef(v.id).bio||'',v.strains.length?'Carries: '+v.strains.filter(k=>STRAINS[k]).map(k=>STRAINS[k].name).join(', ')+'.':'No strain in the blood yet. Splice one on the campaign screen.',st,tags,''); }
+    html=intelCard(SPR['crew_'+v.type].url,crewTitle(v),`${d.name} of the Osprey${v.capt?' · Captain, leads the squad':''}`,'rogue',crewText(v,crewDef(v.id).intel||crewDef(v.id).bio),v.strains.length?'Carries: '+v.strains.filter(k=>STRAINS[k]).map(k=>STRAINS[k].name).join(', ')+'.':'No strain in the blood yet. Splice one on the campaign screen.',st,tags,''); }
   else if(it.strain){ const S=STRAINS[it.strain], who=R.crew.filter(v=>v.strains.includes(it.strain)).map(v=>v.name);
     html=intelCard(rogueArt('vial',it.strain==='hive'?'#c38bff':'#8dff4a'),S.name,`Strain · from the ${S.from}`,'rogue',S.text,who.length?'Carried by '+who.join(', ')+'.':'Nobody carries it yet.',[intelStat('Samples',S.cost),intelStat('Taint','+'+S.taint),intelStat('In the lab',R.dna[it.strain]||0)],[`${S.glyph} ${S.from} DNA`],''); }
   else { const x=it.info; html=intelCard(x.art(),x.name,x.role,'rogue',x.text,x.note,x.stats().map(([k,v])=>intelStat(k,v)),[],''); }

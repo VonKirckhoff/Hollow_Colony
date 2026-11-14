@@ -55,7 +55,7 @@ ROGUE_MISSIONS.push(
               if(n<3){ const k=Math.max(1,Math.round((J.burrow+n-1)*G.diff.budget)), up=[...g.spawn('drone',{x:17,y:44},k,{order:'hunt'}),...g.spawn(n>1?'spitter':'crawler',{x:17,y:44},1,{order:'hunt'})];   /* the old burrow by the ridge wakes too */
                 for(const u of up){ emergeStart(u); u.order={type:'amove',x:aim.x,y:aim.y}; setPath(u,aim.x,aim.y); }
                 if(!g.vars.burrowSaid){ g.vars.burrowSaid=true; g.crewSay('Mortier','The old burrow! They are coming up right next to us! West side, west side!'); } }
-              g.crewSay(['Capt. Kerckhoffs','Braet','Devreese'][n-1]||'Capt. Kerckhoffs',[
+              g.crewSay(['Capt. Kerckhoffs','Van Wesemael','Devreese'][n-1]||'Capt. Kerckhoffs',[
                 'One pod is quiet. Hear that? Half the plain just turned its head. Ridge, they are coming for you!',
                 'Second one is down. Here they come again. Keep the line, keep the line!',
                 'The last one... it is so quiet. They are lying down. All of them. Everyone, now, through the nest!'][n-1]||''); } });

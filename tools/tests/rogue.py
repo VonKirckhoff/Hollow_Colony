@@ -16,9 +16,9 @@ CASES=[
   for(const m of MISSIONS.slice(0,-1)) recordWin(m.id,'normal',500,false); ok(!rogueUnlocked()&&rogueUnlockCount()===MISSIONS.length-1,'one Easy mission left keeps it locked');
   recordWin(MISSIONS[MISSIONS.length-1].id,'hard',500,false); goMenu('campaign'); ok(!rb().classList.contains('locked')&&!document.querySelector('#s-campaign').classList.contains('rogue-locked'),'unlocked once every Corps mission is won on Normal or Hard'); ok(!itab()&&!!document.querySelector('[data-itab=rogue]'),'the Rogue Intel tab loses its lock'); goMenu('campaign');
   ui.campSide='rogue'; goMenu('campaign'); ok(document.querySelectorAll('.crow').length===7,'seven crew in the splice lab'); ok(/Rogue Strain/.test(document.getElementById('camp-title').textContent),'campaign title');
-  const R=rogueStore(); ok(R.crew.find(v=>v.capt).rank===5,'Kerckhoffs is the Captain'); ok(splice('osp-braet','drone')!==null,'no samples: no splice');
-  R.dna.drone=3; ok(splice('osp-braet','drone')===null&&R.crew.find(v=>v.id==='osp-braet').taint===10&&R.dna.drone===0,'splice: strain in, taint up, samples spent');
-  ok(splice('osp-braet','drone')!==null,'a strain only once'); R.crew[2].taint=90; R.dna.hive=3; ok(/taint/.test(splice(R.crew[2].id,'hive')||''),'no splice past '+SPLICE_MAX);
+  const R=rogueStore(); ok(R.crew.find(v=>v.capt).rank===5,'Kerckhoffs is the Captain'); ok(splice('osp-self','drone')!==null,'no samples: no splice');
+  R.dna.drone=3; ok(splice('osp-self','drone')===null&&R.crew.find(v=>v.id==='osp-self').taint===10&&R.dna.drone===0,'splice: strain in, taint up, samples spent');
+  ok(splice('osp-self','drone')!==null,'a strain only once'); R.crew[2].taint=90; R.dna.hive=3; ok(/taint/.test(splice(R.crew[2].id,'hive')||''),'no splice past '+SPLICE_MAX);
   R.stab=1; ok(stabilizeCrew(R.crew[2].id)===null&&R.crew[2].taint===55&&R.stab===0,'a dose in the lab: -35'); resetRogue();'''),
 ('osprey down: freezer, samples, escape, settle','''resetRogue(); const G=start(0); step(1); ok(crew().length===7,'the crew is on the field'); ok(crew().every(u=>u.hp<u.maxHp),'everyone hurt from the crash');
   calm(); const eng=crew().find(u=>u.def.builder); tp(eng,53,9); step(13); ok(G.objectives.find(o=>o.id==='freezer').state==='done','the Engineer cracks the freezer');
@@ -42,13 +42,13 @@ CASES=[
   step(ROGUE.taint.feralTime+0.5); ok(!(u.feral>0)&&Math.abs(u.vet.taint-ROGUE.taint.after)<2,'the fit ends: he collapses, taint '+ROGUE.taint.after);
   u.vet.taint=100; step(0.2); ok(u.feral>0,'feral again'); tp(m,Math.floor(u.x/TILE)+1,Math.floor(u.y/TILE)); selectEntities([m],false); const s=G.rogue.stab; rogueStabilize(); ok(!(u.feral>0)&&u.vet.taint<=65&&G.rogue.stab===s-1,'the Medic doses him: back to his senses');
   ok(cmdButtons().some(c=>c.key==='J'),'the Medic has the J button');'''),
-('strains on the field','''resetRogue(); const R=rogueStore(); const v=R.crew.find(x=>x.id==='osp-braet'); v.strains=['brute','drone','husk','hive','crawler']; v.taint=20; saveRogue();
-  const G=start(0); step(1); calm(); const u=crew().find(x=>x.vet.id==='osp-braet'), w=crew().find(x=>x.vet.id==='osp-vanwesemael');
+('strains on the field','''resetRogue(); const R=rogueStore(); const v=R.crew.find(x=>x.id==='osp-self'); v.strains=['brute','drone','husk','hive','crawler']; v.taint=20; saveRogue();
+  const G=start(0); step(1); calm(); const u=crew().find(x=>x.vet.id==='osp-self'), w=crew().find(x=>x.vet.id==='osp-vanwesemael');
   ok(Math.abs(u.armor-0.2)<1e-6&&u.maxHp>w.maxHp,'Chitin: armour and health'); ok(speedOf(u)>speedOf(w)*1.15,'Swift and Night Eyes: faster'); ok(u.sightAdd===2,'Night Eyes: +2 sight');
   u.hp=10; u.hitAt=-99; step(2); ok(u.hp>10,'Knitting Flesh heals'); ok(rogueHuntSkip(u)&&!rogueHuntSkip(w),'Hive Scent: the hunt passes him by');
   gainXP(u,10); ok(u.vet.rank>0&&Math.abs(u.armor-0.2)<1e-6,'a promotion keeps the strains'); w.vet.taint=50; ok(feverOf(w)>1.09,'fever: taint adds damage');'''),
-('fallen crew comes back tainted','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.vet.id==='osp-braet'); u.vet.taint=30; damage(u,1e6,null); kill(u,null); step(1); ok(u.dead,'Braet is dead');
-  G.objectives.forEach(o=>o.state='done'); endGame(true,'test'); const v=rogueStore().crew.find(x=>x.id==='osp-braet'); ok(v.taint===30+ROGUE.taint.fallen,'back with +'+ROGUE.taint.fallen+' taint ('+v.taint+')'); ok(G.rogueResult.back.includes('Braet'),'the end screen says so');'''),
+('fallen crew comes back tainted','''resetRogue(); const G=start(0); step(1); calm(); const u=crew().find(x=>x.vet.id==='osp-self'); u.vet.taint=30; damage(u,1e6,null); kill(u,null); step(1); ok(u.dead,'Braet is dead');
+  G.objectives.forEach(o=>o.state='done'); endGame(true,'test'); const v=rogueStore().crew.find(x=>x.id==='osp-self'); ok(v.taint===30+ROGUE.taint.fallen,'back with +'+ROGUE.taint.fallen+' taint ('+v.taint+')'); ok(G.rogueResult.back.includes('Braet'),'the end screen says so');'''),
 ('dead air: alarm, towers, caches, escape','''resetRogue(); const G=start(1); step(1); ok(G.vars.relays.length===2,'two relay towers'); ok(G.vars.caches.length===3,'three caches');
   for(const e of G.ents) if(e.faction==='swarm') e.invuln=true; const u=crew()[1]; tp(u,40,36); u.invuln=true; step(3); ok(G.vars.alarm&&G.timer&&G.timer.label==='Call to Tycho','seen: the towers start calling'); ok(G.objectives.find(o=>o.id==='quiet').state==='active'&&!G.objectives.find(o=>o.id==='quiet').optional,'not quiet any more, but the call is not out yet (and not optional)');
   for(const r of G.vars.relays){ r.invuln=false; kill(r,u); } step(1); ok(G.objectives.find(o=>o.id==='towers').state==='done'&&!G.timer,'both towers down: dead air');

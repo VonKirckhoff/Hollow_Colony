@@ -25,10 +25,18 @@ function uniqueName(taken){
   for(const L of NAME_INITIALS){ const f=SURNAMES.filter(n=>!taken.has(`${L}. ${n}`)); if(f.length) return `${L}. ${pick(f)}`; }
   for(let i=2;;i++){ const n=`${pick(SURNAMES)} ${i}`; if(!taken.has(n)) return n; } }
 function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[]; r.fallen=r.fallen||[]; delete r.rd;
+  /* your own soldier (Nov 2026): one name and sex for good (r.self), up to five careers = hero records on the roster, one per role; r.career = the role that goes on the next mission.
+     A roster from before: the one hero becomes the name and his type the first career. */
+  const hs=r.active.filter(v=>v.hero);
+  if(!r.self&&hs.length) r.self={ name:hs[0].name, sex:hs[0].sex==='f'?'f':'m' };
+  if(r.self){ const seen=new Set(); r.active=r.active.filter(v=>{ if(!v.hero) return true; if(seen.has(v.type)) return false; seen.add(v.type); return true; });
+    for(const v of r.active) if(v.hero){ v.name=r.self.name; v.sex=r.self.sex; if(v.tp) delete v.tp.void; }
+    if(!r.active.some(v=>v.hero&&v.type===r.career)) r.career=(r.active.find(v=>v.hero)||{}).type||r.career||'trooper'; }
   // names no longer in SURNAMES, and doubles, get a fresh unique name
   const all=[...r.active,...r.fallen], taken=new Set();
   all.sort((a,b)=>(b.hero||b.risen?1:0)-(a.hero||a.risen?1:0));
-  for(const v of all){ if((v.hero||v.risen)&&!taken.has(v.name)){ taken.add(v.name); continue; } if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
+  for(const v of all){ if(v.hero&&r.self&&v.name===r.self.name){ taken.add(v.name); continue; }   /* your careers all carry your one name */
+    if((v.hero||v.risen)&&!taken.has(v.name)){ taken.add(v.name); continue; } if(!validName(v.name)||taken.has(v.name)){ const busy=new Set(all.map(x=>x.name)); taken.forEach(n=>busy.add(n)); v.name=uniqueName(busy); } taken.add(v.name); }
   return r; }
 function saveRoster(){ store.set('hc-roster',ui.roster); }
 const emptyRoster=()=>({active:[],fallen:[]});
@@ -52,7 +60,7 @@ function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swa
    The rest wait in reserve and arrive first whenever you train or order that type. */
 function deployRoster(){
   G.reserve=[]; G.deployedIds=new Set(); if(!isCampaign()) return;
-  const pool=[...ui.roster.active].sort((a,b)=>b.xp-a.xp);
+  const me=heroOf(), pool=[...ui.roster.active].filter(v=>!v.hero||v===me).sort((a,b)=>b.xp-a.xp);   /* only the career you picked goes; the other four stay home */
   // your own soldier always goes in: he takes the place of a starting soldier of his type, or joins the squad as an extra
   const hi=pool.findIndex(v=>v.hero);
   if(hi>=0){ const h=pool.splice(hi,1)[0]; let u=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.vet&&e.type===h.type&&!G.deployedIds.has(e.vet.id));
@@ -74,7 +82,8 @@ function settleRoster(){
   const res={ joined:[], fallen:[] };
   const P=G.promoted||{};
   const FV=G.fallenVets||{}, ids=new Set(R.active.map(v=>v.id));
-  for(const v of R.active){ if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
+  for(const v of R.active){ if(v.hero&&G.deployedIds.has(v.id)&&!alive.has(v.id)){ res.heroDown=v.name; continue; }   /* your own soldier never goes on the Cenotaph: the mission just does not count for that career */
+    if(G.deployedIds.has(v.id) && !alive.has(v.id)){ const f=FV[v.id]||v, rank=Math.max(v.rank,f.rank||0,P[v.id]?P[v.id].rank:0);
     const rec={ name:v.name, type:v.type, rank, xp:f.xp||v.xp, kills:f.kills||v.kills||0, missions:v.missions||0, mission:G.mission.title, at:Date.now(), hero:v.hero||undefined, sex:v.sex||undefined, risen:v.risen||undefined };
     R.fallen.unshift(rec); res.fallen.push(rec); } }
   // soldiers who earned a rank in this mission and fell are remembered too
@@ -85,9 +94,8 @@ function settleRoster(){
   res.promoted=Object.entries(P).filter(([id])=>alive.has(id)).map(([,p])=>p);
   /* for the end screen: everyone with a name who fell in this mission, also fresh privates (the Cenotaph keeps only the veterans) */
   res.fallenAll=Object.values(FV).map(f=>({ name:f.name, type:f.type, rank:Math.max(f.rank||0,P[f.id]?P[f.id].rank:0), kills:f.kills||0, missions:f.missions||0, hero:f.hero||undefined }));
-  R.active=R.active.filter(v=>!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
+  R.active=R.active.filter(v=>v.hero||!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
   for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, sex:u.vet.sex||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined };
-    if(v.hero && !(u.vet.missions>0) && G.mission.id!==MISSIONS[0].id && !(v.tp&&v.tp.void)) v.tp={...(v.tp||{}), void:true};   /* a trophy run starts at mission 1 */
     if(v.hero && G.over && G.over.win) res.trophies=heroTrack(v);
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
@@ -124,9 +132,12 @@ function spawnNearBuilding(type,faction,b,toward){
 
 /* ---- your own soldier: a named recruit you create on the campaign screen ---- */
 const HERO_TYPES=['trooper','gunner','pyro','medic','engineer'];
+/* your own soldier: one name and sex for good (ui.roster.self), five careers (one hero record per role on the roster) */
+function selfOf(){ return ui.roster&&ui.roster.self||null; }
+function careerOf(t){ return ui.roster.active.find(v=>v.hero&&v.type===t)||null; }
 /* ---------- the Trophy wall: your own soldier wins every campaign mission and walks out alive, as one type, on one difficulty.
    A win on Hard also counts for Normal and Easy.
-   Progress lives on your soldier (v.tp: missions won per column); a new soldier starts from zero. Awards: hc-trophies { 'gunner:hard':[{name,at}, …] }. ---------- */
+   Progress lives on the career (v.tp: missions won per column, an unbroken chain from mission 1). A mission where your soldier falls does not count: play it again. Awards: hc-trophies { 'gunner:hard':[{name,at}, …] }. ---------- */
 const TROPHY_COLS=[ {key:'easy',label:'Easy'}, {key:'normal',label:'Normal'}, {key:'hard',label:'Hard'} ];
 function trophies(){ return store.get('hc-trophies',{}); }
 /* strict: the soldier's very first mission was mission 1, and the missions were won in campaign order: progress is how far that unbroken chain reaches */
@@ -161,28 +172,31 @@ function heroTrack(v){
     if(trophyProgress(v,c.key)>=MISSIONS.length){ list.push({ id:v.id, name:v.name, type:v.type, at:Date.now() }); won.push({ type:v.type, col:c.key, name:v.name }); } else if(!list.length) delete T[tag]; }
   if(won.length) store.set('hc-trophies',T);
   return won; }
-function heroOf(){ return ui.roster.active.find(v=>v.hero)||null; }
+function heroOf(){ const R=ui.roster; return careerOf(R.career)||R.active.find(v=>v.hero)||null; }   /* the career that goes on the next mission */
 /* he / she for a soldier record (only your own soldier can be a woman: sex:'f') */
 function pron(v,form){ const f=v&&v.sex==='f'; return ({he:f?'she':'he',He:f?'She':'He',him:f?'her':'him',his:f?'her':'his'})[form]; }
-function setHero(name,type,sex){
-  name=String(name||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,18);
-  if(name.length<2) return 'Give your soldier a name of at least 2 letters.';
-  if(!HERO_TYPES.includes(type)) return 'Pick a type.';
+function cleanName(name){ return String(name||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,18); }
+/* enlist: name and sex are set once and never change (only "Fresh start" clears them) */
+function enlistSelf(name,sex,type){
+  if(selfOf()) return 'Your soldier already has a name. It cannot be changed.';
+  name=cleanName(name); if(name.length<2) return 'Give your soldier a name of at least 2 letters.';
+  if(!HERO_TYPES.includes(type)) return 'Pick a role.';
   const others=new Set([...ui.roster.active.filter(v=>!v.hero).map(v=>v.name),...ui.roster.fallen.map(v=>v.name)]);
   if(others.has(name)) return 'That name is already taken by another soldier (or on the Cenotaph).';
-  const h=heroOf();
-  sex=sex==='f'?'f':'m';
-  if(h){ if(h.type!==type && (h.missions||0)>0) return `Your soldier has seen action: ${pron(h,'his')} type can no longer change.`; h.name=name; h.type=type; h.sex=sex; }
-  else ui.roster.active.unshift({ id:'hero-'+Date.now().toString(36), name, type, sex, rank:0, xp:0, kills:0, missions:0, hero:true });
-  saveRoster(); return null;
-}
+  ui.roster.self={ name, sex:sex==='f'?'f':'m' }; return pickCareer(type); }
+/* pick the career that goes on the next mission; a role you never played starts a new career at Private */
+function pickCareer(type){ const me=selfOf(); if(!me) return 'Enlist your soldier first.'; if(!HERO_TYPES.includes(type)) return 'Pick a role.';
+  if(!careerOf(type)) ui.roster.active.unshift({ id:'hero-'+type+'-'+Date.now().toString(36), name:me.name, type, sex:me.sex, rank:0, xp:0, kills:0, missions:0, hero:true });
+  ui.roster.career=type; saveRoster(); return null; }
+/* the old call (tests, dev): enlist if there is no soldier yet, else just pick the career */
+function setHero(name,type,sex){ return selfOf()?pickCareer(type):enlistSelf(name,sex,type); }
 /* ---- zombie mode: raise a fallen soldier from the Cenotaph ---- */
 function setZombie(on){ ui.zombie=!!on; store.set('hc-zombie',ui.zombie); }
 function canRaise(rec){ return ui.zombie && !rec.risen && !!UNITS[rec.type]; }
 function raiseFallen(i){
   const R=ui.roster, rec=R.fallen[i]; if(!rec||!canRaise(rec)) return 'This soldier rests for good.';
   if(R.active.length>=ROSTER_MAX) return 'The roster is full.';
-  const hero=!!rec.hero && !heroOf();
+  const hero=false;   /* a risen soldier is never your own: your own soldier has his careers and never lies on the Cenotaph (Nov 2026) */
   const v={ id:'risen-'+Date.now().toString(36), name:rec.name, type:rec.type, rank:rec.rank||0, xp:rec.xp||0, kills:rec.kills||0, missions:rec.missions||0, healed:0, repaired:0, risen:true, hero:hero||undefined, sex:rec.sex||undefined };
   if(v.rank>=RANKS.length || (RANKS[v.rank].heroOnly&&!hero)) v.rank=rankFor(v.xp,hero);
   R.fallen.splice(i,1); if(hero) R.active.unshift(v); else R.active.push(v); saveRoster(); return null;

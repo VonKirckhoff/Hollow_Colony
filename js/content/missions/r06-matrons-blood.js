@@ -40,12 +40,12 @@ ROGUE_MISSIONS.push(
           g.setText('lair',`Open the lair: burn the three egg chambers (${n}/3), or let a crew member with 60+ taint stand at the membrane${g.vars.mem>0?` (${Math.floor(g.vars.mem)}/6)`:''}`);
           if(n>=3||g.vars.mem>=6){ g.vars.open=true; g.complete('lair'); g.openWall('lair'); g.unmark('mem'); for(const k of ['a','b','c']) g.unmark('ch'+k); g.marker('queen','9','The Matron');
             g.crewSay(n>=3?'Capt. Kerckhoffs':'Devreese',n>=3?'The membrane is rotting away. She is in there. Everyone, on me.':'It opened for him. God help us, it opened for him. She is in there.'); } } },
-      { when:g=>g.vars.mother&&g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.crewSay('Braet','Look at the size of her.'); } },
+      { when:g=>g.vars.mother&&g.vars.mother.awake, do:g=>{ g.unmark('queen'); g.crewSay('Van Wesemael','Look at the size of her.'); } },
       { when:g=>g.vars.mother&&g.vars.mother.bossState&&g.vars.mother.bossState.lairs>=1, do:g=>g.crewSay('Devreese','She is crawling back to heal! Go in after her!') },
       /* bled out: she tears her Seed loose and burrows into the deep. She lives; the Corps goes after her in The Matron (Corps 9), and finds only the Seed's husk */
       { when:g=>g.vars.mother&&!g.vars.mother.dead&&g.vars.mother.hp<=1.5, do:g=>{ const m=g.vars.mother; m.dead=true; m.hp=0; G.boss=null;
           dustPuff(m.x,m.y,40); SFX.play('huskroar',m.x,m.y); G.shake=Math.max(G.shake||0,0.6); addDecal(m.x,m.y,30,'rgba(60,20,70,.6)');
-          G.fx.push({k:'text',x:m.x,y:m.y-70,t:2,max:2,txt:'SHE TEARS FREE',col:'#c38bff'}); g.crewSay('Braet','She is going into the ground! She tore something out of her roots... it is still pulsing.'); } },
+          G.fx.push({k:'text',x:m.x,y:m.y-70,t:2,max:2,txt:'SHE TEARS FREE',col:'#c38bff'}); g.crewSay('Van Wesemael','She is going into the ground! She tore something out of her roots... it is still pulsing.'); } },
       /* her Seed, and the choice */
       { when:g=>g.vars.mother&&g.vars.mother.dead, do:g=>{ const m=g.vars.mother; g.complete('mother'); G.boss=null;
           const h={ id:NEXT_ID++, kind:'crate', rogue:true, heart:true, x:m.x, y:m.y, r:12, faction:'none', t:1e9, seed:1 }; G.ents.push(h); g.vars.heart=h; g.vars.asc=0; g.vars.ash=0; g.vars.ht=g.time;
