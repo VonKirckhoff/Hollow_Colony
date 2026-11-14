@@ -493,7 +493,9 @@ const ROGUE_INTEL=[
   { id:'heir', anim:'heir', name:'The Heir', role:'The Seed Wakes', art:()=>iconUrl('heir'), text:UNITS.heir.desc+' She fights like her mother: she charges, spits, lays eggs and crawls back to her lair to heal. Bled badly enough, she tears her roots loose and flees into the deep, and leaves the Seed behind.', note:'Her lair is sealed with living membrane: burn its three egg chambers, or stand a crew member with 60% taint or more against it.', stats:()=>[['HP (this job)',Math.round(UNITS.heir.hp*0.8)],['Speed',fmt1(UNITS.heir.speed/TILE)+' tiles/s'],['Size','60% of the Matron']] },
   { id:'exit', anim:'shaft', name:'The way out', role:'Mine shaft', art:()=>rogueArt('shaft','#e2556b'), text:'Most jobs end down an old mine shaft. Once the job is done, right-click the shaft: whoever reaches it is safe. The job is won when nobody of the crew is left standing on the field.', note:'Before the job is done the shaft stays shut. The Brood does not use it: their own shafts take over from the hives you destroy.', stats:()=>[] }
 ];
-function buildRogueIntel(){ const R=rogueStore(), items=[...R.crew.map(v=>({crew:v})),...STRAIN_ORDER.map(k=>({strain:k})),...ROGUE_INTEL.map(x=>({info:x}))];
+/* your own soldier shows up in Intel only once he is one of the crew: the Corps campaign done and the first Rogue job (Dead Man's Frequency) won */
+function selfJoined(){ return rogueUnlocked()&&isDone(ROGUE_MISSIONS[0].id); }
+function buildRogueIntel(){ const R=rogueStore(), items=[...R.crew.filter(v=>v.id!=='osp-self'||selfJoined()).map(v=>({crew:v})),...STRAIN_ORDER.map(k=>({strain:k})),...ROGUE_INTEL.map(x=>({info:x}))];
   const sel=Math.min(intelSel.rogue||0,items.length-1);
   $('#intel-list').innerHTML=items.map((it,i)=>{ const pic=it.crew?SPR['crew_'+it.crew.type].url:it.strain?rogueArt('vial',it.strain==='hive'?'#c38bff':'#8dff4a'):it.info.art();
     const nm=it.crew?crewTitle(it.crew):it.strain?STRAINS[it.strain].name:it.info.name, sub=it.crew?UNITS[it.crew.type].name+(it.crew.capt?' · Captain':''):it.strain?`Strain · from the ${STRAINS[it.strain].from}`:it.info.role;

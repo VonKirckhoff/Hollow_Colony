@@ -26,6 +26,12 @@ CASES=[
   ok(said('Vonk',/smaller/),'your line at the start'); ok(!(G.mission.tough||{}).broodmother&&G.mission.tough.heir,'tough set for the Heir');
   const tr=String(G.mission.triggers.find(t=>String(t.do).includes('dustLand=true')).do); ok(/kesslerDead/.test(tr)&&/Van Der Planck/.test(tr)&&/this ends today/.test(tr),'Dust comes down with Kessler, or Van Der Planck if he died');
   const hu=String(ROGUE_MISSIONS.find(m=>m.id==='rogue-hunted').triggers.map(t=>t.do).join(' ')); ok(/flags\\.kesslerDead=/.test(hu),'Hunted writes the flag');'''),
+('Intel: your soldier only after he joined','''const names=()=>{ ui.campSide='rogue'; goMenu('intel'); const t=[...document.querySelectorAll('[data-itab]')].find(b=>/Rogue/.test(b.textContent)); if(t) t.click(); return document.getElementById('intel-list').textContent; };
+  delete ui.progress.results['rogue-osprey-down']; resetRogue(); ok(selfName()==='Vonk','(your soldier is Vonk)');
+  ok(!/Vonk/.test(names())&&/Kerckhoffs/.test(names()),'Corps done, job 1 not yet: not in Intel');
+  const keep=ui.progress.results; ui.progress.results={...keep}; delete ui.progress.results[MISSIONS[MISSIONS.length-1].id]; recordWin('rogue-osprey-down','normal',100,false);
+  ok(!/Vonk/.test(names()),'job 1 won but the Corps campaign not done: not in Intel'); ui.progress.results=keep; recordWin('rogue-osprey-down','normal',100,false);
+  ok(/Vonk/.test(names()),'Corps done and job 1 won: in Intel'); goMenu('main');'''),
 ('High Ground hint and end screen','''ok(/report to medical for screening/.test(MISSIONS.find(m=>m.id==='high-ground').triggers.map(t=>String(t.do)).join(' ')),'High Ground: the screening hint');
   ok(/Containment Order 10 has your name on it/.test(String(showEnd)),'end screen when Rogue opens');''')
 ]
