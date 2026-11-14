@@ -31,7 +31,10 @@ function loadRoster(){ const r=store.get('hc-roster',{}); r.active=r.active||[];
   if(!r.self&&hs.length) r.self={ name:hs[0].name, sex:hs[0].sex==='f'?'f':'m' };
   if(r.self){ const seen=new Set(); r.active=r.active.filter(v=>{ if(!v.hero) return true; if(seen.has(v.type)) return false; seen.add(v.type); return true; });
     for(const v of r.active) if(v.hero){ v.name=r.self.name; v.sex=r.self.sex; if(v.tp) delete v.tp.void; }
-    if(!r.active.some(v=>v.hero&&v.type===r.career)) r.career=(r.active.find(v=>v.hero)||{}).type||r.career||'trooper'; }
+    if(!r.active.some(v=>v.hero&&v.type===r.career)) r.career=(r.active.find(v=>v.hero)||{}).type||r.career||'trooper';
+    /* v.won: every Corps mission this career ever won (any order); r.finished: the roles that won the whole Corps campaign, in the order they did it */
+    for(const v of r.active) if(v.hero&&!v.won) v.won=[...new Set(Object.entries(v.tp||{}).filter(([k])=>k!=='void').flatMap(([,l])=>l))];
+    if(!Array.isArray(r.finished)) r.finished=r.active.filter(v=>v.hero&&careerDone(v)).sort((a,b)=>(b.missions||0)-(a.missions||0)).map(v=>v.type); }
   // names no longer in SURNAMES, and doubles, get a fresh unique name
   const all=[...r.active,...r.fallen], taken=new Set();
   all.sort((a,b)=>(b.hero||b.risen?1:0)-(a.hero||a.risen?1:0));
@@ -95,7 +98,8 @@ function settleRoster(){
   /* for the end screen: everyone with a name who fell in this mission, also fresh privates (the Cenotaph keeps only the veterans) */
   res.fallenAll=Object.values(FV).map(f=>({ name:f.name, type:f.type, rank:Math.max(f.rank||0,P[f.id]?P[f.id].rank:0), kills:f.kills||0, missions:f.missions||0, hero:f.hero||undefined }));
   R.active=R.active.filter(v=>v.hero||!(G.deployedIds.has(v.id)&&!alive.has(v.id)));
-  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, sex:u.vet.sex||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined };
+  for(const u of alive.values()){ const v={ id:u.vet.id, name:u.vet.name, type:u.type, rank:u.vet.rank, xp:u.vet.xp, kills:u.vet.kills, missions:(u.vet.missions||0)+1, healed:u.vet.healed||0, repaired:u.vet.repaired||0, hero:u.vet.hero||undefined, sex:u.vet.sex||undefined, risen:u.vet.risen||undefined, tp:u.vet.tp||undefined, won:u.vet.won||undefined };
+    if(v.hero && G.over && G.over.win){ v.won=[...new Set([...(v.won||[]),G.mission.id])]; R.finished=R.finished||[]; if(careerDone(v)&&!R.finished.includes(v.type)){ R.finished.push(v.type); res.finished=v.type; } }
     if(v.hero && G.over && G.over.win) res.trophies=heroTrack(v);
     const i=R.active.findIndex(x=>x.id===v.id); if(i>=0) R.active[i]=v; else if(v.xp>0||v.hero){ R.active.push(v); res.joined.push(v); } }
   R.active.sort((a,b)=>(b.hero?1:0)-(a.hero?1:0)||b.xp-a.xp); if(R.active.length>ROSTER_MAX) R.active.length=ROSTER_MAX;   /* your own soldier always stays */ R.fallen=R.fallen.slice(0,60);
@@ -135,6 +139,12 @@ const HERO_TYPES=['trooper','gunner','pyro','medic','engineer'];
 /* your own soldier: one name and sex for good (ui.roster.self), five careers (one hero record per role on the roster) */
 function selfOf(){ return ui.roster&&ui.roster.self||null; }
 function careerOf(t){ return ui.roster.active.find(v=>v.hero&&v.type===t)||null; }
+/* a career has finished the Corps campaign once it has won every Corps mission (any order, any difficulty) */
+function careerDone(v){ return !!v&&typeof MISSIONS!=='undefined'&&MISSIONS.length>0&&MISSIONS.every(m=>(v.won||[]).includes(m.id)); }
+/* the roles your soldier may play in the Osprey crew: the first role that finished the Corps campaign, then every later one.
+   Before any career finished (the Rogue side opened on wins by several careers), the career with the most Corps wins. */
+function rogueRoles(){ const R=ui.roster, f=(R.finished||[]).filter(t=>HERO_TYPES.includes(t)); if(f.length) return f;
+  const best=R.active.filter(v=>v.hero).sort((a,b)=>(b.won||[]).length-(a.won||[]).length)[0]; return [best?best.type:'trooper']; }
 /* ---------- the Trophy wall: your own soldier wins every campaign mission and walks out alive, as one type, on one difficulty.
    A win on Hard also counts for Normal and Easy.
    Progress lives on the career (v.tp: missions won per column, an unbroken chain from mission 1). A mission where your soldier falls does not count: play it again. Awards: hc-trophies { 'gunner:hard':[{name,at}, …] }. ---------- */

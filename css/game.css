@@ -588,6 +588,10 @@ body.as-swarm #r-salvage{color:#a6ff4a;}
 .tbar2{position:relative;display:block;height:7px;background:#0b0c11;border:1px solid #2c3326;}
 .tbar2>span{display:block;height:100%;} .tbar2 i{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.25);}
 .crew-detail{display:grid;gap:7px;}
+.self-role{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}   /* your own soldier's role in the crew (splice lab) */
+.self-role .htype{display:flex;flex-direction:row;align-items:center;gap:4px;padding:3px 8px;font-size:12px;min-width:0;background:var(--panel-2);border:1px solid var(--line);cursor:pointer;color:inherit;}
+.self-role .htype img{width:18px;height:18px;image-rendering:pixelated;}
+.self-role .htype.on{border-color:#ffd23f;background:#2a2216;}
 /* the briefing of a Rogue job: the splice lab beside the briefing, so the crew can be changed before going dark */
 #s-brief.rogue .sheet{max-width:1240px;grid-template-columns:minmax(0,640px) minmax(0,540px);column-gap:32px;}
 #s-brief.rogue .sheet>*{grid-column:1;} #s-brief.rogue .sheet>#b-lab{grid-column:2;grid-row:1 / span 6;align-self:start;}

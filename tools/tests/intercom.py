@@ -51,7 +51,7 @@ with sync_playwright() as p:
     J(pg,"()=>{ openBriefing(0); }"); pg.wait_for_timeout(250)
     J(pg,"()=>document.querySelector('#s-brief [data-go=campaign]').click()"); pg.wait_for_timeout(100)
     ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed"),'Back stops it')
-    J(pg,"()=>{ openBriefing(0); }"); pg.wait_for_timeout(250)
+    J(pg,"()=>{ if(!selfOf()) enlistSelf('Tester','m','trooper'); openBriefing(0); }"); pg.wait_for_timeout(250)
     J(pg,"()=>$('#b-start').click()"); pg.wait_for_timeout(100)
     ok(J(pg,"()=>!BRIEF_VOICE.on&&!SFX.bed&&ui.mode==='game'"),'Deploy stops it')
     J(pg,"()=>{ goMenu('campaign'); ui.voices=false; __said.length=0; window.__speakMs=600; openBriefing(1); }"); pg.wait_for_timeout(400)   # slower fake speech: the briefing must still be running when the button is pressed

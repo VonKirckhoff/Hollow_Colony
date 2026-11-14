@@ -70,6 +70,7 @@ $('#hero-card').addEventListener('click',e=>{ if(ui.campSide==='rogue') return; 
 });
 $('#hero-card').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='hero-name'){ e.preventDefault(); $('#hero-save').click(); } });
 $('#mission-list').addEventListener('click',e=>{ const b=e.target.closest('[data-mission]'); if(!b) return;
+  if(ui.campSide==='corps'&&+b.dataset.mission>=0&&!selfOf()){ toast('Enlist your own soldier first: give a name, pick man or woman and a role.',true); const i=$('#hero-name'); if(i) i.focus(); return; }   /* the trainings stay open */
   if(b.dataset.rlock){ toast(`Playable after the Corps campaign: win all ${MISSIONS.length} Lunar Corps missions on Normal or Hard.`,true); return; }
   if(b.getAttribute('aria-disabled')==='true'){
     if(!e.shiftKey){ toast('Finish the previous mission first. Shift-click to play it anyway.',true); return; } }
@@ -275,7 +276,7 @@ function briefIntro(m,i){ const N=n=>['zero','one','two','three','four','five','
 $('#b-voice').addEventListener('click',()=>{ if(BRIEF_VOICE.on){ BRIEF_VOICE.stop(); return; }
   if(SFX.muted){ toast('Sound is off.',true); return; }
   const m=briefMission(briefIdx); BRIEF_VOICE.play(briefIntro(m,briefIdx),m.briefing); });
-$('#b-start').addEventListener('click',()=>startMission(briefMission(briefIdx)));
+$('#b-start').addEventListener('click',()=>{ const m=briefMission(briefIdx); if(isCorpsMission(m.id)&&!selfOf()){ toast('Enlist your own soldier first, on the campaign screen.',true); return; } startMission(m); });
 $('#b-watch').addEventListener('click',()=>startMission(briefMission(briefIdx),{demo:true}));
 $('#camp-side').addEventListener('click',e=>{ const b=e.target.closest('[data-side]'); if(!b) return; ui.campSide=b.dataset.side; store.set('hc-camp-side',ui.campSide); buildCampaign(); });
 function syncDiff(){ document.querySelectorAll('.diff-seg').forEach(seg=>{ seg.innerHTML=Object.entries(DIFFICULTY).map(([k,d])=>`<button type="button" data-diff="${k}" class="${k===ui.diff?'on':''}">${d.label}</button>`).join(''); }); }
@@ -357,7 +358,7 @@ function showEnd(){
     const byRank=list=>{ const m2=new Map(); for(const v of list){ if(!m2.has(v.rank)) m2.set(v.rank,[]); m2.get(v.rank).push(v.name); }
       return [...m2.entries()].sort((a,b)=>b[0]-a[0]).map(([r,ns])=>`<div class="vrow"><span class="vrank">${RANKS[r].mark||'·'} ${RANKS[r].name}</span><span>${ns.sort((a,b)=>a.localeCompare(b)).map(n=>star(n)+n).join(', ')}</span></div>`).join(''); };
     const fallen=fallenAll.slice().sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
-    const tw=(rr&&rr.trophies)||[], run=o.win&&hero&&(hero.tp||rr&&rr.heroDown)?`<div class="vsec"><span class="lbl">Trophy run</span><div>★ ${hero.name} · ${UNITS[hero.type].name}: ${TROPHY_COLS.map(c=>`${c.label} ${trophyProgress(hero,c.key)}/${MISSIONS.length}`).join(' · ')}</div>${rr&&rr.heroDown?`<div>${hero.name} went down in this mission, so it does not count for the ${UNITS[hero.type].name} career. Play it again.</div>`:''}</div>`:'';
+    const tw=(rr&&rr.trophies)||[], run=o.win&&hero&&(hero.tp||rr&&rr.heroDown)?`<div class="vsec"><span class="lbl">Trophy run</span><div>★ ${hero.name} · ${UNITS[hero.type].name}: ${TROPHY_COLS.map(c=>`${c.label} ${trophyProgress(hero,c.key)}/${MISSIONS.length}`).join(' · ')}</div>${rr&&rr.heroDown?`<div>${hero.name} went down in this mission, so it does not count for the ${UNITS[hero.type].name} career. Play it again.</div>`:''}${rr&&rr.finished?`<div>${hero.name} has won every Corps mission as ${UNITS[rr.finished].name}. ${(ui.roster.finished||[]).length>1?`In the Osprey crew you can now pick this role too (splice lab).`:`That is ${pron(hero,'his')} role in the Osprey crew.`}</div>`:''}</div>`:'';
     ev.innerHTML=(tw.length?`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${tw.map(w=>`<div>${w.name}: ${UNITS[w.type].name} · ${TROPHY_COLS.find(c=>c.key===w.col).label}. It hangs on the Trophy wall.</div>`).join('')}</div>`:'')+run+(promoted.length?`<div class="vsec"><span class="lbl">Promotions</span>${byRank(promoted)}</div>`:'')+
       (rr&&rr.joined.length?`<div class="vsec"><span class="lbl">New on the roster</span>${byRank(rr.joined)}</div>`:'')+
       (fallen.length?`<div class="vsec fallen"><span class="lbl">Fallen</span>${fallen.map(v=>`<div class="vrow"><span class="vrank">${RANKS[v.rank].mark||'·'} ${RANKS[v.rank].name}</span><span>${v.hero?'<span class="vstar">★</span> ':''}${v.name} <i>${UNITS[v.type]?UNITS[v.type].name:''}${v.missions?` · ${v.missions} mission${v.missions>1?'s':''}`:''}${v.kills!=null?` · ${v.kills} kill${v.kills===1?'':'s'}`:''}</i></span></div>`).join('')}</div>`:''); }

@@ -30,6 +30,25 @@ CASES=[
   document.getElementById('btn-reset-vets').click(); document.getElementById('btn-reset-vets').click(); ok(selfOf()&&selfOf().name==='Vonk'&&careerOf('pyro'),'Reset veterans keeps your soldier and careers');'''),
 ('old roster migrates','''ui.roster={ active:[{ id:'hero-x', name:'Oldhand', type:'engineer', sex:'m', rank:2, xp:20, kills:3, missions:3, hero:true, tp:{easy:['dust-landing'],void:true} },{ id:'v1', name:'Peeters', type:'trooper', rank:1, xp:8, kills:1, missions:1 }], fallen:[] }; saveRoster(); ui.roster=loadRoster();
   ok(selfOf()&&selfOf().name==='Oldhand'&&ui.roster.career==='engineer','the old hero becomes your name and first career'); ok(!heroOf().tp.void&&trophyProgress(heroOf(),'easy')===1,'void cleared, progress kept');'''),
+('enlist before the campaign','''localStorage.removeItem('hc-roster'); ui.roster=emptyRoster(); ui.campSide='corps'; goMenu('campaign');
+  document.querySelector('#mission-list [data-mission="0"]').click(); ok(document.getElementById('s-brief').hidden,'no soldier: mission 1 does not open');
+  ok(document.activeElement&&document.activeElement.id==='hero-name','the name field gets the focus');
+  document.querySelector('#mission-list [data-mission="-1"]').click(); ok(!document.getElementById('s-brief').hidden,'the training still opens'); goMenu('campaign');
+  enlistSelf('Vonk','f','medic'); document.querySelector('#mission-list [data-mission="0"]').click(); ok(!document.getElementById('s-brief').hidden,'enlisted: mission 1 opens');'''),
+('the role in the Osprey crew','''ui.roster=emptyRoster(); enlistSelf('Vonk','f','pyro'); pickCareer('engineer'); careerOf('engineer').won=MISSIONS.slice(0,4).map(m=>m.id);
+  ok(rogueRoles().join()==='engineer','nothing finished yet: the career with the most wins');
+  pickCareer('pyro'); careerOf('pyro').won=MISSIONS.slice(0,-1).map(m=>m.id); __hc.startMission(MISSIONS[MISSIONS.length-1]); step(1); win();
+  ok(ui.roster.finished.join()==='pyro'&&rogueRoles().join()==='pyro','Pyro wins the last mission: finished, the crew role');
+  showEnd(); ok(/role in the Osprey crew/.test(document.getElementById('e-vets').textContent),'the end screen says so');
+  resetRogue(); let v=rogueStore().crew.find(x=>x.id==='osp-self'); ok(v.type==='pyro','in the crew as Pyro');
+  ui.campSide='rogue'; goMenu('campaign'); document.querySelector('[data-crew="osp-self"]').click(); ok(!document.querySelector('[data-selfrole]')&&/first won the Corps campaign/.test(document.getElementById('hero-card').textContent),'one role: no buttons, a line');
+  ok(setSelfRole('medic')!==null,'a role that did not finish cannot be picked');
+  pickCareer('medic'); careerOf('medic').won=MISSIONS.slice(0,-1).map(m=>m.id); __hc.startMission(MISSIONS[MISSIONS.length-1]); step(1); win();
+  ok(ui.roster.finished.join()==='pyro,medic','Medic finishes second'); ui.campSide='rogue'; goMenu('campaign'); document.querySelector('[data-crew="osp-self"]').click();
+  ok(document.querySelectorAll('[data-selfrole]').length===2&&rogueStore().crew.find(x=>x.id==='osp-self').type==='pyro','two buttons, still Pyro');
+  document.querySelector('[data-selfrole="medic"]').click(); v=rogueStore().crew.find(x=>x.id==='osp-self'); ok(v.type==='medic'&&JSON.parse(localStorage.getItem('hc-rogue')).selfRole==='medic','picked Medic, saved');
+  __hc.startMission(ROGUE_MISSIONS[0]); step(1); ok(__hc.G.ents.some(e=>!e.dead&&e.crew&&e.vet.id==='osp-self'&&e.type==='medic'&&e.sprite==='crew_medic'),'she goes dark as a Medic');
+  ui.roster.finished=['trooper'];'''),
 ('in the Osprey crew','''ui.roster.self={ name:'Vonk', sex:'f' }; resetRogue(); const R=rogueStore(), v=R.crew.find(x=>x.id==='osp-self');
   ok(v&&v.name==='Vonk'&&v.sex==='f'&&v.type==='trooper'&&v.rank===0,'your soldier in Braet\\'s place: Trooper, Braet\\'s rank'); ok(!R.crew.some(x=>x.name==='Braet')&&R.crew.length===7,'no Braet, still seven');
   ok(R.crew[0].capt&&R.crew[0].name==='Kerckhoffs','Kerckhoffs still leads'); ok(!ospreyLost().some(o=>/Vonk|Braet/.test(o.title)),'not on the Osprey stone');
