@@ -19,11 +19,11 @@ with sync_playwright() as p:
       const w=G.ents.find(e=>e.type==='wreck'); window._w=w; ui.follow=false; G.following=false; centerOn(w.x,w.y); G.devPause=true; window._T=performance.now();
       window._step=(sec)=>{ const t1=G.time+sec; for(let i=0;i<2000&&G.time<t1;i++){ __hc.update(1/30); _T+=1000/30; render(_T); } }; _step(3); }""")
     r=J(pg,"""()=>{ const g=V3.objs.get(_w), U=g&&g.userData; if(!U) return null; let meshes=0; g.traverse(o=>{ if(o.isMesh) meshes++; });
-      const tex=['wreckTex0','wreckTex1','wreckTex2','wreckTex3'].every(k=>MAT[k]&&MAT[k].map);
+      const tex=['hullTexwreck','camoTileB'].every(k=>MAT[k]&&MAT[k].map)&&!!GEO.wreckFront&&!!GEO.wreckRear;
       const nose=U.nose.getWorldPosition(new THREE.Vector3()), rear=U.rearSmoke.getWorldPosition(new THREE.Vector3());
       return [!!U.wreck, meshes, tex, +(nose.y-v3H(nose.x,nose.z)).toFixed(2), +(rear.y-v3H(rear.x,rear.z)).toFixed(2)]; }""")
     print('model',r)
-    check('the wreck model is built (many parts, both hull textures)', r and r[0] and r[1]>=60 and r[2], r)
+    check('the wreck model is built (many parts, the rounded hull halves of the dropship, burnt camouflage with OSPREY and LC-71)', r and r[0] and r[1]>=60 and r[2], r)
     check('nose low in the mound, tail up in the air', r and r[3]<0.6 and r[4]>r[3]+0.3, r)
     r=J(pg,"""()=>{ const g=V3.objs.get(_w); const sm=V3.smoke.filter(s=>s.life&&Math.hypot(s.x-g.position.x,s.z-g.position.z)<3);
       const ys=sm.map(s=>s.y+s.t/s.life*s.rise*s.sz); const xs=sm.map(s=>s.x), zs=sm.map(s=>s.z);

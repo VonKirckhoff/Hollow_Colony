@@ -33,6 +33,10 @@ with sync_playwright() as p:
     check('parked: the ramp reaches the ground', r and abs(r[0])<0.15, r)
     for (yaw,dist,name) in [(0,8,'a'),(120,6,'b'),(220,7,'c'),(300,9,'d')]:
         J(pg,f"()=>{{ V3.yaw={yaw}; VIEW3D.dist={dist}; _step(0.1); }}"); pg.wait_for_timeout(100); pg.screenshot(path=f'/tmp/s3/ship_{name}.png')
+    J(pg,"()=>{ for(const u of __hc.G.ents) if(u.kind==='unit'){ u.x+=30*TILE; u.y+=6*TILE; } const st=document.createElement('style'); st.id='nohud'; st.textContent='#msgs,#messages,.msg,.dialog,#dialog,#log{display:none!important}'; document.head.appendChild(st); }")
+    for (yaw,pitch,name) in [(0,85,'top'),(0,25,'side1'),(180,25,'side2')]:
+        J(pg,f"()=>{{ window._p0=window._p0||VIEW3D.pitch; V3.yaw={yaw}; V3.yawR={yaw}*Math.PI/180; VIEW3D.pitch={pitch}; VIEW3D.dist=6.5; _step(0.1); }}"); pg.wait_for_timeout(100); pg.screenshot(path=f'/tmp/s3/ship_{name}.png')
+    J(pg,"()=>{ VIEW3D.pitch=_p0; document.getElementById('nohud').remove(); }")
     J(pg,"()=>{ V3.yaw=0; VIEW3D.dist=8; _b.ship={ phase:'takeoff', t:2.2, out:-0.8 }; _step(0.5); }"); pg.wait_for_timeout(100); pg.screenshot(path='/tmp/s3/ship_lift.png')
     r=J(pg,"()=>{ const g=V3.ships.get(_b.id+':0'); return g&&[g.visible, +g.userData.ramp.rotation.z.toFixed(2), g.userData.pods[0].userData.flame.scale.y>0.1]; }")
     check('taking off: ramp shut along the tail, flames on', r and r[0] and r[1]<-0.5 and r[2], r)
