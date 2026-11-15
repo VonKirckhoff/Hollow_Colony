@@ -2,7 +2,9 @@
 /* Mission 6: Dead Signal
    Sabotage with a small squad and no base: arm three seismic charges next to three nests and keep each charge alive
    until it blows. Each blast buries its nest. Then everyone to the launch pad in the east for pickup.
-   Four old mine shafts in the canyon walls: once every hive is gone (buried or burnt), the waves come up out of these. */
+   Four old mine shafts in the canyon walls: once every hive is gone (buried or burnt), the waves come up out of these.
+   Under each of the three charge nests runs a tunnel: burn such a hive and the brood keeps coming up out of its tunnel (as strong as the hive was)
+   until that charge blows and the rubble closes it. */
 const DS_SITES = [ { tag:'s1', at:{x:32,y:3},  nest:'b', name:'North nest' },
                    { tag:'s2', at:{x:47,y:12}, nest:'c', name:'Central nest' },
                    { tag:'s3', at:{x:62,y:29}, nest:'d', name:'South-east nest' } ];
@@ -20,7 +22,8 @@ MISSIONS.push(
     start:{ salvage:150, camera:'P',
       units:[ ['engineer','P',1,{carry:'sentry'}], ['engineer','P',1], ['trooper','P',5], ['gunner','P',2], ['pyro','P',1], ['medic','P',1] ],
       buildings:[], hives:['a','b','c','d','e'], hiveHp:2.5,
-      shafts:[ {x:31,y:2,wall:'n'}, {x:50,y:2,wall:'n'}, {x:74,y:2,wall:'n'}, {x:56,y:40,wall:'s'} ],   // old mine shafts in the canyon walls: with every hive gone, the waves come up out of these
+      shafts:[ {x:31,y:2,wall:'n'}, {x:50,y:2,wall:'n'}, {x:74,y:2,wall:'n'}, {x:56,y:40,wall:'s'},   // old mine shafts in the canyon walls: with every hive gone, the waves come up out of these
+        {at:'b',under:true}, {at:'c',under:true}, {at:'d',under:true} ],   // a tunnel under each charge nest: burn the hive and the brood still comes up out of it, until the charge buries it
       swarmUnits:[ ['drone','b',6], ['spitter','b',2], ['drone','c',5], ['crawler','c',4], ['spitter','c',1], ['drone','d',5], ['spitter','d',2], ['brute','d',1] ] },
     swarm:{ biomass:40, rate:0.38, guardMax:5, guardEvery:15, waves:{ first:150, every:80, budget:65, growth:22 }, unlock:{ spitter:120, brute:480 } },
     objectives:[

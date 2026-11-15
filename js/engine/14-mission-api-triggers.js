@@ -46,10 +46,11 @@ function makeApi(){
     /* Generators: online() = how many run right now; generatorAt(at) = the generator on that point. */
     online:()=>G.ents.filter(e=>!e.dead&&e.def&&e.def.generator&&e.powered).length,
     generatorAt(at){ const p=ptWorld(at); if(!p) return null; return G.ents.find(e=>!e.dead&&e.def&&e.def.generator&&Math.hypot(e.x-p.x,e.y-p.y)<TILE*2)||null; },
-    /* bury(at, radius, tag): a collapse. Hives near the point die, rubble fills the ground around it (not under soldiers),
+    /* bury(at, radius, tag): a collapse. Hives near the point die (and the tunnels under them, shaft entry under:true), rubble fills the ground around it (not under soldiers),
        and any soldier cut off from the start point P is dug out to the nearest open ground. */
     bury(at,radius=1.6,tag='collapse'){ const p=pt(at); if(!p) return; const w=ptWorld(at);
       for(const h of G.ents) if(!h.dead&&h.type==='hive'&&Math.hypot(h.x-w.x,h.y-w.y)<(radius+2)*TILE) kill(h,null);
+      for(const s of G.ents) if(!s.dead&&s.type==='shaft'&&s.under&&Math.hypot(s.x-w.x,s.y-w.y)<(radius+2)*TILE){ s.dead=true; s.closed=true; }   /* a tunnel under a buried hive caves in with it */
       const R2=radius*radius;
       for(let y=p.y-Math.ceil(radius);y<=p.y+Math.ceil(radius);y++) for(let x=p.x-Math.ceil(radius);x<=p.x+Math.ceil(radius);x++){
         if((x-p.x)**2+(y-p.y)**2>R2||!walkableT(x,y)) continue; const cx=(x+.5)*TILE, cy=(y+.5)*TILE;

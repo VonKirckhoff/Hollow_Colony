@@ -1298,7 +1298,7 @@ function v3Ships(now,lights,put){ const T=now/1000, seen=new Set();
 /* ---------- which entities show (as in 2D) ---------- */
 function v3Shown(e){ const m=G.map;
   if(e.hidden&&!e.dead&&e.bossState&&e.bossState.burrow&&e.def.burrowTime-e.bossState.burrow.t<0.9) return isVisible(e);   /* the Matron sinking into the ground */
-  if(e.dead||e.hidden||e.ospTunnel) return false;
+  if(e.dead||e.hidden||e.ospTunnel||(e.under&&!e.heir)) return false;   /* e.under: a tunnel under a living hive */
   if(e.kind==='body'&&e.carrier) return isVisible(e.carrier);
   const i=Math.floor(e.y/TILE)*m.w+Math.floor(e.x/TILE);
   if(e.kind==='crate'||e.kind==='body') return !!G.seen[i];

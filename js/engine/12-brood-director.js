@@ -14,10 +14,13 @@ function shafts(){ return G.ents.filter(e=>e.type==='shaft'&&!e.dead&&!e.exit); 
    spawners(): living hives plus shafts that took over. */
 function spawners(){ return G.ents.filter(e=>!e.dead&&(e.type==='hive'||(e.type==='shaft'&&e.heir))); }
 function spawnerCount(){ const s=new Set(); for(const e of spawners()) s.add(e.type==='hive'?e.id:'h'+e.heirOf); return s.size; }   /* a hive and its heirs count as one */
-function assignHeirs(){ const hs=hives(); for(const s of shafts()){ const h=hs.length?hs.reduce((a,b)=>dist(a,s)<=dist(b,s)?a:b):null; if(h) s.heirOf=h.id; } }
+/* a tunnel under a hive (shaft entry under:true, Dead Signal) is always that hive's heir, with or without swarm.shaftHeirs:
+   once the hive is burnt, the brood keeps coming up out of its tunnel until a collapse (g.bury) closes it. */
+function assignHeirs(all){ const hs=hives(); for(const s of shafts()){ if(!all&&!s.under) continue; const h=hs.length?hs.reduce((a,b)=>dist(a,s)<=dist(b,s)?a:b):null; if(h) s.heirOf=h.id; } }
 function heirTakeover(){ for(const s of shafts()){ if(s.heir||s.heirOf==null) continue; const h=G.ents.find(e=>e.id===s.heirOf); if(h&&!h.dead) continue;
     const group=shafts().filter(o=>o.heirOf===s.heirOf); for(const o of group){ o.heir=true; o.share=1/group.length; o.cfg={...((h&&h.cfg)||{}), creep:(o.cfg&&o.cfg.creep)||0, eggs:(o.cfg&&o.cfg.eggs)||0};   /* a shaft with creep of its own keeps it: still a nest for the dead */ o.spawnT=rand(3,6);
       G.pings.push({x:o.x,y:o.y,t:0,col:'#a6ff4a'}); if(isVisible(o)||G.seen[Math.floor(o.y/TILE)*G.map.w+Math.floor(o.x/TILE)]) SFX.play('hatch',o.x,o.y); }
+    if(G.side==='corps'&&s.under){ say('Sgt. Kessler',G.saidUnder?'Another tunnel open under a burnt hive. Only that charge will shut it.':'The hive is ash, but there is a tunnel under it. They will keep coming up out of that hole until the charge brings the roof down on it.','alert'); G.saidUnder=true; continue; }
     if(G.side==='corps') say(G.mission.rogue?'Capt. Kerckhoffs':'Sgt. Kessler',G.saidHeir?'Another one. That shaft has taken over from the hive we burnt.':'The hive is ash, but listen: they are coming up the old mine shaft behind it now. Same numbers as before.','alert'); G.saidHeir=true; } }
 /* nests: everything with creep the Swarm brings its dead home to and where Husks heal: hives, and shafts with creep of their own (shaft entry creep:<tiles>) */
 function isNest(e){ return !e.dead&&(e.type==='hive'||(e.type==='shaft'&&e.cfg&&e.cfg.creep>0)); }
@@ -35,8 +38,8 @@ function waveBudget(){ const S=G.swarm, w=S.cfg.waves, hs=spawnerCount();
 function nextWaveDue(){ const S=G.swarm; if(roamCount()>=swarmCap()*0.85){ S.nextWave=G.time+WAVES.waitFull; return false; } return true; }
 function updateSwarm(dt){
   const S=G.swarm, cfg=S.cfg;
-  if(S.hives0==null){ S.hives0=hives().length; if(cfg.shaftHeirs) assignHeirs(); }
-  if(cfg.shaftHeirs) heirTakeover();
+  if(S.hives0==null){ S.hives0=hives().length; S.heirs=!!cfg.shaftHeirs||shafts().some(s=>s.under); if(S.heirs) assignHeirs(!!cfg.shaftHeirs); }
+  if(S.heirs) heirTakeover();
   const hs=spawners();
   if(!hs.length){ if((cfg.burrows||shafts().length) && cfg.waves && G.time>=S.nextWave && nextWaveDue()){   /* no hive left: they burrow up, or come up the mine shafts */ S.waveN++; launchWave(waveBudget()); S.nextWave=G.time+cfg.waves.every*G.diff.interval; } return; }
   S.biomass+=cfg.rate*hs.reduce((n,h)=>n+(h.share||1),0)*dt;
@@ -79,11 +82,22 @@ function launchWaveAt(budget,from,aim,only,first){ const room=swarmCap()-roamCou
   types.forEach((ty,i)=>{ const s=tiles[i]; if(!s) return; const u=makeUnit(ty,'swarm',(s.x+.5)*TILE,(s.y+.5)*TILE); u.role='wave'; out.push(u); emergeStart(u); });
   for(const u of out){ u.order={type:'amove',x:aim.x+rand(-30,30),y:aim.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); }
   addDecal((from.x+.5)*TILE,(from.y+.5)*TILE,22,'rgba(30,26,22,.6)'); makePacks(out); return out; }
+/* the shafts from which the brood can walk to p (world point): a flood fill over the terrain and rubble, buildings do not count
+   (they can be broken down). A shaft in a sealed pocket would send a wave that never arrives. */
+function shaftsReaching(p){ const W=G.map.w, H=G.map.h, N=W*H, open=new Uint8Array(N), seen=new Uint8Array(N), q=new Int32Array(N);
+  for(let k=0;k<N;k++) open[k]=G.map.walk[k]?1:0;
+  for(const e of G.ents) if(!e.dead&&e.type==='rubble') open[Math.floor(e.y/TILE)*W+Math.floor(e.x/TILE)]=0;
+  let tx=Math.floor(p.x/TILE), ty=Math.floor(p.y/TILE), h=0, t=0;
+  if(!open[ty*W+tx]){ const o=SPIRAL.find(o=>{ const x=tx+o.x, y=ty+o.y; return x>=0&&y>=0&&x<W&&y<H&&open[y*W+x]; }); if(!o) return shafts(); tx+=o.x; ty+=o.y; }
+  q[t++]=ty*W+tx; seen[ty*W+tx]=1;
+  while(h<t){ const i=q[h++], x=i%W, y=i/W|0; for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+dx, ny=y+dy; if(nx<0||ny<0||nx>=W||ny>=H) continue; const j=ny*W+nx; if(!open[j]||seen[j]) continue; seen[j]=1; q[t++]=j; } }
+  return shafts().filter(s=>{ const sx=Math.floor(s.x/TILE), sy=Math.floor(s.y/TILE); for(const o of SPIRAL.slice(0,25)){ const x=sx+o.x, y=sy+o.y; if(x>=0&&y>=0&&x<W&&y<H&&seen[y*W+x]) return true; } return false; }); }
 function launchWave(budget,aim){
   let hs=spawners(); const out=[]; let left=budget, guard=0;
   if(!hs.length&&shafts().length){   /* mine shafts: the wave comes up out of one (the nearest to its goal, not one your troops stand on) */
     left*=G.swarm.cfg.shaftScale!=null?G.swarm.cfg.shaftScale:WAVES.shaftScale;   /* the hives are gone: what climbs out of the shafts is less (a mission can set swarm.shaftScale) */
-    const corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'), ok=shafts().filter(s=>!corps.some(c=>dist(c,s)<6*TILE)), pool=ok.length?ok:shafts();
+    const corps=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'), goal=aim||corps[0], open=goal?shaftsReaching(goal):shafts(), all=open.length?open:shafts();   /* never a shaft walled off from the goal (Dead Signal's pocket at the north wall) */
+    const ok=all.filter(s=>!corps.some(c=>dist(c,s)<6*TILE)), pool=ok.length?ok:all;
     const sh=aim?pool.sort((a,b)=>dist(a,aim)-dist(b,aim))[0]:pick(pool), room=swarmCap()-roamCount(), wt=G.swarm.cfg.waves&&G.swarm.cfg.waves.types;
     const tiles=freeTilesNear(Math.floor(sh.x/TILE),Math.floor(sh.y/TILE),24);
     while(left>=15 && guard++<80 && out.length<Math.min(room,tiles.length)){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;

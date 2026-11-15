@@ -36,9 +36,10 @@ function newGame(mission, diffKey){
   for(const [type,at] of st.buildings||[]){ const p=pt(at); const s=BUILDINGS[type].size; makeBuilding(type,'corps',p.x-Math.floor(s/2),p.y-Math.floor(s/2),true); }
   /* mine shafts (start.shafts): when no hive is left, waves come up out of these.
      An entry can be {x,y, wall:'n'|'s'|'e'|'w', creep:<tiles>, eggs:<n>}: wall draws it as a Swarm tunnel breaking out of the map wall;
-     creep grows a small patch of creep round it, with eggs on it, so bodies are dragged there and a Husk can hatch there (it is a nest, see nests()). */
-  for(const at of st.shafts||[]){ const p=pt(at); if(!p) continue; const s=makeBuilding('shaft','swarm',p.x-1,p.y-1,true); s.invuln=true;
-    if(typeof at==='object'){ if(at.wall) s.wall=at.wall; if(at.creep) s.cfg={ creep:at.creep, eggs:at.eggs!=null?at.eggs:1 }; }
+     creep grows a small patch of creep round it, with eggs on it, so bodies are dragged there and a Husk can hatch there (it is a nest, see nests()).
+     {at:'b', under:true}: a tunnel under the hive on map point b; it takes over from that hive once it is burnt and only a collapse (g.bury) closes it. */
+  for(const at of st.shafts||[]){ const p=pt(at&&at.at!==undefined?at.at:at); if(!p) continue; const s=makeBuilding('shaft','swarm',p.x-1,p.y-1,true); s.invuln=true;
+    if(typeof at==='object'){ if(at.wall) s.wall=at.wall; if(at.under) s.under=true; if(at.creep) s.cfg={ creep:at.creep, eggs:at.eggs!=null?at.eggs:1 }; }
     if(at&&at.exit){ s.exit=true; s.faction='none'; s.cfg=null; s.label=at.label||'Way out'; } }   /* Rogue: the crew's way out (31-rogue.js), the Swarm does not use it */
   for(const [at,label] of st.uplinks||[]){ const p=pt(at); const u=makeBuilding('uplink','corps',p.x-1,p.y-1,true); u.invuln=true; u.r=TILE; u.label=label; u.cap=0; u.owned=false; u.point=at; }
   if(mission.landingZone){ const L=mission.landingZone; const lz=makeBuilding('lz','corps',L.tx,L.ty,true); lz.flight=null; lz.invuln=true; lz.r=TILE*1.5; }
