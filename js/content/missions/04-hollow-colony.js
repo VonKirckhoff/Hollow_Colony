@@ -46,13 +46,17 @@ MISSIONS.push(
           g.complete('lab'); g.unmark('lab');
           g.vars.maas=g.spawn('scientist',{x:53,y:4},1)[0]; g.vars.rescueT=g.time;
           const s=g.vars.maas, near=nearestOf(s,e=>e.kind==='unit'&&e.faction==='corps'&&!e.def.escort); if(near){ s.order={type:'move',x:near.x,y:near.y+TILE}; setPath(s,s.order.x,s.order.y); }
-          g.say('Dr. Maas','Thank God. I have the core. Get me to the extraction pad, quickly. They hear everything.'); g.setTimer(240,'Dropship');
-          g.addObjective('escort','Bring Dr. Maas to the extraction pad and hold until the dropship lands'); g.addObjective('maas','Dr. Maas must survive');
+          g.say('Dr. Maas','Thank God. I have the core. Get me to the extraction pad, quickly. They hear everything.'); g.setTimer(240,'Dropship'); g.pad('2','extract'); g.landShip('extract',240);
+          g.addObjective('escort','Bring Dr. Maas to the extraction pad and get everyone aboard before the dropship lifts off'); g.addObjective('maas','Dr. Maas must survive');
           g.marker('lz','2','Extraction'); g.vars.nextWave=g.time+30; } },
       { when:g=>g.vars.rescueT && g.timerLeft()<=60, do:g=>g.say('Dropship Kestrel','Kestrel here. One minute out. Keep that pad clear.') },
       { repeat:true, when:g=>g.vars.rescueT && g.time>g.vars.nextWave, do:g=>{ g.wave(80+(g.vars.waveN=(g.vars.waveN||0)+1)*25, g.vars.maas&&!g.vars.maas.dead?g.vars.maas:undefined);   /* every wave comes for Dr. Maas */ g.vars.nextWave=g.time+35; } },
       { when:g=>g.vars.maas && g.vars.maas.dead, do:g=>{ g.fail('maas'); g.lose('Dr. Maas is dead. The data core is lost.'); } },
-      { when:g=>g.vars.maas && !g.vars.maas.dead && g.near('corps','2',2.5)>0 && g.timerLeft()===0 && Math.hypot(g.vars.maas.x-g.where('2').x,g.vars.maas.y-g.where('2').y)<4*32, do:g=>{
+      /* the pickup (Nov 2026): the Kestrel waits 90 seconds on the pad; the Brood goes for its hull; everyone, Dr. Maas too, up the ramp in time */
+      { when:g=>g.vars.rescueT && g.shipDown('extract') && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft('extract'),'Lift-off'); g.say('Dropship Kestrel','Wheels down. Ninety seconds, then I leave this place to them. Doctor first!'); } },
+      { repeat:true, when:g=>g.vars.landed && !g.vars.won, do:g=>g.setText('escort',`Everyone aboard the dropship before it lifts off, Dr. Maas too (${g.aboard('extract')}/${g.troops()})`) },
+      { when:g=>g.vars.landed && !g.vars.won && g.shipGone('extract'), do:g=>{ g.clearTimer(); g.fail('escort'); g.lose(g.shipGone('extract')==='hull'?'The Brood tears into the Kestrel and she pulls out. The colony keeps Dr. Maas, and Squad Dust with her.':'The Kestrel could not wait. The colony keeps Dr. Maas, and Squad Dust with her.'); } },
+      { when:g=>g.vars.landed && g.vars.maas && !g.vars.maas.dead && g.troops()>0 && g.aboard('extract')>=g.troops(), do:g=>{ g.vars.won=true; g.clearTimer(); g.liftOff('extract');
           g.complete('escort'); g.complete('maas'); g.unmark('lz');
           g.win('Dr. Maas and the data core are aboard. As the dropship lifts off, the colony falls silent behind them. Below, something old is still singing.'); } }
     ]

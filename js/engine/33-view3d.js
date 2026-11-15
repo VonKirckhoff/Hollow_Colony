@@ -1349,17 +1349,27 @@ function v3Dropship(){ v3ShipGeo(); const g=new THREE.Group(), U=g.userData, S=s
   U.red=ball(glow('#ff5a4f'),0.06,0.06,0.06,X(23),0.03,-Z(36.5)-0.27); U.green=ball(glow('#5fe3b0'),0.06,0.06,0.06,X(23),0.03,Z(36.5)+0.27); U.red.castShadow=U.green.castShadow=false; g.add(U.red); g.add(U.green);
   g.traverse(o=>{ if(o.isMesh&&o.material.type!=='MeshBasicMaterial') o.receiveShadow=true; });
   U.dropship=true; return g; }
+/* every ship gets its own copy of its materials, so it can fade on its own (the shared ones stay as they are) */
+function v3ShipOwnMats(g){ const U=g.userData; U.mats=[]; g.traverse(o=>{ if(!o.isMesh) return; const m=o.material, c=m.clone(); if(m.type!=='MeshBasicMaterial') v3Fogify(c);
+  c.userData={ op:m.opacity, tr:m.transparent, dw:m.depthWrite }; o.material=c; U.mats.push(c); }); }
+function v3ShipOpacity(g,op){ const U=g.userData; if(Math.abs((U.opNow??1)-op)<0.004) return; U.opNow=op; const see=op<0.98;
+  for(const m of U.mats){ const d=m.userData; m.opacity=d.op*(see?op:1); m.transparent=see||d.tr; m.depthWrite=see?false:d.dw; } }
 function v3Ships(now,lights,put){ const T=now/1000, seen=new Set();
   for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue; const poses=shipPoses(b);
-    poses.forEach((P,i)=>{ const key=b.id+':'+i; seen.add(key); let g=V3.ships.get(key); if(!g){ g=v3Dropship(); V3.ships.set(key,g); V3.g.add(g); } g.visible=true; const U=g.userData;
-      const x=P.gx/TILE, z=P.gy/TILE, gy=v3H(b.x/TILE,b.y/TILE), y=Math.max(gy,v3H(x,z))+0.85+P.alt/TILE*0.55;
-      g.position.set(x,y,z); g.rotation.set(P.bank*0.6,-P.hd,P.pitch*0.45);
+    poses.forEach((P,i)=>{ const key=b.id+':'+i; seen.add(key); let g=V3.ships.get(key); if(!g){ g=v3Dropship(); v3ShipOwnMats(g); V3.ships.set(key,g); V3.g.add(g); } g.visible=true; const U=g.userData;
+      const k=SHIP.size3d, x=P.gx/TILE, z=P.gy/TILE, gy=v3H(b.x/TILE,b.y/TILE), y=Math.max(gy,v3H(x,z))+0.85*k+P.alt/TILE*0.55*(1+(k-1)*0.5);
+      g.scale.setScalar(k); g.position.set(x,y,z); g.rotation.set(P.bank*0.6,-P.hd,P.pitch*0.45);
+      /* see-through while your own soldiers stand under it (low over the pad), so they stay in sight and can be picked */
+      let under=false; if(P.alt<60){ const c=Math.cos(P.hd), sn=Math.sin(P.hd); for(const u of G.ents){ if(u.dead||u.hidden||u.kind!=='unit'||u.faction!==G.side) continue;
+        const dx=u.x/TILE-x, dz=u.y/TILE-z, lu=dx*c+dz*sn, lv=-dx*sn+dz*c; if(lu>-2.05*k&&lu<1.95*k&&Math.abs(lv)<1.5*k){ under=true; break; } } }
+      const dtf=Math.min(0.1,Math.max(0,(now-(U.tPrev||now))/1000)); U.tPrev=now; U.op=(U.op??1)+((under?SHIP.fade:1)-(U.op??1))*Math.min(1,dtf*6); v3ShipOpacity(g,U.op);
+      U.hullP=P.hull; U.leftP=P.left; U.wx=x; U.wy=y+0.55*k; U.wz=z;
       for(const pod of U.pods){ pod.rotation.z=P.tilt*Math.PI/2; const L=(0.4+1.2*P.thrust*(0.85+0.15*Math.sin(T*40)))*(P.tilt>0.5?0.8:1.2); pod.userData.flame.scale.set(0.17,P.thrust>0.02?L:0.001,0.17); pod.userData.core.scale.set(0.08,P.thrust>0.02?L*0.6:0.001,0.08); }
       for(const l of U.legs3) l.scale.y=Math.max(0.01,P.legs);
       U.ramp.rotation.z=(1-P.ramp)*-0.62+P.ramp*0.78;   /* shut: along the underside of the tail; open: down to the ground */
       const blink=Math.floor(now/400)%2===0; U.red.visible=U.green.visible=blink;
-      if(P.thrust>0.4&&P.alt<120) lights.push({x,y:y-0.6,z,i:2.2*P.thrust,c:0xffa860,d:6});
-      if(P.beams>0){ const ahead=(SHIP.lightReach+P.alt*0.35)/TILE; for(const side of [-1,1]){ const sw=Math.sin(now/520+side)*0.7, lx=x+Math.cos(P.hd)*ahead-Math.sin(P.hd)*(side*0.45+sw), lz=z+Math.sin(P.hd)*ahead+Math.cos(P.hd)*(side*0.45+sw);
+      if(P.thrust>0.4&&P.alt<120) lights.push({x,y:y-0.6*k,z,i:2.2*P.thrust,c:0xffa860,d:4*k});
+      if(P.beams>0){ const ahead=(SHIP.lightReach+P.alt*0.35)/TILE+1.9*(k-1); for(const side of [-1,1]){ const sw=Math.sin(now/520+side)*0.7, lx=x+Math.cos(P.hd)*ahead-Math.sin(P.hd)*(side*0.45*k+sw), lz=z+Math.sin(P.hd)*ahead+Math.cos(P.hd)*(side*0.45*k+sw);
         put(lx,v3H(lx,lz)+0.08,lz,1.6,'#fff0c8',0.35*P.beams); if(side>0) lights.push({x:lx,y:v3H(lx,lz)+1.2,z:lz,i:1.6*P.beams,c:0xfff0c8,d:5}); } } }); }
   for(const [k,g] of V3.ships) if(!seen.has(k)) g.visible=false; }
 
@@ -1892,6 +1902,11 @@ function v3Overlay(now){
   ctx.setTransform(ui.dpr,0,0,ui.dpr,0,0); ctx.clearRect(0,0,ui.vw,ui.vh); ctx.imageSmoothingEnabled=false;
   ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center';
   const label=(txt,col,p)=>{ ctx.fillStyle='#000'; ctx.fillText(txt,p.x+1,p.y+1); ctx.fillStyle=col; ctx.fillText(txt,p.x,p.y); };
+  /* a dropship waiting for a pickup: its hull and the seconds it still waits (as in 2D) */
+  for(const g of (V3.ships||new Map()).values()){ const U=g.userData; if(!g.visible||U.hullP==null) continue; _v.set(U.wx,U.wy,U.wz).project(V3.cam); if(_v.z>1||_v.z<-1) continue;
+    const px=(_v.x+1)/2*V3.w, py=(1-_v.y)/2*V3.h, bw=70, x0=Math.round(px-bw/2), y0=Math.round(py);
+    ctx.fillStyle='#000'; ctx.fillRect(x0-1,y0-1,bw+2,6); ctx.fillStyle='#3a1512'; ctx.fillRect(x0,y0,bw,4); ctx.fillStyle=U.hullP>0.5?'#5fe3b0':U.hullP>0.25?'#ffb347':'#ff5a4f'; ctx.fillRect(x0,y0,Math.round(bw*U.hullP),4);
+    label(`LIFT-OFF ${Math.ceil(U.leftP)}s`,U.leftP<SHIP.warnAt?'#ff5a4f':'#ffd690',{x:px,y:y0-4}); }
   for(const [e,g] of V3.objs){ if(!g.visible||e.kind==='crate'||e.kind==='body'||!e.maxHp||e.ospTunnel) continue;
     const crew=e.crew&&e.vet&&isRogue(), show=G.sel.includes(e)||e.hp<e.maxHp||(e.kind==='building'&&!e.built)||crew; if(!show||(e.def&&e.def.ground&&!G.sel.includes(e))) continue;
     const p=v3Screen(e.x,e.y,(g.userData.top||1)+0.25); if(!p.ok) continue; const w=e.kind==='building'?Math.min(70,(e.size||1)*26):26, x=Math.round(p.x-w/2), y=Math.round(p.y);

@@ -14,7 +14,7 @@ SWARM_MISSIONS.push(
       '<b>She must not leave.</b> Kill her before she is on board. The walls and doors are ours: lure them apart, wait in the halls.',
       'Bring the fallen colonists home: what grows out of them sings. Keep at least one nest alive.'
     ],
-    landingZone:{ tx:58, ty:39, scripted:true },
+    landingZone:{ tx:54, ty:36, scripted:true },   /* Nov 2026: the pad moved in from the corner (the bigger 3D dropship), round waypoint 2 */
     start:{ camera:{x:28,y:20}, rally:{x:28,y:18},
       units:[ ['trooper','P',5], ['gunner','P',1], ['pyro','P',1], ['medic','P',1], ['engineer','P',1] ],
       swarmUnits:[ ['crawler','b',6], ['drone','b',4], ['spitter','b',1] ],

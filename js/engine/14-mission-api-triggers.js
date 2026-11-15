@@ -61,7 +61,16 @@ function makeApi(){
     /* pad(at, tag): an extra landing pad (no orders), e.g. for a pickup. landShip(tag, seconds): a dropship lands there and waits.
        landShip(tag, seconds, false): a drop, not a pickup; it sets down, unloads and lifts off again (the mission spawns the men). */
     pad(at,tag){ const p=pt(at); if(!p) return; const b=makeBuilding('lz','corps',p.x-1,p.y-1,true); b.flight=null; b.invuln=true; b.r=TILE*1.5; b.noOrders=true; b.tag=tag; G.stats.built--; return b; },
-    landShip(tag,seconds=60,stay=true){ const b=G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&e.tag===tag); if(b) b.flight={ t:seconds, total:seconds, cargo:[], pickup:!!stay }; },
+    landShip(tag,seconds=60,stay=true,opt={}){ const b=shipPad(tag); if(b){ b.shipLeft=null; b.flight={ t:seconds, total:seconds, cargo:[], pickup:!!stay, wait:opt.wait||SHIP.wait, name:opt.name }; } },
+    /* a pickup (Nov 2026): shipDown(tag) the ship is on the pad and waiting; aboard(tag) how many went up its ramp; shipGone(tag) it left
+       ('time', 'hull' or 'done'); liftOff(tag) send it off now (the mission is won); shipLeft(tag) seconds until it goes; hullLeft(tag) 0…1.
+       tag null: the mission's own Landing Zone. */
+    shipDown:tag=>{ const b=shipPad(tag); return !!(b&&b.ship&&b.ship.phase==='parked'&&b.ship.pickup); },
+    aboard:tag=>{ const b=shipPad(tag); return b?G.ents.filter(e=>!e.dead&&e.aboard===b).length:0; },
+    shipGone:tag=>{ const b=shipPad(tag); return b?b.shipLeft||null:null; },
+    liftOff(tag){ const b=shipPad(tag); if(b&&b.ship&&b.ship.phase==='parked'&&b.ship.pickup) pickupLeave(b,b.ship,'done'); },
+    shipLeft:tag=>{ const b=shipPad(tag); return b&&b.ship&&b.ship.pickup&&b.ship.phase==='parked'?Math.max(0,b.ship.t):0; },
+    hullLeft:tag=>{ const b=shipPad(tag), h=b&&pickupHull(b); return h?h.hp/h.maxHp:0; },
     /* supplyDrop(type, tag, seconds): the dropship flies a folded-up structure (e.g. 'sentry') to a pad (g.pad tag, or the mission's
        Landing Zone without a tag). It is set down on the pad; an Engineer picks it up by walking onto it.
        supplies(type): how many the Corps has anywhere (standing, carried, on a pad or on the way). */

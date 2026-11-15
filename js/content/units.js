@@ -96,6 +96,8 @@ const BUILDINGS = {
   lz:        { name:'Landing Zone', faction:'corps', size:3, hp:1, sight:4, art:'lz', reinforce:true, noBlock:true, ground:true,
                orders:['trooper','gunner','medic','pyro','engineer'], cargo:6,
                desc:'A marking on the ground. Order reinforcements here and a dropship brings them in. Units can walk over it and the enemy ignores it. Right-click the ground to set where new troops gather.' },
+  hull:      { name:'Dropship', faction:'corps', size:3, hp:1500, sight:0, art:'lz', noBlock:true, noDestroy:true, armor:0.2, hull:true,
+               desc:'The dropship waiting on a pad for a pickup. Never drawn itself (the ship is): an invisible target over the pad that the enemy attacks. When it is spent the ship lifts off.' },
   uplink:    { name:'Uplink Beacon', faction:'corps', size:2, hp:1, sight:3, art:'uplink', noBlock:true, ground:true, capture:true, captureTime:20, loseTime:15,
                desc:'Stand next to it with no Brood close by to capture it. The Brood takes it back if it holds the beacon unopposed.' },
   /* Mission objects (placed by mission scripts, never built by the player) */

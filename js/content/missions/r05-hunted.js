@@ -50,10 +50,11 @@ ROGUE_MISSIONS.push(
           g.say('Magpie','Magpie here. Ore run, no questions, no names. I see your beacon. Two and a half minutes, keep it clear.');
           g.setTimer(150,'Magpie'); g.addObjective('hold','Hold the beacon until the Magpie lands, then everyone aboard'); g.vars.magpie=true;
           const ld=g.loyals().filter(u=>!u.kessler).slice(0,4); for(const u of ld){ u.hunter=false; u.order={type:'amove',x:b.x,y:b.y}; setPath(u,b.x,b.y); } } },
-      { when:g=>g.vars.magpie&&g.timerLeft()<=0&&!g.vars.landed, do:g=>{ g.vars.landed=true; g.clearTimer(); const p=g.where(g.vars.bp); const pad=g.pad({x:Math.floor(p.x/TILE)-1,y:Math.floor(p.y/TILE)+2},'magpie'); g.landShip('magpie',0.1);
-          g.say('Magpie','Wheels down. Ramp is open. Ten seconds and I am gone, with or without you.'); } },
-      { repeat:true, when:g=>g.vars.landed&&!g.vars.won, do:g=>g.setText('hold',`Everyone aboard the Magpie (${Math.min(g.crewNear(g.vars.bp,5),g.crewUp())}/${g.crewUp()})`) },
-      { when:g=>g.vars.landed&&g.crewUp()>0&&g.crewNear(g.vars.bp,5)>=g.crewUp(), do:g=>{ g.vars.won=true; g.complete('hold'); if(g.vars.kessler&&!g.vars.kessler.dead&&!g.vars.kOut) g.complete('kessler');
+      { when:g=>g.vars.magpie&&g.timerLeft()<=0&&!g.vars.landed, do:g=>{ g.vars.landed=true; g.clearTimer(); const p=g.where(g.vars.bp); const pad=g.pad({x:Math.floor(p.x/TILE)-1,y:Math.floor(p.y/TILE)+2},'magpie'); g.landShip('magpie',0.1,true,{name:'Magpie'}); g.setTimer(SHIP.wait,'Lift-off');
+          g.say('Magpie','Wheels down. Ramp is open. Ninety seconds and I am gone, with or without you.'); } },
+      { repeat:true, when:g=>g.vars.landed&&!g.vars.won, do:g=>g.setText('hold',`Everyone aboard the Magpie before she lifts off (${Math.min(g.aboard('magpie'),g.crewUp())}/${g.crewUp()})`) },
+      { when:g=>g.vars.landed&&!g.vars.won&&g.shipGone('magpie'), do:g=>{ g.clearTimer(); g.lose(g.shipGone('magpie')==='hull'?'The Magpie takes too many hits and pulls out without you. Kessler closes the net.':'The Magpie does not wait. Kessler closes the net on whoever is left on the Highlands.'); } },
+      { when:g=>g.vars.landed&&g.crewUp()>0&&g.aboard('magpie')>=g.crewUp(), do:g=>{ g.vars.won=true; g.clearTimer(); g.liftOff('magpie'); g.complete('hold'); if(g.vars.kessler&&!g.vars.kessler.dead&&!g.vars.kOut) g.complete('kessler');
           rogueStore().flags.kesslerDead=!(g.vars.kOut||(g.vars.kessler&&!g.vars.kessler.dead));   /* The Seed Wakes: who leads Dust down into the Maw */
           g.win(g.vars.kOut||(g.vars.kessler&&!g.vars.kessler.dead)?'The Magpie climbs out over the Highlands with seven passengers she will never mention. On the ground, Kessler watches her go, and writes "no contact" in his report.':'The Magpie climbs out over the Highlands with seven passengers she will never mention. Behind them, Squad Dust zips its own sergeant into a bag.'); } },
       { when:g=>g.time>2&&g.crew().length===0, do:g=>g.lose('Kessler brings the Osprey crew in, and his own soldier with them. All of them, in bags.') }

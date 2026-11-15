@@ -236,26 +236,67 @@ function updateShip(b,dt){
   const s=b.ship; if(!s) return;
   if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9});
     for(let i=0;i<10;i++){ const a=rand(0,Math.PI*2), v=rand(60,150); G.fx.push({k:'spark',x:b.x+Math.cos(a)*20,y:b.y+Math.sin(a)*14,vx:Math.cos(a)*v,vy:Math.sin(a)*v*0.6-40,t:0.7,max:0.7,col:pick(['#8a8478','#6d675d','#a39b8c'])}); } } }   /* pebbles flung away */
+  else if(s.phase==='parked'&&s.pickup) pickupTick(b,s,dt);
   else if(s.phase==='takeoff'){ s.t-=dt; if(s.t>2.2&&Math.random()<dt*30) dustPuff(b.x,b.y,1); if(s.t<=0) b.ship=null; }
 }
+/* ---------- a pickup (Nov 2026): the ship waits SHIP.wait seconds with its ramp down. Soldiers that reach the pad walk up the ramp
+   one by one and are aboard (hidden, safe). The ship is a target: an invisible hull (BUILDINGS.hull) over the pad that the Brood (and
+   any other enemy) attacks; when the hull is spent, or the time is up, it lifts off with whoever is aboard. The mission decides what
+   that means (g.shipGone, g.aboard, g.liftOff in 14-mission-api-triggers.js). ---------- */
+function pickupLand(b,s){ s.pickup=true; s.t=s.wait||SHIP.wait; s.wait=s.t; const h=makeBuilding('hull','corps',b.tx,b.ty,true); G.stats.built--;
+  h.hidden=true; h.r=TILE*1.15*SHIP.size3d; h.tag=b.tag; h.pad=b; s.hull=h; s.said={}; }
+function shipPad(tag){ return G.ents.find(e=>!e.dead&&e.def&&e.def.reinforce&&(tag==null?!e.tag:e.tag===tag)); }   /* tag null: the mission's own Landing Zone */
+function pickupHull(b){ const s=b.ship; return s&&s.hull&&!s.hull.dead?s.hull:null; }
+function boardShip(u,b){ u.aboard=b; u.hidden=true; u.invuln=true; u.order=null; u.path=null; u.target=null; u.moving=false; u.boarding=null; u.x=b.x; u.y=b.y;
+  if(u.haul){ const body=u.haul; dropBody(body); }
+  G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; SFX.play('ready'); }
+function pickupTick(b,s,dt){ const h=s.hull, who=s.name||'Dropship Kestrel', F=rampFoot(b);
+  s.t-=dt; if(Math.random()<dt*2) dustPuff(b.x,b.y,1);
+  const hp=h?h.hp/h.maxHp:1;
+  if(h&&hp<0.5&&!s.said.h50){ s.said.h50=true; say(who,'Taking hits on the hull! Get them off me!','alert'); }
+  if(h&&hp<0.25&&!s.said.h25){ s.said.h25=true; say(who,'Hull is going! I cannot hold much longer!','alert'); }
+  if(s.t<SHIP.warnAt&&!s.said.t30){ s.said.t30=true; say(who,`${Math.round(SHIP.warnAt)} seconds, then I am gone.`,'alert'); }
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='corps'||u.aboard||u.downed||u.hidden||u.def.passive&&!u.def.escort) continue;
+    const dp=Math.hypot(u.x-b.x,u.y-b.y), df=Math.hypot(u.x-F.x,u.y-F.y);
+    if(df<TILE*0.75){ boardShip(u,b); continue; }
+    const near=dp<SHIP.boardR*TILE||df<2*TILE, toF=u.order&&u.order.x===F.x&&u.order.y===F.y;
+    if(near&&(u.boarding!==b||!u.order)){ u.boarding=b; if(!toF){ u.order={type:'move',x:F.x,y:F.y}; setPath(u,F.x,F.y); } }   /* on the pad (or at the ramp): up he goes */
+    else if(u.boarding===b&&!near&&u.order&&!toF) u.boarding=null; }   /* sent elsewhere: he no longer boards */
+  if(s.t<=0||(h&&h.hp<=1)) pickupLeave(b,s,s.t<=0?'time':'hull'); }
+function pickupLeave(b,s,why){ if(s.hull){ s.hull.dead=true; s.hull=null; } s.left=why||'done'; b.shipLeft=s.left;
+  for(const u of G.ents) if(!u.dead&&u.boarding===b) u.boarding=null;
+  if(why==='hull') say(s.name||'Dropship Kestrel','Hull breach! I am pulling out!','alert'); else if(why==='time') say(s.name||'Dropship Kestrel','Out of time. Lifting off!','alert');
+  s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9}); }
 /* Where the dropship of a pad is right now and how it looks: one pose per ship in the air or on the ground (the 2D and the 3D view both draw from this).
    Arrival (flight.t 5→0): it comes in on a curve, banking, landing lights sweeping the ground; near the pad the engines turn down and the legs fold out.
    On the ground: legs out, ramp down while it unloads (or waits for a pickup), engines idle.
    Take-off (3 s): it lifts on its engines, folds its legs, then the nose comes up and it turns away and speeds off.
    tilt: engines 0 = pushing back (flying) … 1 = blowing down (hovering) · pitch: nose up 0…1 · beams: landing lights 0…1 · legs, ramp 0…1 */
-const SHIP = { curve:0.32, liftAlt:42, lightReach:70 };
+const SHIP = { curve:0.32, liftAlt:42, lightReach:70, size3d:2.5, wait:90, boardR:2.6, warnAt:30, fade:0.4 };
+/* Nov 2026: the 3D ship is SHIP.size3d times the 2D sprite. On a pad it sets down along the heading where its body (hull, wings, pods
+   and the open ramp) covers the least rock, cliff or crater rim, or the map's edge; ties keep the old heading (nose east). */
+const SHIP_BLOCK = { '#':1, '^':1, '*':1, '%':1, '&':1 };   /* a crater rim ) is lower than the belly; plateau & only counts from the low ground */
+function shipBlocked(cx,cy,hd,k){ const m=G.map, c=Math.cos(hd), s=Math.sin(hd), high=m.tiles[Math.floor(cy)*m.w+Math.floor(cx)]==='&'; let n=0;
+  for(let u=-2.1*k;u<=1.95*k;u+=0.5) for(let v=-1.5*k;v<=1.5*k;v+=0.5){ const x=Math.floor(cx+u*c-v*s), y=Math.floor(cy+u*s+v*c), t=x<0||y<0||x>=m.w||y>=m.h?'#':m.tiles[y*m.w+x];
+    if(SHIP_BLOCK[t]&&!(high&&t==='&')) n++; } return n; }
+function padHeading(b){ if(b.padHd!=null) return b.padHd; let best=0, bs=Infinity;
+  for(const h of [0,Math.PI,Math.PI/2,-Math.PI/2,Math.PI/4,-Math.PI/4,3*Math.PI/4,-3*Math.PI/4]){ const n=shipBlocked(b.x/TILE,b.y/TILE,h,SHIP.size3d); if(n<bs){ bs=n; best=h; } }
+  return b.padHd=best; }
+/* the foot of the open ramp: behind the tail, where soldiers go aboard */
+function rampFoot(b){ const h=padHeading(b), d=2.0*SHIP.size3d*TILE; return { x:b.x-Math.cos(h)*d, y:b.y-Math.sin(h)*d }; }
+const angLerp=(a,b,t)=>{ let d=b-a; while(d>Math.PI) d-=2*Math.PI; while(d<-Math.PI) d+=2*Math.PI; return a+d*t; };
 function shipPoses(b){ const out=[], sm=(e0,e1,v)=>{ const t=clamp((v-e0)/(e1-e0),0,1); return t*t*(3-2*t); };
   if(b.flight&&b.flight.t<5&&b.flight.ang!==undefined){ const k=Math.max(0,b.flight.t/5), a=b.flight.ang, side=(b.id%2?1:-1);
     const at=q=>{ const D=820*q*q, off=Math.sin(q*Math.PI)*D*SHIP.curve*side; return [b.x+Math.cos(a)*D-Math.sin(a)*off, b.y+Math.sin(a)*D+Math.cos(a)*off]; };
-    const [gx,gy]=at(k), [px,py]=at(Math.min(1,k+0.02)); let hd=Math.atan2(gy-py,gx-px); if(!(k>0.001)) hd=0;
-    let dd=0-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI; hd+=dd*sm(0.32,0.05,k);
+    const [gx,gy]=at(k), [px,py]=at(Math.min(1,k+0.02)); let hd=Math.atan2(gy-py,gx-px); if(!(k>0.001)) hd=padHeading(b);
+    const H=padHeading(b); let dd=H-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI; hd+=dd*sm(0.32,0.05,k);
     out.push({ gx, gy, alt:260*k, hd, scale:1+0.35*k, tilt:1-sm(0.12,0.45,k), pitch:0, beams:k>0.03&&k<0.9?Math.min(1,(0.9-k)*6):0, legs:1-sm(0.02,0.14,k), ramp:0, thrust:1, bank:Math.sin(k*Math.PI)*side*0.5 }); }
   const s=b.ship; if(!s) return out;
   if(s.phase==='ground'||s.phase==='parked'){ const open=s.phase==='parked'?1:clamp((2.6-s.t)/0.35,0,1)*clamp(s.t/0.35,0,1);
-    out.push({ gx:b.x, gy:b.y, alt:0, hd:0, scale:1, tilt:1, pitch:0, beams:0, legs:1, ramp:open, thrust:s.phase==='parked'?0.35:0.2+0.8*clamp((s.t-2.2)/0.4,0,1), bank:0 }); }
+    out.push({ gx:b.x, gy:b.y, alt:0, hd:padHeading(b), scale:1, tilt:1, pitch:0, beams:0, legs:1, ramp:open, thrust:s.phase==='parked'?0.35:0.2+0.8*clamp((s.t-2.2)/0.4,0,1), bank:0 , hull:s.pickup?(s.hull?s.hull.hp/s.hull.maxHp:0):null, left:s.pickup?Math.max(0,s.t):null }); }
   else if(s.phase==='takeoff'){ const k=1-s.t/3, a=s.out;
-    if(k<0.25){ const q=k/0.25; out.push({ gx:b.x, gy:b.y, alt:SHIP.liftAlt*sm(0,1,q), hd:0, scale:1+0.05*q, tilt:1, pitch:0, beams:0, legs:1-q, ramp:0, thrust:1, bank:0 }); }
-    else { const q=(k-0.25)/0.75, D=820*q*q; out.push({ gx:b.x+Math.cos(a)*D, gy:b.y+Math.sin(a)*D, alt:SHIP.liftAlt+218*q, hd:a*Math.min(1,q*1.6), scale:1.05+0.3*q, tilt:1-sm(0,0.6,q), pitch:Math.sin(Math.min(1,q*2.2)*Math.PI/2)*(1-0.6*q), beams:0, legs:0, ramp:0, thrust:1, bank:Math.sin(q*Math.PI)*0.4 }); } }
+    if(k<0.25){ const q=k/0.25; out.push({ gx:b.x, gy:b.y, alt:SHIP.liftAlt*sm(0,1,q), hd:padHeading(b), scale:1+0.05*q, tilt:1, pitch:0, beams:0, legs:1-q, ramp:0, thrust:1, bank:0 }); }
+    else { const q=(k-0.25)/0.75, D=820*q*q; out.push({ gx:b.x+Math.cos(a)*D, gy:b.y+Math.sin(a)*D, alt:SHIP.liftAlt+218*q, hd:angLerp(padHeading(b),a,Math.min(1,q*1.6)), scale:1.05+0.3*q, tilt:1-sm(0,0.6,q), pitch:Math.sin(Math.min(1,q*2.2)*Math.PI/2)*(1-0.6*q), beams:0, legs:0, ramp:0, thrust:1, bank:Math.sin(q*Math.PI)*0.4 }); } }
   return out; }
 function drawShip(P,now){
   const art=ARTC.dropship, sc=P.scale, w=art.width*2.6*sc, h=art.height*2.6*sc, sx=w/art.width, sy=h/art.height, gx=P.gx, gy=P.gy, alt=P.alt;
@@ -288,6 +329,9 @@ function drawShip(P,now){
   if(Math.floor(now/400)%2===0){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(-w*0.02),Math.round(-h/2),3,3); ctx.fillStyle='#5fe3b0'; ctx.fillRect(Math.round(-w*0.02),Math.round(h/2-3),3,3); }
   if(P.ramp>0){ const L=12*sc*P.ramp; ctx.fillStyle='rgba(30,32,40,.92)'; ctx.fillRect(Math.round(-w/2-L+2*sc),Math.round(-9*sc),Math.round(L),Math.round(18*sc)); ctx.fillStyle='#f2c230'; ctx.fillRect(Math.round(-w/2-L+2*sc),Math.round(-9*sc),Math.max(1,Math.round(2*sc)),Math.round(18*sc)); }
   ctx.restore();
+  if(P.hull!=null){ const bw=Math.round(w*0.5), x0=Math.round(gx-bw/2), y0=Math.round(gy-h*0.62);   /* a pickup: the hull and the seconds it still waits */
+    ctx.fillStyle='#000'; ctx.fillRect(x0-1,y0-1,bw+2,6); ctx.fillStyle='#3a1512'; ctx.fillRect(x0,y0,bw,4); ctx.fillStyle=P.hull>0.5?'#5fe3b0':P.hull>0.25?'#ffb347':'#ff5a4f'; ctx.fillRect(x0,y0,Math.round(bw*P.hull),4);
+    ctx.font='10px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(`LIFT-OFF ${Math.ceil(P.left)}s`,gx+1,y0-3); ctx.fillStyle=P.left<SHIP.warnAt?'#ff5a4f':'#ffd690'; ctx.fillText(`LIFT-OFF ${Math.ceil(P.left)}s`,gx,y0-4); }
 }
 function drawShips(now){ for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue; for(const P of shipPoses(b)) drawShip(P,now); } }
 

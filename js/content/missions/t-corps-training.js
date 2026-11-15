@@ -15,7 +15,7 @@ TRAINING.corps = {
   start:{ salvage:0, camera:'P',
     units:[ ['trooper','P',4], ['gunner','P',1], ['medic','P',1], ['engineer','P',1] ],
     buildings:[], hives:[ { at:'b', hp:0.25, guardMax:0, aggro:0, brood:0, rage:0.01 } ] },
-  landingZone:{ tx:3, ty:31, max:14 },
+  landingZone:{ tx:5, ty:31, max:14 },   /* Nov 2026: two tiles in from the edge, so the bigger 3D dropship fits */
   swarm:{ biomass:0, rate:0, guardMax:0, aggro:0, brood:0, waves:null },
   objectives:[ { id:'tut', text:'Training' } ],
   triggers:[

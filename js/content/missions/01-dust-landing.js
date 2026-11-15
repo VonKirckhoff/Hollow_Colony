@@ -93,15 +93,18 @@ MISSIONS.push(
       { when:g=>g.vars.second && !g.hiveAt('a'), do:g=>{
           g.complete('nest2'); g.unmark('nest2');
           g.say('Cmdr. Varga','Both nests are ash. Dropship is inbound to Kappa Station. Get back to the pad, and watch your flanks.');
-          g.addObjective('extract','Everyone back to the landing pad for pickup'); g.marker('ex',{x:46,y:38},'Pickup'); g.vars.extract=true; g.vars.shaftNext=g.time+12; } },
+          g.addObjective('extract','Everyone back to the landing pad for pickup'); g.marker('ex',{x:46,y:38},'Pickup'); g.vars.extract=true; g.landShip(null,60); g.setTimer(60,'Dropship'); g.vars.shaftNext=g.time+12; } },
       // the hives are gone, the mine shafts are not: waves keep climbing out of them until the dropship leaves
       { repeat:true, when:g=>g.vars.extract && !g.vars.won && g.time>g.vars.shaftNext, do:g=>{
           if(!g.vars.shaftSaid){ g.vars.shaftSaid=true; g.say('Sgt. Kessler','The nests are gone, but they are still coming up the mine shafts. Stay sharp all the way to the pad!'); }
           if(g.swarmCount()<30) g.wave(g.vars.shaftWaves?60:90,(g.vars.shaftWaves||0)%2?undefined:{x:46,y:38});   // the first out of the shaft nearest the pad, then turn and turn about with a random one (never one our troops stand on)
           g.vars.shaftWaves=(g.vars.shaftWaves||0)+1; g.vars.shaftNext=g.time+35; } },
-      // the dropship only leaves with the whole squad aboard
-      { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',`Everyone back to the landing pad for pickup (${Math.min(g.near('corps',{x:46,y:38},5),g.troops())}/${g.troops()})`) },
-      { when:g=>g.vars.extract && g.troops()>0 && g.near('corps',{x:46,y:38},5)>=g.troops(), do:g=>{ g.vars.won=true; g.complete('extract'); g.unmark('ex'); g.win('Squad Dust is aboard. Kappa Station is ours again, for now.'); } }
+      // the whole squad has to be aboard before the dropship leaves
+      { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',g.vars.landed?`Everyone aboard the dropship before it lifts off (${g.aboard(null)}/${g.troops()})`:`Everyone back to the landing pad for pickup (${Math.min(g.near('corps',{x:46,y:38},5),g.troops())}/${g.troops()})`) },
+      /* the pickup (Nov 2026): the Kestrel lands a minute later and waits 90 seconds; the Brood goes for its hull; late is lost */
+      { when:g=>g.vars.extract && g.shipDown(null) && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft(null),'Lift-off'); g.say('Dropship Kestrel','Wheels down on Kappa pad. Ninety seconds, Dust, then I am gone.'); } },
+      { when:g=>g.vars.landed && !g.vars.won && g.shipGone(null), do:g=>{ g.clearTimer(); g.lose(g.shipGone(null)==='hull'?'The Brood swarmed the Kestrel and she had to pull out. Squad Dust is left behind at Kappa Station.':'The Kestrel could not wait. Squad Dust is left behind at Kappa Station.'); } },
+      { when:g=>g.vars.landed && g.troops()>0 && g.aboard(null)>=g.troops(), do:g=>{ g.vars.won=true; g.clearTimer(); g.liftOff(null); g.complete('extract'); g.unmark('ex'); g.win('Squad Dust is aboard. Kappa Station is ours again, for now.'); } }
     ]
   }
 );

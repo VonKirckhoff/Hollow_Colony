@@ -60,9 +60,11 @@ MISSIONS.push(
           g.setTimer(90,'Pickup'); g.landShip('pickup',90); g.say('Dropship Kestrel','Ninety seconds out. Be on that pad when I land.');
           g.wave(70,{x:78,y:30}); g.vars.chase=g.time+35; } },
       { repeat:true, when:g=>g.vars.extract && g.time>g.vars.chase && !g.vars.won, do:g=>{ g.vars.chase=g.time+35; g.wave(45,{x:78,y:30}); } },
-      { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',`Everyone to the launch pad in the east (${Math.min(g.near('corps',{x:78,y:30},5),g.troops())}/${g.troops()})`) },
-      { when:g=>g.vars.extract && g.timerLeft()===0 && !g.vars.landed, do:g=>{ g.vars.landed=true; g.say('Dropship Kestrel','Wheels down. Everybody aboard, now!'); } },
-      { when:g=>g.vars.landed && g.troops()>0 && g.near('corps',{x:78,y:30},5)>=g.troops(), do:g=>{ g.vars.won=true; g.complete('extract'); g.unmark('ex');
+      { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',g.vars.landed?`Everyone aboard the dropship before it lifts off (${g.aboard('pickup')}/${g.troops()})`:`Everyone to the launch pad in the east (${Math.min(g.near('corps',{x:78,y:30},5),g.troops())}/${g.troops()})`) },
+      /* the pickup (Nov 2026): the Kestrel waits 90 seconds with its ramp down; the Brood goes for its hull; whoever is not aboard when it goes, the mission is lost */
+      { when:g=>g.vars.extract && g.shipDown('pickup') && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft('pickup'),'Lift-off'); g.say('Dropship Kestrel','Wheels down, ramp is open. Ninety seconds, not one more. Everybody aboard, now!'); } },
+      { when:g=>g.vars.landed && !g.vars.won && g.shipGone('pickup'), do:g=>{ g.clearTimer(); g.lose(g.shipGone('pickup')==='hull'?'The Brood tore into the Kestrel and she had to pull out. Squad Dust is left behind in a canyon that is coming down.':'The Kestrel could not wait any longer. Squad Dust is left behind in a canyon that is coming down.'); } },
+      { when:g=>g.vars.landed && g.troops()>0 && g.aboard('pickup')>=g.troops(), do:g=>{ g.vars.won=true; g.clearTimer(); g.liftOff('pickup'); g.complete('extract'); g.unmark('ex');
           g.win('Squad Dust lifts off as Ridgeback Canyon caves in behind them. Dr. Maas has the map: under Tycho Maw, something is still laying eggs.'); } },
       { when:g=>g.time>2 && g.troops()===0, do:g=>g.lose('Squad Dust is gone. The charges stay silent.') }
     ]

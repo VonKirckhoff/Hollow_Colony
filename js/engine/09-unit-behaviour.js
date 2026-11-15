@@ -4,6 +4,7 @@
 const FAUNA = { flee:3.5, fleeTime:2.5, fleeSpeed:2.2, herd:3 };   /* tiles it runs, seconds, × speed, tiles the herd panics with it (flee 0 = they stand still) */
 function updateUnit(u,dt){
   const d=u.def;
+  if(u.aboard) return;   /* gone up the ramp of a waiting dropship (pickupTick in 22-squad-life.js) */
   if(u.downed){ downedThink(u,dt); return; }
   if(u.emergeT>0) return;   /* still under the bulging ground (a burrowing wave) */
   if(u.stunT>0){ u.stunT-=dt; return; }   /* knocked down: he lies dazed a moment */
