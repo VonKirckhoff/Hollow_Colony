@@ -37,7 +37,7 @@ const SURNAMES = [
   'Raes','Moens','Dierickx','Huysmans','De Lepeleire','Deckers','Vincke','Schepers','Govaerts','Lenaerts','Verstraete','Vercammen',
   'De Keyser','Callens','Van Laere','De Mesmaeker','Bastiaens','Verbeeck','Van Hove','De Coster','Vandeputte','Lauwers','Van Daele','Vanneste',
   'Bauwens','Van Hulle','Lemmens','Coene','De Donder','Vermeiren','Van Wesemael','Van Steenkiste','Verbiest','Van Rompaey','Vanhaecke',
-  'Haesaert','Braet','Cnudde','Neyt','De Vlaeminck','Van Belle','Berkhof','Van Peteghem','Swinnen','Wyns','Tack','Mortier', 'Devreese'];
+  'Haesaert','Neyt','De Vlaeminck','Van Belle','Berkhof','Van Peteghem','Swinnen','Wyns','Tack','Clauwaert'];
 /* The first soldiers of a fresh campaign always get STARTER_NAMES, in this order
    (while those names are free: not on the roster, not on the memorial, not already in the mission).
    Names are unique: nobody in the roster, among the fallen or in the current mission shares a name.
