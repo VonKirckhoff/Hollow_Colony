@@ -1264,23 +1264,75 @@ function v3Model(e){
   return g; }
 
 
-/* ---------- the dropship (nose along +x): poses come from shipPoses in 22-squad-life.js, the same as in 2D ---------- */
-function v3Dropship(){ const g=new THREE.Group(), U=g.userData; g.rotation.order='YZX';
-  const hull=mat('#5d6f83'), top=mat('#a3b4c6'), dark=mat('#262a33'), plate=mat('#4f5766'), yel=mat('#f2c230');
-  g.add(box(hull,3.0,0.7,1.1,0,0,0)); g.add(box(top,2.6,0.12,0.8,-0.1,0.4,0)); g.add(box(dark,1.0,0.1,0.6,-0.4,0.47,0));
-  g.add(rotZ(part(GEO.cone,hull,0.56,0.9,0.56,1.9,0,0),-Math.PI/2)); g.add(box(shiny('#7ff6ff',{ emissive:0x1a6a78 }),0.5,0.22,0.62,1.45,0.28,0));
-  for(let i=0;i<4;i++) g.add(box(i%2?dark:yel,0.18,0.12,0.02,0.6+i*0.18,-0.12,0.56));
-  for(const z of [-1,1]){ const w=box(plate,1.3,0.1,1.2,-0.25,0.02,z*0.95); w.rotation.y=z*0.25; g.add(w); g.add(box(dark,0.5,0.6,0.08,-1.45,0.45,z*0.42)); }
-  U.pods=[]; for(const z of [-1,1]){ const pod=grp(-0.15,0.05,z*1.65); pod.add(rotZ(cyl(plate,0.24,1.5,0.24,0,0,0),Math.PI/2)); pod.add(rotZ(cyl(top,0.25,0.5,0.25,0.35,0,0),Math.PI/2));
-    pod.add(rotZ(part(GEO.torus,dark,0.2,1,0.2,-0.76,0,0),Math.PI/2)); const fl=rotZ(part(GEO.cone,glow('#ffb35a',{ transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false }),0.17,1,0.17,-0.76,0,0),Math.PI/2);
+/* ---------- the dropship (nose along +x): poses come from shipPoses in 22-squad-life.js, the same as in 2D ----------
+   Nov 2026: shaped after the 2D sprite (ART.dropship, 56×40 px, 1 px = S units): a rounded, oval hull that tapers to a blunt nose and a
+   narrower tail, swept wings with rounded edges, round engine pods on the wing tips, canted tail fins, a bubble canopy, the roof hatch,
+   hazard stripes and panel seams, a ramp under the tail. Every solid part casts a shadow, so the shadow is the ship's own outline. */
+const shipPx=0.072;   /* one pixel of the 2D sprite, in tiles (not a tunable: the shapes are built once) */
+function v3ShipGeo(){ if(GEO.shipHull) return; const S=shipPx, X=px=>(px-28)*S, Z=py=>(py-20)*S;
+  /* the hull: a lathe along x with an oval cross-section (flatter than wide); vertex colours: lit top, blue-grey sides, dark belly */
+  const prof=[[0,-1.87],[0.34,-1.87],[0.47,-1.7],[0.58,-1.48],[0.645,-1.18],[0.66,-0.6],[0.66,0.3],[0.64,0.86],[0.59,1.12],[0.51,1.36],[0.4,1.56],[0.26,1.74],[0.12,1.85],[0,1.89]];
+  const hg=new THREE.LatheGeometry(prof.map(([r,a])=>new THREE.Vector2(r,a)),28); hg.rotateZ(-Math.PI/2); hg.scale(1,0.72,1); hg.computeVertexNormals();
+  const P=hg.attributes.position, col=new Float32Array(P.count*3), lit=new THREE.Color('#76889c'), mid=new THREE.Color('#4f5f72'), bel=new THREE.Color('#2c313b'), seam=new THREE.Color('#262a33'), c=new THREE.Color();
+  for(let i=0;i<P.count;i++){ const x=P.getX(i), y=P.getY(i), z=P.getZ(i), r=Math.hypot(y/0.72,z)||1, up=y/0.72/r;
+    c.copy(mid); if(up>0.78) c.lerp(lit,Math.min(1,(up-0.78)/0.15)); else if(up<-0.2) c.lerp(bel,Math.min(1,(-0.2-up)/0.5));
+    if(Math.abs(x-X(18))<0.03||Math.abs(x-X(30))<0.03) c.lerp(seam,0.7);   /* the panel seams of the sprite */
+    col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
+  hg.setAttribute('color',new THREE.BufferAttribute(col,3)); GEO.shipHull=hg;
+  /* the swept wing, as in the sprite (root inside the hull), extruded thin with a rounded edge; lies in xz, top at y=+half */
+  const wing=(side)=>{ const pts=[[35,13.5],[29,2],[15,2],[21,13.5]].map(([a,b])=>[X(a),side<0?Z(b):Z(40-b)]); const sh=new THREE.Shape();
+    pts.forEach(([x,z],i)=>i?sh.lineTo(x,-z):sh.moveTo(x,-z)); const g=new THREE.ExtrudeGeometry(sh,{ depth:0.04, bevelEnabled:true, bevelThickness:0.03, bevelSize:0.035, bevelSegments:3, curveSegments:4 });
+    g.rotateX(-Math.PI/2); g.translate(0,-0.02,0); g.computeVertexNormals(); return g; };
+  GEO.shipWingL=wing(-1); GEO.shipWingR=wing(1);
+  /* a tail fin, side profile (x,y), extruded thin and rounded */
+  const fs=new THREE.Shape(); fs.moveTo(X(11),0); fs.lineTo(X(3),0); fs.lineTo(X(1.5),0.5); fs.lineTo(X(5.5),0.5); fs.lineTo(X(11),0.08);
+  const fg=new THREE.ExtrudeGeometry(fs,{ depth:0.02, bevelEnabled:true, bevelThickness:0.015, bevelSize:0.02, bevelSegments:2, curveSegments:3 }); fg.translate(0,0,-0.01); fg.computeVertexNormals(); GEO.shipFin=fg;
+  GEO.shipSeam=new THREE.TorusGeometry(1,0.022,6,40).rotateY(Math.PI/2);   /* a ring round the x axis */
+  GEO.shipNoz=new THREE.CylinderGeometry(1,0.8,1,16,1,true); GEO.shipPod=new THREE.CylinderGeometry(1,1,1,18); GEO.shipCap=new THREE.SphereGeometry(1,18,10); }
+function v3Dropship(){ v3ShipGeo(); const g=new THREE.Group(), U=g.userData, S=shipPx, X=px=>(px-28)*S, Z=py=>(py-20)*S; g.rotation.order='YZX';
+  const hullM=mat('#ffffff',{ vertexColors:true }), wingM=mat('#5a6578'), plate=mat('#4f5766'), lite=mat('#8d9db0'), dark=mat('#262a33'), black=mat('#0f1116'), yel=mat('#f2c230'), amber=mat('#ffb347'),
+        glass=shiny('#1c4f5a',{ emissive:0x072a33, specular:0x9fd8ee, shininess:120 });
+  g.add(part(GEO.shipHull,hullM,1,1,1,0,0,0));
+  /* panel seams round the hull (sprite x 18 and 30) and the nose ring */
+  for(const [px,r] of [[18,0.665],[30,0.665],[44,0.6]]) g.add(part(GEO.shipSeam,dark,1,r*0.72,r,X(px),0,0));
+  /* swept wings, a little below the middle, with a slight dihedral; a lighter strip along the leading edge */
+  const wl=part(GEO.shipWingL,wingM,1,1,1,0,-0.08,0); wl.rotation.x=0.06; g.add(wl);
+  const wr=part(GEO.shipWingR,wingM,1,1,1,0,-0.08,0); wr.rotation.x=-0.06; g.add(wr);
+  /* canted tail fins (they read as the slanted plates at the back of the sprite) */
+  for(const s of [-1,1]){ const f=part(GEO.shipFin,plate,1,1,1,0,0.12,s*0.36); f.rotation.x=s*0.95; g.add(f); f.add(box(yel,0.05,0.03,0.03,X(2.2),0.49,0)); }
+  /* the canopy: a glass bubble on the nose with a dark frame and a centre strut */
+  g.add(part(GEO.shipCap,black,0.41,0.19,0.35,X(46.4),0.275,0)); g.add(part(GEO.shipCap,glass,0.4,0.2,0.33,X(46.5),0.285,0));
+  for(const s of [-1,1]) g.add(part(GEO.shipCap,glass,0.16,0.07,0.04,X(43.5),0.14,s*0.55));   /* side windows */
+  /* the roof hatch (rounded plate), its handle, a dorsal antenna and a sensor blister under the nose */
+  g.add(part(GEO.shipPod,plate,0.3,0.1,0.27,X(24.5),0.45,Z(19))); g.add(part(GEO.shipPod,black,0.24,0.1,0.21,X(24.5),0.462,Z(19))); g.add(part(GEO.shipPod,dark,0.19,0.1,0.16,X(24.5),0.468,Z(19)));
+  g.add(box(lite,0.12,0.03,0.03,X(24.5),0.53,Z(19)));
+  g.add(cyl(dark,0.015,0.32,0.015,X(12),0.56,0)); g.add(ball(black,0.035,0.035,0.035,X(12),0.72,0));
+  g.add(part(GEO.shipCap,black,0.16,0.09,0.14,X(47),-0.3,0));
+  /* hazard stripes on both flanks (sprite x 33–41) and the markings near the tail */
+  for(const s of [-1,1]){ for(let i=0;i<4;i++){ const st=box(i%2?black:yel,0.14,0.11,0.02,X(34+i*2),-0.06,s*0.663); st.rotation.y=s*-0.06; g.add(st); }
+    g.add(box(amber,0.28,0.03,0.02,X(14),0.1,s*0.655)); }
+  /* the engine pods on the wing tips (sprite: x 13–33, y 0–7 and 33–40): round body, cap at the front with the intake ring, flared nozzle at the back */
+  U.pods=[]; for(const s of [-1,1]){ const pod=grp(X(23),0.03,s*Z(36.5)), R=0.25;
+    pod.add(rotZ(part(GEO.shipPod,plate,R,1.1,R,-0.05,0,0),Math.PI/2));
+    pod.add(rotZ(part(GEO.shipPod,lite,R*0.82,0.9,R*0.82,-0.02,0.07,0),Math.PI/2));   /* lit top strip */
+    pod.add(part(GEO.shipCap,plate,0.2,R,R,0.5,0,0));
+    pod.add(rotZ(part(GEO.shipSeam,yel,1,R*1.02,R*1.02,0.42,0,0),0)); pod.add(rotZ(part(GEO.shipSeam,dark,1,R*1.02,R*1.02,-0.2,0,0),0));
+    pod.add(part(GEO.shipCap,black,0.04,R*0.6,R*0.6,0.69,0,0));   /* the intake */
+    const nz=rotZ(part(GEO.shipNoz,dark,R*0.85,0.18,R*0.85,-0.67,0,0),Math.PI/2); nz.material=mat('#20232b',{ side:THREE.DoubleSide }); pod.add(nz);
+    pod.add(rotZ(part(GEO.shipPod,black,R*0.6,0.02,R*0.6,-0.6,0,0),Math.PI/2));
+    pod.add(box(dark,0.5,0.1,0.06,0.05,-0.12,-s*0.2));   /* the pylon down to the wing */
+    const fl=rotZ(part(GEO.cone,glow('#ffb35a',{ transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false }),0.17,1,0.17,-0.76,0,0),Math.PI/2);
     fl.geometry=GEO.flame||(GEO.flame=new THREE.ConeGeometry(1,1,10).translate(0,0.5,0)); fl.castShadow=false; pod.add(fl); pod.userData.flame=fl;
     const core=rotZ(part(GEO.flame,glow('#9ff8ff',{ transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false }),0.08,1,0.08,-0.76,0,0),Math.PI/2); core.castShadow=false; pod.add(core); pod.userData.core=core;
     g.add(pod); U.pods.push(pod); }
-  U.legs3=[]; for(const [x,z] of [[-0.9,-0.45],[-0.9,0.45],[0.8,-0.4],[0.8,0.4]]){ const l=grp(x,-0.35,z); l.add(cyl(dark,0.05,0.5,0.05,0,-0.25,0)); l.add(box(plate,0.24,0.05,0.24,0,-0.5,0)); g.add(l); U.legs3.push(l); }
-  const ramp=grp(-1.5,-0.3,0); ramp.add(box(dark,0.9,0.06,0.8,-0.45,0,0)); ramp.add(box(yel,0.06,0.07,0.8,-0.88,0,0)); g.add(ramp); U.ramp=ramp;
-  U.red=ball(glow('#ff5a4f'),0.07,0.07,0.07,-0.2,0.1,-2.45); U.green=ball(glow('#5fe3b0'),0.07,0.07,0.07,-0.2,0.1,2.45); g.add(U.red); g.add(U.green);
+  /* landing legs with round feet */
+  U.legs3=[]; for(const [x,z] of [[-0.9,-0.42],[-0.9,0.42],[0.8,-0.36],[0.8,0.36]]){ const l=grp(x,-0.32,z); l.add(cyl(dark,0.05,0.53,0.05,0,-0.265,0)); l.add(cyl(lite,0.07,0.12,0.07,0,-0.12,0)); l.add(part(GEO.shipPod,plate,0.13,0.04,0.13,0,-0.51,0)); g.add(l); U.legs3.push(l); }
+  /* the ramp: hinged under the tail; shut it closes the back of the hull, open it reaches the ground */
+  const ramp=grp(-1.55,-0.4,0); ramp.add(box(dark,0.62,0.05,0.5,-0.31,0,0)); ramp.add(box(plate,0.6,0.012,0.44,-0.31,0.03,0)); ramp.add(box(yel,0.05,0.06,0.5,-0.6,0,0)); g.add(ramp); U.ramp=ramp;
+  /* navigation lights on the pods' outer sides: red to port, green to starboard */
+  U.red=ball(glow('#ff5a4f'),0.06,0.06,0.06,X(23),0.03,-Z(36.5)-0.27); U.green=ball(glow('#5fe3b0'),0.06,0.06,0.06,X(23),0.03,Z(36.5)+0.27); U.red.castShadow=U.green.castShadow=false; g.add(U.red); g.add(U.green);
   g.traverse(o=>{ if(o.isMesh&&o.material.type!=='MeshBasicMaterial') o.receiveShadow=true; });
-  return g; }
+  U.dropship=true; return g; }
 function v3Ships(now,lights,put){ const T=now/1000, seen=new Set();
   for(const b of G.ents){ if(b.dead||!b.def||!b.def.reinforce) continue; const poses=shipPoses(b);
     poses.forEach((P,i)=>{ const key=b.id+':'+i; seen.add(key); let g=V3.ships.get(key); if(!g){ g=v3Dropship(); V3.ships.set(key,g); V3.g.add(g); } g.visible=true; const U=g.userData;
@@ -1288,7 +1340,7 @@ function v3Ships(now,lights,put){ const T=now/1000, seen=new Set();
       g.position.set(x,y,z); g.rotation.set(P.bank*0.6,-P.hd,P.pitch*0.45);
       for(const pod of U.pods){ pod.rotation.z=P.tilt*Math.PI/2; const L=(0.4+1.2*P.thrust*(0.85+0.15*Math.sin(T*40)))*(P.tilt>0.5?0.8:1.2); pod.userData.flame.scale.set(0.17,P.thrust>0.02?L:0.001,0.17); pod.userData.core.scale.set(0.08,P.thrust>0.02?L*0.6:0.001,0.08); }
       for(const l of U.legs3) l.scale.y=Math.max(0.01,P.legs);
-      U.ramp.rotation.z=(1-P.ramp)*1.45-P.ramp*0.35;
+      U.ramp.rotation.z=(1-P.ramp)*-0.62+P.ramp*0.78;   /* shut: along the underside of the tail; open: down to the ground */
       const blink=Math.floor(now/400)%2===0; U.red.visible=U.green.visible=blink;
       if(P.thrust>0.4&&P.alt<120) lights.push({x,y:y-0.6,z,i:2.2*P.thrust,c:0xffa860,d:6});
       if(P.beams>0){ const ahead=(SHIP.lightReach+P.alt*0.35)/TILE; for(const side of [-1,1]){ const sw=Math.sin(now/520+side)*0.7, lx=x+Math.cos(P.hd)*ahead-Math.sin(P.hd)*(side*0.45+sw), lz=z+Math.sin(P.hd)*ahead+Math.cos(P.hd)*(side*0.45+sw);
