@@ -122,6 +122,8 @@ const DEV_HELP = {
   'RELIC3D|ringSecure':'3D relics: radius of the gold ring that shows how far a soldier has secured an ancient egg, tiles.',
   'RELIC3D|ringHatch':'3D relics: radius of the green ring that shows how far the Brood has hatched an ancient egg, tiles.',
   'FALLEN3D|pool':'3D fallen soldier: size of the dark pool under him, tiles (for new bodies).',
+  'WRECK3D|size':'3D crashed Osprey: how many times its true size it is drawn (2.5 = as big as the 3D dropship). It may hang over walls: it crashed.',
+  'WRECK3D|fires':'3D crashed Osprey: size of the small fires in the crack, on the nose, in the roof holes, on the torn wing, in the fuel pool and on a piece of debris (0 = none).',
   'WRECK3D|smoke':'3D crashed Osprey: smoke puffs per second, spread over the crack, the bent pod, the nose, the tail and the torn wing.',
   'WRECK3D|smokeLife':'3D crashed Osprey: seconds a puff of smoke hangs before it is gone (longer = taller plumes).',
   'WRECK3D|smokeSize':'3D crashed Osprey: size of the smoke puffs (1 = normal).',

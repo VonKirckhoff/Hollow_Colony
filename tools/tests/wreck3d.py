@@ -25,12 +25,17 @@ with sync_playwright() as p:
     print('model',r)
     check('the wreck model is built (many parts, the rounded hull halves of the dropship, burnt camouflage with OSPREY and LC-71)', r and r[0] and r[1]>=60 and r[2], r)
     check('nose low in the mound, tail up in the air', r and r[3]<0.6 and r[4]>r[3]+0.3, r)
-    r=J(pg,"""()=>{ const g=V3.objs.get(_w); const sm=V3.smoke.filter(s=>s.life&&Math.hypot(s.x-g.position.x,s.z-g.position.z)<3);
+    r=J(pg,"""()=>{ const g=V3.objs.get(_w), U=g.userData; U.crack.getWorldPosition(V3._ww); const p=V3._ww.clone().project(V3.cam), sx=(p.x+1)/2*V3.w, sy=(1-p.y)/2*V3.h, w=v3Pick(sx,sy,true);
+      return [+g.scale.x.toFixed(2), U.fires.length, U.emit.length, Math.round(Math.hypot(w.x-_w.x,w.y-_w.y))]; }""")
+    print('size',r)
+    check('as big as the 3D dropship (WRECK3D.size), torn open with small fires all over (crack, nose, roof holes, torn wing, fuel pool, debris)', r and abs(r[0]-2.5)<0.01 and r[1]>=7 and r[2]>=12, r)
+    check('a click on the wreck goes to the ground under it, not to its centre', r and r[3]>8, r)
+    r=J(pg,"""()=>{ const g=V3.objs.get(_w); const sm=V3.smoke.filter(s=>s.life&&Math.hypot(s.x-g.position.x,s.z-g.position.z)<3*WRECK3D.size);
       const ys=sm.map(s=>s.y+s.t/s.life*s.rise*s.sz); const xs=sm.map(s=>s.x), zs=sm.map(s=>s.z);
       const flat=__hc.G.fx.filter(f=>f.wr).length;
       const shown=V3.fxPool.filter(s=>s.visible&&Math.hypot(s.position.x-g.position.x,s.position.z-g.position.z)<4);
       const orange=shown.filter(s=>s.material.blending===THREE.AdditiveBlending&&s.material.color.r>0.7&&s.material.color.b<0.4).length;
-      const lit=V3.lights.some(l=>l.intensity>0&&l.color.r>0.9&&l.color.b<0.4&&Math.hypot(l.position.x-g.position.x,l.position.z-g.position.z)<3);
+      const lit=V3.lights.some(l=>l.intensity>0&&l.color.r>0.9&&l.color.b<0.4&&Math.hypot(l.position.x-g.position.x,l.position.z-g.position.z)<3*WRECK3D.size);
       return [sm.length, +(Math.max(...ys)-Math.min(...ys)).toFixed(2), +(Math.max(...xs)-Math.min(...xs)+Math.max(...zs)-Math.min(...zs)).toFixed(2), V3.sparks.length, orange, lit, flat]; }""")
     print('fx',r)
     check('smoke plumes that rise and come from several spots', r[0]>=25 and r[1]>2 and r[2]>1.5, r)
@@ -39,8 +44,8 @@ with sync_playwright() as p:
     check('a light in the crack', r[5], r)
     check('the 2D wreck smoke still runs (for 2D) but is tagged', r[6]>=1, r)
     for (yaw,name) in [(0,'a'),(140,'b'),(250,'c')]:
-        J(pg,f"()=>{{ V3.yaw={yaw}; VIEW3D.dist=8; _step(0.2); }}"); pg.wait_for_timeout(100); pg.screenshot(path=f'/tmp/wreck_{name}.png')
-    J(pg,"()=>{ V3.yaw=0; VIEW3D.dist=17; _step(0.2); }"); pg.screenshot(path='/tmp/wreck_far.png')
+        J(pg,f"()=>{{ V3.yaw={yaw}; VIEW3D.dist=16; _step(0.2); }}"); pg.wait_for_timeout(100); pg.screenshot(path=f'/tmp/wreck_{name}.png')
+    J(pg,"()=>{ V3.yaw=0; VIEW3D.dist=30; _step(0.2); }"); pg.screenshot(path="/tmp/wreck_far.png")
     # 2D unchanged
     pg.keyboard.press('F3'); pg.wait_for_timeout(300); J(pg,"()=>_step(0.1)"); pg.screenshot(path='/tmp/wreck_2d.png')
     r=J(pg,"()=>V3.on"); check('back in 2D', not r, r)

@@ -795,7 +795,7 @@ function v3Barricade(e){ const g=new THREE.Group(), U=g.userData, S=0.98, Hb=0.6
 /* ---------- the crashed Osprey (Nov 2026): the 3D dropship nose-first in the ground, burnt, broken in two, one wing torn off ----------
    Smoke as in 2D but in plumes from the crack, the bent pod, the nose and the torn wing; sparks flying up; small open flames out of
    the bent pod; a flickering glow in the crack that lights the ground. The 2D smoke fx of a wreck are not drawn in 3D (f.wr). */
-const WRECK3D = { smoke:14, smokeLife:4.2, smokeSize:1, embers:7, flames:1, glow:1, light:2.4, lightReach:6 };
+const WRECK3D = { size:2.5, smoke:18, smokeLife:4.2, smokeSize:1, embers:10, flames:1, fires:1, glow:1, light:2.4, lightReach:6 };
 function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.id,i,s);
   GEO.plane=GEO.plane||new THREE.PlaneGeometry(1,1);
   const soot=mat('#19191c'), burnt=mat('#232428'), dark=mat('#0c0c0f'), rib=mat('#34363c'), paint=mat('#3c4753'), dirt=mat('#3d3a38'), dirt2=mat('#24211f'),
@@ -855,32 +855,49 @@ function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.i
   TW.add(part(GEO.shipWingR,camoB,1,1,1,0.2,0,-0.9)); for(let i=0;i<3;i++){ const sp=part(GEO.cone,burnt,0.08,0.25,0.05,-0.4+i*0.35,0,-0.45); sp.rotation.x=-Math.PI/2; TW.add(sp); }
   const cp=rotZ(part(GEO.shipPod,camoB,0.24,1.1,0.13,-0.2,0.12,0.6),Math.PI/2); cp.rotation.x=0.3; TW.add(cp); TW.add(part(GEO.shipCap,soot,0.18,0.22,0.13,0.37,0.12,0.6));
   U.wing=grp(-0.2,0.2,0.6); TW.add(U.wing);
+  /* Nov 2026: the hull torn open in places (a dark hole, bent-out plate flaps, bare ribs, embers inside) and black scorch over the paint */
+  U.fires=[]; const tear=(par,x,y,z,side,w,h,burning)=>{ const T=grp(x,y,z); if(side==='roof') T.rotation.x=0; else T.rotation.x=side==='left'?-Math.PI/2:Math.PI/2; par.add(T);
+      const hole=part(GEO.lowball,dark,w,0.05,h,0,0,0); T.add(hole); T.add(part(GEO.lowball,soot,w*1.35,0.03,h*1.35,0,-0.008,0));
+      for(let i=0;i<5;i++){ const a=i/5*Math.PI*2+H(i,40+x*10|0)*0.6, fl=box(camoB,0.12+H(i,41)*0.1,0.015,0.1+H(i,42)*0.08,Math.cos(a)*w*0.85,0.02,Math.sin(a)*h*0.85); fl.rotation.set(Math.sin(a)*0.9,a,-Math.cos(a)*0.9); T.add(fl); }   /* plate flaps bent outwards */
+      for(let i=0;i<2;i++) T.add(box(rib,w*1.6,0.03,0.03,0,-0.03,(i-0.5)*h*0.7));   /* ribs across the hole */
+      if(burning){ T.add(part(GEO.lowball,emb,w*0.45,0.02,h*0.4,0,-0.02,0)); const f=grp(0,0.05,0); T.add(f); U.fires.push(f); } return T; };
+  tear(F,0.75,0.47,-0.1,'roof',0.26,0.2,true);   /* a hole in the roof of the front half, burning inside */
+  tear(R,-0.55,0.35,0.64,'right',0.22,0.18,false);   /* a gash in the right flank of the rear half */
+  tear(R,-0.2,0.8,-0.12,'roof',0.18,0.14,true);   /* and in its roof */
+  tear(F,1.05,0.05,-0.6,'left',0.16,0.14,false);
+  for(const [par,x,y,z,w,h] of [[F,0.3,0.46,0.2,0.4,0.3],[F,1.3,0.3,-0.3,0.3,0.22],[R,-1.2,0.75,0.1,0.35,0.3],[R,-0.9,0.35,-0.64,0.4,0.28]]){ const b=part(GEO.lowball,soot,w,0.02,h,x,y,z); if(Math.abs(z)>0.5) b.rotation.x=z>0?Math.PI/2:-Math.PI/2; par.add(b); }   /* black scorch */
+  /* small fires: in the crack, on the nose, on the torn wing, in a pool of fuel on the ground by the bent pod, on a piece of debris */
+  for(const [par,x,y,z] of [[F,0.05,0.28,-0.3],[F,1.6,0.15,-0.15],[TW,-0.3,0.08,-0.7],[W,-0.4,0.03,-1.55],[W,1.0,0.04,1.3]]){ const f=grp(x,y,z); par.add(f); U.fires.push(f); }
+  const pool=part(GEO.disc,mat('#0a0806',{ transparent:true, opacity:0.75, depthWrite:false }),0.5,1,0.35,-0.4,0.035,-1.55); pool.castShadow=false; W.add(pool);   /* the fuel that burns */
   /* debris all round: plates, a crate, a fuel can, a bit of tail */
   for(let i=0;i<11;i++){ const a=H(i,16)*Math.PI*2, r=1.5+H(i,17)*1.4, x=Math.cos(a)*r, z=Math.sin(a)*r*0.8; if(x>1.6&&Math.abs(z)<1) continue; const k=i%4;
     const o=k===0?box(crate,0.3,0.22,0.24,x,0.11,z):k===1?box(i%3?burnt:paint,0.4+H(i,18)*0.3,0.03,0.25+H(i,19)*0.2,x,0.03,z):k===2?rotZ(cyl(rib,0.07,0.28,0.07,x,0.07,z),Math.PI/2):box(dark,0.18,0.1,0.3,x,0.05,z);
     o.rotation.y=H(i,20)*3; if(k===1) o.rotation.z=(H(i,21)-0.5)*0.4; W.add(o); if(k===0) o.add(box(yel,1.03,0.18,1.03,0,0.3,0)); }
-  g.scale.setScalar(0.95); U.wreck=true; U.top=1.2; U.emit=[[U.crack,0.38,'#1e1c1b'],[U.pod,0.27,'#2a2826'],[U.nose,0.15,'#45413d'],[U.rearSmoke,0.1,'#55514c'],[U.wing,0.1,'#5e5a55']];
+  g.scale.setScalar(WRECK3D.size); U.wreck=true; U.top=1.2*WRECK3D.size; U.emit=[[U.crack,0.3,'#1e1c1b'],[U.pod,0.2,'#2a2826'],[U.nose,0.12,'#45413d'],[U.rearSmoke,0.08,'#55514c'],[U.wing,0.08,'#5e5a55'],...U.fires.map(f=>[f,0.22/U.fires.length,'#2a2826'])];   /* WRECK3D.size: as big as the 3D dropship (SHIP.size3d) */
   U.acc=0; U.eacc=0; return g; }
-function v3WreckFx(now,dt,put,lights){ const W=WRECK3D, T=now/1000, w=V3._ww||(V3._ww=new THREE.Vector3());
+function v3WreckFx(now,dt,put,lights){ const W=WRECK3D, T=now/1000, w=V3._ww||(V3._ww=new THREE.Vector3()), k=W.size, ks=Math.sqrt(k);   /* ks: smoke, sparks and flames grow less than the ship */
   V3.sparks=V3.sparks||[];
   for(const [e,g] of V3.objs){ const U=g.userData; if(!U.wreck||!g.visible) continue;
     const fl=0.75+0.15*Math.sin(T*13+e.id)+0.1*Math.sin(T*31)+0.08*Math.random();
     U.emb.color.setRGB(1,0.3+0.18*fl,0.06);
     U.acc+=dt*W.smoke; let guard=0;
     while(U.acc>=1&&guard++<20){ U.acc--; let r=Math.random(), em=U.emit[0]; for(const E of U.emit){ if((r-=E[1])<=0){ em=E; break; } }
-      em[0].getWorldPosition(w); V3.smoke.push({ x:w.x+rand(-0.12,0.12), y:w.y+rand(0,0.1), z:w.z+rand(-0.12,0.12), t:0, sz:rand(0.75,1.25)*W.smokeSize, col:Math.random()<0.5?em[2]:pick(['#2f2d2b','#3d3a37','#4f4b47']), a:0.72, rise:1.6, life:W.smokeLife*rand(0.8,1.15) }); }
+      em[0].getWorldPosition(w); V3.smoke.push({ x:w.x+rand(-0.12,0.12)*k, y:w.y+rand(0,0.1)*k, z:w.z+rand(-0.12,0.12)*k, t:0, sz:rand(0.75,1.25)*W.smokeSize*ks, col:Math.random()<0.5?em[2]:pick(['#2f2d2b','#3d3a37','#4f4b47']), a:0.72, rise:1.6, life:W.smokeLife*rand(0.8,1.15) }); }
     U.eacc+=dt*W.embers; guard=0;
-    while(U.eacc>=1&&guard++<20){ U.eacc--; (Math.random()<0.6?U.crack:U.pod).getWorldPosition(w);
-      V3.sparks.push({ x:w.x, y:w.y, z:w.z, vx:rand(-0.35,0.35), vy:rand(0.7,1.6), vz:rand(-0.35,0.35), t:0, life:rand(0.9,1.8), col:pick(['#ff8a2a','#ffd23f','#ff6a20']) }); }
+    while(U.eacc>=1&&guard++<20){ U.eacc--; const r=Math.random(); (r<0.4?U.crack:r<0.6?U.pod:pick(U.fires)).getWorldPosition(w);
+      V3.sparks.push({ x:w.x, y:w.y, z:w.z, vx:rand(-0.35,0.35)*ks, vy:rand(0.7,1.6)*ks, vz:rand(-0.35,0.35)*ks, t:0, life:rand(0.9,1.8), col:pick(['#ff8a2a','#ffd23f','#ff6a20']) }); }
     /* small open flames out of the bent pod: licking upwards */
     U.pod.getWorldPosition(w);
-    if(W.flames>0) for(let i=0;i<5;i++){ const ph=(T*2.2+i/5+e.id*0.37)%1, s=W.flames*(0.42-ph*0.28)*(0.8+0.4*Math.random());
-      put(w.x+Math.sin(T*7+i*2)*0.06+ph*0.12, w.y+0.05+ph*0.55*W.flames, w.z+Math.cos(T*6+i)*0.06, s, ph<0.3?'#ffe08a':ph<0.65?'#ff8a2a':'#c43c10', (1-ph)*0.9); }
+    const flame=(x,y,z,n,f,seed)=>{ for(let i=0;i<n;i++){ const ph=(T*2.2+i/n+seed*0.37)%1, s=f*ks*(0.42-ph*0.28)*(0.8+0.4*Math.random());
+      put(x+(Math.sin(T*7+i*2+seed)*0.06+ph*0.12)*ks, y+(0.05+ph*0.55*f)*ks, z+Math.cos(T*6+i+seed)*0.06*ks, s, ph<0.3?'#ffe08a':ph<0.65?'#ff8a2a':'#c43c10', (1-ph)*0.9); } };
+    if(W.flames>0) flame(w.x,w.y,w.z,6,W.flames,e.id);
+    if(W.fires>0) U.fires.forEach((f,j)=>{ f.getWorldPosition(w); flame(w.x,w.y,w.z,4,W.fires*0.6*(0.8+0.25*Math.sin(T*1.3+j*2)),e.id+j*3.1); });   /* the small fires (Nov 2026) */
+    U.pod.getWorldPosition(w);
     const pw={ x:w.x, y:w.y, z:w.z };
     /* the glow in the crack */
     U.crack.getWorldPosition(w);
-    if(W.glow>0){ put(w.x,w.y-0.1,w.z,1.1*W.glow*fl,'#ff5a1a',0.35); put(w.x,w.y-0.15,w.z,0.5*W.glow*fl,'#ffb347',0.5); }
-    if(W.light>0){ lights.push({ x:w.x, y:w.y+0.6, z:w.z, i:W.light*fl, c:0xff7a30, d:W.lightReach }); lights.push({ x:pw.x, y:pw.y+0.5, z:pw.z, i:W.light*0.6*fl, c:0xff9a40, d:W.lightReach*0.7 }); } }
+    if(W.glow>0){ put(w.x,w.y-0.1*k,w.z,1.1*W.glow*fl*ks,'#ff5a1a',0.35); put(w.x,w.y-0.15*k,w.z,0.5*W.glow*fl*ks,'#ffb347',0.5); }
+    if(W.light>0){ lights.push({ x:w.x, y:w.y+0.6*ks, z:w.z, i:W.light*fl, c:0xff7a30, d:W.lightReach*ks }); lights.push({ x:pw.x, y:pw.y+0.5*ks, z:pw.z, i:W.light*0.6*fl, c:0xff9a40, d:W.lightReach*0.7*ks }); } }
   for(const s of V3.sparks){ s.t+=dt; s.x+=(s.vx+0.2)*dt; s.y+=s.vy*dt; s.z+=s.vz*dt; s.vy-=0.25*dt; const k=s.t/s.life; put(s.x,s.y,s.z,0.06+0.03*Math.sin(s.t*20),s.col,(1-k)*(0.7+0.3*Math.sin(s.t*25))); }
   V3.sparks=V3.sparks.filter(s=>s.t<s.life); }
 const HIVE3D={ sapSpeed:0.35, sap:2, spores:5, sporeRise:1.6, sway:0.1, sag:0.9 };
@@ -1984,7 +2001,7 @@ toWorld=function(sx,sy){ if(!v3Active()||!V3.hv) return toWorld2D(sx,sy); return
 /* mouse → map: first a soldier, creature or building under the cursor, else where the ray meets the ground (rock tops included) */
 function v3Pick(sx,sy,ents){
   const nd=new THREE.Vector2(sx/V3.w*2-1,-(sy/V3.h)*2+1); V3.ray.setFromCamera(nd,V3.cam);
-  if(ents){ const roots=[]; for(const g of V3.objs.values()) if(g.visible&&!(g.userData.ent.def&&g.userData.ent.def.ground)) roots.push(g);
+  if(ents){ const roots=[]; for(const g of V3.objs.values()) if(g.visible&&!(g.userData.ent.def&&g.userData.ent.def.ground)&&!g.userData.wreck) roots.push(g);   /* the big wreck is scenery: a click on it goes to the ground below */
     const hit=V3.ray.intersectObjects(roots,true)[0]; if(hit){ let o=hit.object; while(o&&!o.userData.ent) o=o.parent; if(o&&!o.userData.ent.dead) return { x:Math.round(o.userData.ent.x), y:Math.round(o.userData.ent.y) }; } }
   const O=V3.ray.ray.origin, D=V3.ray.ray.direction; let a=0, b=-1;
   for(let t=0;t<260;t+=0.2){ const x=O.x+D.x*t, y=O.y+D.y*t, z=O.z+D.z*t; if(y<=v3H(x,z)){ b=t; break; } a=t; }
