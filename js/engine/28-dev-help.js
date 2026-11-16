@@ -33,6 +33,8 @@ const DEV_HELP = {
   'SHIP|curve':'Dropship: how wide the curve is it comes in on (0 = straight in).',
   'SHIP|liftAlt':'Dropship: how high it hovers on its engines before the nose comes up at take-off (pixels).',
   'SHIP|lightReach':'Dropship: how far ahead of the nose the landing lights reach the ground (pixels).',
+  'SHIP|approach':'Dropship: how far (radians) its way in and way out may lie off the heading it lands on; small = no quick turns near the pad.',
+  'SHIP|turnFrom':'Dropship: how much of the way in (0…1, of the last five seconds) it spends turning onto its landing heading; bigger = slower turn.',
   'SHIP|size3d':'Dropship in 3D: how many times bigger than the 2D sprite (2.5 = about 10 × 7.5 tiles). The pad picks the heading with no rock under it.',
   'SHIP|wait':'Pickup: how many seconds the dropship waits on the pad with its ramp down before it lifts off.',
   'SHIP|boardR':'Pickup: within how many tiles of the pad a soldier heads up the ramp by himself.',

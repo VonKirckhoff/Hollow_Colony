@@ -20,6 +20,11 @@ CASES=[
     start(id); const G=__hc.G; let cx=x, cy=y; if(typeof x==='string'){ const p=ptWorld(x); cx=p.x/TILE; cy=p.y/TILE; if(id==='rogue-hunted'){ cx=Math.floor(cx)-0.5; cy=Math.floor(cy)+2.5; } }
     const f={x:cx*TILE,y:cy*TILE}, n=shipBlocked(cx,cy,padHeading(f),SHIP.size3d); if(n>0) bad.push(id+'@'+cx+','+cy+':'+n); }
   ok(!bad.length,'the Brood Tactics drill pad, the Needle relief pad, the Dead Man pad, the Hollow Colony pickup and the Magpie beacons: '+bad.join(' '));'''),
+('no quick turns: landing and lifting off turn slowly','''const G=start('dead-signal'); step(0.5); calm(); let worst=0, worstT=0, where='';
+  for(const pad of G.ents.filter(e=>!e.dead&&e.def&&e.def.reinforce)) for(let r=0;r<16;r++){ const ang=r/16*Math.PI*2, d=(a,b)=>{ let x=b-a; while(x>Math.PI) x-=2*Math.PI; while(x<-Math.PI) x+=2*Math.PI; return Math.abs(x); };
+    let prev=null; for(let t=4.95;t>=0;t-=0.05){ pad.flight={ t, total:25, cargo:[], ang }; const P=shipPoses(pad)[0]; if(prev!=null){ const w=d(prev,P.hd)/0.05; if(w>worst){ worst=w; where='landing t='+t.toFixed(2)+' ang='+ang.toFixed(2); } } prev=P.hd; }
+    pad.flight=null; prev=null; for(let t=2.99;t>0;t-=0.05){ pad.ship={ phase:'takeoff', t, out:ang }; const P=shipPoses(pad)[0]; if(prev!=null){ const w=d(prev,P.hd)/0.05; if(w>worstT){ worstT=w; } } prev=P.hd; } pad.ship=null; }
+  ok(worst<1.6,'landing: never faster than 90°/s ('+(worst*57.3).toFixed(0)+'°/s, '+where+')'); ok(worstT<1.6,'lifting off: never faster than 90°/s ('+(worstT*57.3).toFixed(0)+'°/s)');'''),
 ('dead signal: the ship waits, they board one by one, won','''%s
   ok(s&&s.phase==='parked'&&s.pickup&&h&&h.hidden&&h.def.hull,'parked with a hidden hull over the pad'); ok(G.vars.landed&&G.timer&&G.timer.label==='Lift-off'&&Math.abs(G.api.timerLeft()-SHIP.wait)<3,'the mission counts down the lift-off ('+Math.round(G.api.timerLeft())+' s)');
   const us=dust(); for(const u of us) u.invuln=true; tp(us[0],Math.floor(pad.x/TILE),Math.floor(pad.y/TILE)); step(8); ok(us[0].aboard===pad&&us[0].hidden&&G.api.aboard('pickup')===1,'the first walks up the ramp and is aboard');

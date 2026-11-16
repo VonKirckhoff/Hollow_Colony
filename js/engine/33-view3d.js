@@ -52,6 +52,7 @@ function v3Init(){
 const GEO={}, MAT={};
 /* every material: darkened by the fog of war, lit up where your units see, tinted by creep; the ground also gets the painted 2D animations */
 function v3Fogify(m,decal){
+  m.customProgramCacheKey=()=>decal?'v3dec':'v3';   /* the two variants differ only inside the closure: without this three.js may hand the ground the program without decals (or a hull the one with) */
   m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{ v3Fog:V3.u.fog, v3Size:V3.u.size, v3Lift:V3.u.lift, v3Dec:V3.u.dec, v3DecR:V3.u.decR });
     sh.uniforms.v3Time=V3.u.time; sh.uniforms.v3Myc=V3.u.myc;
     sh.vertexShader=(decal?'#define V3_DECAL\n':'')+sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size;')
@@ -803,9 +804,10 @@ function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.i
   U.own=[]; const emb=new THREE.MeshBasicMaterial({ color:'#ff6a20' }); U.own.push(emb); U.emb=emb;
   const yaw=0.4+H(1,1)*0.6, W=grp(); W.rotation.y=yaw; g.add(W);   /* W: the crash site, nose along +x */
   /* the ground: a scorched patch, the furrow it ploughed, the mound thrown up in front of the nose */
-  const scorch=part(GEO.disc,mat('#0a0908',{ transparent:true, opacity:0.6, depthWrite:false }),2.4,1,1.7,-0.2,0.03,0); scorch.castShadow=false; scorch.renderOrder=1; W.add(scorch);
-  const fur=part(GEO.plane,mat('#0e0c0b',{ transparent:true, opacity:0.55, depthWrite:false }),2.4,0.6,1,-2.6,0.035,0); fur.rotation.x=-Math.PI/2; fur.castShadow=false; fur.renderOrder=1; W.add(fur);
-  for(let i=0;i<10;i++){ const s=i%2?1:-1, x=-1.5-i*0.22-H(i,30)*0.2, z=s*(0.3+H(i,31)*0.14)*(1-i/24); W.add(part(GEO.lowball,dirt2,0.05+H(i,32)*0.05,0.03+H(i,33)*0.03,0.05+H(i,34)*0.04,x,0.02,z)); }   /* clods thrown up along the furrow */
+  /* Nov 2026: the scorched patch and the furrow are no flat disc and plank any more but a soft, ragged decal painted into the ground layer
+     (v3WreckGround), so they follow the ground and fray at the edges */
+  U.siteYaw=yaw;
+  for(let i=0;i<16;i++){ const s=i%2?1:-1, x=-1.4-i*0.16-H(i,30)*0.2, z=s*(0.2+H(i,31)*0.16)*(1-i/30); const c=W.add(part(GEO.lowball,i%3?dirt:dirt2,0.025+H(i,32)*0.035,0.015+H(i,33)*0.02,0.025+H(i,34)*0.03,x,0.01,z)); }   /* small clods thrown up along the furrow's lips */
   for(let i=0;i<16;i++){ const a=(i/15-0.5)*2.6, r=1.95+H(i,2)*0.4; W.add(part(GEO.lowball,i%3?dirt:dirt2,0.1+H(i,3)*0.16,0.06+H(i,4)*0.12,0.1+H(i,5)*0.14,Math.cos(a)*r*0.95,0.04,Math.sin(a)*r*0.6)); }   /* the mound in front of the nose */
   /* the ship: pitched nose-down into the mound, rolled a little */
   const S=grp(0.05,0.44,0); S.rotation.order='YZX'; S.rotation.set(0.15,0,-0.22); W.add(S); U.ship=S;
@@ -875,6 +877,31 @@ function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.i
     o.rotation.y=H(i,20)*3; if(k===1) o.rotation.z=(H(i,21)-0.5)*0.4; W.add(o); if(k===0) o.add(box(yel,1.03,0.18,1.03,0,0.3,0)); }
   g.scale.setScalar(WRECK3D.size); U.wreck=true; U.top=1.2*WRECK3D.size; U.emit=[[U.crack,0.3,'#1e1c1b'],[U.pod,0.2,'#2a2826'],[U.nose,0.12,'#45413d'],[U.rearSmoke,0.08,'#55514c'],[U.wing,0.08,'#5e5a55'],...U.fires.map(f=>[f,0.22/U.fires.length,'#2a2826'])];   /* WRECK3D.size: as big as the 3D dropship (SHIP.size3d) */
   U.acc=0; U.eacc=0; return g; }
+/* the ground under a crashed ship (Nov 2026): a scorched patch with a ragged soft edge, burn streaks thrown out, ash, and the furrow it
+   ploughed (a gouge that widens towards the wreck, churned earth heaped along both lips, scrape marks); painted once per wreck into a
+   canvas in the wreck's own frame, then laid into the 3D ground layer, so it lies on the terrain like footprints and fire do */
+const WRECK_DECAL={ x0:-4.4, x1:2.8, z0:-2.8, z1:2.8, ppu:72 };
+function v3WreckDecal(e){ const k='wreckDecal'+e.id; if(V3[k]) return V3[k]; const D=WRECK_DECAL, Wd=Math.round((D.x1-D.x0)*D.ppu), Hd=Math.round((D.z1-D.z0)*D.ppu);
+  const c=document.createElement('canvas'); c.width=Wd; c.height=Hd; const x=c.getContext('2d'), R=(i,s)=>hash2(e.id,i,s+70), P=(lx,lz)=>[(lx-D.x0)*D.ppu,(lz-D.z0)*D.ppu], u=D.ppu;
+  const blob=(cx,cz,r,a,col='12,10,9')=>{ const [px,pz]=P(cx,cz), g=x.createRadialGradient(px,pz,0,px,pz,r*u); g.addColorStop(0,`rgba(${col},${a})`); g.addColorStop(0.55,`rgba(${col},${a*0.6})`); g.addColorStop(1,`rgba(${col},0)`); x.fillStyle=g; x.fillRect(px-r*u,pz-r*u,r*2*u,r*2*u); };
+  /* the furrow: churned lips first, then the gouge, then scrape marks */
+  const fx0=-4.1, fx1=-1.2, wAt=t=>0.12+0.3*t;   /* t 0 at the far end, 1 at the wreck */
+  for(let i=0;i<70;i++){ const t=R(i,1), lx=fx0+(fx1-fx0)*t, sd=R(i,2)<0.5?-1:1, lz=sd*(wAt(t)+0.06+R(i,3)*0.12); blob(lx,lz,0.08+R(i,4)*0.12,0.35,R(i,5)<0.5?'78,70,62':'52,47,42'); }   /* heaped earth along the lips */
+  x.beginPath(); for(let i=0;i<=24;i++){ const t=i/24, [px,pz]=P(fx0+(fx1-fx0)*t,-(wAt(t)+(R(i,6)-0.5)*0.05)); i?x.lineTo(px,pz):x.moveTo(px,pz); }
+  for(let i=24;i>=0;i--){ const t=i/24, [px,pz]=P(fx0+(fx1-fx0)*t,wAt(t)+(R(i,7)-0.5)*0.05); x.lineTo(px,pz); } x.closePath();
+  const [g0x]=P(fx0,0), [g1x]=P(fx1,0), gg=x.createLinearGradient(g0x,0,g1x,0); gg.addColorStop(0,'rgba(20,17,15,0)'); gg.addColorStop(0.25,'rgba(20,17,15,.55)'); gg.addColorStop(1,'rgba(14,12,11,.8)');
+  x.save(); x.filter='blur(3px)'; x.fillStyle=gg; x.fill(); x.restore();
+  x.lineCap='round'; for(let i=0;i<9;i++){ const lz=(R(i,8)-0.5)*0.4, t0=R(i,9)*0.4; x.strokeStyle=`rgba(${R(i,10)<0.5?'8,7,6':'92,84,74'},${0.25+R(i,11)*0.3})`; x.lineWidth=1+R(i,12)*2; x.beginPath(); const [a1,b1]=P(fx0+(fx1-fx0)*t0,lz*(0.4+t0)), [a2,b2]=P(fx1+0.1,lz*1.3); x.moveTo(a1,b1); x.lineTo(a2,b2); x.stroke(); }
+  /* the scorched patch: many soft blobs make a ragged edge; streaks thrown outwards; a darker heart under the hull */
+  for(let i=0;i<46;i++){ const a=R(i,13)*Math.PI*2, rr=Math.sqrt(R(i,14)), lx=-0.2+Math.cos(a)*rr*2.0, lz=Math.sin(a)*rr*1.45; blob(lx,lz,0.35+R(i,15)*0.55,0.22+0.2*(1-rr)); }
+  blob(-0.1,0,1.3,0.5,'6,5,5'); blob(0.6,-0.2,0.8,0.35,'6,5,5');
+  for(let i=0;i<22;i++){ const a=R(i,16)*Math.PI*2, r0=1.1+R(i,17)*0.5, r1=r0+0.6+R(i,18)*1.0, [ax,az]=P(-0.2+Math.cos(a)*r0,Math.sin(a)*r0*0.75), [bx,bz]=P(-0.2+Math.cos(a)*r1,Math.sin(a)*r1*0.75);
+    const g=x.createLinearGradient(ax,az,bx,bz); g.addColorStop(0,'rgba(10,9,8,.45)'); g.addColorStop(1,'rgba(10,9,8,0)'); x.strokeStyle=g; x.lineWidth=3+R(i,19)*7; x.beginPath(); x.moveTo(ax,az); x.lineTo(bx,bz); x.stroke(); }   /* burn streaks */
+  for(let i=0;i<120;i++){ const a=R(i,20)*Math.PI*2, rr=Math.sqrt(R(i,21))*1.9, [px,pz]=P(-0.2+Math.cos(a)*rr,Math.sin(a)*rr*0.8); x.fillStyle=R(i,22)<0.6?`rgba(150,145,138,${0.25+R(i,23)*0.3})`:`rgba(4,4,4,${0.4+R(i,23)*0.4})`; x.fillRect(px,pz,1+R(i,24)*3,1+R(i,25)*2); }   /* ash and cinders */
+  for(let i=0;i<6;i++){ const a=R(i,26)*Math.PI*2, rr=0.4+R(i,27)*1.2; blob(-0.2+Math.cos(a)*rr,Math.sin(a)*rr*0.8,0.18+R(i,28)*0.2,0.3,'120,116,110'); }   /* grey ash drifts */
+  return V3[k]=c; }
+function v3WreckGround(){ for(const [e,g] of V3.objs){ const U=g.userData; if(!U.wreck||!g.visible) continue; const c=v3WreckDecal(e), D=WRECK_DECAL, k=WRECK3D.size*TILE/D.ppu;
+  ctx.save(); ctx.imageSmoothingEnabled=true; ctx.translate(g.position.x*TILE,g.position.z*TILE); ctx.rotate(-U.siteYaw-g.rotation.y); ctx.scale(k,k); ctx.drawImage(c,D.x0*D.ppu,D.z0*D.ppu); ctx.restore(); } }
 function v3WreckFx(now,dt,put,lights){ const W=WRECK3D, T=now/1000, w=V3._ww||(V3._ww=new THREE.Vector3()), k=W.size, ks=Math.sqrt(k);   /* ks: smoke, sparks and flames grow less than the ship */
   V3.sparks=V3.sparks||[];
   for(const [e,g] of V3.objs){ const U=g.userData; if(!U.wreck||!g.visible) continue;
@@ -1896,7 +1923,7 @@ function v3GroundLayer(now){
   const vx0=x0, vy0=y0, vx1=x0+side, vy1=y0+side, inView=e=>e.x>vx0&&e.x<vx1&&e.y>vy0&&e.y<vy1;
   try{
     for(const d of G.decals){ if(!inView(d)) continue; ctx.fillStyle=d.col; for(let i=0;i<5;i++){ const a=d.seed+i*1.7, rr=d.r*(0.35+0.25*((i*37+d.seed)%1)); ctx.fillRect(Math.round(d.x+Math.cos(a)*d.r*0.5-rr/2),Math.round(d.y+Math.sin(a)*d.r*0.35-rr/3),Math.round(rr),Math.round(rr*0.66)); } }
-    { const vv=MYCEL.veins; MYCEL.veins=vv&&!MYCEL3D.veins; try{ drawMycel(now,vx0,vy0,vx1,vy1); } finally { MYCEL.veins=vv; } } drawCreepLife(now,vx0,vy0,vx1,vy1); drawPools(now); drawDrags(); drawPrints(); drawFires(now);
+    { const vv=MYCEL.veins; MYCEL.veins=vv&&!MYCEL3D.veins; try{ drawMycel(now,vx0,vy0,vx1,vy1); } finally { MYCEL.veins=vv; } } drawCreepLife(now,vx0,vy0,vx1,vy1); drawPools(now); v3WreckGround(); drawDrags(); drawPrints(); drawFires(now);
     for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||!inView(e)) continue; if(e.wall){ drawTunnel(e,now); continue; } const a=ARTC[e.def.art]; if(a){ ctx.globalAlpha=0.9; ctx.drawImage(a,e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); ctx.globalAlpha=1; }
       if(e.def.capture){ const r=e.size*TILE*0.62, col=e.state==='contested'?'#ff9a3c':e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffb347';
         ctx.lineWidth=5; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle=col; ctx.beginPath(); ctx.arc(e.x,e.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*(e.cap||0)); ctx.stroke(); }

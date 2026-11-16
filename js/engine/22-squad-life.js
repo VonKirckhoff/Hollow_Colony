@@ -272,7 +272,7 @@ function pickupLeave(b,s,why){ if(s.hull){ s.hull.dead=true; s.hull=null; } s.le
    On the ground: legs out, ramp down while it unloads (or waits for a pickup), engines idle.
    Take-off (3 s): it lifts on its engines, folds its legs, then the nose comes up and it turns away and speeds off.
    tilt: engines 0 = pushing back (flying) … 1 = blowing down (hovering) · pitch: nose up 0…1 · beams: landing lights 0…1 · legs, ramp 0…1 */
-const SHIP = { curve:0.32, liftAlt:42, lightReach:70, size3d:2.5, wait:90, boardR:2.6, warnAt:30, fade:0.4 };
+const SHIP = { curve:0.32, liftAlt:42, lightReach:70, approach:0.9, turnFrom:0.7, size3d:2.5, wait:90, boardR:2.6, warnAt:30, fade:0.4 };
 /* Nov 2026: the 3D ship is SHIP.size3d times the 2D sprite. On a pad it sets down along the heading where its body (hull, wings, pods
    and the open ramp) covers the least rock, cliff or crater rim, or the map's edge; ties keep the old heading (nose east). */
 const SHIP_BLOCK = { '#':1, '^':1, '*':1, '%':1, '&':1 };   /* a crater rim ) is lower than the belly; plateau & only counts from the low ground */
@@ -286,17 +286,19 @@ function padHeading(b){ if(b.padHd!=null) return b.padHd; let best=0, bs=Infinit
 function rampFoot(b){ const h=padHeading(b), d=2.0*SHIP.size3d*TILE; return { x:b.x-Math.cos(h)*d, y:b.y-Math.sin(h)*d }; }
 const angLerp=(a,b,t)=>{ let d=b-a; while(d>Math.PI) d-=2*Math.PI; while(d<-Math.PI) d+=2*Math.PI; return a+d*t; };
 function shipPoses(b){ const out=[], sm=(e0,e1,v)=>{ const t=clamp((v-e0)/(e1-e0),0,1); return t*t*(3-2*t); };
-  if(b.flight&&b.flight.t<5&&b.flight.ang!==undefined){ const k=Math.max(0,b.flight.t/5), a=b.flight.ang, side=(b.id%2?1:-1);
+  /* Nov 2026: the ship comes in from behind its landing heading (within SHIP.approach radians of it), so it no longer whips round at
+     the last moment; what is left of the turn it takes slowly over the last part of the approach (SHIP.turnFrom of the way in) */
+  if(b.flight&&b.flight.t<5&&b.flight.ang!==undefined){ const k=Math.max(0,b.flight.t/5), H=padHeading(b), back=H+Math.PI, a=back+clamp(angLerp(back,b.flight.ang,1)-back,-SHIP.approach,SHIP.approach), side=(b.id%2?1:-1);
     const at=q=>{ const D=820*q*q, off=Math.sin(q*Math.PI)*D*SHIP.curve*side; return [b.x+Math.cos(a)*D-Math.sin(a)*off, b.y+Math.sin(a)*D+Math.cos(a)*off]; };
     const [gx,gy]=at(k), [px,py]=at(Math.min(1,k+0.02)); let hd=Math.atan2(gy-py,gx-px); if(!(k>0.001)) hd=padHeading(b);
-    const H=padHeading(b); let dd=H-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI; hd+=dd*sm(0.32,0.05,k);
+    let dd=H-hd; while(dd>Math.PI) dd-=2*Math.PI; while(dd<-Math.PI) dd+=2*Math.PI; hd+=dd*sm(SHIP.turnFrom,0.04,k);
     out.push({ gx, gy, alt:260*k, hd, scale:1+0.35*k, tilt:1-sm(0.12,0.45,k), pitch:0, beams:k>0.03&&k<0.9?Math.min(1,(0.9-k)*6):0, legs:1-sm(0.02,0.14,k), ramp:0, thrust:1, bank:Math.sin(k*Math.PI)*side*0.5 }); }
   const s=b.ship; if(!s) return out;
   if(s.phase==='ground'||s.phase==='parked'){ const open=s.phase==='parked'?1:clamp((2.6-s.t)/0.35,0,1)*clamp(s.t/0.35,0,1);
     out.push({ gx:b.x, gy:b.y, alt:0, hd:padHeading(b), scale:1, tilt:1, pitch:0, beams:0, legs:1, ramp:open, thrust:s.phase==='parked'?0.35:0.2+0.8*clamp((s.t-2.2)/0.4,0,1), bank:0 , hull:s.pickup?(s.hull?s.hull.hp/s.hull.maxHp:0):null, left:s.pickup?Math.max(0,s.t):null }); }
-  else if(s.phase==='takeoff'){ const k=1-s.t/3, a=s.out;
+  else if(s.phase==='takeoff'){ const k=1-s.t/3, H=padHeading(b), a=H+clamp(angLerp(H,s.out,1)-H,-SHIP.approach,SHIP.approach);   /* it leaves roughly the way its nose points, turning slowly */
     if(k<0.25){ const q=k/0.25; out.push({ gx:b.x, gy:b.y, alt:SHIP.liftAlt*sm(0,1,q), hd:padHeading(b), scale:1+0.05*q, tilt:1, pitch:0, beams:0, legs:1-q, ramp:0, thrust:1, bank:0 }); }
-    else { const q=(k-0.25)/0.75, D=820*q*q; out.push({ gx:b.x+Math.cos(a)*D, gy:b.y+Math.sin(a)*D, alt:SHIP.liftAlt+218*q, hd:angLerp(padHeading(b),a,Math.min(1,q*1.6)), scale:1.05+0.3*q, tilt:1-sm(0,0.6,q), pitch:Math.sin(Math.min(1,q*2.2)*Math.PI/2)*(1-0.6*q), beams:0, legs:0, ramp:0, thrust:1, bank:Math.sin(q*Math.PI)*0.4 }); } }
+    else { const q=(k-0.25)/0.75, D=820*q*q; out.push({ gx:b.x+Math.cos(a)*D, gy:b.y+Math.sin(a)*D, alt:SHIP.liftAlt+218*q, hd:angLerp(H,a,sm(0,0.9,q)), scale:1.05+0.3*q, tilt:1-sm(0,0.6,q), pitch:Math.sin(Math.min(1,q*2.2)*Math.PI/2)*(1-0.6*q), beams:0, legs:0, ramp:0, thrust:1, bank:Math.sin(q*Math.PI)*0.4 }); } }
   return out; }
 function drawShip(P,now){
   const art=ARTC.dropship, sc=P.scale, w=art.width*2.6*sc, h=art.height*2.6*sc, sx=w/art.width, sy=h/art.height, gx=P.gx, gy=P.gy, alt=P.alt;

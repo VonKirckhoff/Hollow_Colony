@@ -30,6 +30,11 @@ with sync_playwright() as p:
     print('size',r)
     check('as big as the 3D dropship (WRECK3D.size), torn open with small fires all over (crack, nose, roof holes, torn wing, fuel pool, debris)', r and abs(r[0]-2.5)<0.01 and r[1]>=7 and r[2]>=12, r)
     check('a click on the wreck goes to the ground under it, not to its centre', r and r[3]>8, r)
+    r=J(pg,"""()=>{ _step(0.1); const g=V3.objs.get(_w), U=g.userData, r=V3.u.decR.value, at=(lx)=>{ const a=-U.siteYaw-g.rotation.y, wx=_w.x/TILE+Math.cos(a)*lx, wz=_w.y/TILE+Math.sin(a)*lx;
+        return V3.decCtx.getImageData(Math.round((wx-r.x)/r.z*1024),Math.round((wz-r.y)/r.w*1024),1,1).data[3]; };
+      return [!!V3['wreckDecal'+_w.id], at(-3*WRECK3D.size), at(0), at(-9*WRECK3D.size), V3.terrain?V3.terrain.material.customProgramCacheKey():'?']; }""")
+    print('ground',r)
+    check('scorch and furrow are a soft decal in the ground layer (dark along the furrow and under the hull, nothing far away)', r and r[0] and r[1]>80 and r[2]>80 and r[3]<10, r)
     r=J(pg,"""()=>{ const g=V3.objs.get(_w); const sm=V3.smoke.filter(s=>s.life&&Math.hypot(s.x-g.position.x,s.z-g.position.z)<3*WRECK3D.size);
       const ys=sm.map(s=>s.y+s.t/s.life*s.rise*s.sz); const xs=sm.map(s=>s.x), zs=sm.map(s=>s.z);
       const flat=__hc.G.fx.filter(f=>f.wr).length;
