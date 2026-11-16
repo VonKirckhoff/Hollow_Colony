@@ -250,7 +250,7 @@ function pickupHull(b){ const s=b.ship; return s&&s.hull&&!s.hull.dead?s.hull:nu
 function boardShip(u,b){ u.aboard=b; u.hidden=true; u.invuln=true; u.order=null; u.path=null; u.target=null; u.moving=false; u.boarding=null; u.x=b.x; u.y=b.y;
   if(u.haul){ const body=u.haul; dropBody(body); }
   G.sel=G.sel.filter(x=>x!==u); G.selDirty=true; SFX.play('ready'); }
-function pickupTick(b,s,dt){ const h=s.hull, who=s.name||'Dropship Kestrel', F=rampFoot(b);
+function pickupTick(b,s,dt){ const h=s.hull, who=s.name||'Dropship Icarus', F=rampFoot(b);
   s.t-=dt; if(Math.random()<dt*2) dustPuff(b.x,b.y,1);
   const hp=h?h.hp/h.maxHp:1;
   if(h&&hp<0.5&&!s.said.h50){ s.said.h50=true; say(who,'Taking hits on the hull! Get them off me!','alert'); }
@@ -265,7 +265,7 @@ function pickupTick(b,s,dt){ const h=s.hull, who=s.name||'Dropship Kestrel', F=r
   if(s.t<=0||(h&&h.hp<=1)) pickupLeave(b,s,s.t<=0?'time':'hull'); }
 function pickupLeave(b,s,why){ if(s.hull){ s.hull.dead=true; s.hull=null; } s.left=why||'done'; b.shipLeft=s.left;
   for(const u of G.ents) if(!u.dead&&u.boarding===b) u.boarding=null;
-  if(why==='hull') say(s.name||'Dropship Kestrel','Hull breach! I am pulling out!','alert'); else if(why==='time') say(s.name||'Dropship Kestrel','Out of time. Lifting off!','alert');
+  if(why==='hull') say(s.name||'Dropship Icarus','Hull breach! I am pulling out!','alert'); else if(why==='time') say(s.name||'Dropship Icarus','Out of time. Lifting off!','alert');
   s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9}); }
 /* Where the dropship of a pad is right now and how it looks: one pose per ship in the air or on the ground (the 2D and the 3D view both draw from this).
    Arrival (flight.t 5→0): it comes in on a curve, banking, landing lights sweeping the ground; near the pad the engines turn down and the legs fold out.

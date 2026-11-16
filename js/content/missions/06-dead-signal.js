@@ -49,7 +49,7 @@ MISSIONS.push(
       // an Engineer is always needed: replace them when both are lost
       { repeat:true, when:g=>!g.vars.done && g.has('engineer')===0 && !(g.vars.engDrop>g.time), do:g=>{
           const next=DS_SITES.find(o=>g.charge(o.tag)!=='blown'); g.vars.engDrop=g.time+60;
-          g.say('Cmdr. Varga','No Engineers left. Kestrel is dropping one at your landing pad. He will make his way to you.');
+          g.say('Cmdr. Varga','No Engineers left. Icarus is dropping one at your landing pad. He will make his way to you.');
           g.airdrop([['engineer',1]],20,next?next.at:'P'); } },
 
       // the run to the pad
@@ -57,13 +57,13 @@ MISSIONS.push(
           g.complete('charges');
           g.say('Dr. Maas','Three echoes. I have the whole cave system. Get out, the canyon floor is coming apart!');
           g.addObjective('extract','Everyone to the launch pad in the east'); g.marker('ex',{x:78,y:30},'Pickup'); g.vars.extract=true;
-          g.setTimer(90,'Pickup'); g.landShip('pickup',90); g.say('Dropship Kestrel','Ninety seconds out. Be on that pad when I land.');
+          g.setTimer(90,'Pickup'); g.landShip('pickup',90); g.say('Dropship Icarus','Ninety seconds out. Be on that pad when I land.');
           g.wave(70,{x:78,y:30}); g.vars.chase=g.time+35; } },
       { repeat:true, when:g=>g.vars.extract && g.time>g.vars.chase && !g.vars.won, do:g=>{ g.vars.chase=g.time+35; g.wave(45,{x:78,y:30}); } },
       { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',g.vars.landed?`Everyone aboard the dropship before it lifts off (${g.aboard('pickup')}/${g.troops()})`:`Everyone to the launch pad in the east (${Math.min(g.near('corps',{x:78,y:30},5),g.troops())}/${g.troops()})`) },
-      /* the pickup (Nov 2026): the Kestrel waits 90 seconds with its ramp down; the Brood goes for its hull; whoever is not aboard when it goes, the mission is lost */
-      { when:g=>g.vars.extract && g.shipDown('pickup') && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft('pickup'),'Lift-off'); g.say('Dropship Kestrel','Wheels down, ramp is open. Ninety seconds, not one more. Everybody aboard, now!'); } },
-      { when:g=>g.vars.landed && !g.vars.won && g.shipGone('pickup'), do:g=>{ g.clearTimer(); g.lose(g.shipGone('pickup')==='hull'?'The Brood tore into the Kestrel and she had to pull out. Squad Dust is left behind in a canyon that is coming down.':'The Kestrel could not wait any longer. Squad Dust is left behind in a canyon that is coming down.'); } },
+      /* the pickup (Nov 2026): the Icarus waits 90 seconds with its ramp down; the Brood goes for its hull; whoever is not aboard when it goes, the mission is lost */
+      { when:g=>g.vars.extract && g.shipDown('pickup') && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft('pickup'),'Lift-off'); g.say('Dropship Icarus','Wheels down, ramp is open. Ninety seconds, not one more. Everybody aboard, now!'); } },
+      { when:g=>g.vars.landed && !g.vars.won && g.shipGone('pickup'), do:g=>{ g.clearTimer(); g.lose(g.shipGone('pickup')==='hull'?'The Brood tore into the Icarus and she had to pull out. Squad Dust is left behind in a canyon that is coming down.':'The Icarus could not wait any longer. Squad Dust is left behind in a canyon that is coming down.'); } },
       { when:g=>g.vars.landed && g.troops()>0 && g.aboard('pickup')>=g.troops(), do:g=>{ g.vars.won=true; g.clearTimer(); g.liftOff('pickup'); g.complete('extract'); g.unmark('ex');
           g.win('Squad Dust lifts off as Ridgeback Canyon caves in behind them. Dr. Maas has the map: under Tycho Maw, something is still laying eggs.'); } },
       { when:g=>g.time>2 && g.troops()===0, do:g=>g.lose('Squad Dust is gone. The charges stay silent.') }

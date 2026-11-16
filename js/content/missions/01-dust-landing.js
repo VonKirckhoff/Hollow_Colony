@@ -63,7 +63,7 @@ MISSIONS.push(
       // 2. the dropship lands on the station pad
       { when:g=>g.vars.ambush && g.alive(g.vars.ambush)===0, do:g=>{
           g.complete('ambush');
-          g.say('Cmdr. Varga','Good work, Dust. Kestrel is inbound to the station pad with two rifles and a Pyro. Hold the platform.');
+          g.say('Cmdr. Varga','Good work, Dust. Icarus is inbound to the station pad with two rifles and a Pyro. Hold the platform.');
           g.airdrop([['trooper',2],['pyro',1]],18); g.addObjective('drop','Wait for reinforcements on the landing pad'); g.marker('lz',{x:46,y:38},'Landing pad'); g.vars.drop1=true; } },
 
       // 3. the blast doors open
@@ -80,7 +80,7 @@ MISSIONS.push(
       // 4. the two hives
       { when:g=>g.vars.open && !g.hiveAt('c'), do:g=>{
           g.complete('nest'); g.unmark('nest'); g.unmark('tunnel');
-          g.say('Cmdr. Varga','The nest burns. But we have a second signature, bigger, in the eastern cavern. Kestrel is bringing a Medic and two rifles. They will move up the tunnel to join you.');
+          g.say('Cmdr. Varga','The nest burns. But we have a second signature, bigger, in the eastern cavern. Icarus is bringing a Medic and two rifles. They will move up the tunnel to join you.');
           g.airdrop([['trooper',2],['medic',1]],20,'3');
           g.addObjective('nest2','Destroy the hive in the eastern cavern'); g.marker('nest2','a','Hive'); g.vars.second=true; g.vars.westAt=g.time+25; } },
       { when:g=>g.vars.westAt && g.time>g.vars.westAt, do:g=>{ g.reveal(DUST_SHAFT_W,3,6);
@@ -101,9 +101,9 @@ MISSIONS.push(
           g.vars.shaftWaves=(g.vars.shaftWaves||0)+1; g.vars.shaftNext=g.time+35; } },
       // the whole squad has to be aboard before the dropship leaves
       { repeat:true, when:g=>g.vars.extract && !g.vars.won, do:g=>g.setText('extract',g.vars.landed?`Everyone aboard the dropship before it lifts off (${g.aboard(null)}/${g.troops()})`:`Everyone back to the landing pad for pickup (${Math.min(g.near('corps',{x:46,y:38},5),g.troops())}/${g.troops()})`) },
-      /* the pickup (Nov 2026): the Kestrel lands a minute later and waits 90 seconds; the Brood goes for its hull; late is lost */
-      { when:g=>g.vars.extract && g.shipDown(null) && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft(null),'Lift-off'); g.say('Dropship Kestrel','Wheels down on Kappa pad. Ninety seconds, Dust, then I am gone.'); } },
-      { when:g=>g.vars.landed && !g.vars.won && g.shipGone(null), do:g=>{ g.clearTimer(); g.lose(g.shipGone(null)==='hull'?'The Brood swarmed the Kestrel and she had to pull out. Squad Dust is left behind at Kappa Station.':'The Kestrel could not wait. Squad Dust is left behind at Kappa Station.'); } },
+      /* the pickup (Nov 2026): the Icarus lands a minute later and waits 90 seconds; the Brood goes for its hull; late is lost */
+      { when:g=>g.vars.extract && g.shipDown(null) && !g.vars.landed, do:g=>{ g.vars.landed=true; g.setTimer(g.shipLeft(null),'Lift-off'); g.say('Dropship Icarus','Wheels down on Kappa pad. Ninety seconds, Dust, then I am gone.'); } },
+      { when:g=>g.vars.landed && !g.vars.won && g.shipGone(null), do:g=>{ g.clearTimer(); g.lose(g.shipGone(null)==='hull'?'The Brood swarmed the Icarus and she had to pull out. Squad Dust is left behind at Kappa Station.':'The Icarus could not wait. Squad Dust is left behind at Kappa Station.'); } },
       { when:g=>g.vars.landed && g.troops()>0 && g.aboard(null)>=g.troops(), do:g=>{ g.vars.won=true; g.clearTimer(); g.liftOff(null); g.complete('extract'); g.unmark('ex'); g.win('Squad Dust is aboard. Kappa Station is ours again, for now.'); } }
     ]
   }

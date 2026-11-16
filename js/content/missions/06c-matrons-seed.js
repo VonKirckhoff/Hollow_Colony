@@ -12,7 +12,7 @@ MISSIONS.push(
     briefing:[
       'Seismic picked up a scream under Tycho Maw, then a long silence. Something went into the Matron\'s lair and hurt her. She tore herself free and burrowed into the deep, and she left part of herself behind: her Seed, ripped out of her roots, as big as a man and still pulsing.',
       'The Osprey crew got there first. They opened her membrane, and now they are drawing the sap out of it. Dr. Maas says whatever is in that sap could finish what the strain started in them. Command wants it ash.',
-      'Kestrel puts you down at the cave mouth with a Command Post to call in replacements, but there is no time to dig in. Push through the tunnels to the lair in the north-east and burn that Seed. A Pyro does it fastest. The brood is frantic with its mother hurt, and it will not touch the crew.'
+      'Icarus puts you down at the cave mouth with a Command Post to call in replacements, but there is no time to dig in. Push through the tunnels to the lair in the north-east and burn that Seed. A Pyro does it fastest. The brood is frantic with its mother hurt, and it will not touch the crew.'
     ],
     job:{ mhTap:{ easy:260, normal:210, hard:180 }, mhBurn:10, mhSmash:25, mhBack:45 },
     landingZone:{ tx:16, ty:44, max:14, delay:25 },
@@ -39,7 +39,7 @@ MISSIONS.push(
           g.marker('sac','9','Her Seed'); g.reveal('9',3,6); g.setTimer(G.mission.job.mhTap[G.diffKey]||240,'Seed drained'); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, you are in the Maw. The lair is open and the Osprey crew is inside it. Order 9: burn that Seed, and anything that stands between you and it.') },
       { when:g=>g.time>9,  do:g=>g.say('Dr. Maas','Look at the seismic trace: she is still moving, deep down. She is not dead, only hurt. Whatever they are taking from her, do not let it leave this cave.') },
-      { when:g=>g.time>18, do:g=>g.say('Dropship Kestrel','Kestrel on station. Fourteen boots on the ground max. Select the Landing Zone for replacements.') },
+      { when:g=>g.time>18, do:g=>g.say('Dropship Icarus','Icarus on station. Fourteen boots on the ground max. Select the Landing Zone for replacements.') },
       { when:g=>g.time>30, do:g=>g.ospreySay('Osprey crew','Dust is in the Maw. Doc, how long?') },
       { when:g=>g.time>36, do:g=>g.ospreySay('Osprey crew','Long enough to matter. Hold the gate. Do not let them near her.') },
       /* the tap: one of the crew next to the blood draws it off, their Medic fastest; Dust next to it burns it (a Pyro) or smashes it */

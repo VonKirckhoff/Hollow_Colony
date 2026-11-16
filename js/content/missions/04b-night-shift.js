@@ -24,7 +24,7 @@ MISSIONS.push(
     summary:'Hold the Kappa field hospital until dawn. Something walks past the Brood to get in, and it keeps coming back.',
     briefing:[
       'A week after Hollow Colony. The relay station you held at Kappa is a field hospital now, and Dr. Maas\'s shipment sits in its tents: three cases of her stabilizer and the files that go with it. The convoy to Tycho comes at dawn, ten minutes from now.',
-      'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Kestrel can fly replacements to the pad just south of the tents; claim the relay pads to pay for them.',
+      'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Icarus can fly replacements to the pad just south of the tents; claim the relay pads to pay for them.',
       'Kappa medical has a dozen wounded in those tents. Nobody gets near them.'
     ],
     job:{ nsHold:600, nsArrive:40, nsSneak:25, nsFirst:120, nsEvery:60, nsDownload:60, nsGrab:2.5, nsWave:65, nsWaveGrow:15, nsUnder:5, nsBrute:3 },

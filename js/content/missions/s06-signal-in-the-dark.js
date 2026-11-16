@@ -47,7 +47,7 @@ SWARM_MISSIONS.push(
             if(b.owned) b.retakeSent=false; } } },
       /* fresh soldiers by dropship every few minutes, sent to the beacon in the most trouble */
       { repeat:true, when:g=>g.time>(g.vars.dropAt||(g.vars.dropAt=150)), do:g=>{ g.vars.dropAt=g.time+150/(G.corpsDiff?G.corpsDiff.reinforce:1);
-          if(!g.has('hq')||g.corps().length>=g.n(22)) return; g.say('Dropship Kestrel','Kestrel inbound to the base with a fire team.'); g.airdrop([['trooper',g.n(3)],['gunner',1]],15); } },
+          if(!g.has('hq')||g.corps().length>=g.n(22)) return; g.say('Dropship Icarus','Icarus inbound to the base with a fire team.'); g.airdrop([['trooper',g.n(3)],['gunner',1]],15); } },
       { when:g=>g.time>420, do:g=>signalRaid(g,4,'Sgt. Kessler','They breed out in the wings. Fire team, burn the nearest nest.') },
       { when:g=>g.time>720, do:g=>signalRaid(g,6,'Cmdr. Varga','Three minutes. Burn whatever they are breeding from.') },
       { when:g=>g.timerLeft()<=120 && g.time>5, do:g=>g.say('Cmdr. Varga','Two minutes to the fleet. Hold the beacons!') },

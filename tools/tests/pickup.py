@@ -30,7 +30,8 @@ CASES=[
   const us=dust(); for(const u of us) u.invuln=true; tp(us[0],Math.floor(pad.x/TILE),Math.floor(pad.y/TILE)); step(8); ok(us[0].aboard===pad&&us[0].hidden&&G.api.aboard('pickup')===1,'the first walks up the ramp and is aboard');
   ok(!G.sel.includes(us[0])&&!G.over,'out of the selection, not won yet ('+G.api.aboard('pickup')+'/'+G.api.troops()+')');
   const t0=us[0].x; step(2); ok(us[0].x===pad.x,'aboard he stays put');
-  for(const u of us) if(!u.aboard) tp(u,Math.floor(pad.x/TILE)+1,Math.floor(pad.y/TILE)); step(25); ok(G.over&&G.over.win,'all aboard: won ('+G.api.aboard('pickup')+'/'+G.api.troops()+')'); ok(!pad.ship||pad.ship.phase==='takeoff','and the ship lifts off');''' % DS),
+  for(const u of us) if(!u.aboard) tp(u,Math.floor(pad.x/TILE)+1,Math.floor(pad.y/TILE)); for(let i=0;i<250&&!G.endWait&&!G.over;i++) step(0.1);
+  ok(G.endWait&&G.endWait.win&&!G.over&&pad.ship&&pad.ship.phase==='takeoff','all aboard: the ship lifts off first, no end screen yet'); step(4); ok(G.over&&G.over.win&&!pad.ship,'then the end: won ('+G.api.aboard('pickup')+'/'+G.api.troops()+')'); ok(true,'all aboard: won ('+G.api.aboard('pickup')+'/'+G.api.troops()+')'); ok(!pad.ship||pad.ship.phase==='takeoff','and the ship lifts off');''' % DS),
 ('dead signal: too late is lost','''%s
   const us=dust(); for(const u of us) u.invuln=true; tp(us[0],Math.floor(pad.x/TILE),Math.floor(pad.y/TILE)); step(SHIP.wait-25); ok(!G.over&&G.api.aboard('pickup')===1,'one aboard, the rest far away');
   step(30); ok(G.over&&!G.over.win&&G.api.shipGone('pickup')==='time','time up: it leaves and the mission is lost'); ok(h.dead,'the hull is gone with it');''' % DS),
@@ -39,10 +40,10 @@ CASES=[
   step(6); const hit=h.hp<h.maxHp; ok(hit,'the drones attack the ship ('+Math.round(h.hp)+'/'+h.maxHp+')'); ok(bs.some(b=>b.target===h),'it is their target');
   for(let i=0;i<60&&!G.over;i++) step(1); ok(G.over&&!G.over.win&&G.api.shipGone('pickup')==='hull','hull spent: it pulls out early, lost ('+(G.over&&G.over.text||'')+')');''' % DS),
 ('dust landing: a real pickup at Kappa pad','''const G=start('dust-landing'); step(0.5); calm(); G.vars.extract=true; G.api.addObjective('extract','x'); G.vars.shaftNext=1e9; G.api.landShip(null,1); step(2);
-  const pad=G.ents.find(e=>e.def.reinforce&&!e.tag); ok(G.vars.landed&&pad.ship&&pad.ship.hull,'the Kestrel lands on the station pad and waits');
+  const pad=G.ents.find(e=>e.def.reinforce&&!e.tag); ok(G.vars.landed&&pad.ship&&pad.ship.hull,'the Icarus lands on the station pad and waits');
   for(const u of dust()){ u.invuln=true; tp(u,Math.floor(pad.x/TILE),Math.floor(pad.y/TILE)); } step(25); ok(G.over&&G.over.win,'all aboard: won');'''),
 ('the hollow colony: Dr. Maas and everyone up the ramp','''const G=start('hollow-colony'); step(1); calm(); G.vars.nextWave=1e9; G.vars.maas=G.api.spawn('scientist',{x:53,y:4},1)[0]; G.vars.rescueT=G.time; G.api.pad('2','extract'); G.api.addObjective('escort','x'); G.api.landShip('extract',1); step(2);
-  const pad=G.ents.find(e=>e.tag==='extract'); ok(G.vars.landed&&pad.ship&&pad.ship.hull,'the Kestrel lands at the extraction pad and waits');
+  const pad=G.ents.find(e=>e.tag==='extract'); ok(G.vars.landed&&pad.ship&&pad.ship.hull,'the Icarus lands at the extraction pad and waits');
   const mine=dust().filter(u=>u!==G.vars.maas); for(const u of mine){ u.invuln=true; tp(u,Math.floor(pad.x/TILE),Math.floor(pad.y/TILE)); } step(20); ok(!G.over,'not without Dr. Maas ('+G.api.aboard('extract')+'/'+G.api.troops()+')');
   G.vars.maas.invuln=true; tp(G.vars.maas,Math.floor(pad.x/TILE),Math.floor(pad.y/TILE)); step(15); ok(G.over&&G.over.win,'Dr. Maas aboard too: won');'''),
 ('hunted: the Magpie waits 90 s','''resetRogue(); const G=start('rogue-hunted'); step(14); calm(); for(const e of G.ents) if(e.faction==='loyal') e.dead=true;

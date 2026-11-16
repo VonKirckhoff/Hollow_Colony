@@ -54,7 +54,7 @@ ROGUE_MISSIONS.push(
           g.marker('heart',{x:Math.floor(m.x/TILE),y:Math.floor(m.y/TILE)},'Her Seed');
           g.addObjective('ascend','Ascension: one of the crew takes the Seed into his blood (stand on it, 8 s)'); g.addObjective('ashes','Ashes: Mortier burns the Seed (Pyro next to it, 6 s)');
           g.crewSay('Devreese','She left her Seed behind, and it is still pulsing. Captain... your call. Stand someone on it and I put it in our blood. Or let Mortier burn it, and everything with it.');
-          g.say('Cmdr. Varga','All Dust elements, seismic picked up a scream under the Maw. The lair is not empty. Kestrel, take Dust down now.'); g.setTimer(150,'Dust in the Maw'); } },
+          g.say('Cmdr. Varga','All Dust elements, seismic picked up a scream under the Maw. The lair is not empty. Icarus, take Dust down now.'); g.setTimer(150,'Dust in the Maw'); } },
       { repeat:true, when:g=>g.vars.heart&&!g.vars.chosen, do:g=>{ const h=g.vars.heart, dt=g.time-g.vars.ht; g.vars.ht=g.time;
           const near=(r,f)=>g.crew().some(u=>!u.downed&&f(u)&&Math.hypot(u.x-h.x,u.y-h.y)<r*TILE);
           if(near(1.6,u=>u.def.attack!=='flame')) g.vars.asc=Math.min(8,g.vars.asc+dt); else g.vars.asc=Math.max(0,g.vars.asc-dt);

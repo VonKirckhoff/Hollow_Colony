@@ -1326,11 +1326,12 @@ function v3Stencil(x,W,H,txt,len,u,px,face,col='#dfe4ea',a=0.85){ for(const yy o
 /* the hull texture of a ship: camouflage, serial number on both flanks and the roof; the wreck: burnt paint, soot, OSPREY and LC-71 */
 function v3HullTex(kind){ const k='hullTex'+kind; if(MAT[k]) return MAT[k]; const W=1024, H=512, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), wreck=kind==='wreck';
   v3Camo(x,W,H,12,7,wreck?CAMO_BURNT:CAMO_CORPS,wreck?71:67);
-  if(!wreck){ for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'LC-67',0.665,f==='right'?0.935:0.565,62,f); v3Stencil(x,W,H,'LUNAR CORPS',0.19,u,30,f); }   /* the serial in front of the pods, above the hazard stripes */
-    v3Stencil(x,W,H,'LC-67',0.64,0.75,80,'roof'); }   /* between the roof hatch and the canopy */
+  if(!wreck){ for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'LC-72',0.665,f==='right'?0.935:0.565,62,f);   /* the serial in front of the pods, above the hazard stripes */
+      v3Stencil(x,W,H,'ICARUS',0.19,u,44,f); v3Stencil(x,W,H,'LUNAR CORPS',0.19,f==='right'?u+0.07:u-0.07,22,f); }   /* her name near the tail, LUNAR CORPS under it */
+    v3Stencil(x,W,H,'LC-72',0.64,0.75,80,'roof'); }   /* between the roof hatch and the canopy */
   else { const R=(a,b,s)=>hash2(a,b,s+31);
-    for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'OSPREY',0.27,u,92,f,'#aeb5bd',0.35); v3Stencil(x,W,H,'LC-71',0.7,u,70,f,'#c4cad1',0.45); v3Stencil(x,W,H,'LUNAR CORPS',0.7,f==='right'?u+0.075:u-0.075,22,f,'#c4cad1',0.4); }
-    v3Stencil(x,W,H,'OSPREY',0.27,0.75,100,'roof','#aeb5bd',0.3); v3Stencil(x,W,H,'LC-71',0.7,0.75,84,'roof','#c4cad1',0.42);   /* faded stencils, the soot goes over them */
+    for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'OSPREY',0.24,u,48,f,'#aeb5bd',0.4); v3Stencil(x,W,H,'LC-71',0.7,u,56,f,'#c4cad1',0.45); v3Stencil(x,W,H,'LUNAR CORPS',0.7,f==='right'?u+0.07:u-0.07,22,f,'#c4cad1',0.4); }
+    v3Stencil(x,W,H,'LC-71',0.7,0.75,70,'roof','#c4cad1',0.42);   /* faded stencils, the soot goes over them; the name only on the flanks (Nov 2026) */
     /* soot: clouds everywhere, worst at the crack in the middle and on the nose; streaks blown back; bare metal scratches */
     for(let i=0;i<46;i++){ const near=i<16, px=near?W*(0.5+(R(i,4,2)-0.5)*0.22):i<22?W*(0.85+R(i,4,2)*0.15):R(i,4,3)*W, py=R(i,5,2)*H, r=30+R(i,6,2)*90;
       const g=x.createRadialGradient(px,py,0,px,py,r); g.addColorStop(0,`rgba(12,10,9,${near?0.95:0.75})`); g.addColorStop(1,'rgba(12,10,9,0)'); x.fillStyle=g; x.fillRect(px-r,py-r,r*2,r*2); }

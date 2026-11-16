@@ -56,7 +56,7 @@ const ROGUE = {
   loyal:{ help:12, hp:{ easy:0.85, normal:1, hard:1.2 }, dmg:{ easy:0.85, normal:1, hard:1.15 }, xp:2 }
 };
 /* Corps voices heard over the radio in a Rogue mission: shown as an intercept */
-const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Kestrel','Dr. Maas','Lt. Van Der Planck','Corps patrol','Outpost Kappa','Corps radio'];
+const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Icarus','Dr. Maas','Lt. Van Der Planck','Corps patrol','Outpost Kappa','Corps radio'];
 /* ROGUE_VOICE: what the Osprey crew says instead of the Corps lines (VOICE in veterans.js). Kinds the crew lacks fall back to VOICE.
    Extra kinds: loyal (first shots at the loyal Corps), taint (said now and then from 85% taint), seizure, feral, stab (the Medic doses someone), sorry (back to his senses after a feral fit).
    The voice itself is lower and slower than the Corps, and drops further as the taint climbs (ROGUE_VOICE_TONE). */

@@ -39,7 +39,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.near('corps','1',5)>=2, do:g=>{ g.vars.station=g.time; g.say('Sgt. Kessler','We are at the station. Doors forced open from the inside. No crew.'); } },
       // first reinforcements: after a while at the station, or as soon as the squad is hurting
       { when:g=>!g.vars.drop1 && ((g.vars.station && g.time>g.vars.station+35) || (g.time>20 && g.corps().length<=3)), do:g=>{ g.vars.drop1=g.time;
-          g.say('Cmdr. Varga','Kestrel is inbound to the station pad with rifles and a Pyro. Hold the platform, Dust.'); g.airdrop([['trooper',g.n(2)],['pyro',1]],18); } },
+          g.say('Cmdr. Varga','Icarus is inbound to the station pad with rifles and a Pyro. Hold the platform, Dust.'); g.airdrop([['trooper',g.n(2)],['pyro',1]],18); } },
       // once the Pyro is down, they open the doors and come for the nests
       { when:g=>g.vars.drop1 && g.time>g.vars.drop1+20 && g.inbound()===0 && !g.vars.doorAt, do:g=>{ g.vars.doorAt=g.time+(g.has('pyro')?20:5); } },
       { when:g=>g.vars.doorAt && g.time>g.vars.doorAt, do:g=>{ g.openWall('north'); g.ping({x:44,y:24}); g.vars.open=true;
@@ -49,7 +49,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.vars.push && !g.hiveAt('c') && !g.vars.east, do:g=>{ g.vars.east=true; g.say('Cmdr. Varga','West nest is ash. Second signature, east cavern. Move.'); g.orderCorps('all','a','amove'); } },
       // second team when the first is nearly gone
       { when:g=>g.vars.drop1 && g.time>g.vars.drop1+25 && !g.vars.drop2 && g.corps().length<=2 && g.inbound()===0, do:g=>{ g.vars.drop2=g.time;
-          g.say('Cmdr. Varga','Dust is not answering. Kestrel, put the second team on the pad. Rifles and a Medic.'); g.airdrop([['trooper',g.n(3)],['gunner',1],['medic',1]],20); } },
+          g.say('Cmdr. Varga','Dust is not answering. Icarus, put the second team on the pad. Rifles and a Medic.'); g.airdrop([['trooper',g.n(3)],['gunner',1],['medic',1]],20); } },
       { when:g=>g.vars.drop2 && g.time>g.vars.drop2+24 && g.inbound()===0 && !g.vars.go2, do:g=>{ g.vars.go2=true; g.orderCorps('all',g.vars.open?(g.hiveAt('c')?'c':'a'):'1','amove'); } },
       // the end
       { when:g=>g.vars.drop2 && g.time>g.vars.drop2+24 && g.inbound()===0 && g.corps().length===0, do:g=>{ g.complete('kill'); g.complete('nest');

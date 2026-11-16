@@ -29,7 +29,7 @@ MISSIONS.push(
       { when:g=>g.time>0.3, do:g=>{ g.marker('u1','1','Uplink'); g.marker('u2','2','Uplink'); g.marker('u3','3','Uplink'); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Three beacons, wide open ground. Take them one at a time.') },
       { when:g=>g.time>12, do:g=>g.say('Sgt. Kessler','Stand next to a beacon with no Brood nearby to capture it. Twenty seconds, uncontested.') },
-      { when:g=>g.time>20, do:g=>{ g.say('Dropship Kestrel','Kestrel on station. The Landing Zone next to the Command Post takes reinforcement orders. Twenty-four boots max.'); g.ping({x:48,y:55}); } },
+      { when:g=>g.time>20, do:g=>{ g.say('Dropship Icarus','Icarus on station. The Landing Zone next to the Command Post takes reinforcement orders. Twenty-four boots max.'); g.ping({x:48,y:55}); } },
       { when:g=>g.time>30, do:g=>g.say('Dr. Maas','The beacons have no cover around them. A Sentry Gun next to each one will hold a lot.') },
       { repeat:true, when:g=>!g.vars.phase2, do:g=>{ const n=g.uplinks(); g.setText('take',`Capture the three uplink beacons (${n}/3)`);
           for(const k of ['1','2','3']) if(g.uplinkOwned(k)) g.unmark('u'+k); } },

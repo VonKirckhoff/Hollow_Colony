@@ -8,7 +8,7 @@ MISSIONS.push(
     summary:'Descend beneath Tycho Maw, burn three egg chambers and kill the Matron.',
     briefing:[
       'Tycho Maw is silent, yet the brood keeps coming. The seismic echoes from Ridgeback mapped the caves beneath it, and something down there is still laying eggs.',
-      'Twelve days ago the seismographs caught a scream under Tycho Maw. By the time Kestrel got a team down, her lair stood open and empty: the Osprey crew had been there first, and they were gone, along with whatever she tore out of herself. The Matron lived. She crawled back, sealed her lair again, and lays faster than ever.',
+      'Twelve days ago the seismographs caught a scream under Tycho Maw. By the time Icarus got a team down, her lair stood open and empty: the Osprey crew had been there first, and they were gone, along with whatever she tore out of herself. The Matron lived. She crawled back, sealed her lair again, and lays faster than ever.',
       'Three egg chambers feed a sealed lair in the north-east. Living membrane closes the only tunnel into the lair, and it will not die while its chambers live.',
       'You may field at most fifteen soldiers. The Command Post cannot train down here: order replacements at the Landing Zone and a dropship brings them in. Set up at the cave mouth, claim the relay pads in the tunnels and push in. This will be a long fight. Pyros burn eggs, Engineers keep the sentries moving. When the lair opens, kill the Matron. Do not let her get away to heal.'
     ],
@@ -32,7 +32,7 @@ MISSIONS.push(
           for(const k of ['a','b','c']) g.marker('ch'+k,k,'Egg chamber'); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Welcome to the Maw Depths. Three egg chambers, one Matron. Dig in at the cave mouth first.') },
       { when:g=>g.time>14, do:g=>g.say('Sgt. Kessler','Six sentries max down here. Relay pads in the side tunnels will keep the salvage flowing.') },
-      { when:g=>g.time>26, do:g=>{ g.say('Dropship Kestrel','Kestrel on station. Fifteen boots on the ground max. Select the Landing Zone to order replacements.'); g.ping({x:17,y:45}); } },
+      { when:g=>g.time>26, do:g=>{ g.say('Dropship Icarus','Icarus on station. Fifteen boots on the ground max. Select the Landing Zone to order replacements.'); g.ping({x:17,y:45}); } },
       { when:g=>g.time>45, do:g=>g.say('Dr. Maas','The membrane at the lair is fed by the chambers. Kill all three and it will rot away.') },
       { repeat:true, when:g=>!!g.vars.mother, do:g=>{ let n=0; for(const k of ['a','b','c']){ if(!g.hiveAt(k)){ n++; g.unmark('ch'+k); } }
           g.setText('chambers',`Burn the three egg chambers (${n}/3)`); g.vars.burned=n; } },

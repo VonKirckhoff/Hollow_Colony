@@ -110,6 +110,7 @@ function makeApi(){
   };
 }
 function runTriggers(){
+  if(G.endWait){ if(!shipLeaving()){ const e=G.endWait; G.endWait=null; endGame(e.win,e.text); } return; }   /* waiting for the dropship to be gone */
   for(const t of G.triggers){ if(G.over) return; if(t.fired && !t.repeat) continue;
     let ok=false; try{ ok=t.when(G.api); }catch(e){ console.error('Trigger condition error',e); t.fired=true; continue; }
     if(ok){ t.fired=true; try{ t.do(G.api); }catch(e){ console.error('Trigger action error',e); } } }
@@ -120,8 +121,10 @@ function runTriggers(){
 /* After a defeat the battle carries on behind the report: the simulation keeps running (no more triggers), the fog lifts
    and you can pan around to watch what the Swarm does next (23-main-loop.js, 13-fog-of-war.js, 20-input.js, showEnd). */
 function afterDefeat(){ return !!(G&&G.over&&!G.over.win); }
+/* Nov 2026: a pickup that ends the mission (won or lost) first lets the dropship lift off and fly away; the end comes after */
+const shipLeaving=()=>G.ents.some(b=>!b.dead&&b.ship&&b.ship.pickup&&b.ship.phase==='takeoff');
 function endGame(win,text){
-  if(G.over) return; G.over={win,text,at:performance.now()}; SFX.play(win?'win':'lose');
+  if(G.over||G.endWait) return; if(shipLeaving()){ G.endWait={win,text}; return; } G.over={win,text,at:performance.now()}; SFX.play(win?'win':'lose');
   if(win){ settleRoster(); if(G.mission.rogue) rogueSettle(); }   /* Rogue: the crew, its samples and its taint (31-rogue.js) */
   if(win && G.mission.id!=='skirmish' && !G.demo){   /* a training you only watched does not count */ G.prevBest=resultOf(G.mission.id)?{...resultOf(G.mission.id)}:null;
     const rogueWas=typeof rogueUnlocked==='function'&&rogueUnlocked(); G.flawless=flawlessRun(); recordWin(G.mission.id,G.diffKey,Math.round(G.time),G.flawless); G.flawlessWon=G.flawless?checkFlawless():[]; G.grandWon=checkGrand(); G.swarmWon=G.mission.side==='swarm'?checkSwarmTrophies():[]; G.rogueOpened=!rogueWas&&typeof rogueUnlocked==='function'&&rogueUnlocked();   /* the last Corps mission on Normal+ opens Rogue Strain */

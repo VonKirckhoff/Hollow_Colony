@@ -25,7 +25,7 @@ function orderDrop(b,type){
   if(G.salvage<d.cost){ toast('Not enough salvage.'); return; }
   if(b.flight && b.flight.cargo.length>=cap){ toast('This dropship is full. Wait for the next one.'); return; }
   G.salvage-=d.cost;
-  if(!b.flight){ b.flight={ t:L.delay||25, total:L.delay||25, cargo:[] }; say('Dropship Kestrel',`Reinforcements ordered. Wheels down in ${Math.round(b.flight.t)} seconds.`); }
+  if(!b.flight){ b.flight={ t:L.delay||25, total:L.delay||25, cargo:[] }; say('Dropship Icarus',`Reinforcements ordered. Wheels down in ${Math.round(b.flight.t)} seconds.`); }
   b.flight.cargo.push(type); SFX.play('ack'); G.selDirty=true;
 }
 function cancelTrain(b,i){ const type=b.queue[i]; if(!type) return; G.salvage+=UNITS[type].cost; b.queue.splice(i,1); if(i===0) b.prodT=0; G.selDirty=true; }

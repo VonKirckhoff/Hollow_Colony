@@ -29,7 +29,7 @@ function updateBuilding(b,dt){
       b.ship={ phase:pickup?'parked':'ground', t:2.6, ang }; b.shipLeft=null; if(pickup){ b.ship.wait=wait; b.ship.name=sname; pickupLand(b,b.ship); } dustPuff(b.x,b.y,22); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.8,max:0.8}); SFX.play('land',b.x,b.y);
       for(const type of cargo){ if(!UNITS[type]){ dropSupply(b,type); continue; }   /* a folded-up structure (a Sentry Gun): set down on the pad for an Engineer */ const u=spawnNearBuilding(type,'corps',b,rally); if(!u) continue; fromReserve(u); G.stats.trained++;
         if(rally){ const n=(b.rallyN=(b.rallyN||0)+1), a=n*2.4, r=n===1?0:12+4*Math.sqrt(n), rx=rally.x+Math.cos(a)*r, ry=rally.y+Math.sin(a)*r; u.order={type:otype,x:walkableP(rx,ry)?rx:rally.x,y:walkableP(rx,ry)?ry:rally.y}; setPath(u,u.order.x,u.order.y); } else u.home={x:u.x,y:u.y}; }
-      const men=cargo.filter(t=>UNITS[t]).length; if(men){ SFX.play('complete'); say('Dropship Kestrel',`${men} reinforcement${men>1?'s':''} on the ground.`,'sys'); } G.selDirty=true; } }
+      const men=cargo.filter(t=>UNITS[t]).length; if(men){ SFX.play('complete'); say('Dropship Icarus',`${men} reinforcement${men>1?'s':''} on the ground.`,'sys'); } G.selDirty=true; } }
   if(d.trains && b.queue.length){
     b.prodT+=dt; const type=b.queue[0];
     if(b.prodT>=UNITS[type].buildTime){
@@ -82,7 +82,7 @@ function chargeLost(c){ const s=makeBuilding('chargesite','corps',c.tx,c.ty,true
 function dropSupply(lz,type){ const a=rand(0,Math.PI*2), r=TILE*0.6, x=lz.x+Math.cos(a)*r, y=lz.y+TILE*0.4+Math.sin(a)*r*0.4;
   G.ents.push({ id:NEXT_ID++, kind:'crate', supply:type, x, y, r:10, faction:'none', hp:toughHp(type) });
   G.pings.push({x,y,t:0,col:'#ffb347'}); SFX.play('complete');
-  say('Dropship Kestrel',`${BUILDINGS[type].name} is on the pad, folded up. Send an Engineer to pick it up.`,'sys'); }
+  say('Dropship Icarus',`${BUILDINGS[type].name} is on the pad, folded up. Send an Engineer to pick it up.`,'sys'); }
 /* an Engineer with free hands who walks onto a supply crate takes it */
 function supplyPickup(c){ const u=G.ents.find(e=>e.kind==='unit'&&!e.dead&&!e.downed&&e.faction==='corps'&&e.def.builder&&!e.carry&&dist(e,c)<e.r+16); if(!u) return;
   c.dead=true; u.carry={type:c.supply,hp:c.hp}; SFX.play('ready'); bark(u,'build');

@@ -48,7 +48,7 @@ SWARM_MISSIONS.push(
           if(g.time>(g.vars.mendAt||0)){ g.vars.mendAt=g.time+3; corpsMendGenerators(g,2); } } },
       /* replacements by dropship, while the Command Post stands */
       { repeat:true, when:g=>g.time>(g.vars.dropAt||(g.vars.dropAt=150)), do:g=>{ g.vars.dropAt=g.time+150/(G.corpsDiff?G.corpsDiff.reinforce:1);
-          if(!g.has('hq')||g.corps().length>=g.n(18)) return; g.say('Cmdr. Varga','Kestrel inbound with an Engineer and rifles. Keep the lights on.'); g.airdrop([['engineer',1],['trooper',g.n(2)]],15); } },
+          if(!g.has('hq')||g.corps().length>=g.n(18)) return; g.say('Cmdr. Varga','Icarus inbound with an Engineer and rifles. Keep the lights on.'); g.airdrop([['engineer',1],['trooper',g.n(2)]],15); } },
       /* two raids on the nearest nest */
       { when:g=>g.time>300, do:g=>mareRaid(g,4,'Sgt. Kessler','Something keeps killing our lights. Fire team, burn the nearest nest.') },
       { when:g=>g.time>600, do:g=>mareRaid(g,6,'Cmdr. Varga','They are breeding in the dark corners. Take a team and burn one out.') },
