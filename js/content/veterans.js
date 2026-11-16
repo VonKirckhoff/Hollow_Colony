@@ -27,9 +27,9 @@ const AURA = { radius:4, rate:1.10, armor:0.10, waver:{ radius:9, time:10, rate:
 const RISEN = { hp:1.25, speed:0.85, regen:2, calm:4 };   /* regen only after `calm` seconds without being hit */
 const VET_XP = { kill:1, spitter:2, brute:4, husk:3, hive:5, broodmother:10, heir:8, healPerXp:60, repairPerXp:250, build:1 };
 const ROSTER_MAX = 30; 
-const STARTER_NAMES = ['Dehandschutter','Staelens','De Ridder','De Vos','Wolfaert'];   /* made-up everyday Flemish names, no famous namesakes */
+const STARTER_NAMES = ['Reynaerts','Staelens','De Ridder','De Vos','Wolfaert'];   /* made-up everyday Flemish names, no famous namesakes */
 const SURNAMES = [
-  'Dehandschutter','Staelens','De Ridder','De Vos','Wolfaert', 'Sterckx', 'Peeters','Janssens','Jacobs','Iserbyt','Willems','Claes',
+  'Reynaerts','Staelens','De Ridder','De Vos','Wolfaert', 'Sterckx', 'Peeters','Janssens','Jacobs','Iserbyt','Willems','Claes',
   'Goossens','Wouters','De Smet','Hermans','Aerts','Pauwels','De Groote','Van den Bossche','Lambrechts','Vermeulen','Verbeke','Hendrickx',
   'Smets','Coppens','De Brabander','Deconinck','De Geest','Dewitte','Vandenbergh','Daems','Verhoeven','Bogaerts','Cools','Segers',
   'Van Hecke','Verlinden','Leemans','Wuyts','Thys','Bosmans','Geerts','Van Acker','De Backer','Van de Velde','Vervoort','Willaert',
