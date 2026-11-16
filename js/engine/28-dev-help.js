@@ -506,8 +506,6 @@ const DEV_HELP = {
   'M|job.nsHold':'Night Shift: seconds Dust holds the hospital until dawn.', 'M|job.nsFirst':'Night Shift: seconds after the raiders come before their first push with a Brood wave.', 'M|job.nsEvery':'Night Shift: seconds between two pushes (the healed raiders come back with a Brood wave).',
   'M|job.nsUnder':'Night Shift: seconds the raiders spend in the hive tunnels before they come up at the side of the next push.', 'M|job.nsBrute':'Night Shift: from this push on the brood brings a Brute (two, two pushes later).',
   'M|job.nsWave':'Night Shift: budget of the Brood wave with the sirens and the first push.', 'M|job.nsWaveGrow':'Night Shift: extra wave budget for every next push.',
-  'M|job.koShip':'Kill Order: seconds until the hauler comes in; then all three beacons must be yours.', 'M|job.koRethink':'Kill Order: seconds between two looks of the crew at which beacon to go for.',
-  'M|job.koBack.easy':'Kill Order: seconds before one of the crew who got away comes back on Easy.', 'M|job.koBack.normal':'Kill Order: seconds before one who got away comes back on Normal.', 'M|job.koBack.hard':'Kill Order: seconds before one who got away comes back on Hard.',
   'M|job.download':'Needle and Thread: seconds a Medic has to stand at the records terminal.',
   'M|job.lostFor':'Needle and Thread: how many men the defence ring must lose (after the alarm) before the hospital calls in a relief squad.',
   'M|job.call':'Needle and Thread: seconds from the call until the relief squad lands on the pad.',

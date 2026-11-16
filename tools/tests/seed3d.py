@@ -1,5 +1,5 @@
 # The Matron's Seed (Nov 2026; crate flag `heart`): what she leaves behind in The Seed Wakes (Rogue job 8, The Matron's Blood until Nov 2026), and its split husk
-# (flags heart+husk) that Dust finds in The Matron (Corps 9; the Corps mission The Matron's Seed was cut, the campaign has 10 missions).
+# (flags heart+husk) that Dust finds in The Matron (Corps 8; The Matron's Seed and Kill Order were cut, the campaign has 9 missions).
 # 2D: drawn by drawMatronSeed (root fibres, bark rind, glowing cracks, bent tip), also in Intel; 3D: v3Seed (bark plates,
 # 16 crack pieces, 7 root fibres with beads of sap, a bud and a haze), it does not bob and it pulses (seedBeat). Must end with ALL OK.
 import sys
@@ -21,7 +21,7 @@ with sync_playwright() as p:
       window._s={ id:NEXT_ID++, kind:'crate', rogue:true, heart:true, x:_h.x-3*TILE, y:_h.y, r:12, faction:'none', t:1e9, seed:1 }; G.ents.push(_s);   /* a Seed to look at, next to the husk */ ui.follow=false; G.following=false; centerOn(_s.x,_s.y); for(const u of G.ents) if(u.kind==='unit'&&u.faction!=='corps') u.devFrozen=true; G.devPause=true; }""")
     r=J(pg,"()=>{ const G=__hc.G; return [MISSIONS.length, MISSIONS.map(m=>m.id).join(','), !!(_h&&_h.heart&&_h.husk), Math.floor(_h.x/TILE), Math.floor(_h.y/TILE), walkableT(Math.floor(_h.x/TILE),Math.floor(_h.y/TILE)), MISSIONS.find(m=>m.id==='brood-mother').briefing.join(' ')]; }")
     print('mission',r[:5])
-    check('the Corps campaign has 10 missions, The Matron\'s Seed is gone', r[0]==10 and 'mothers-heart' not in r[1], r[1])
+    check('the Corps campaign has 9 missions, The Matron\'s Seed and Kill Order are gone', r[0]==9 and 'mothers-heart' not in r[1] and 'kill-order' not in r[1], r[1])
     check('The Matron: the Seed\'s husk lies by her tunnel, on open ground', r[2] and r[5], r[2:6])
     check('The Matron\'s briefing tells what happened (the scream, the crew, what she tore out)', 'scream' in r[6] and 'Osprey crew' in r[6] and 'tore out of herself' in r[6])
     r=J(pg,"""()=>{ const G=__hc.G; const said=[], o=window.say; window.say=(w,t,k)=>{ said.push(t); return o(w,t,k); }; G.devPause=false; let n=0; for(const u of G.ents) if(u.kind==='unit'&&u.faction==='corps'&&n<3){ u.x=_h.x+TILE*(1+n*0.5); u.y=_h.y; u.invuln=true; n++; } _step(3); const early=said.some(t=>/This is where they were/.test(t));

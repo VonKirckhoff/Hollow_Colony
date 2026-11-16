@@ -1,4 +1,4 @@
-# The Osprey crew as the enemy in the Lunar Corps campaign (Nov 2026): Night Shift, Kill Order (The Matron's Seed was cut: 10 missions).
+# The Osprey crew as the enemy in the Lunar Corps campaign (Nov 2026): Night Shift (Kill Order and The Matron's Seed were cut: 9 missions).
 # The crew never dies: they break off below OSPREY.breakAt and run for a way out. Must end with ALL OK.
 from playwright.sync_api import sync_playwright
 errs=[]
@@ -11,10 +11,10 @@ HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{
   start=id=>{ __hc.startMission(MISSIONS.find(m=>m.id===id)); return __hc.G; }; try{ '''
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 CASES=[
-('campaign order','''const ids=MISSIONS.map(m=>m.id); ok(ids.length===10,'ten Corps missions');
-  ok(ids[4]==='night-shift'&&ids[7]==='kill-order'&&ids[8]==='brood-mother'&&ids[9]==='high-ground'&&!ids.includes('mothers-heart'),'Night Shift 5, Kill Order 8, Matron 9, High Ground 10');
-  for(const m of MISSIONS) recordWin(m.id,'normal',500,false); ok(rogueUnlocked(),'all ten won: Rogue open');
-  const P=ui.progress; for(const id of ['night-shift','kill-order']) delete (P.results||P)[id]; ok(rogueUnlocked(),'the eight old ones won before Nov 2026: Rogue stays open');
+('campaign order','''const ids=MISSIONS.map(m=>m.id); ok(ids.length===9,'nine Corps missions');
+  ok(ids[4]==='night-shift'&&ids[7]==='brood-mother'&&ids[8]==='high-ground'&&!ids.includes('mothers-heart')&&!ids.includes('kill-order'),'Night Shift 5, Matron 8, High Ground 9, no Kill Order');
+  for(const m of MISSIONS) recordWin(m.id,'normal',500,false); ok(rogueUnlocked(),'all nine won: Rogue open');
+  const P=ui.progress; for(const id of ['night-shift']) delete (P.results||P)[id]; ok(rogueUnlocked(),'the eight old ones won before Nov 2026: Rogue stays open');
   for(const id of ['brood-mother']) delete (P.results||P)[id]; ok(!rogueUnlocked()||devUnlock,'one old one missing and the new ones not won: locked'); for(const m of MISSIONS) recordWin(m.id,'normal',500,false);'''),
 ('the crew: truce, breaking off, never dying','''const G=start('night-shift'); step(0.5); calm(); G.api.ospreyHeal(false); const u=G.api.osprey('trooper',{x:20,y:30},1)[0]; G.api.ospreyExits([{x:2,y:35}]);
   ok(u.sprite==='crew_trooper'&&u.faction==='osprey','crew kit, faction osprey'); ok(u.maxHp>UNITS.trooper.hp*1.2,'tougher than a trooper ('+Math.round(u.maxHp)+')');
@@ -59,27 +59,12 @@ CASES=[
   e.quiet=false; e.invuln=false; damage(e,1e8,dust()[0]); step(OSPREY.demoPlant+OSPREY.demoFuse+1); ok(!other.dead&&!G.osprey.charges.length,'break him off while he kneels: no charge'); '''),
 ('night shift: they get the files','''const G=start('night-shift'); step(1); calm(); for(const s of dust()){ s.invuln=true; s.quiet=true; } step(G.mission.job.nsArrive+G.mission.job.nsSneak+0.5); const doc=G.vars.doc; doc.invuln=true;
   for(let i=0;i<G.mission.job.nsDownload+5&&!G.vars.dlDone;i++){ tp(doc,20,19); step(1); } ok(G.vars.dlDone&&obj('records')==='failed','the download finishes: optional failed');'''),
-('kill order: Kessler, beacons, the hauler','''const G=start('kill-order'); step(1); const k=G.vars.kessler; ok(k&&k.npc&&k.vet.name==='Kessler'&&k.vet.rank===2,'Sgt. Kessler in the squad'); ok(osp().length===7,'seven of them');
-  ok(osp().every(u=>!validTarget(u,k)),'they will not shoot Kessler'); ok(osp().every(u=>validTarget(u,dust().find(s=>s!==k))),'but the rest of Dust, yes'); ok(G.timer&&G.timer.label==='Hauler','the hauler is coming');
-  for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; calm(); G.swarm.nextWave=1e9; for(const u of osp()){ u.invuln=true; tp(u,45,45); u.ospHunt=false; } for(const s of dust()) s.invuln=true;
-  const ups=G.ents.filter(e=>!e.dead&&e.def&&e.def.capture); const ss=dust(); ups.forEach((b,i)=>{ for(const s of ss.filter((_,j)=>j%3===i)) tp(s,Math.floor(b.x/TILE)+1,Math.floor(b.y/TILE)); });
-  for(let i=0;i<30&&G.api.uplinks()<3;i++){ for(const u of osp()) tp(u,45,45); step(1); } ok(G.api.uplinks()===3,'Dust holds all three beacons');
-  const o=osp()[0]; o.invuln=false; tp(o,Math.floor(ups[0].x/TILE)-2,Math.floor(ups[0].y/TILE)); for(const s of ss) if(Math.hypot(s.x-ups[0].x,s.y-ups[0].y)<6*TILE) tp(s,40,58); step(BUILDINGS.uplink.loseTime+2);
-  ok(!ups[0].owned,'the crew takes a beacon back'); ok(G.msgs.some(m=>/Osprey crew/.test(m.text)),'lost to the Osprey crew');'''),
-('kill order: denied, they run, won','''const G=start('kill-order'); step(1); calm(); for(const s of dust()) s.invuln=true; for(const b of G.ents.filter(e=>e.def&&e.def.capture)){ b.owned=true; b.cap=1; } for(const u of osp()){ u.invuln=true; tp(u,45,45); }
-  G.timer.end=G.time+0.2; step(1); ok(obj('beacons')==='done'&&osp().every(u=>u.ospBroke),'the hauler turns back, they all break off'); for(let i=0;i<40&&!G.over;i++) step(1);
-  ok(G.over&&G.over.win&&obj('kessler')==='done','won, Kessler alive'); settleRoster(); ok(!ui.roster.active.some(v=>v.name==='Kessler'),'Kessler does not join your roster');'''),
-('kill order: back on his feet','''const G=start('kill-order'); step(1); calm(); for(const s of dust()) s.invuln=true; const u=osp()[1], ty=u.type; damage(u,1e8,null); ok(u.ospBroke,'broken off'); step(OSPREY.vanish+1); ok(u.dead&&G.api.ospreyComing()===1,'gone, and coming back');
-  const n=osp().length; step((G.mission.job.koBack[G.diffKey]||60)+1); const b=osp().find(x=>x.ospBack); ok(b&&b.type===ty&&b.hp===b.maxHp&&osp().length===n+1,'he is back, healed'); ok(!validTarget(b,G.vars.kessler),'and still spares Kessler');
-  step(G.mission.job.koRethink+1); ok(G.vars.teams.some(t=>t.list.includes(b)),'he joins a team');'''),
-('kill order: lost','''let G=start('kill-order'); step(1); calm(); for(const s of dust()) s.invuln=true; G.timer.end=G.time+0.2; step(1); ok(G.over&&!G.over.win&&/Magpie/.test(G.over.text),'a beacon not yours: the hauler lands');
-  G=start('kill-order'); step(1); calm(); kill(G.vars.kessler,null); step(1); ok(G.over&&!G.over.win&&obj('kessler')==='failed','Kessler dead: lost');'''),
 ("mother's blood: she tears free",'''resetRogue(); __hc.startMission(ROGUE_MISSIONS.find(m=>m.id==='rogue-mothers-blood')); const G=__hc.G; step(1); const m=G.vars.mother; m.invuln=false; damage(m,1e8,null); step(1);
   ok(m.dead&&G.vars.heart&&G.vars.heart.heart,'she tears her Seed loose and is gone'); ok(G.msgs.some(x=>/scream/.test(x.text)),'Varga: something hurt her'); ok(/blood trail/.test(ROGUE_MISSIONS.find(x=>x.id==='rogue-mothers-blood').triggers.map(t=>String(t.do)).join('')),'no dead queen any more');
   ok(/The Matron lived/.test(MISSIONS.find(x=>x.id==='brood-mother').briefing.join(' ')),'Matron: she lived through it');'''),
 ('save and load, dev panel','''let G=start('night-shift'); step(1); calm(); step(G.mission.job.nsArrive+G.mission.job.nsSneak+1); G.vars.dl=0.3; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); G=__hc.G; step(0.5);
   ok(osp().length===7&&osp().every(u=>u.truce==='swarm'&&u.sprite==='crew_'+u.type),'the raiders come back as they were'); ok(G.vars.dl>=0.29&&G.vars.term,'and the download'); goMenu('menu');
-  for(const k of ['OSPREY|demoPlant','OSPREY|demoFuse','OSPREY|demoDmg','OSPREY|nadeEvery','OSPREY|nadeDmg','M|job.nsUnder','M|job.nsBrute','OSPREY|hiveHeal','OSPREY|healTo','OSPREY|spacing','OSPREY|contact','OSPREY|calm','M|job.nsHold','M|job.nsEvery','OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload','M|job.koShip']) ok(!!devHelp(k),'dev help: '+k);''')
+  for(const k of ['OSPREY|demoPlant','OSPREY|demoFuse','OSPREY|demoDmg','OSPREY|nadeEvery','OSPREY|nadeDmg','M|job.nsUnder','M|job.nsBrute','OSPREY|hiveHeal','OSPREY|healTo','OSPREY|spacing','OSPREY|contact','OSPREY|calm','M|job.nsHold','M|job.nsEvery','OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload']) ok(!!devHelp(k),'dev help: '+k);''')
 ]
 res=[]
 with sync_playwright() as p:

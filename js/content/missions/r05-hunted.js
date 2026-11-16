@@ -1,6 +1,6 @@
 'use strict';
 /* Rogue 5: Hunted
-   Selene Highlands, some days after Kill Order (Rogue Strain is a sequel to the Corps campaign). Tycho has the crew's location and sends
+   Selene Highlands, where Dust held the beacons in High Ground (Rogue Strain is a sequel to the Corps campaign). Tycho has the crew's location and sends
    Sgt. Kessler with Squad Dust, your own soldier's old squad, to contain them.
    Take an old uplink beacon and call the Magpie, an ore hauler whose pilot asks no questions, then hold until it lands.
    Optional: let Kessler live. Hurt him badly enough and he pulls back; kill him and that is on you. */
@@ -10,7 +10,7 @@ ROGUE_MISSIONS.push(
     summary:'Your old squad is hunting you on open ground. Call a ride and hold on.',
     briefing:[
       'Somewhere between Kappa and Mare Colony, Tycho got its location. Either way it knows: the Osprey crew is on the Selene Highlands, and Squad Dust\'s missing soldier is with them.',
-      'They sent Sgt. Kessler, and they sent Dust with him. Your squad. The last time you stood on these highlands, Kessler was on your side and the Osprey crew was the target. His orders are to contain us. Out here there is nowhere to hide.',
+      'They sent Sgt. Kessler, and they sent Dust with him. Your squad. The last time you stood on these highlands, you held those same beacons for the Corps with Kessler at your side. He knew some of us before the crash. His orders are to contain us. Out here there is nowhere to hide.',
       'Cnudde knows an ore hauler, the Magpie, whose pilot asks no questions. Take any of the three old uplink beacons and call her, then hold that beacon until she lands. And if you can, let Kessler walk away. He is not the enemy. He just thinks we are.'
     ],
     start:{ salvage:0, camera:{x:5,y:50}, crewAt:{x:5,y:50},

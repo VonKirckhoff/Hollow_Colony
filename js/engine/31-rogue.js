@@ -35,7 +35,7 @@ function saveRogue(){ store.set(ROGUE_KEY,rogueStore()); }
 function resetRogue(){ ui.rogue=null; try{ localStorage.removeItem(ROGUE_KEY); }catch(e){} rogueStore(); saveRogue(); }
 /* the Rogue side opens once the whole Lunar Corps campaign is won on Normal or Hard (Easy does not count): only then is the Osprey story told */
 const ROGUE_UNLOCK_DIFF='normal';
-/* Nov 2026 the Corps campaign grew from 8 to 10 missions (Night Shift, Kill Order; The Matron's Seed was added and cut again). Whoever had already won the
+/* Nov 2026 the Corps campaign grew from 8 to 9 missions (Night Shift; Kill Order and The Matron's Seed were added and cut again). Whoever had already won the
    8 old ones on Normal or Hard keeps the Rogue campaign open; a new player only reaches the old missions through the new ones. */
 const ROGUE_LEGACY=['dust-landing','hold-kappa','burn-the-brood','hollow-colony','blackout','dead-signal','brood-mother','high-ground'];
 const wonFor=id=>{ const r=resultOf(id); return !!r&&DIFF_RANK[r.diff]>=DIFF_RANK[ROGUE_UNLOCK_DIFF]; };

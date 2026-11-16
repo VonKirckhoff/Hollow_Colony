@@ -1,6 +1,6 @@
 'use strict';
 /* Rogue 8: The Seed Wakes (The Matron's Blood until Nov 2026; the id stayed 'rogue-mothers-blood')
-   The Maw Depths, after the Corps campaign (Rogue Strain is its sequel). The Matron is dead (Corps 9). The Seed the crew took from her
+   The Maw Depths, after the Corps campaign (Rogue Strain is its sequel). The Matron is dead (Corps 8). The Seed the crew took from her
    lair broke out of its case (Among Them), went home and rooted in her lair; what grew out of it is the Heir (UNITS.heir: the Matron at
    60% size, 30% faster). The lair membrane opens when its three egg chambers die, or for one of the crew whose blood is tainted enough (60+).
    Bleed the Heir until she tears her roots loose and flees into the deep, leaving the Seed behind (crate flag `heart` in code). Then decide:

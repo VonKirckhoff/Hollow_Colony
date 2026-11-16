@@ -2,7 +2,7 @@
 /* Hollow Colony — the third campaign: Rogue Strain.
    A sequel to the Corps campaign (Nov 2026). After High Ground, Tycho issues Containment Order 10: everyone exposed in the Matron's
    lair, and every patient at Kappa, is to be contained (burnt). Your own soldier (Squad Dust, infected in her lair) runs and joins the
-   Osprey crew, the deserters Dust fought in Night Shift and Kill Order. They carry the Matron's Seed, taken from her lair before she died.
+   Osprey crew, the deserters Dust fought in Night Shift. They carry the Matron's Seed, taken from her lair before she died.
    You play the crew: seven named soldiers (Kerckhoffs, five of his own, and you), no base, no dropship, hunted by the Brood and the Corps.
    Unlocked once every Lunar Corps campaign mission is won on Normal or Hard. The engine lives in js/engine/31-rogue.js. */
 const ROGUE_MISSIONS = [];   /* filled by js/content/missions/r01-… to r06-… (with r01b and r05b in between), in the order of their <script> lines */
