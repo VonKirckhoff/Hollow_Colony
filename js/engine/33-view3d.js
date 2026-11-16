@@ -34,7 +34,8 @@ function v3Init(){
   if(V3.ok||V3.failed) return V3.ok;
   if(typeof THREE==='undefined'){ V3.failed=true; return false; }
   let r; try{ r=new THREE.WebGLRenderer({ antialias:true }); }catch(e){ V3.failed=true; return false; }
-  V3.r=r; r.setClearColor(0x05060a); r.shadowMap.enabled=true; r.shadowMap.type=THREE.PCFSoftShadowMap;
+  V3.r=r; r.domElement.addEventListener('webglcontextrestored',v3Restored);   /* three.js uploads everything again; the ground canvas needs repainting first */
+  r.setClearColor(0x05060a); r.shadowMap.enabled=true; r.shadowMap.type=THREE.PCFSoftShadowMap;
   const c=r.domElement; c.id='game3d'; c.style.cssText='position:fixed;left:0;top:0;display:none;pointer-events:none;';
   cv.parentNode.insertBefore(c,cv); c.style.filter=cv.style.filter;   /* the Brightness setting (34-settings.js) */
   V3.scene=new THREE.Scene();
@@ -49,6 +50,8 @@ function v3Init(){
   v3MakeShared();
   V3.ok=true; return true;
 }
+function v3Restored(){ refreshAllGrounds(); }
+function v3GroundChanged(m){ if(V3.terrain&&G&&G.map===m&&V3.terrain.material.map) V3.terrain.material.map.needsUpdate=true; }
 const GEO={}, MAT={};
 /* every material: darkened by the fog of war, lit up where your units see, tinted by creep; the ground also gets the painted 2D animations */
 function v3Fogify(m,decal){
@@ -105,7 +108,7 @@ function v3MakeShared(){
   GEO.claw=new THREE.ConeGeometry(1,1,5).translate(0,0.5,0).rotateX(Math.PI/2);   /* points along +z from its base */
   MAT.xray=new THREE.MeshBasicMaterial({ color:0x5fe3b0, transparent:true, opacity:VIEW3D.xray, depthFunc:THREE.GreaterDepth, depthWrite:false });
   MAT.depth=new THREE.MeshBasicMaterial({ colorWrite:false });
-  const gc=document.createElement('canvas'); gc.width=gc.height=64; const gx=gc.getContext('2d'), gr=gx.createRadialGradient(32,32,0,32,32,32);
+  const gc=document.createElement('canvas'); gc.width=gc.height=64; const gx=gc.getContext('2d',CPU2D), gr=gx.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.35,'rgba(255,255,255,.55)'); gr.addColorStop(1,'rgba(255,255,255,0)'); gx.fillStyle=gr; gx.fillRect(0,0,64,64);
   V3.glowTex=new THREE.CanvasTexture(gc);
   V3.fxPool=[]; V3.shotPool=[]; V3.ringPool=[]; V3.pingPool=[];
@@ -462,7 +465,7 @@ function v3Grazer(e,sick){
    scans slowly with no target, the dish turns; below plateAt a side plate flies off, below smokeAt it sparks and smokes. ---------- */
 const SENTRY3D = { size:1.15, scan:0.7, scanSpeed:0.55, scanDelay:2, recoil:0.07, flash:1, casings:true, plateAt:0.5, smokeAt:0.25, smoke:5, sparks:4 };
 function v3SentryTex(kind){ const k='sentryTex'+kind; if(MAT[k]) return MAT[k];
-  const c=document.createElement('canvas'), x=c.getContext('2d');
+  const c=document.createElement('canvas'), x=c.getContext('2d',CPU2D);
   if(kind==='jacket'){ c.width=64; c.height=64; x.fillStyle='#363c45'; x.fillRect(0,0,64,64); x.fillStyle='#0b0c0e';
     for(let j=0;j<6;j++) for(let i=0;i<8;i++){ x.beginPath(); x.arc(4+i*8,5+j*10+(i%2)*5,2.3,0,7); x.fill(); }
     const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,1); return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
@@ -584,7 +587,7 @@ function v3SentryFx(now,dt,put,lights){ const C=SENTRY3D, w=V3._sw||(V3._sw=new 
    Repaired above it: whole again. */
 const HQ3D = { lamps:1, reach:4.2, sweep:0.45, sweepSpeed:0.35, light:1.6, beam:0.6, fan:4, plateAt:0.5, steam:7, smokeAt:0.25, smoke:5, sparks:4 };
 function v3HqTex(kind){ const k='hqTex'+kind; if(MAT[k]) return MAT[k];
-  const W=256, H=kind==='top'?256:kind==='upper'?88:kind==='foot'?24:kind==='console'?128:82, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const W=256, H=kind==='top'?256:kind==='upper'?88:kind==='foot'?24:kind==='console'?128:82, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d',CPU2D);
   const rivet=(cx,cy,r=2.6)=>{ x.fillStyle='rgba(0,0,0,.45)'; x.beginPath(); x.arc(cx+0.8,cy+1,r,0,7); x.fill(); x.fillStyle='#9097a3'; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill();
     x.fillStyle='#c9ced6'; x.beginPath(); x.arc(cx-0.8,cy-0.8,r*0.45,0,7); x.fill(); };
   const stripes=(y0,h,step=16)=>{ x.save(); x.beginPath(); x.rect(0,y0,W,h); x.clip(); x.fillStyle='#f2c230'; x.fillRect(0,y0,W,h); x.fillStyle='#17171a';
@@ -757,7 +760,7 @@ function v3Building(e){
    Riveted plate sides with a black/yellow hazard band round the top edge, a riveted top plate with a hatch, angle irons on the
    four corners with bolt heads, a dark foot. The sides and top are painted on canvas (cheap: one box per block). */
 function v3BarTex(kind){ const k='barTex'+kind; if(MAT[k]) return MAT[k];
-  const W=128, H=kind?128:84, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const W=128, H=kind?128:84, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d',CPU2D);
   const rivet=(cx,cy,r=2.6)=>{ x.fillStyle='rgba(0,0,0,.45)'; x.beginPath(); x.arc(cx+0.8,cy+1,r,0,7); x.fill(); x.fillStyle='#9097a3'; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill();
     x.fillStyle='#c9ced6'; x.beginPath(); x.arc(cx-0.8,cy-0.8,r*0.45,0,7); x.fill(); };
   x.fillStyle='#6c727e'; x.fillRect(0,0,W,H);
@@ -882,7 +885,7 @@ function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.i
    canvas in the wreck's own frame, then laid into the 3D ground layer, so it lies on the terrain like footprints and fire do */
 const WRECK_DECAL={ x0:-4.4, x1:2.8, z0:-2.8, z1:2.8, ppu:72 };
 function v3WreckDecal(e){ const k='wreckDecal'+e.id; if(V3[k]) return V3[k]; const D=WRECK_DECAL, Wd=Math.round((D.x1-D.x0)*D.ppu), Hd=Math.round((D.z1-D.z0)*D.ppu);
-  const c=document.createElement('canvas'); c.width=Wd; c.height=Hd; const x=c.getContext('2d'), R=(i,s)=>hash2(e.id,i,s+70), P=(lx,lz)=>[(lx-D.x0)*D.ppu,(lz-D.z0)*D.ppu], u=D.ppu;
+  const c=document.createElement('canvas'); c.width=Wd; c.height=Hd; const x=c.getContext('2d',CPU2D), R=(i,s)=>hash2(e.id,i,s+70), P=(lx,lz)=>[(lx-D.x0)*D.ppu,(lz-D.z0)*D.ppu], u=D.ppu;
   const blob=(cx,cz,r,a,col='12,10,9')=>{ const [px,pz]=P(cx,cz), g=x.createRadialGradient(px,pz,0,px,pz,r*u); g.addColorStop(0,`rgba(${col},${a})`); g.addColorStop(0.55,`rgba(${col},${a*0.6})`); g.addColorStop(1,`rgba(${col},0)`); x.fillStyle=g; x.fillRect(px-r*u,pz-r*u,r*2*u,r*2*u); };
   /* the furrow: churned lips first, then the gouge, then scrape marks */
   const fx0=-4.1, fx1=-1.2, wAt=t=>0.12+0.3*t;   /* t 0 at the far end, 1 at the wreck */
@@ -1114,7 +1117,7 @@ const RELIC_EGG3D = {
   'egg-convoy':{ stone:'#6a4a3a', lit:'#86604a', glow:'#ff5a1a', core:'#ffb347', crack:'#ff8a2a', seams:4, hot:true },
   'egg-depths':{ stone:'#2e2836', lit:'#43394f', glow:'#4fae22', core:'#a6ff4a', crack:'#120e16', seams:5, veins:true } };
 function v3RelicHash(id,k){ let h=2166136261; const s=id+':'+k; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return ((h>>>0)%1000)/1000; }
-function v3StarTex(){ if(V3.starTex) return V3.starTex; const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
+function v3StarTex(){ if(V3.starTex) return V3.starTex; const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d',CPU2D);
   const gr=x.createRadialGradient(32,32,0,32,32,14); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=gr; x.fillRect(0,0,64,64);
   x.fillStyle='rgba(255,250,220,.95)'; x.beginPath(); x.moveTo(32,2); x.lineTo(35,29); x.lineTo(62,32); x.lineTo(35,35); x.lineTo(32,62); x.lineTo(29,35); x.lineTo(2,32); x.lineTo(29,29); x.closePath(); x.fill();
   return V3.starTex=new THREE.CanvasTexture(c); }
@@ -1315,7 +1318,7 @@ function v3Camo(x,W,H,cw,ch,cols,seed){ const nx=Math.round(W/cw), ny=Math.round
         const d=hash2(b*17+k,l,seed+4); if(d<0.4) cx++; else if(d<0.6) cx--; else if(d<0.85) cy++; else cy--; } } } }
 const CAMO_CORPS=['#4a596b','#3b4858','#5b6c80','#29313c'], CAMO_BURNT=['#3a4450','#2f3742','#46515e','#22282f'];
 /* a small tile of the camouflage for wings, fins and pods (uv in tiles, repeating) */
-function v3CamoTile(burnt){ const k='camoTile'+(burnt?'B':''); if(MAT[k]) return MAT[k]; const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
+function v3CamoTile(burnt){ const k='camoTile'+(burnt?'B':''); if(MAT[k]) return MAT[k]; const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d',CPU2D);
   v3Camo(x,256,256,12,12,burnt?CAMO_BURNT:CAMO_CORPS,burnt?71:67);
   if(burnt) for(let i=0;i<14;i++){ const px=hash2(i,1,5)*256, py=hash2(i,2,5)*256, r=30+hash2(i,3,5)*70, g=x.createRadialGradient(px,py,0,px,py,r); g.addColorStop(0,'rgba(12,10,9,.85)'); g.addColorStop(1,'rgba(12,10,9,0)'); x.fillStyle=g; x.fillRect(px-r,py-r,r*2,r*2); }
   const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=4; t.magFilter=THREE.NearestFilter; return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
@@ -1324,7 +1327,7 @@ function v3Stencil(x,W,H,txt,len,u,px,face,col='#dfe4ea',a=0.85){ for(const yy o
   x.save(); x.globalAlpha=a; x.translate(len*W,yy); x.scale(face==='left'?-1:1,(face==='left'?1:-1)*0.575); x.fillStyle=col; x.textAlign='center'; x.textBaseline='middle';
   x.font=`bold ${px}px Impact, "Arial Black", sans-serif`; x.fillText(txt,0,0); x.restore(); } }
 /* the hull texture of a ship: camouflage, serial number on both flanks and the roof; the wreck: burnt paint, soot, OSPREY and LC-71 */
-function v3HullTex(kind){ const k='hullTex'+kind; if(MAT[k]) return MAT[k]; const W=1024, H=512, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), wreck=kind==='wreck';
+function v3HullTex(kind){ const k='hullTex'+kind; if(MAT[k]) return MAT[k]; const W=1024, H=512, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d',CPU2D), wreck=kind==='wreck';
   v3Camo(x,W,H,12,7,wreck?CAMO_BURNT:CAMO_CORPS,wreck?71:67);
   if(!wreck){ for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'LC-72',0.665,f==='right'?0.935:0.565,62,f);   /* the serial in front of the pods, above the hazard stripes */
       v3Stencil(x,W,H,'ICARUS',0.19,u,44,f); v3Stencil(x,W,H,'LUNAR CORPS',0.19,f==='right'?u+0.07:u-0.07,22,f); }   /* her name near the tail, LUNAR CORPS under it */

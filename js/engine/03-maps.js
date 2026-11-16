@@ -35,9 +35,16 @@ function loadMap(id){
     for(let j=-1;j<=1;j++) for(let k=-1;k<=1;k++){ const c=(rows[y+j]||'')[x+k]; if(c==='&'||c==='_') cnt[c]=(cnt[c]||0)+1; }
     for(const c of ['&','_']) if((cnt[c]||0)>=3){ m.tiles[y*w+x]=c; m.walk[y*w+x]=1; } }
   m.height=new Int8Array(m.w*m.h); for(let i=0;i<m.w*m.h;i++){ const c=m.tiles[i]; m.height[i]= c==='&'||c==='%' ? 1 : c==='_' ? -1 : 0; }
-  m.ground=renderGround(m); m.mini=renderMini(m);
+  m.ground=renderGround(m); m.mini=renderMini(m); watchGround(m);
   MAP_CACHE[id]=m; return m;
 }
+/* The GPU can reset (a driver hiccup, too little video memory: 'WebGL context lost'). Chrome keeps the big ground canvas on the GPU,
+   so it comes back empty and the map turns black. Paint it again into the same canvas (every reference stays valid). */
+function watchGround(m){ m.ground.addEventListener('contextrestored',()=>refreshGround(m)); }
+function refreshGround(m){ const f=renderGround(m), x=m.ground.getContext('2d'); x.clearRect(0,0,m.ground.width,m.ground.height); x.drawImage(f,0,0);
+  const n=renderMini(m), y=m.mini.getContext('2d'); y.clearRect(0,0,m.mini.width,m.mini.height); y.drawImage(n,0,0);
+  if(typeof v3GroundChanged==='function') v3GroundChanged(m); }
+function refreshAllGrounds(){ for(const m of Object.values(MAP_CACHE)) refreshGround(m); }
 /* Height map: plateau = 1, normal ground and ramps = 0, crater floor = -1. Only used to keep burrowing Swarm off plateaus and crater floors. */
 function tileAt(m,x,y){ return (x<0||y<0||x>=m.w||y>=m.h) ? '^' : m.tiles[y*m.w+x]; }
 function renderGround(m){
@@ -95,6 +102,6 @@ function renderGround(m){
     x.fillStyle='#4a5366'; x.fillRect(X+12,Y+12,8,8); x.fillStyle=PALETTE.y; x.fillRect(X+15,Y+10,2,12); x.fillRect(X+10,Y+15,12,2); }
   return c;
 }
-function renderMini(m){ const [c,x]=pxCtx(m.w,m.h);
+function renderMini(m){ const [c,x]=pxCtx(m.w,m.h,true);
   for(let y=0;y<m.h;y++) for(let X=0;X<m.w;X++){ x.fillStyle=TILE_DEF[m.tiles[y*m.w+X]].mm; x.fillRect(X,y,1,1); }
   x.fillStyle='#c79a3a'; for(const s of m.sites) x.fillRect(s.x,s.y,2,2); return c; }

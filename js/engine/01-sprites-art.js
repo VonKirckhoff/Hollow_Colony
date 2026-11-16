@@ -11,7 +11,9 @@ function buildSprite(rows){
 }
 for(const k in SPRITES) SPR[k]=buildSprite(SPRITES[k]);
 
-function pxCtx(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); return [c,x]; }
+/* a canvas kept in normal memory instead of on the GPU: its picture survives when the GPU resets (WebGL context lost) */
+const CPU2D={ willReadFrequently:true };
+function pxCtx(w,h,cpu){ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=cpu?c.getContext('2d',CPU2D):c.getContext('2d'); return [c,x]; }
 function disc(x,cx,cy,r,col){ x.fillStyle=col; for(let j=-r;j<=r;j++){ const half=Math.floor(Math.sqrt(r*r-j*j)+0.3); x.fillRect(cx-half,cy+j,half*2+1,1); } }
 function oval(x,cx,cy,rx,ry,col){ x.fillStyle=col; for(let j=-ry;j<=ry;j++){ const half=Math.floor(rx*Math.sqrt(Math.max(0,1-(j*j)/(ry*ry)))+0.3); x.fillRect(cx-half,cy+j,half*2+1,1); } }
 const ART = {
