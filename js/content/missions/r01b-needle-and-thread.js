@@ -21,15 +21,14 @@ const NT_MORTAR={x:20,y:20};  /* the garrison's mortar: in the middle of the rin
            facing it, `frontAt` tiles short of the crew but `frontMin`…`frontMax` from the camp's middle (right behind a barricade when one
            stands that way), `spacing` tiles apart, the ends bent back by `bend`; the Medics stand `medBack` tiles behind it, spread out;
            when a man falls the line closes up where it stands (no one walks into the gap from the far side).
-   back  — the line has been hit for `outFor` seconds by someone none of them can reach, and there are too few to send a fire team: everyone
-           pulls back `back` tiles behind the middle of the camp, out of reach, and waits until the crew comes within `near` tiles.
-   With at least `flankMin` fighters, a fire team (the Lieutenant and two more, never more than leaves two behind) goes round instead:
-   out to the side (`flankWide` tiles from the camp's middle), then to a spot `flankOff` tiles beside the crew, and attacks from there;
-   the men go side by side, `gap` tiles apart (more than a grenade's reach); it comes back once the crew is gone, after `flankMax` seconds, or when the fight is over; a next one not before `flankCool` seconds.
-   A relief squad that lands during a fight goes round the crew the same way, to `behind` tiles behind it (as seen from the camp).
+   back  — the line has been hit for `outFor` seconds by someone none of them can reach: everyone pulls back `back` tiles behind the middle
+           of the camp, out of reach, and waits until the crew comes within `near` tiles. The garrison never splits up to go round
+           (a fire team round the flank was tried in Nov 2026 and taken out again: it only made the camp weaker).
+   A relief squad that lands during a fight goes round the crew, to `behind` tiles behind it (as seen from the camp), or `flankOff` tiles
+   beside it; the men go side by side, `gap` tiles apart (more than a grenade's reach), and come back after `flankMax` seconds at the latest.
    Nobody seen for `calm` seconds: back to the ring. */
 const NT_TAC={ see:12, calm:8, outFor:4, near:6.5, frontAt:4.2, frontMin:1.5, frontMax:4.5, spacing:1.1, bend:0.12, medBack:2.2, back:2.5,
-  flankMin:4, gap:1.8, flankOff:4.5, flankWide:4, flankMax:45, flankCool:30, behind:3.5, turn:25 };
+  gap:1.8, flankOff:4.5, flankMax:45, behind:3.5, turn:25 };
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, supGap:2.2, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle, supGap: tiles between two of the support at the least (more than a grenade's radius, PERKS.trooper.radius: one grenade never catches both Medics) (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
@@ -182,8 +181,8 @@ function ntLine(g,fight,sup,T,place,eng){ const A=NT_TAC, C={x:NT_RING.x*TILE,y:
 /* the crew the garrison knows about: seen by a loyal soldier or gun near the camp, or just now hit one of the garrison */
 function ntThreats(g){ const C={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, rings=G.ents.filter(r=>r.ringer&&!r.dead);
   return g.crew().filter(u=>!u.downed&&!u.hidden&&!u.aboard&&!u.out&&((Math.hypot(u.x-C.x,u.y-C.y)<NT_TAC.see*TILE&&loyalSees(u))||rings.some(r=>r.shotBy===u&&G.time-(r.shotAt||-99)<3))); }
-/* every half second: ring, front or back, and a fire team round the flank (see NT_TAC) */
-function ntTac(g){ const A=NT_TAC, T=g.vars.tac||(g.vars.tac={mode:'ring',outT:0,flankAt:-99,seen:-99}), C={x:NT_RING.x*TILE,y:NT_RING.y*TILE};
+/* every half second: ring, front or back (see NT_TAC); relief squads going round the crew follow it too */
+function ntTac(g){ const A=NT_TAC, T=g.vars.tac||(g.vars.tac={mode:'ring',outT:0,seen:-99}), C={x:NT_RING.x*TILE,y:NT_RING.y*TILE};
   const th=ntThreats(g), rings=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer&&!e.aboard), fighters=rings.filter(u=>!u.def.heal&&!u.def.builder&&!u.flank);
   if(th.length){ T.seen=g.time; const K={x:th.reduce((a,u)=>a+u.x,0)/th.length,y:th.reduce((a,u)=>a+u.y,0)/th.length}, L=Math.hypot(K.x-C.x,K.y-C.y)||1, nd={x:(K.x-C.x)/L,y:(K.y-C.y)/L};
     T.K=K; T.dist=L;
@@ -192,9 +191,7 @@ function ntTac(g){ const A=NT_TAC, T=g.vars.tac||(g.vars.tac={mode:'ring',outT:0
     const hit=rings.some(r=>G.time-(r.shotAt||-99)<1.5&&r.shotBy&&r.shotBy.crew);
     const answer=th.some(c=>fighters.some(f=>Math.hypot(f.x-c.x,f.y-c.y)<=(f.def.range+(f.rangeBonus||0)+0.5)*TILE));
     T.outT=(T.mode==='front'&&hit&&!answer)?T.outT+0.5:Math.max(0,T.outT-0.5);
-    if(T.outT>=A.outFor){ T.outT=0; const flankers=G.ents.some(u=>!u.dead&&u.flank&&u.ringer);
-      if(!flankers&&fighters.length>=A.flankMin&&g.time-T.flankAt>A.flankCool){ T.flankAt=g.time; ntFireTeam(g,fighters,T); }
-      else if(!flankers){ T.mode='back'; ntRing(g,[]); const s=g.vars.lead&&!g.vars.lead.dead?g.vars.lead:fighters[0]; if(s) g.say(s.vet?`${RANKS[s.vet.rank].abbr} ${s.vet.name}`:'Kappa garrison','We cannot reach them from here. Fall back behind the tents! Let them come to us!'); } }
+    if(T.outT>=A.outFor){ T.outT=0; { T.mode='back'; ntRing(g,[]); const s=g.vars.lead&&!g.vars.lead.dead?g.vars.lead:fighters[0]; if(s) g.say(s.vet?`${RANKS[s.vet.rank].abbr} ${s.vet.name}`:'Kappa garrison','We cannot reach them from here. Fall back behind the tents! Let them come to us!'); } }
     if(T.mode==='back'&&th.some(c=>Math.hypot(c.x-C.x,c.y-C.y)<A.near*TILE)){ T.mode='front'; T.dir=nd; T.lineAt=g.time; ntRing(g,[]); } }
   else if(T.mode!=='ring'&&g.time-T.seen>A.calm){ T.mode='ring'; T.K=null; for(const u of G.ents) if(u.flank&&!u.dead) ntFlankEnd(u); ntRing(g,[]); }
   for(const u of G.ents) if(u.flank&&!u.dead&&!u.downed) ntFlankStep(g,u,T,th); }
@@ -207,16 +204,6 @@ function ntFlankStep(g,u,T,th){ const f=u.flank;
   if(g.time>f.until||(!th.length&&g.time-T.seen>3)){ ntFlankEnd(u); return; }
   if(f.stage<2){ const p=f.stage===0?f.w:f.q; if(!u.order||Math.hypot(u.x-p.x,u.y-p.y)<TILE*1.2){ f.stage++; const n=f.stage===1?f.q:T.K?{x:T.K.x+f.off.x,y:T.K.y+f.off.y}:f.q; u.order={type:f.stage===1?'move':'amove',x:n.x,y:n.y}; setPath(u,n.x,n.y); } }
   else if(!u.target&&T.K){ const k={x:T.K.x+f.off.x,y:T.K.y+f.off.y}; if(!u.order||Math.hypot(u.order.x-k.x,u.order.y-k.y)>2*TILE){ u.order={type:'amove',x:k.x,y:k.y}; setPath(u,k.x,k.y); } } }   /* keep their spacing as they close in */
-/* the fire team: the Lieutenant and two more (leaving at least two in the line) go round the side the crew is weakest on */
-function ntFireTeam(g,fighters,T){ const A=NT_TAC, C={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, K=T.K, d=T.dir, p={x:-d.y,y:d.x};
-  const lead=g.vars.lead&&fighters.includes(g.vars.lead)?g.vars.lead:null, n=Math.min(3,fighters.length-2); if(n<1) return;
-  const team=[...(lead?[lead]:[]),...fighters.filter(u=>u!==lead).sort((a,b)=>(b.hp/b.maxHp)-(a.hp/a.maxHp))].slice(0,n);
-  const opt=[1,-1].map(sg=>{ const w={x:C.x+p.x*sg*A.flankWide*TILE,y:C.y+p.y*sg*A.flankWide*TILE}, q={x:K.x+p.x*sg*A.flankOff*TILE,y:K.y+p.y*sg*A.flankOff*TILE};
-    const mx=team.reduce((a,u)=>a+u.x,0)/team.length, my=team.reduce((a,u)=>a+u.y,0)/team.length;
-    return { w, q, cost:Math.hypot(w.x-mx,w.y-my)+Math.hypot(q.x-w.x,q.y-w.y)+(walkableP(q.x,q.y)?0:6*TILE)+(walkableP(w.x,w.y)?0:3*TILE) }; }).sort((a,b)=>a.cost-b.cost)[0];
-  team.forEach((u,i)=>ntFlankGo(u,opt.w,opt.q,i));
-  const s=lead||team[0]; g.say(s.vet?`${RANKS[s.vet.rank].abbr} ${s.vet.name}`:'Kappa garrison','Fire team, on me! We go round their flank. The rest of you keep their heads down!');
-  g.vars.ftSent=(g.vars.ftSent||0)+1; ntRing(g,[]); }
 /* a relief squad that lands in the middle of a fight: round the crew, from the pad's side, to behind it */
 function ntFlankRelief(g,u,T){ const A=NT_TAC, K=T.K, d=T.dir, p={x:-d.y,y:d.x}, pad={x:(NT_PAD.x+.5)*TILE,y:(NT_PAD.y+.5)*TILE};
   const sg=((pad.x-K.x)*p.x+(pad.y-K.y)*p.y)>=0?1:-1;
