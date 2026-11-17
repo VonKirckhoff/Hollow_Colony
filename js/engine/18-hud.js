@@ -58,10 +58,13 @@ function renderSelection(){
     return `<div class="sel-group"><div class="sel-ghead" data-type="${type}" data-tip="${list[0].def.name}|Click to select only these.">${list[0].def.name}<b>${list.length}</b></div><div class="sel-gcells">`+
       list.map(e=>`<div class="sel-cell${taintWarnCls(e)}" data-only="${e.id}" data-tip="${unitTitle(e)}|Click to select only this one.${groupsOf(e).length?' Group '+groupsOf(e).join(', ')+'.':''}"><img alt="" src="${iconUrl(e.type)}">${rankBadge(e)}${groupsOf(e).length?`<span class="grp">${groupsOf(e).join('')}</span>`:''}<i><s style="width:${clamp(e.hp/e.maxHp,0,1)*100}%;background:${hpColor(e.hp/e.maxHp)}"></s></i></div>`).join('')+'</div></div>'; }).join('')+'</div>';
 }
+/* Select all (Orders row, always there, also with nothing selected): every unit of yours on the map, e.g. to put them all in one formation. Ctrl+A. */
+function selAllBtn(){ return {row:'Orders',key:'^A',glyph:'⊞',tip:'Select all|Selects every unit of yours on the whole map, so you can put them all in one formation at once. Press again: the camera jumps to them. Key Ctrl+A.',act:selectAllUnits}; }
 function cmdButtons(){
-  if(G.side==='swarm') return swarmButtons();
+  if(G.side==='swarm'){ const o=swarmButtons(); if(!ui.placing) o.push(selAllBtn()); return o; }
   const {units,blds}=primaryGroup(); const out=[];
   if(ui.placing){ out.push({row:'Placing',key:'Esc',glyph:'✕',tip:'Cancel|Stop placing the building.',act:()=>{ui.placing=null;G.selDirty=true;}}); return out; }
+  if(!units.length) out.push(selAllBtn());
   if(units.length){
     const st=stanceOf(units);
     out.push({row:'Orders',key:'A',glyph:'⚔',tip:'Attack|Click a spot or an enemy: the squad moves and engages anything on the way. They stay aggressive on later moves, until you press S (or H).',act:cmdAttack,active:ui.amove||(st==='attack'&&!ui.flare)});
@@ -69,6 +72,7 @@ function cmdButtons(){
     out.push({row:'Orders',key:'Q',glyph:'⊘',tip:'Hold fire|They do not shoot on their own, not even back: only at what you order them to attack (right-click an enemy). Good for slipping past a nest without waking it. Stays on after moves; press again, or A or S, to open fire.',act:cmdQuiet,active:units.every(u=>u.quiet)});
     out.push({row:'Orders',key:'S',glyph:'■',tip:'Cancel order|Stop, and drop the attack or defensive stance.',act:cmdStop});
     if(flareThrowers().length) out.push({row:'Orders',key:'L',glyph:'✶',cost:`${G.flares}`,off:!G.flares,tip:`Flare|A soldier throws a flare up to ${SQUAD.flare.range} tiles. It lights the ground for ${SQUAD.flare.time} seconds. ${G.flares} left this mission.`,act:startFlare,active:ui.flare});
+    out.push(selAllBtn());
     if(units.length>1){ const cur=units[0].formation, all=cur&&units.every(u=>u.formation===cur);
       for(const [shape,f] of Object.entries(FORMATIONS)) out.push({row:'Formation',key:f.key,glyph:f.glyph,active:all&&cur.shape===shape,off:shape==='custom'&&!customForm(),
         tip:`${f.name} formation|${f.tip||'Medics, Engineers and escorts in the centre.'}${shape==='line'?' Attack (A) in a line is a Sweep: they advance together and fire on the move.':''} The squad marches in this shape on every move, with the front leading; pick another one while they walk and they take it up on the way. Hold the right mouse button and drag to choose where it faces. Press again to release.`,act:()=>setFormation(shape)});
