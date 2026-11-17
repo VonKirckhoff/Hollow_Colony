@@ -13,7 +13,7 @@ ROGUE_MISSIONS.push(
       'One frequency nobody at Tycho listens to any more: the Osprey\'s. You called it, and a voice you last heard over the barrel of a rifle answered. Kerckhoffs. The wreck at Hollow Colony, before dawn.',
       'The crew is starving for the strain: Devreese\'s stores ran dry and the Seed they took from the Matron sleeps in its case. The Corps sealed Maas\'s lab, but her freezer is still in it. Get Cnudde to it. Kill Brood with lead, not fire: whatever Mortier burns is useless, what a bullet leaves behind Devreese can bottle. Then down the Brood tunnel in the south wall, before Tycho\'s clean-up team lands.'
     ],
-    start:{ salvage:0, camera:{x:41,y:13}, crewAt:{x:41,y:13},
+    start:{ salvage:0, camera:{x:39,y:16}, crewAt:{x:39,y:16},
       units:[], buildings:[], hives:['a','b','c'],
       shafts:[ {x:40,y:2,wall:'n',creep:3,eggs:1}, {x:61,y:21,wall:'e',creep:3,eggs:1}, {x:38,y:41,wall:'s',exit:true,label:'South tunnel'} ],
       swarmUnits:[ ['drone','3',3], ['crawler','5',3], ['drone','4',2], ['crawler','6',2] ] },
