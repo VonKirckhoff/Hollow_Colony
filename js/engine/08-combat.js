@@ -15,11 +15,13 @@ function fireBlocked(u,t){ const m=G.map, W=m.w, S=membraneTiles(), dx=t.x-u.x, 
   for(let i=1;i<n;i++){ const x=u.x+dx*i/n, y=u.y+dy*i/n, tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), k=ty*W+tx; if(k===k0||k===k1) continue;
     if(own&&tx>=own.tx&&tx<own.tx+own.size&&ty>=own.ty&&ty<own.ty+own.size) continue;   /* the structure you aim at */
     if(FIRE_BLOCK[m.tiles[k]]||(S.has(k)&&t.type!=='membrane')) return true; } return false; }
-function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(u.spare&&t===u.spare) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t) && !(t.crew&&u.faction==='swarm'&&veiled(t)); }   /* Rogue: the veil (Among Them) */
+function validTarget(u,t,explicit){ return t && !t.dead && !t.invuln && !deadGen(u,t) && !(t.downed&&spareDowned(u)) && !(u.truce&&t.faction===u.truce) && !(u.spare&&t===u.spare) && (explicit||!outLeash(u,t)) && !(t.truce&&t.truce===u.faction) && t.kind!=='crate' && t.faction!==u.faction && (explicit||hostile(u.faction,t.faction)) && visibleTo(u.faction,t) && !(t.crew&&u.faction==='swarm'&&veiled(t)); }   /* Rogue: the veil (Among Them) */
 /* the Swarm (except the Matron) leaves a downed soldier alone: it wants the body */
 function spareDowned(u){ return u.faction==='swarm'&&!(u.def&&u.def.boss)&&!u.avatar; }   /* the creature you steer may feed on the fallen */
 /* the Swarm wants the escort (Dr. Maas) above all: in a fight it picks her over a soldier up to pull tiles closer, and hunters within hunt tiles of her go for her */
 const SWARM_VIP = { pull:3, hunt:22 };
+/* u.leash {x,y,r} (px): a unit that guards a spot (Needle and Thread's garrison) never picks a target standing further than r from it */
+const outLeash=(u,t)=>!!u.leash&&Math.hypot(t.x-u.leash.x,t.y-u.leash.y)>u.leash.r;
 function findTarget(u,rangeTiles,unitsOnly){
   const R=rangeTiles*TILE; let best=null, bs=Infinity;
   for(const e of G.ents){ if(e.dead||e.kind==='crate'||!hostile(u.faction,e.faction)) continue;
@@ -27,6 +29,7 @@ function findTarget(u,rangeTiles,unitsOnly){
     if(e.downed&&spareDowned(u)) continue;
     if(deadGen(u,e)) continue;
     if(e.faction==='wild'&&u.faction==='swarm'&&!u.avatar&&G.swarm.cfg.spareFauna) continue;   /* a mission can leave the grazers to your own creature */   /* the Swarm wants the body, not a corpse full of holes */
+    if(outLeash(u,e)) continue;   /* a garrison on a leash only fights what comes near its camp */
     if(e.invuln || (u.truce&&e.faction===u.truce) || (e.truce&&e.truce===u.faction)) continue;
     if(e.crew&&u.faction==='swarm'&&veiled(e)) continue;   /* Rogue: the brood looks right through one of its own (the veil, Among Them) */
     const d=dist(u,e)-e.r; if(d>R) continue; if(!visibleTo(u.faction,e)) continue; if(fireBlocked(u,e)) continue;   /* not through rock or a membrane */

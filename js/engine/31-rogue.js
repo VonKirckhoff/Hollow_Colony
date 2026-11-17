@@ -232,7 +232,7 @@ function loyalAI(dt){ G.loyalT=(G.loyalT||0)-dt; if(G.loyalT>0) return; G.loyalT
   const L=ROGUE.loyal, hit=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.hitAt!=null&&G.time-e.hitAt<3);
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='loyal'||u.downed) continue;
     if(hit.length&&!u.target&&u.def.damage&&!(u.order&&u.order.type==='move')){ const h=hit.find(e=>e!==u&&dist(e,u)<L.help*TILE);
-      if(h){ const foe=nearestOf(h,e=>e.kind==='unit'&&!e.dead&&!e.downed&&(e.faction==='corps'||e.faction==='swarm')&&dist(e,h)<9*TILE); if(foe) u.target=foe; } }
+      if(h){ const foe=nearestOf(h,e=>e.kind==='unit'&&!e.dead&&!e.downed&&!outLeash(u,e)&&(e.faction==='corps'||e.faction==='swarm')&&dist(e,h)<9*TILE); if(foe) u.target=foe; } }
     if(u.target) continue;
     if(u.hunter&&(!u.order||u.order.type!=='amove'||G.time>(u.huntAt||0)+12)&&G.time>(u.huntAt||0)){ u.huntAt=G.time+5;
       const t=nearestOf(u,e=>e.kind==='unit'&&e.crew&&!e.dead); if(t){ u.home=null; u.order={type:'amove',x:t.x+rand(-24,24),y:t.y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); } continue; }

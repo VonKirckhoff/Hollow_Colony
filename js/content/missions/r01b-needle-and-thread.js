@@ -11,7 +11,7 @@ const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
 const NT_PAD={x:23,y:26};     /* the relief pad: the 3×3 pad right under the tower (one tile below it), just south of the camp */
-const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.8, leash:7.5 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle, how far from the middle of the camp a soldier chases before he goes back (the pad lies within it) */
+const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
     id:'rogue-needle-and-thread', title:'Needle and Thread', map:'kappa', rogue:true,
@@ -41,13 +41,13 @@ ROGUE_MISSIONS.push(
           /* the garrison stands in a defence ring round the middle of the camp: fighters on the ring, Medics and the Engineer inside */
           const gar=[...g.loyal('trooper',{x:21,y:21},2),...g.loyal('gunner',{x:24,y:22},1),...g.loyal('trooper',{x:19,y:16},1),
             ...g.loyal('medic',{x:19,y:22},2),...g.loyal('engineer',{x:22,y:20},1)];
+          gar.push(...g.loyal('trooper',{x:18,y:24},2));   /* the old patrol: no more walks round the basin (it woke the hive in the north-east), it stands in the ring too */
           ntRing(g,gar,true); g.vars.ringMax=gar.length;   /* the ring's full strength: a relief squad never fills it past this */
-          g.loyal('trooper',{x:12,y:22},2,{ patrol:[{x:12,y:22},{x:20,y:27},{x:29,y:21},{x:25,y:13}] });   /* and a patrol round the camp, outside the ring */
           g.pad(NT_PAD,'relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
           g.marker('term',{x:20,y:18},'Records terminal');
           g.reveal({x:20,y:20},6,1e6); } },   /* the hospital is lit all night: the crew can watch it from afar */
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs',`Kappa Basin again. Last time they held us off till dawn. ${selfName()}, you were in that ring. Tell me where it is thin.`) },
-      { when:g=>g.time>5, do:g=>g.crewSay(selfName(),'West side, by the tents. The Medics stand inside the ring, the patrol walks wide. And they will call Tycho the moment they see us.') },
+      { when:g=>g.time>5, do:g=>g.crewSay(selfName(),'West side, by the tents. They stand in a ring round the middle and never leave the camp, Medics in the middle. And they will call Tycho the moment they see us.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','The terminal in the middle of the tents. Get me there and keep them off me. It takes time to find her files, and they will hear me looking.') },
       { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','That pad south of the camp, under their tower, is a relief pad. Once the hospital shouts for help, Tycho lands its people right on their doorstep.') },
       { when:g=>g.time>27, do:g=>g.crewSay('Van Wesemael','Hold fire (Q) till we are close, Captain. The longer they do not see us, the longer before the first dropship.') },
@@ -103,10 +103,10 @@ ROGUE_MISSIONS.push(
 function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.say('Kappa medical',line);
   g.ping(NT_PAD);
   g.crewSay('Capt. Kerckhoffs','That is the alarm. Thin out that ring and Tycho drops more people on that pad. Get Devreese her files and get the cases, fast.'); }
-/* the defence ring (circle formation, holding): add units to it and share out the places again.
+/* the defence ring (circle formation, defensive stance): add units to it and share out the places again.
    Fighters stand on a ring round NT_RING (it grows with the number of men), Medics and Engineers on a small circle inside.
    at once: put them straight on their places (the start of the mission). */
-function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=true; u.hunter=false; u.patrol=null; }
+function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=true; u.hunter=false; u.patrol=null; u.stance='hold'; u.leash={x:NT_RING.x*TILE,y:NT_RING.y*TILE,r:NT_RING.reach*TILE}; }   /* defensive stance, and a leash on what they may shoot at */
   g.vars.ringOn=true; const R=NT_RING, cx=(R.x)*TILE, cy=(R.y)*TILE;
   const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), fight=us.filter(u=>!u.def.heal&&!u.def.builder), sup=us.filter(u=>u.def.heal||u.def.builder);
   const place=(grp,r)=>{ if(!grp.length) return; const spots=grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/4;   /* not straight north: the terminal stands there */  let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
