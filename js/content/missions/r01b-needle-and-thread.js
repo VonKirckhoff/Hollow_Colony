@@ -10,7 +10,7 @@
 const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of the three hospital tents */
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
-const NT_PAD={x:23,y:26};     /* the relief pad: the 3×3 pad right under the tower (one tile below it), just south of the camp */
+const NT_PAD={x:30,y:20};     /* the relief pad: the 3×3 pad right under the tower (one tile below it), just south of the camp */
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
