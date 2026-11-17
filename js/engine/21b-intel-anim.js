@@ -112,6 +112,14 @@ function iaRubble(c,t){ const cy=iaCyc(t,3.8); iaArt(c,'rubble',24,IA_GROUND,26)
   if(cy.s>0.9&&cy.s<2) { c.globalAlpha=0.5*(2-cy.s); c.fillStyle='#8a7d68'; c.beginPath(); c.ellipse(24,IA_GROUND-3,6+(cy.s-0.9)*10,3,0,0,Math.PI*2); c.fill(); c.globalAlpha=1; } }
 function iaDoor(c,t){ const x=24, y=IA_GROUND; iaArt(c,'door',x,y,28); if(Math.sin(t*3)>0.3) iaGlow(c,x+6,y-24,4,'rgba(255,180,70,.9)'); }
 function iaMembrane(c,t){ const b=1+0.04*Math.sin(t*2.4); iaArt(c,'membrane',24,IA_GROUND,30,{ sx:2-b, sy:b }); iaGlow(c,24,IA_GROUND-12,10,'rgba(195,139,255,'+(0.12+0.08*Math.sin(t*2.4))+')'); }
+/* the loyal Corps' mortar: a thump and smoke at the tube, the shell's arc, the red ring where it will land, then the blast */
+function iaMortar(c,t){ const x=12, y=IA_GROUND, cy=iaCyc(t,2.8), p=cy.p, tx=35, ty=IA_GROUND-2; iaShadow(c,x,y,9); iaArt(c,'mortar',x,y,22);
+  if(p<0.08){ iaGlow(c,x+5,y-17,7,'rgba(255,210,120,.9)'); }   /* the thump */
+  for(let i=0;i<4;i++){ const q=p*4-i*0.15; if(q<=0||q>1) continue; c.globalAlpha=0.5*(1-q); c.fillStyle='#9a9a9a'; c.beginPath(); c.arc(x+5+i*2-q*4,y-17-q*9,1.5+q*2.5,0,Math.PI*2); c.fill(); c.globalAlpha=1; }   /* smoke */
+  if(p>=0.06&&p<0.7){ const k=(p-0.06)/0.64; iaRing(c,tx,ty,5+Math.sin(t*14)*0.6,'#ff5a4f',0.5+0.4*k);   /* where it will land */
+    const sx=x+5+(tx-x-5)*k, sy=(y-17)+(ty-(y-17))*k-Math.sin(k*Math.PI)*26; c.fillStyle='#0a0b10'; c.fillRect(Math.round(sx)-1,Math.round(sy)-1,3,3); iaDot(c,sx,sy,Math.floor(t*14)%2?'#ff5a4f':'#6f8240'); }
+  if(p>=0.7&&p<0.95){ const q=(p-0.7)/0.25; iaGlow(c,tx,ty-3,10*(1-q*0.5),`rgba(255,140,60,${0.9*(1-q)})`);
+    for(let i=0;i<7;i++){ const a=iaHash(cy.k,i)*Math.PI, r=q*12; iaDot(c,tx+Math.cos(a)*r,ty-Math.sin(a)*r*1.2+q*q*6,i%2?'#ffd23f':'#8a7a6a'); } } }
 function iaChoir(c,t){ iaArt(c,'choirpod',24,IA_GROUND,28,{ sy:1+0.05*Math.sin(t*4) }); for(let i=0;i<3;i++){ const q=(t*0.5+i/3)%1; iaRing(c,24,IA_GROUND-14,3+q*20,'#c38bff',0.8-q); } }
 function iaCase(c,t){ const x=24, y=IA_GROUND-2+Math.sin(t*2.2)*1.5; iaShadow(c,24,IA_GROUND,9);
   c.fillStyle='#0a0b10'; c.fillRect(x-10,y-13,21,15); c.fillStyle='#3a6f86'; c.fillRect(x-9,y-12,19,13); c.fillStyle='#7fdfff'; c.fillRect(x-1,y-11,3,11); c.fillRect(x-6,y-8,13,4);
@@ -138,7 +146,7 @@ const INTEL_SCENES = {
   broodmother:iaBroodMother, heir:iaBroodMother, grazer:iaGrazer,
   hq:iaHq, relay:iaRelay, sentry:iaSentry, barricade:iaBarricade, lz:iaLz, uplink:iaUplink, generator:iaGenerator, chargesite:iaChargeSite, charge:iaCharge,
   medtent:iaTent, terminal:iaTerminal, door:iaDoor, wreck:iaWreck, rubble:iaRubble,
-  hive:iaHive, egg:iaEgg, cocoon:(c,t)=>iaPulse(c,t,'cocoon',{ amp:0.1*Math.max(0,Math.sin(t*4.5))**4+0.02, speed:4.5, fit:22 }), membrane:iaMembrane, shaft:iaShaft, choirpod:iaChoir,
+  hive:iaHive, egg:iaEgg, cocoon:(c,t)=>iaPulse(c,t,'cocoon',{ amp:0.1*Math.max(0,Math.sin(t*4.5))**4+0.02, speed:4.5, fit:22 }), membrane:iaMembrane, shaft:iaShaft, choirpod:iaChoir, mortar:iaMortar,
   relaypad:iaPad, salvage:iaCrate, stabcase:iaCase, heart:iaHeart, raiders:iaRaiders, veil:iaVeil, taint:iaTaint
 };
 function intelScene(key){ if(INTEL_SCENES[key]) return INTEL_SCENES[key];

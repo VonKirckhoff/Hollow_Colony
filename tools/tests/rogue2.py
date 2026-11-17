@@ -82,7 +82,11 @@ CASES=[
   mo.fireAt=G.time+0.2; let sh=null; for(let i=0;i<3*30&&!sh;i++){ __hc.update(1/30); sh=G.shots.find(x=>x.shell); } ok(!!sh&&sh.faction==='loyal','it lobs a shell at the crew'); 
   ok(sh&&cs.some(c=>Math.hypot(c.x-sh.tx,c.y-sh.ty)<LOYAL_MORTAR.radius*TILE),'at the middle of the group'); ok(sh&&sh.dur>=2,'it hangs in the air for a while: the red ring is the warning');
   const hp0=cs.map(c=>c.hp); for(let i=0;i<4*30&&G.shots.includes(sh);i++) __hc.update(1/30); ok(cs.some((c,i)=>c.hp<hp0[i]-1)||cs.some(c=>Math.hypot(c.x-sh.tx,c.y-sh.ty)>LOYAL_MORTAR.radius*TILE),'the shell hurts whoever stays in the ring ('+cs.map((c,i)=>Math.round(hp0[i]-c.hp)).join('/')+')');
-  en.dead=true; step(0.5); const n0=G.shots.filter(x=>x.shell).length; step(LOYAL_MORTAR.every*2); ok(!mo.manned&&G.shots.filter(x=>x.shell).length===n0,'its Engineer dead: the mortar falls silent');
+  en.dead=true; step(1); const ld=G.ents.find(u=>!u.dead&&u.mortarLoader); ok(ld&&ld.type==='trooper'&&ld!==G.vars.lead,'its Engineer dead: a Trooper goes to load it');
+  for(let i=0;i<10*30&&!mo.manned;i++) __hc.update(1/30); ok(mo.manned&&mo.slowMan,'he mans it (slower)');
+  const t1=[]; let seen=new Set(G.shots.filter(x=>x.shell)); for(let i=0;i<(LOYAL_MORTAR.every*LOYAL_MORTAR.slow*2+6)*30&&t1.length<2;i++){ __hc.update(1/30); for(const x of G.shots) if(x.shell&&!seen.has(x)){ seen.add(x); t1.push(G.time); } }
+  ok(t1.length===2&&t1[1]-t1[0]>=LOYAL_MORTAR.every*LOYAL_MORTAR.slow-0.5,'it fires again, but slower ('+(t1.length===2?(t1[1]-t1[0]).toFixed(1):'-')+' s between shells)');
+  G.vars.sent=99;   /* no relief squad now (a Trooper of theirs would load it again) */ ld.dead=true; for(const u of G.ents) if(!u.dead&&u.ringer&&u.type==='trooper') u.dead=true; step(1); const old=new Set(G.shots.filter(x=>x.shell)); let fresh2=0; for(let i=0;i<(LOYAL_MORTAR.every*LOYAL_MORTAR.slow+2)*30;i++){ __hc.update(1/30); for(const x of G.shots) if(x.shell&&!old.has(x)){ old.add(x); fresh2++; } } ok(!mo.manned&&fresh2===0,'no Engineer and no Trooper left: the mortar falls silent ('+fresh2+')');
   /* a relief squad that lands during a fight goes round the crew */
   cs.forEach(u=>{ u.invuln=true; }); step(2); ok(G.vars.tac&&G.vars.tac.mode!=='ring','a fight on');
   ring().filter(u=>!u.def.heal&&u!==G.vars.lead).slice(0,2).forEach(u=>u.dead=true); const had=new Set(G.ents);   /* three short: a squad of three */
@@ -180,7 +184,7 @@ CASES=[
 ('intel, trophy wall, dev panel','''goMenu('intel'); intelTab='rogue'; buildIntel(); ok(ROGUE_INTEL.some(x=>x.id==='veil')&&document.querySelectorAll('#intel-list .ili').length===(selfJoined()?7:6)+6+ROGUE_INTEL.length,'The veil in Rogue Intel');
   ok(ROGUE_TROPHIES.some(t=>t.id==='rogue:wolf'),'Wolf in the Fold on the list'); goMenu('trophies'); trophTab='rogue'; buildTrophies(); const wb=document.querySelector('#trophy-wall').getBoundingClientRect(); ok(wb.bottom<=innerHeight&&wb.top>=0,'the Rogue tab still fits on one screen ('+Math.round(wb.bottom)+'/'+innerHeight+')');
   ok(/Wolf in the Fold/.test(document.querySelector('#trophy-wall').textContent),'the plaque hangs on the wall'); goMenu('menu');
-  for(const k of ['ROGUE|stab.formula','ROGUE|veil.taint','ROGUE|veil.broken','M|job.download','M|job.pod','M|job.lull','M|job.stir','M|job.waves','M|job.squad','M|job.lostFor','M|job.call','M|job.rank','M|job.leadRank','M|job.supRank','M|job.reliefRank','MEDIC_SPREAD|reach','MEDIC_SPREAD|every','NT_TAC|see','NT_TAC|campFor','LOYAL_MORTAR|every','LOYAL_MORTAR|flight']) ok(!!devHelp(k),'dev help: '+k);''')
+  for(const k of ['ROGUE|stab.formula','ROGUE|veil.taint','ROGUE|veil.broken','M|job.download','M|job.pod','M|job.lull','M|job.stir','M|job.waves','M|job.squad','M|job.lostFor','M|job.call','M|job.rank','M|job.leadRank','M|job.supRank','M|job.reliefRank','MEDIC_SPREAD|reach','MEDIC_SPREAD|every','NT_TAC|see','NT_TAC|campFor','LOYAL_MORTAR|every','LOYAL_MORTAR|flight','LOYAL_MORTAR|slow']) ok(!!devHelp(k),'dev help: '+k);''')
 ]
 res=[]
 with sync_playwright() as p:

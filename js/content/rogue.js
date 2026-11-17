@@ -104,4 +104,4 @@ const ROGUE_TROPHIES = [
 ];
 /* the loyal Corps' field mortar (BUILDINGS.mortar, loyalMortarTick in 31-rogue.js): seconds between shells, reach and dead zone (tiles), damage and blast (tiles),
    seconds in the air (the warning), how close its Engineer must stand (tiles), seconds before the first shell once someone mans it */
-const LOYAL_MORTAR = { every:11, range:11, min:3.5, damage:70, radius:1.6, flight:2.4, crewR:1.6, first:4 };
+const LOYAL_MORTAR = { every:11, range:11, min:3.5, damage:70, radius:1.6, flight:2.4, crewR:1.6, first:4, slow:1.8 };   /* slow: a Trooper can load it too, but takes this many times longer between shells */

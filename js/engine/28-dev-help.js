@@ -56,6 +56,7 @@ const DEV_HELP = {
   'LOYAL_MORTAR|radius':'Loyal Corps mortar: blast radius of a shell (tiles).',
   'LOYAL_MORTAR|flight':'Loyal Corps mortar: seconds a shell is in the air; its red ring on the ground is the warning.',
   'LOYAL_MORTAR|crewR':'Loyal Corps mortar: an Engineer must stand this close to it (tiles) for it to fire.',
+  'LOYAL_MORTAR|slow':'Loyal Corps mortar: with no Engineer at it a Trooper loads it, this many times slower.',
   'LOYAL_MORTAR|first':'Loyal Corps mortar: seconds before the first shell, once someone mans it.',
   'MEDIC_SPREAD|reach':'A Medic who keeps his distance from the other Medics (Needle and Thread\'s garrison) heals from this share of his heal range away from his patient.', 'MEDIC_SPREAD|every':'Seconds between two looks for a better spot around the patient, away from the other Medics.',
   'SHIP|curve':'Dropship: how wide the curve is it comes in on (0 = straight in).',

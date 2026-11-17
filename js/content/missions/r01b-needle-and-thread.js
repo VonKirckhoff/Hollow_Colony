@@ -143,10 +143,16 @@ function ntUnload(g,sq){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.typ
 function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=true; u.hunter=false; u.patrol=null; u.stance='hold'; u.leash={x:NT_RING.x*TILE,y:NT_RING.y*TILE,r:NT_RING.reach*TILE}; if(u.def.heal) u.spread=NT_RING.supGap; if(u.def.builder) u.repairHome={x:NT_RING.x*TILE,y:NT_RING.y*TILE}; }   /* an Engineer mends from inside the camp (REPAIR_SIDE.home) */   /* Medics keep their distance from each other while they heal too (medicSpread) */   /* defensive stance, and a leash on what they may shoot at */
   g.vars.ringOn=true; const R=NT_RING, cx=(R.x)*TILE, cy=(R.y)*TILE;
   const mortar=g.vars.mortar&&!g.vars.mortar.dead?g.vars.mortar:null, T=g.vars.tac;
-  const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), fight=us.filter(u=>!u.def.heal&&!u.def.builder&&!u.aboard), sup=us.filter(u=>(u.def.heal||u.def.builder)&&!u.aboard);   /* in the ring the mortar stands in the middle: its Engineer on the inner circle is close enough to man it */
-  if(T&&T.mode!=='ring'&&T.dir) for(const u of us) if(u.mortarMan&&mortar&&!u.aboard){ const d=T&&T.mode!=='ring'&&T.dir?T.dir:{x:0,y:1}; let x=mortar.x-d.x*TILE, y=mortar.y-d.y*TILE;   /* the Engineer at the mortar, on the side away from the crew */
+  const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer);
+  if(mortar){ const engOk=us.some(u=>u.def.builder&&u.mortarMan&&!u.aboard); let ld=us.find(u=>u.mortarLoader&&!u.aboard);   /* no Engineer at the mortar (dead or down): a Trooper loads it, slower (LOYAL_MORTAR.slow) */
+    if(engOk&&ld){ ld.mortarMan=false; ld.mortarLoader=false; }
+    else if(!engOk&&!ld){ ld=us.filter(u=>u.type==='trooper'&&u!==g.vars.lead&&!u.aboard).sort((a,b)=>Math.hypot(a.x-mortar.x,a.y-mortar.y)-Math.hypot(b.x-mortar.x,b.y-mortar.y))[0]; if(ld){ ld.mortarMan=true; ld.mortarLoader=true; } } }
+  const fight=us.filter(u=>!u.def.heal&&!u.def.builder&&!u.aboard&&!(u.mortarLoader&&mortar)), sup=us.filter(u=>(u.def.heal||u.def.builder)&&!u.aboard);   /* in the ring the mortar stands in the middle: its Engineer on the inner circle is close enough to man it */
+  for(const u of us) if(u.mortarMan&&mortar&&!u.aboard&&(T&&T.mode!=='ring'&&T.dir||u.mortarLoader)){ const d=T&&T.mode!=='ring'&&T.dir?T.dir:{x:0,y:1};   /* in the ring the Engineer stands on the inner circle; a Trooper loader just north of the mortar */ let x=mortar.x-d.x*TILE, y=mortar.y-d.y*TILE;   /* the Engineer at the mortar, on the side away from the crew */
     if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } u.ringAt={x,y}; u.home={x,y};
-    if(atOnce){ u.x=x; u.y=y; u.order={type:'hold'}; u.path=null; } else if(!u.target&&!u.repairT){ u.order={type:'amove',x,y}; setPath(u,x,y); } }
+    if(atOnce){ u.x=x; u.y=y; u.order={type:'hold'}; u.path=null; }
+    else if(u.mortarLoader){ if(Math.hypot(u.x-x,u.y-y)>TILE*0.6){ u.target=null; u.order={type:'move',x,y}; setPath(u,x,y); } }   /* a loader goes straight to the mortar, no stopping to fight on the way */
+    else if(!u.target&&!u.repairT){ u.order={type:'amove',x,y}; setPath(u,x,y); } }
   const place=(grp,r,given)=>{ if(!grp.length) return; const spots=given?given.map(p=>{ let x=p.x, y=p.y; if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; }):grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/4;   /* not straight north: the terminal stands there */  let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
       if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; });
     const a=assignCheapest(grp.map(u=>spots.map(p=>(u.x-p.x)**2+(u.y-p.y)**2)));
