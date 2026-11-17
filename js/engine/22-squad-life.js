@@ -86,7 +86,7 @@ function inCover(t,src){
   return false;
 }
 function coverDamage(t,amt,src){
-  if(t.kind!=='unit'||t.faction!=='corps'||!src||!src.def||src.def.attack==='melee'||!(src.def.range>=2)) return amt;
+  if(t.kind!=='unit'||(t.faction!=='corps'&&!(t.faction==='loyal'&&G.mission.loyalCover))||!src||!src.def||src.def.attack==='melee'||!(src.def.range>=2)) return amt;
   if(!inCover(t,src)) return amt;
   if(Math.random()<0.15) G.fx.push({k:'text',x:t.x,y:t.y-30,t:0.6,max:0.6,txt:'COVER',col:'#9fd3ff'});
   return amt*SQUAD.cover.factor;

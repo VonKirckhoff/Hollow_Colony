@@ -239,9 +239,12 @@ function loyalAI(dt){ G.loyalT=(G.loyalT||0)-dt; if(G.loyalT>0) return; G.loyalT
     if(u.patrol&&!u.order){ const P=u.patrol, p=ptWorld(P.pts[P.i%P.pts.length]); P.i++; if(p){ u.home=null; u.order={type:'amove',x:p.x+rand(-20,20),y:p.y+rand(-20,20)}; setPath(u,u.order.x,u.order.y); } } } }
 /* the extra mission API for Rogue missions (mixed into g) */
 function rogueApi(){ return {
-  /* loyal(type, at, n, { hunter, patrol:[points], hold, tough }) : Lunar Corps soldiers who shoot the crew on sight */
+  /* loyal(type, at, n, { hunter, patrol:[points], hold, tough, rank }) : Lunar Corps soldiers who shoot the crew on sight.
+     rank (0…4, RANKS in veterans.js): a seasoned soldier with the rank's hp, damage and fire rate (and from Lieutenant on his ability, e.g. a
+     Trooper's grenade); his mark shows over his head. He never gains experience (gainXP) and never goes on any roster (u.npc). */
   loyal(type,at,n=1,opt={}){ const us=spawnAt(type,'loyal',at,n);
-    for(const u of us){ loyalScale(u); u.home={x:u.x,y:u.y}; if(opt.hunter) u.hunter=true; if(opt.patrol) u.patrol={ pts:opt.patrol, i:Math.floor(Math.random()*opt.patrol.length) };
+    for(const u of us){ if(opt.rank>0&&isSoldierType(u.type)){ u.vet={ id:'loyal'+u.id, name:freshName(), type:u.type, rank:Math.min(4,Math.round(opt.rank)), xp:0, kills:0, missions:0, healed:0, repaired:0 }; u.npc=true; applyRank(u); u.hp=u.maxHp; }
+      loyalScale(u); u.home={x:u.x,y:u.y}; if(opt.hunter) u.hunter=true; if(opt.patrol) u.patrol={ pts:opt.patrol, i:Math.floor(Math.random()*opt.patrol.length) };
       if(opt.hold) u.order={type:'hold'}; if(opt.tough){ u.hp=u.maxHp=u.maxHp*opt.tough; } if(opt.name) u.loyalName=opt.name; }
     return us; },
   /* loyalB(type, at): a Lunar Corps structure (relay, sentry, barricade) that belongs to them */

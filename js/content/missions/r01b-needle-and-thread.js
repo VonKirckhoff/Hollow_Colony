@@ -11,17 +11,20 @@ const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
 const NT_PAD={x:30,y:20};     /* the relief pad (its middle tile): on the east side of the camp, so the relief squad walks straight in */
+const NT_BARRICADES=[ {x:24,y:20}, {x:24,y:22}, {x:17,y:21} ];   /* the garrison's sandbags: two on the east side (the pad), one on the west (tiles) */
+/* a rank from the job's number: Easy one lower, Hard one higher, never past Lieutenant */
+const ntRank=r=>Math.max(0,Math.min(4,r+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)));
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
-    id:'rogue-needle-and-thread', title:'Needle and Thread', map:'kappa', rogue:true,
+    id:'rogue-needle-and-thread', title:'Needle and Thread', map:'kappa', rogue:true, loyalCover:true,   /* the garrison takes cover behind its barricades (coverDamage) */
     summary:'Hit the Kappa field hospital a second time, for Maas\'s stabilizer and her formula.',
     briefing:[
       'One case of stabilizer from Maas\'s freezer, and it is half gone. Devreese says it will not last the month. Without it, the strain takes us one by one, and you first: you have had it the shortest.',
       'The crew hit Kappa\'s field hospital once before. You were on the other side that night, holding the line until dawn. Now Tycho is emptying the tents under Containment Order 10, and Maas\'s stabilizer and her files go out on the next transport.',
       'Three cases of stabilizer, one in each tent. And the records terminal: if Devreese can stand at it long enough, she pulls Maas\'s formula off it, and we never have to steal a dose again. The moment she starts, the hospital calls for help. Then out through the old shaft in the north wall.'
     ],
-    job:{ download:50, lostFor:3, call:15, waves:3, squad:4 },
+    job:{ download:50, lostFor:3, call:15, waves:3, squad:4, rank:2, leadRank:4, supRank:1, reliefRank:1 },   /* ranks (RANKS): ring fighters, the ring's Lieutenant, Medics and Engineer, the first relief squad (+1 per squad after it); Easy one lower, Hard one higher (ntRank) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c'],
       shafts:[ {x:17,y:2,wall:'n',exit:true,label:'North shaft'} ],
@@ -39,9 +42,12 @@ ROGUE_MISSIONS.push(
           g.vars.cases=NT_CASES.map(c=>{ g.cache(c,{ stab:1 }); return G.ents[G.ents.length-1]; });
           g.loyalB('sentry',{x:16,y:20}); g.loyalB('sentry',{x:25,y:19}); g.vars.relay=g.loyalB('relay',NT_RELAY);
           /* the garrison stands in a defence ring round the middle of the camp: fighters on the ring, Medics and the Engineer inside */
-          const gar=[...g.loyal('trooper',{x:21,y:21},2),...g.loyal('gunner',{x:24,y:22},1),...g.loyal('trooper',{x:19,y:16},1),
-            ...g.loyal('medic',{x:19,y:22},2),...g.loyal('engineer',{x:22,y:20},1)];
-          gar.push(...g.loyal('trooper',{x:18,y:24},2));   /* the old patrol: no more walks round the basin (it woke the hive in the north-east), it stands in the ring too */
+          const R={rank:ntRank(J.rank)}, S={rank:ntRank(J.supRank)};
+          const lead=g.loyal('trooper',{x:21,y:21},1,{rank:ntRank(J.leadRank)});   /* the ring's Lieutenant: he throws grenades at a bunched-up crew */ g.vars.lead=lead[0];
+          const gar=[...lead,...g.loyal('trooper',{x:21,y:21},1,R),...g.loyal('gunner',{x:24,y:22},1,R),...g.loyal('trooper',{x:19,y:16},1,R),
+            ...g.loyal('medic',{x:19,y:22},2,S),...g.loyal('engineer',{x:22,y:20},1,S)];
+          gar.push(...g.loyal('trooper',{x:18,y:24},2,R));
+          g.vars.barricades=NT_BARRICADES.map(p=>g.loyalB('barricade',p)).filter(Boolean);   /* sandbags on the edge of the ring, most on the side of the pad */   /* the old patrol: no more walks round the basin (it woke the hive in the north-east), it stands in the ring too */
           ntRing(g,gar,true); g.vars.ringMax=gar.length;   /* the ring's full strength: a relief squad never fills it past this */
           g.pad(NT_PAD,'relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
           g.marker('term',{x:20,y:18},'Records terminal');
@@ -77,7 +83,7 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>g.vars.dueAt!=null&&!g.vars.landAt&&!g.vars.won&&g.time>=g.vars.dueAt-3.2, do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
           const J=G.mission.job, most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), n=Math.max(1,Math.min(most,ntMissing(g))), k=g.vars.sent++;
-          const sq=[...g.loyal(k===2&&n>1?'medic':'trooper',NT_PAD,1)]; if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2));
+          const RR={rank:ntRank(J.reliefRank+k)}, sq=[...g.loyal(k===2&&n>1?'medic':'trooper',NT_PAD,1,RR)]; if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR));   /* Tycho sends better people each time */
           ntRing(g,sq); ntUnload(g,sq);
           g.say(['Lt. Van Der Planck','Sgt. Brandt','Lt. Van Der Planck'][k]||'Corps radio',[
             'Relief squad on the ground at Kappa. Into the ring, all of you. Weapons free, mind the tents.',
