@@ -39,6 +39,7 @@ const DEV_HELP = {
   'SHIP|wait':'Pickup: how many seconds the dropship waits on the pad with its ramp down before it lifts off.',
   'SHIP|boardR':'Pickup: within how many tiles of the pad a soldier heads up the ramp by himself.',
   'SHIP|warnAt':'Pickup: the pilot warns this many seconds before lift-off; the lift-off clock turns red.',
+  'SHIP|unloadHold':'Dropship: while soldiers still walk off the ramp one by one it stays on the pad; this many seconds after the last one is off it lifts off.',
   'SHIP|fade':'Dropship in 3D: how see-through it gets while your own soldiers stand under it (0 = gone, 1 = solid).',
   'MYCEL|veins':'The mycel shows a network of veins from every nest, with green pulses running out through them.',
   'MYCEL|branches':'How many main veins grow out of a nest.',

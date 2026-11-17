@@ -3,14 +3,14 @@
    Kappa Basin, a week after Dead Man's Frequency: the crew hits the field hospital a second time (the first raid was Corps mission Night Shift,
    which your own soldier helped to hold). Tycho is emptying the tents under Containment Order 10; Maas's stabilizer and her files go out on the next transport. Devreese has to stand at the records
    terminal for a while to pull the files off it; the moment she starts (or the moment anyone sees the crew) the hospital calls Tycho,
-   and once the ring round the camp has lost job.lostFor men, a relief squad lands on the pad just south of the camp, under its Relay Tower,
+   and once the ring round the camp has lost job.lostFor men, a relief squad lands on the pad on the east side of the camp,
    and fills the ring back up (never past its first strength; job.waves drops at most). Take the three cases of stabilizer from the tents and leave by the north shaft.
    The files hold Maas's formula: from the next job on, Devreese brews her own stabilizer (ROGUE.stab.formula per job).
    job: the numbers of this job (dev panel, "This job"). */
 const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of the three hospital tents */
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
-const NT_PAD={x:30,y:20};     /* the relief pad: the 3×3 pad right under the tower (one tile below it), just south of the camp */
+const NT_PAD={x:30,y:20};     /* the relief pad (its middle tile): on the east side of the camp, so the relief squad walks straight in */
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
@@ -49,7 +49,7 @@ ROGUE_MISSIONS.push(
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs',`Kappa Basin again. Last time they held us off till dawn. ${selfName()}, you were in that ring. Tell me where it is thin.`) },
       { when:g=>g.time>5, do:g=>g.crewSay(selfName(),'West side, by the tents. They stand in a ring round the middle and never leave the camp, Medics in the middle. And they will call Tycho the moment they see us.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','The terminal in the middle of the tents. Get me there and keep them off me. It takes time to find her files, and they will hear me looking.') },
-      { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','That pad south of the camp, under their tower, is a relief pad. Once the hospital shouts for help, Tycho lands its people right on their doorstep.') },
+      { when:g=>g.time>18, do:g=>g.crewSay('Cnudde','That pad on the east side of the camp is a relief pad. Once the hospital shouts for help, Tycho lands its people right on their doorstep.') },
       { when:g=>g.time>27, do:g=>g.crewSay('Van Wesemael','Hold fire (Q) till we are close, Captain. The longer they do not see us, the longer before the first dropship.') },
       /* seen before the download starts: the hospital calls Tycho early */
       { when:g=>!g.vars.alarm&&!!g.spotted(), do:g=>{ const s=g.spotted(); ntAlarm(g,'Contact at the perimeter! Corps armour, no IFF! Kappa medical to Tycho, we need a relief squad, now!'); if(s) G.alert={x:s.x,y:s.y}; } },
@@ -85,7 +85,7 @@ ROGUE_MISSIONS.push(
             'This is Van Der Planck again, last squad Tycho can spare. And if Dust\'s deserter is with them: you are not leaving Kappa.'][k]||'Relief squad down.');
           if(g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
       /* the relief squad comes down the ramp one by one, so it never stands bunched up on the pad */
-      { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.aboard=null; u.hidden=false; u.invuln=false;
+      { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.unloadPad=null; u.aboard=null; u.hidden=false; u.invuln=false;
           const p=u.ringAt||u; u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } } },
       /* the sirens wake the basin */
       { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.wave(45,{x:20,y:18}); g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
@@ -110,7 +110,7 @@ function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.
 const NT_DROP={ gap:1.2 };
 function ntUnload(g,sq){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); let f=b?rampFoot(b):null;
   if(f&&!walkableP(f.x,f.y)){ const t=nearestWalkable(Math.floor(f.x/TILE),Math.floor(f.y/TILE)); f=t?{x:(t.x+.5)*TILE,y:(t.y+.5)*TILE}:null; } if(!f&&b) f={x:b.x,y:b.y};
-  [...sq].sort((a,b)=>b.def.speed-a.def.speed).forEach((u,i)=>{ if(f){ u.x=f.x; u.y=f.y; } u.aboard=true; u.hidden=true; u.invuln=true; u.target=null; u.ntOffAt=g.time+i*NT_DROP.gap; }); }
+  [...sq].sort((a,b)=>b.def.speed-a.def.speed).forEach((u,i)=>{ if(f){ u.x=f.x; u.y=f.y; } u.aboard=true; u.hidden=true; u.invuln=true; u.target=null; u.ntOffAt=g.time+i*NT_DROP.gap; if(b) u.unloadPad=b.id; });   /* unloadPad: the ship stays on the pad until he is off */ }
 /* the defence ring (circle formation, defensive stance): add units to it and share out the places again.
    Fighters stand on a ring round NT_RING (it grows with the number of men), Medics and Engineers on a small circle inside.
    at once: put them straight on their places (the start of the mission). */

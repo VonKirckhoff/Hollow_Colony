@@ -234,7 +234,7 @@ function dustPuff(x,y,n){ for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2), sp=ra
   G.fx.push({k:'dust',x:x+Math.cos(a)*rand(8,40),y:y+Math.sin(a)*rand(6,26),vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.6,t:rand(1.2,2.6),max:2.6,r0:rand(10,16),r1:rand(22,40),col:pick(['#b3a58f','#a4967f','#c2b49c'])}); } }
 function updateShip(b,dt){
   const s=b.ship; if(!s) return;
-  if(s.phase==='ground'){ s.t-=dt; if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9});
+  if(s.phase==='ground'){ s.t-=dt; if(s.t<SHIP.unloadHold&&G.ents.some(u=>!u.dead&&u.unloadPad===b.id)) s.t=SHIP.unloadHold;   /* men still inside, walking off one by one: it waits, ramp down */ if(Math.random()<dt*4) dustPuff(b.x,b.y,1); if(s.t<=0){ s.phase='takeoff'; s.t=3; s.out=rand(-2.6,-0.5); SFX.play('engine',b.x,b.y); dustPuff(b.x,b.y,14); G.fx.push({k:'landring',x:b.x,y:b.y+6,t:0.9,max:0.9});
     for(let i=0;i<10;i++){ const a=rand(0,Math.PI*2), v=rand(60,150); G.fx.push({k:'spark',x:b.x+Math.cos(a)*20,y:b.y+Math.sin(a)*14,vx:Math.cos(a)*v,vy:Math.sin(a)*v*0.6-40,t:0.7,max:0.7,col:pick(['#8a8478','#6d675d','#a39b8c'])}); } } }   /* pebbles flung away */
   else if(s.phase==='parked'&&s.pickup) pickupTick(b,s,dt);
   else if(s.phase==='takeoff'){ s.t-=dt; if(s.t>2.2&&Math.random()<dt*30) dustPuff(b.x,b.y,1); if(s.t<=0) b.ship=null; }
@@ -272,7 +272,7 @@ function pickupLeave(b,s,why){ if(s.hull){ s.hull.dead=true; s.hull=null; } s.le
    On the ground: legs out, ramp down while it unloads (or waits for a pickup), engines idle.
    Take-off (3 s): it lifts on its engines, folds its legs, then the nose comes up and it turns away and speeds off.
    tilt: engines 0 = pushing back (flying) … 1 = blowing down (hovering) · pitch: nose up 0…1 · beams: landing lights 0…1 · legs, ramp 0…1 */
-const SHIP = { curve:0.32, liftAlt:42, lightReach:70, approach:0.9, turnFrom:0.7, size3d:2.5, wait:90, boardR:2.6, warnAt:30, fade:0.4 };
+const SHIP = { curve:0.32, liftAlt:42, lightReach:70, approach:0.9, turnFrom:0.7, size3d:2.5, wait:90, boardR:2.6, warnAt:30, fade:0.4, unloadHold:0.8 };
 /* Nov 2026: the 3D ship is SHIP.size3d times the 2D sprite. On a pad it sets down along the heading where its body (hull, wings, pods
    and the open ramp) covers the least rock, cliff or crater rim, or the map's edge; ties keep the old heading (nose east). */
 const SHIP_BLOCK = { '#':1, '^':1, '*':1, '%':1, '&':1 };   /* a crater rim ) is lower than the belly; plateau & only counts from the low ground */
