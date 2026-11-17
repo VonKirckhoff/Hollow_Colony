@@ -89,6 +89,15 @@ CASES=[
   G.vars.alarm=G.time; G.vars.sent=0; G.vars.dueAt=G.time+1; for(let i=0;i<5*30&&!G.vars.sent;i++) __hc.update(1/30); const fresh=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&!had.has(e));
   step(fresh.length*NT_DROP.gap+1); ok(fresh.length>=2&&fresh.every(u=>!u.flank&&u.ringer),'the relief squad walks straight into the camp, no going round ('+fresh.length+')');
   ok(fresh.every(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y)<(NT_TAC.frontMax+2)*TILE),'to its place in the line'); step(8); ok(fresh.every(u=>u.dead||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<1.5*TILE),'and gets there');'''),
+('needle: the Engineer mends from inside the camp','''resetRogue(); const G=start('''+NT+'''); step(1); for(const e of G.ents) if(e.faction==='swarm') e.dead=true;
+  const C={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, en=G.ents.find(e=>!e.dead&&e.ringer&&e.def.builder), rt=G.vars.relay; for(const e of G.ents) if(e.ringer) e.invuln=true;
+  ok(en&&en.repairHome,'the garrison Engineer knows where his camp is'); ok(rt&&rt.type==='relay','the Relay Tower');
+  const cs=crew().filter(u=>!u.def.heal).slice(0,3); cs.forEach((u,i)=>{ u.invuln=true; u.quiet=true; tp(u,21+i,28); });   /* the crew south of the tower */
+  rt.hp=rt.maxHp*0.4; let at=null, mended=false; for(let i=0;i<20*30;i++){ __hc.update(1/30); if(en.order&&en.order.type==='repair'&&en.order.spot&&!at) at={...en.order.spot}; if(rt.hp>=rt.maxHp*0.99){ mended=true; break; } }
+  ok(!!at,'he goes to mend it ('+(en.order&&en.order.type)+')');
+  if(at){ const cx=C.x-rt.x, cy=C.y-rt.y, n=Math.hypot(cx,cy), sx=at.x-rt.x, sy=at.y-rt.y; ok((sx*cx+sy*cy)/n>0,'from the side that faces the camp ('+(at.x/TILE).toFixed(1)+','+(at.y/TILE).toFixed(1)+')');
+    ok(at.y<=rt.y,'not from the south, where the crew is'); }
+  ok(mended,'and the tower is whole again');'''),
 ('needle: download, alarm, relief squads','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()) u.invuln=true; const d=crew().find(u=>u.def.heal); for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='building') e.dead=true;
   const ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), J=G.mission.job; let most=0; const watch=s=>{ for(let i=0;i<s*30&&!G.over;i++){ __hc.update(1/30); if(i%15===0){ most=Math.max(most,G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit').length); for(const e of G.ents) if(!e.dead&&e.faction==='loyal'&&e.kind==='unit') types.add(e.type); } } }, types=new Set();
   ok(G.vars.ringMax===9&&ring().length===9,'the ring starts with 9 men ('+ring().length+')');
