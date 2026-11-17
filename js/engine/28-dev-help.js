@@ -186,6 +186,7 @@ const DEV_HELP = {
   'AMBIENT3D|devilPuffs':'3D dust devil: puffs of dust that make up the funnel.',
   'AMBIENT3D|devilGrit':'3D dust devil: bits of grit sucked up and thrown out at the top.',
   'AMBIENT3D|devilLean':'3D dust devil: how far the top sways, tiles.',
+  'NADE|size':'A grenade in flight (Lieutenant Trooper): how big it is drawn in 2D, pixels across.', 'NADE|arc':'A grenade in flight: how high its arc goes in 2D, pixels.', 'NADE|trail':'A grenade in flight: seconds between two puffs of its smoke trail.',
   'ANIM|devilDust':'A dust devil whips dust off units it crosses: puffs per second per unit (0 = never).',
   'ANIM|devilReach':'How close a unit must be to a dust devil to have dust whipped off it, pixels.',
   'VIEW3D|groundAnims':'3D view: paint the 2D ground animations (footprints, casings, acid, fire, drag trails, zones) on the 3D ground.',

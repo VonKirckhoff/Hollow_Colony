@@ -78,12 +78,15 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
           const J=G.mission.job, most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), n=Math.max(1,Math.min(most,ntMissing(g))), k=g.vars.sent++;
           const sq=[...g.loyal(k===2&&n>1?'medic':'trooper',NT_PAD,1)]; if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2));
-          ntRing(g,sq);
+          ntRing(g,sq); ntUnload(g,sq);
           g.say(['Lt. Van Der Planck','Sgt. Brandt','Lt. Van Der Planck'][k]||'Corps radio',[
             'Relief squad on the ground at Kappa. Into the ring, all of you. Weapons free, mind the tents.',
             'Second squad down. Close up the ring with Van Der Planck\'s people. Flamer on the line, keep them out of the tents.',
             'This is Van Der Planck again, last squad Tycho can spare. And if Dust\'s deserter is with them: you are not leaving Kappa.'][k]||'Relief squad down.');
           if(g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
+      /* the relief squad comes down the ramp one by one, so it never stands bunched up on the pad */
+      { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.aboard=null; u.hidden=false; u.invuln=false;
+          const p=u.ringAt||u; u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } } },
       /* the sirens wake the basin */
       { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.wave(45,{x:20,y:18}); g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
       /* both done: out through the north shaft */
@@ -103,6 +106,11 @@ ROGUE_MISSIONS.push(
 function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.say('Kappa medical',line);
   g.ping(NT_PAD);
   g.crewSay('Capt. Kerckhoffs','That is the alarm. Thin out that ring and Tycho drops more people on that pad. Get Devreese her files and get the cases, fast.'); }
+/* the relief squad: everyone waits inside the ship (hidden, safe) and walks off the ramp NT_DROP.gap seconds after the one before him, the quickest first (so nobody catches up with the one in front) */
+const NT_DROP={ gap:1.2 };
+function ntUnload(g,sq){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); let f=b?rampFoot(b):null;
+  if(f&&!walkableP(f.x,f.y)){ const t=nearestWalkable(Math.floor(f.x/TILE),Math.floor(f.y/TILE)); f=t?{x:(t.x+.5)*TILE,y:(t.y+.5)*TILE}:null; } if(!f&&b) f={x:b.x,y:b.y};
+  [...sq].sort((a,b)=>b.def.speed-a.def.speed).forEach((u,i)=>{ if(f){ u.x=f.x; u.y=f.y; } u.aboard=true; u.hidden=true; u.invuln=true; u.target=null; u.ntOffAt=g.time+i*NT_DROP.gap; }); }
 /* the defence ring (circle formation, defensive stance): add units to it and share out the places again.
    Fighters stand on a ring round NT_RING (it grows with the number of men), Medics and Engineers on a small circle inside.
    at once: put them straight on their places (the start of the mission). */

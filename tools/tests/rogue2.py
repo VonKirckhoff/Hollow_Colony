@@ -29,7 +29,7 @@ CASES=[
   ring()[0].dead=true; watch(1); ok(G.vars.dueAt!=null&&G.timer&&G.timer.label==='Relief squad',J.lostFor+' fallen: the hospital calls a relief squad');
   const before=new Set(ring()); watch(J.call+1); ok(G.vars.sent===1,'the first relief squad lands'); const fresh=ring().filter(u=>!before.has(u));
   ok(fresh.length===J.lostFor&&ring().length===G.vars.ringMax,'it fills the ring back up, no more ('+fresh.length+' new)'); ok(fresh.every(u=>!u.hunter),'the relief squad does not hunt');
-  watch(12); ok(fresh.every(u=>u.dead||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<TILE),'walks into the camp and joins the ring'); ok(fresh.every(u=>u.dead||Math.hypot(u.ringAt.x-NT_RING.x*TILE,u.ringAt.y-NT_RING.y*TILE)<4*TILE),'round the middle of the camp');
+  watch(18); ok(fresh.every(u=>u.dead||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<TILE),'walks into the camp and joins the ring ('+fresh.map(u=>u.dead?'x':(Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)/TILE).toFixed(1)+(u.hidden?'h':'')+(u.order?u.order.type:'-')+(u.target?'T':'')).join(' ')+')'); ok(fresh.every(u=>u.dead||Math.hypot(u.ringAt.x-NT_RING.x*TILE,u.ringAt.y-NT_RING.y*TILE)<4*TILE),'round the middle of the camp');
   for(const u of G.ents) if(u.faction==='loyal') u.invuln=true; tp(d,21,18); for(let i=0;i<50&&!G.vars.dlDone;i++){ tp(d,21,18); watch(1); } ok(G.vars.dlDone&&obj('records')==='done'&&G.rogue.formula,'the files: Maas\\'s formula');
   ok(obj('stab')==='active'&&!G.rogue.exitOpen,'shaft shut until the cases are taken'); for(const c of G.vars.cases){ tp(d,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); watch(0.4); } watch(1);
   ok(obj('stab')==='done'&&G.rogue.exitOpen,'three cases: the north shaft opens'); ok(G.rogue.stab>=3,'the doses are in the bag ('+G.rogue.stab+')');
@@ -44,6 +44,21 @@ CASES=[
   for(let i=0;i<240*30&&!G.over;i++){ __hc.update(1/30); if(i%10===0) for(const u of ring()){ if(u.def.builder) continue; far=Math.max(far,Math.hypot(u.x-C.x,u.y-C.y)/TILE); if(u.target&&(u.target.type==='hive'||u.target===d)) hive=true; } }
   ok(!hive,'nobody goes for a hive or a drone outside the camp'); ok(far<NT_RING.leash,'they stay in the camp (furthest '+far.toFixed(1)+' tiles)');
   ok(h&&!h.dead,'the hive nearest the camp is left alone'); ok(ring().filter(u=>u.def.heal).every(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y)<TILE),'the Medics stand in the middle');'''),
+('needle: grenades and the drop','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='building') e.dead=true;
+  const lt=crew().find(u=>u.type==='trooper'); lt.vet.rank=2; applyRank(lt); lt.invuln=true; for(const u of crew()) if(u!==lt){ tp(u,4,40); u.quiet=true; }
+  const ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='loyal');
+  const med=ring().filter(u=>u.def.heal), eng=ring().find(u=>u.def.builder); for(const m of med){ m.x=eng.x+10; m.y=eng.y+6; m.invuln=false; }
+  for(const u of ring()) u.invuln=false; const hp0=med.map(m=>m.hp); lt.nadeAt=0; tp(lt,Math.floor(eng.x/TILE)+4,Math.floor(eng.y/TILE)); throwGrenade(lt,eng); const sh=G.shots.find(x=>x.k==='grenade'); ok(!!sh,'a Lieutenant throws a grenade at the Engineer and his Medics');
+  for(let i=0;i<60&&G.shots.includes(sh);i++){ for(const u of ring()){ u.order={type:'hold'}; u.target=null; } __hc.update(1/30); }
+  ok(med.every(m=>!m.dead)&&!eng.dead,'it hurts them, nobody dies of it ('+med.map(m=>Math.round(m.hp)).join('/')+', Engineer '+Math.round(eng.hp)+')'); ok(med.some((m,i)=>m.hp<hp0[i]-10),'but it does hurt');
+  ok(G.fx.some(f=>f.k==='nade'),'a blast you can see'); 
+  { const d=makeUnit('drone','swarm',lt.x+90,lt.y), d2=makeUnit('drone','swarm',lt.x+95,lt.y+5); d.hp=d.maxHp=200; d2.hp=d2.maxHp=200; d.invuln=false; lt.nadeAt=0; const hpd=d.hp; throwGrenade(lt,d); const s2=G.shots.find(x=>x.k==='grenade'&&x!==sh); for(let i=0;i<60&&s2&&G.shots.includes(s2);i++) __hc.update(1/30); ok(s2&&hpd-d.hp>PERKS.trooper.damage*0.9,'against the Brood it hits as hard as ever ('+Math.round(hpd-d.hp)+')'); d.dead=true; d2.dead=true; }
+  lt.quiet=true; lt.nadeAt=0; const n0=G.shots.filter(x=>x.k==='grenade').length; throwGrenade(lt,eng); ok(G.shots.filter(x=>x.k==='grenade').length===n0,'hold fire (Q): no grenade, not even with an order'); lt.quiet=false;
+  for(const u of ring()) u.dead=true; G.vars.alarm=G.time; G.vars.dueAt=G.time+1; for(let i=0;i<5*30&&!G.vars.sent;i++) __hc.update(1/30); __hc.update(1/30);
+  const fresh=ring(); ok(G.vars.sent===1&&fresh.length>=2,'a relief squad lands ('+fresh.length+')'); ok(fresh.filter(u=>!u.hidden).length===1,'they come down the ramp one by one ('+fresh.filter(u=>!u.hidden).length+' out)');
+  ok(fresh.filter(u=>u.hidden).every(u=>u.invuln&&findTarget(lt,40,true)!==u),'the ones still aboard cannot be hit');
+  let close=99, at=''; for(let i=0;i<8*30;i++){ __hc.update(1/30); const v=ring().filter(u=>!u.hidden&&Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)>TILE); for(const a of v) for(const b of v) if(a!==b) close=Math.min(close,Math.hypot(a.x-b.x,a.y-b.y)/TILE); if(ring().every(u=>!u.hidden)) break; }
+  ok(ring().every(u=>!u.hidden&&!u.invuln),'all out'); ok(close>PERKS.trooper.radius,'on the way to the ring, never two within reach of one grenade (closest '+close.toFixed(1)+' tiles)');'''),
 ('needle: seen early','''resetRogue(); const G=start('''+NT+'''); step(1); for(const e of G.ents) if(e.faction==='swarm') e.invuln=true; const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt); u.invuln=true; tp(u,22,24); step(3);
   ok(G.vars.alarm!=null&&!G.vars.dlStart,'seen before the download: the alarm goes early'); ok(G.msgs.some(m=>m.who==='Kappa medical'),'Kappa medical calls Tycho');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);

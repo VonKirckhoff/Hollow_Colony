@@ -263,10 +263,28 @@ function drawIdle(u,w,h,now){ if(!ANIM.idle) return;
   if(u.moving||u.target||u.hidden||!isVisible(u)) return; const ph=(now/1000+u.id*0.7)%3.5; if(ph>1.1) return;   /* sniffing: little puffs at the head */
   for(let i=0;i<2;i++){ const s=(ph*2+i*0.5)%1; ctx.fillStyle=`rgba(159,211,138,${0.6-s*0.6})`; ctx.fillRect(Math.round(u.x+u.face*(w*0.4+s*6)),Math.round(u.y-h*0.45-s*4),2,2); } }
 /* grenade: it spins, and its shadow on the ground shows where it will land */
-function drawGrenade(s,t){ const gx=s.sx+(s.tx-s.sx)*t, gy=s.sy+(s.ty-s.sy)*t, x=gx, y=gy-Math.sin(t*Math.PI)*46, sh=1-Math.sin(t*Math.PI)*0.5;
-  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(gx,gy+6,5*sh,2*sh,0,0,Math.PI*2); ctx.fill();
-  ctx.save(); ctx.translate(Math.round(x),Math.round(y)); ctx.rotate(s.t*14); ctx.fillStyle='#0a0b10'; ctx.fillRect(-3,-3,6,6); ctx.fillStyle='#5b6b3a'; ctx.fillRect(-2,-2,4,4); ctx.restore();
-  if(Math.floor(s.t*12)%2){ ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(x)-1,Math.round(y)-5,2,2); } }
+/* a grenade in flight (Lieutenant Trooper): big enough to follow, a blinking fuse light, a shadow that shows where it lands, and a ring on that spot */
+const NADE = { size:9, arc:52, trail:0.03 };   /* px across, px high at the top of its arc, seconds between two smoke puffs of its trail */
+const nadePos=(s,t)=>{ const gx=s.sx+(s.tx-s.sx)*t, gy=s.sy+(s.ty-s.sy)*t; return {gx,gy,x:gx,y:gy-Math.sin(t*Math.PI)*NADE.arc}; };
+function drawGrenade(s,t){ const {gx,gy,x,y}=nadePos(s,t), sh=1-Math.sin(t*Math.PI)*0.5, S=NADE.size, blink=Math.floor(s.t*14)%2;
+  ctx.strokeStyle=`rgba(255,90,79,${0.35+0.4*t})`; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.arc(s.tx,s.ty,s.splash*(1.1-0.3*t),0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);   /* where it will land */
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(gx,gy+6,6*sh,2.5*sh,0,0,Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(Math.round(x),Math.round(y)); ctx.rotate(s.t*14); ctx.fillStyle='#0a0b10'; ctx.fillRect(-S/2,-S/2,S,S); ctx.fillStyle='#6f8240'; ctx.fillRect(-S/2+1,-S/2+1,S-2,S-2);
+  ctx.fillStyle='#3d4a22'; ctx.fillRect(-S/2+1,-1,S-2,2); ctx.fillStyle='#c9d0d8'; ctx.fillRect(-1,-S/2-2,3,3); ctx.restore();   /* body, a band, the lever */
+  if(blink){ ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,90,79,.45)'; ctx.beginPath(); ctx.arc(x,y-S/2-2,5,0,Math.PI*2); ctx.fill(); ctx.globalCompositeOperation='source-over'; ctx.fillStyle='#ff5a4f'; ctx.fillRect(Math.round(x)-1,Math.round(y-S/2)-3,3,3); } }
+/* a thin smoke trail behind a flying grenade (a dust fx, so the 3D view shows it too) */
+function nadeTrail(s,dt){ s.trailT=(s.trailT||0)-dt; if(s.trailT>0) return; s.trailT=NADE.trail; const t=Math.min(1,s.t/s.dur), p=nadePos(s,t);
+  G.fx.push({k:'nsmoke',x:p.gx,y:p.gy,h:Math.sin(t*Math.PI),t:0.5,max:0.5}); }   /* h: how high up its arc (0..1); 2D and 3D each scale it to their own arc */
+function drawNadeSmoke(f){ const a=f.t/f.max; ctx.globalAlpha=a*0.45; ctx.fillStyle='#9a9aa2'; ctx.beginPath(); ctx.arc(f.x,f.y-f.h*NADE.arc,1.5+(1-a)*3,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+/* the blast: a white flash, a fireball, a shock ring over the ground, smoke that rises and sparks */
+function nadeBlast(x,y,r){ G.fx.push({k:'nade',x,y,r,t:0.6,max:0.6});
+  for(let i=0;i<6;i++){ const a=Math.random()*Math.PI*2, d=rand(0,r*0.5); G.fx.push({k:'dust',x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,vx:Math.cos(a)*12,vy:Math.sin(a)*8-6,lift:rand(0.8,1.6),t:rand(1.2,1.8),max:1.8,r0:5,r1:12,col:'#3a3a40'}); } }
+function drawNade(f){ const a=f.t/f.max, k=1-a;
+  ctx.globalCompositeOperation='lighter';
+  if(k<0.25){ const q=1-k/0.25; ctx.fillStyle=`rgba(255,250,225,${q})`; ctx.beginPath(); ctx.arc(f.x,f.y-4,f.r*0.55*(0.6+k*2),0,Math.PI*2); ctx.fill(); }   /* the white flash */
+  ctx.fillStyle=`rgba(255,${Math.round(120+100*a)},40,${0.75*a})`; ctx.beginPath(); ctx.arc(f.x,f.y-4-k*10,f.r*(0.35+0.5*k),0,Math.PI*2); ctx.fill();   /* the fireball rises a little */
+  ctx.globalCompositeOperation='source-over';
+  ctx.strokeStyle=`rgba(255,226,168,${0.8*a})`; ctx.lineWidth=2+2*a; ctx.beginPath(); ctx.ellipse(f.x,f.y,f.r*(0.3+1.1*k),f.r*(0.3+1.1*k)*0.6,0,0,Math.PI*2); ctx.stroke(); }   /* the shock ring */
 /* stray rounds: now and then a shot goes past and kicks up dust, or chips the rock (only to look at: every shot still hits) */
 function strayRound(mx,my,t){ if(!(ANIM.strays>0)||Math.random()>ANIM.strays||!animOnScreen(t.x,t.y)) return; const a=Math.atan2(t.y-my,t.x-mx)+rand(-0.25,0.25), d=Math.hypot(t.x-mx,t.y-my)+rand(14,40);
   const x=mx+Math.cos(a)*d, y=my+Math.sin(a)*d, tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), rock=tx>=0&&ty>=0&&tx<G.map.w&&ty<G.map.h&&!G.map.walk[ty*G.map.w+tx];

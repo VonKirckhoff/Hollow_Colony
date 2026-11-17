@@ -1859,10 +1859,11 @@ function render3D(now){
   n=0; const ping=pool(V3.pingPool,()=>new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, depthWrite:false })));
   for(const p of G.pings){ const r=ping(n++), rad=(10+p.t*28)/TILE, x=p.x/TILE, z=p.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set(p.col); r.material.opacity=Math.max(0,1-p.t/3); }
   for(const f of G.fx){ if(f.k!=='order') continue; const k=1-f.t/f.max, r=ping(n++), rad=(6+k*22)/TILE, x=f.x/TILE, z=f.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set('rgb('+f.col+')'); r.material.opacity=1-k; }
+  for(const s of G.shots){ if(s.k!=='grenade'||s.t<0) continue; const k=s.t/s.dur, r=ping(n++), rad=s.splash*(1.1-0.3*k)/TILE, x=s.tx/TILE, z=s.ty/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set('#ff5a4f'); r.material.opacity=0.35+0.5*k; }   /* where a grenade will land, as in 2D */
   hidePool(V3.pingPool,n);
   n=0; const shot=pool(V3.shotPool,()=>new THREE.Mesh(GEO.ball,new THREE.MeshBasicMaterial({ color:0x4fae22 })));
   for(const s of G.shots){ if(s.t<0) continue; const t=s.t/s.dur, x=(s.sx+(s.tx-s.sx)*t)/TILE, z=(s.sy+(s.ty-s.sy)*t)/TILE, egg=s.k==='egglob'||s.k==='broodlob', arc=s.k==='plasma'?0:Math.sin(t*Math.PI)*(egg?2.2:1.3);
-    const o=shot(n++); o.position.set(x,v3H(x,z)+0.6+arc,z); o.material.color.set(s.k==='plasma'?'#7ff6ff':s.k==='grenade'?'#3a4150':egg?'#6d5a3e':'#a6ff4a'); o.scale.setScalar(egg?0.14:s.k==='grenade'?0.08:0.09); }
+    const o=shot(n++); o.position.set(x,v3H(x,z)+0.6+arc,z); o.material.color.set(s.k==='plasma'?'#7ff6ff':s.k==='grenade'?(Math.floor(s.t*14)%2?'#ff5a4f':'#6f8240'):egg?'#6d5a3e':'#a6ff4a'); o.scale.setScalar(egg?0.14:s.k==='grenade'?0.16:0.09); }   /* a grenade: big, olive, its fuse light blinking red */
   hidePool(V3.shotPool,n);
   /* effects in the air */
   let nt=0; const P=V3.tracerPos, Cc=V3.tracerCol; n=0; const fx=pool(V3.fxPool,v3Sprite);
@@ -1876,6 +1877,10 @@ function render3D(now){
       case 'spark': case 'ember': put(x,gy+0.35+(1-a)*0.5,z,0.13,f.col||'#ffb347',a); break;
       case 'flame': put(x,gy+0.35+(1-a)*0.6,z,0.28+(1-a)*0.5,a>0.6?'#ffe08a':a>0.3?'#ff8a2a':'#783214',a); break;
       case 'boom': put(x,gy+0.45,z,(f.r/TILE)*2.2*(1-a*0.6),f.col||'#ffa03c',a*0.9); break;
+      case 'nsmoke': put(x,gy+0.6+f.h*1.3,z,0.12+(1-a)*0.18,'#9a9aa2',a*0.45,true); break;   /* a flying grenade's smoke trail, at the height of its arc as the shot is drawn */
+      case 'nade': { const k=1-a, R=f.r/TILE; if(k<0.3){ const q=1-k/0.3; put(x,gy+0.7,z,R*3.6*(0.5+k*2),'#fff6dc',q); put(x,gy+0.7,z,R*1.6,'#ffffff',q); }   /* a grenade's blast: a white flash, a fireball that rises, a ring of light over the ground */
+        put(x,gy+0.5+k*0.9,z,R*(1.0+1.3*k),a>0.5?'#ff9a2a':'#7a3a14',a*0.85,true); put(x,gy+0.55+k*0.9,z,R*(1.6+2*k),a>0.5?'#ffd23f':'#ff8a2a',a);
+        for(let i=0;i<14;i++){ const an=i/14*Math.PI*2, rr=R*(0.3+1.2*k); put(x+Math.cos(an)*rr,gy+0.15,z+Math.sin(an)*rr,0.5,'#ffe2a8',a); } break; }
       case 'dust': put(x,gy+0.3+(f.lift?(1-a)*f.lift:0),z,(f.r0+(1-a)*f.r1)/TILE*2,f.col||'#777',a*(f.lift?0.5:0.35),true); break;   /* f.lift: dust whipped up by a dust devil rises */
       case 'hivedeath': { const D=HIVE_DEATH, tt=f.max-f.t; if(!G.seen[Math.floor(f.y/TILE)*G.map.w+Math.floor(f.x/TILE)]) break;
         if(tt<D.scream) put(x,gy+1.1,z,1.4+0.5*Math.abs(Math.sin(tt*24)),'#a6ff4a',0.25+0.2*tt/D.scream);   /* the heart's glow while it screams */
