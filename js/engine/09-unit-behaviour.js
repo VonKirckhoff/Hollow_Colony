@@ -241,7 +241,7 @@ function medicThink(u,dt){
    he heals from a spot around his patient, within reach, as far as he can get from the others (MEDIC_SPREAD.reach of his heal range) */
 const MEDIC_SPREAD = { reach:0.7, every:0.4 };
 function medicSpread(u,t,inRange,dt){ const gap=u.spread*TILE, others=G.ents.filter(e=>e!==u&&!e.dead&&!e.downed&&e.kind==='unit'&&e.faction===u.faction&&e.def.heal);
-  const far=p=>others.reduce((m,e)=>Math.min(m,Math.hypot(e.x-p.x,e.y-p.y)),Infinity);
+  const goal=e=>e.spreadP||(e.order&&e.order.x!=null?e.order:null), far=p=>others.reduce((m,e)=>{ const q=goal(e); return Math.min(m,Math.hypot(e.x-p.x,e.y-p.y),q?Math.hypot(q.x-p.x,q.y-p.y):Infinity); },Infinity);   /* where the others stand, and where they are going */
   if(inRange&&far(u)>=gap){ u.path=null; u.spreadP=null; return; }   /* in reach and clear of the others: heal from here */
   if(!u.spreadP||G.time>=(u.spreadAt||0)){ u.spreadAt=G.time+MEDIC_SPREAD.every; const r=u.def.healRange*MEDIC_SPREAD.reach*TILE; let best=null, bs=-Infinity;
     for(let i=0;i<16;i++){ const a=i/16*Math.PI*2, p={x:t.x+Math.cos(a)*r,y:t.y+Math.sin(a)*r}; if(!walkableP(p.x,p.y)) continue;

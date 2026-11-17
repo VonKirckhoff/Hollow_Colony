@@ -125,7 +125,28 @@ function stabilizeCrew(id){ const R=rogueStore(), v=R.crew.find(x=>x.id===id); i
   R.stab--; v.taint=Math.max(0,v.taint-ROGUE.stab.amount); saveRogue(); return null; }
 
 /* ---- during a mission ---- */
-function rogueTick(dt){ if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
+/* the loyal Corps' field mortar (BUILDINGS.mortar; Needle and Thread): while a loyal Engineer stands within crewR tiles of it, it lobs a shell
+   every `every` seconds at the thickest group of the crew (or anyone hostile to the loyal Corps) that a loyal soldier or gun can see,
+   between `min` and `range` tiles away. The shell is a grenade shot (15-main-update.js: same blast, a soldier takes PERKS.trooper.vsSoldier of it)
+   that hangs `flight` seconds in the air: its red ring on the ground is the warning. Kill the Engineer or blow up the mortar to silence it. */
+/* LOYAL_MORTAR (its numbers) lives in js/content/rogue.js, so the dev panel sees it */
+function loyalMortarTick(dt){ const M=LOYAL_MORTAR;
+  for(const b of G.ents){ if(b.dead||b.type!=='mortar'||b.faction!=='loyal'||!b.built) continue;
+    const man=G.ents.find(u=>!u.dead&&!u.downed&&!u.hidden&&u.kind==='unit'&&u.faction==='loyal'&&u.def.builder&&Math.hypot(u.x-b.x,u.y-b.y)<M.crewR*TILE);
+    b.manned=!!man; if(!man){ b.fireAt=Math.max(b.fireAt||0,G.time+M.first); continue; }   /* nobody at it: a few seconds to get it going again once someone is */
+    if(b.fireAt==null) b.fireAt=G.time+M.first; if(G.time<b.fireAt) continue;
+    const foes=G.ents.filter(e=>!e.dead&&!e.downed&&!e.hidden&&!e.aboard&&!e.invuln&&e.kind==='unit'&&hostile('loyal',e.faction)&&e.faction!=='wild'&&loyalSees(e));
+    let best=null, bn=0; for(const e of foes){ const d=Math.hypot(e.x-b.x,e.y-b.y); if(d>M.range*TILE||d<M.min*TILE) continue;
+      const n=foes.filter(o=>Math.hypot(o.x-e.x,o.y-e.y)<M.radius*TILE).length+(e.crew?0.5:0); if(n>bn){ bn=n; best=e; } }
+    if(!best){ b.fireAt=G.time+1; continue; }
+    const grp=foes.filter(o=>Math.hypot(o.x-best.x,o.y-best.y)<M.radius*TILE), tx=grp.reduce((a,o)=>a+o.x,0)/grp.length, ty=grp.reduce((a,o)=>a+o.y,0)/grp.length;   /* the middle of the group */
+    G.shots.push({k:'grenade',shell:true,sx:b.x,sy:b.y-12,tx,ty,t:0,dur:M.flight,src:b,dmg:M.damage,splash:M.radius*TILE,faction:'loyal'});
+    b.fireAt=G.time+M.every; b.angle=Math.atan2(ty-b.y,tx-b.x); b.recoil=0.3; SFX.play('mortar',b.x,b.y); SFX.play('shell',tx,ty);
+    G.fx.push({k:'flash',x:b.x+Math.cos(b.angle)*8,y:b.y-14,t:0.12,max:0.12}); for(let i=0;i<6;i++) G.fx.push({k:'dust',x:b.x+rand(-6,6),y:b.y-10,vx:rand(-20,20),vy:rand(-50,-20),t:0.8,max:0.8,col:'#9a9a9a'});
+    if(Math.random()<0.6) bark(man,'grenade'); } }
+/* does any loyal soldier or gun see e (within its sight, no rock in the way)? */
+function loyalSees(e){ return G.ents.some(o=>!o.dead&&!o.downed&&!o.hidden&&o.faction==='loyal'&&o.def&&o.def.sight>0&&(o.kind==='unit'||o.built)&&Math.hypot(o.x-e.x,o.y-e.y)<o.def.sight*TILE&&!fireBlocked(o,e)); }
+function rogueTick(dt){ loyalMortarTick(dt); if(!isRogue()||!G.rogue) return; const T=ROGUE.taint;
   G.rogueAcidT=(G.rogueAcidT||0)-dt; const acidTick=G.rogueAcidT<=0; if(acidTick) G.rogueAcidT=0.25;
   for(const u of G.ents){ if(u.dead||u.kind!=='unit') continue;
     if(u.rogueAcid>0&&acidTick){ u.rogueAcid-=0.25; const fl=u.flash; damage(u,2*0.25*4,u.acidBy&&!u.acidBy.dead?u.acidBy:{faction:'corps',dead:true,def:{}}); u.flash=fl;

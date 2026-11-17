@@ -752,6 +752,9 @@ function v3Building(e){
   else if(t==='rubble'){ for(let i=0;i<5;i++) g.add(part(GEO.lowball,mat('#4a4a52'),0.25,0.2,0.25,(hash2(e.id,i,1)-0.5)*0.6,0.12,(hash2(e.id,i,2)-0.5)*0.6)); top=0.4; }
   else if(t==='wreck') return v3Wreck(e);
   else if(t==='medtent'){ const tent=new THREE.Mesh(new THREE.CylinderGeometry(0,1,1,4),mat('#c8d0c0')); tent.scale.set(0.9,1.6,0.9); tent.position.y=0.45; tent.rotation.y=Math.PI/4; tent.castShadow=true; g.add(tent); g.add(box(mat('#e2463a'),0.3,0.08,0.02,0,0.5,0.66)); top=1; }
+  else if(t==='mortar'){ const bag=mat('#8a7a5a'); for(let i=0;i<10;i++){ const a=i/10*Math.PI*2; const b=part(GEO.ball,bag,0.2,0.13,0.13,Math.cos(a)*0.42,0.1,Math.sin(a)*0.42); b.rotation.y=-a; g.add(b); }   /* a ring of sandbags */
+    g.add(cyl(dark,0.22,0.05,0.22,0,0.05,0)); const tube=grp(0,0.12,0); tube.add(cyl(steel,0.07,0.75,0.08,0,0.37,0)); tube.add(cyl(dark,0.085,0.06,0.085,0,0.74,0)); tube.rotation.x=-0.6; g.add(tube); U.tube=tube;   /* base plate and tube */
+    for(const s2 of [-1,1]){ const l=cyl(plate,0.02,0.4,0.02,s2*0.12,0.2,-0.2); l.rotation.x=0.5; l.rotation.z=s2*0.25; g.add(l); } top=0.9; }   /* the bipod */
   else if(t==='terminal'){ g.add(box(metal,0.4,0.7,0.3,0,0.35,0)); g.add(box(glow('#5fe3b0'),0.3,0.22,0.02,0,0.55,0.16)); top=0.8; }
   else if(t==='choirpod'){ g.add(part(GEO.cone,shiny('#5c3e6e'),0.3,0.9,0.3,0,0.45,0)); g.add(ball(glow('#c58cff'),0.1,0.1,0.1,0,0.92,0)); top=1; }
   else return null;

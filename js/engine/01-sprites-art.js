@@ -142,6 +142,13 @@ const ART = {
     x.fillStyle=P.k; x.fillRect(0,1,16,15); x.fillStyle=P.C; x.fillRect(1,2,14,13); x.fillStyle=P.m; x.fillRect(2,4,5,4); x.fillRect(9,8,5,5);
     x.fillStyle=P.p; x.fillRect(3,3,3,1); x.fillRect(10,7,3,1); x.fillStyle=P.e; x.fillRect(7,3,1,9); x.fillRect(4,11,6,1); x.fillRect(12,4,1,4); return c; },
   /* Rogue, Needle and Thread: the field hospital's records terminal (a Corps console with a green screen) and a hospital tent */
+  /* a field mortar: a ring of sandbags, a base plate, and a short fat tube pointing up at an angle */
+  mortar(){ const [c,x]=pxCtx(16,16); const P=PALETTE;
+    x.fillStyle=P.k; x.fillRect(1,8,14,7); x.fillStyle='#8a7a5a'; x.fillRect(2,9,12,5); x.fillStyle='#6f6247';
+    for(const [a,b] of [[2,9],[6,9],[10,9],[4,11],[8,11],[12,11],[2,13],[6,13],[10,13]]) x.fillRect(a,b,3,1);
+    x.fillStyle=P.k; x.fillRect(5,7,7,3); x.fillStyle='#4f5766'; x.fillRect(6,8,5,1);
+    x.fillStyle=P.k; for(let i=0;i<6;i++) x.fillRect(6+i,6-i,3,3); x.fillStyle='#59616f'; for(let i=0;i<5;i++) x.fillRect(7+i,6-i,1,1);
+    x.fillStyle='#3d4454'; for(let i=0;i<5;i++) x.fillRect(8+i,6-i,1,1); x.fillStyle=P.k; x.fillRect(11,1,4,2); x.fillStyle=P.Y||'#f2c230'; x.fillRect(4,10,1,1); x.fillRect(11,10,1,1); return c; },
   terminal(){ const [c,x]=pxCtx(16,18); const P=PALETTE;
     x.fillStyle=P.k; x.fillRect(2,2,12,10); x.fillStyle=P.G; x.fillRect(3,3,10,8); x.fillStyle='#0d2a1a'; x.fillRect(4,4,8,6);
     x.fillStyle='#5fe3b0'; x.fillRect(5,5,5,1); x.fillRect(5,7,3,1); x.fillRect(9,7,2,1); x.fillStyle='#2f8f6a'; x.fillRect(5,9,6,1);

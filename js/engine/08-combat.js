@@ -97,6 +97,7 @@ function damage(t,amt,src){
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
   if(t.kind==='building') t.hitBy=src;
+  else if(t.kind==='unit'&&src&&src.kind==='unit'){ t.shotBy=src; t.shotAt=G.time; }   /* who hit him last, and when (Needle and Thread's garrison reads it) */
   if(t.kind==='unit' && src && !src.dead){
     if(t.def.passive){ const a=Math.atan2(t.y-src.y,t.x-src.x); t.order={type:'move',x:t.x+Math.cos(a)*120,y:t.y+Math.sin(a)*120}; setPath(t,t.order.x,t.order.y); }
     else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction) && !(t.truce&&src.faction===t.truce) && !(src.truce&&src.truce===t.faction)) t.target=src;

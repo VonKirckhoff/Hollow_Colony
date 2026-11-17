@@ -34,6 +34,9 @@ const SFX=(()=>{
     heartbeat:[0.25,v=>{ tone(62,40,0.13,'sine',0.55*v); noise(0.06,180,'lowpass',1,0.25*v); tone(55,36,0.12,'sine',0.4*v,0.17); }],
     /* a meteorite: a thin whistle falling in pitch, then a dull thud in the dust (no crack: that is an egg) */
     meteor:  [0.4, v=>{ tone(2600,700,0.5,'sine',0.05*v); noise(0.5,3000,'bandpass',6,0.06*v); noise(0.35,260,'lowpass',1,0.45*v,0.55,60); tone(70,34,0.4,'sine',0.4*v,0.55); }],
+    /* a mortar: the hollow thump of the shell leaving the tube, then its whistle coming down */
+    mortar:  [0.3, v=>{ tone(110,45,0.22,'sine',0.55*v); noise(0.18,600,'lowpass',1,0.4*v); noise(0.12,2000,'bandpass',2,0.08*v,0.02); }],
+    shell:   [1,   v=>{ tone(2200,600,1.4,'sine',0.045*v); noise(1.3,2600,'bandpass',8,0.03*v); }],
     crack:   [0.12,v=>{ for(let i=0;i<4;i++) noise(0.025,2600+Math.random()*2400,'highpass',1.5,0.32*v,i*0.035+Math.random()*0.02); tone(240,90,0.08,'square',0.05*v); }],
     huskborn:[1,   v=>{ for(let i=0;i<6;i++) noise(0.03,3000+Math.random()*3000,'highpass',1,0.35*v,i*0.03);
                          noise(0.7,900,'lowpass',2,0.45*v,0.12,120); tone(85,30,0.8,'sine',0.5*v,0.1);
