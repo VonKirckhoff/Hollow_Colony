@@ -30,6 +30,7 @@ const DEV_HELP = {
   'INTERCOM|crackle':'Chance per 0.15 s of a crackle on the line (0 = never, 1 = all the time).',
   'INTERCOM|crackleVol':'Loudness of the crackles.',
   'INTERCOM|musicDuck':'The music while the intercom speaks, × its volume (1 = it does not sink).',
+  'MEDIC_SPREAD|reach':'A Medic who keeps his distance from the other Medics (Needle and Thread\'s garrison) heals from this share of his heal range away from his patient.', 'MEDIC_SPREAD|every':'Seconds between two looks for a better spot around the patient, away from the other Medics.',
   'SHIP|curve':'Dropship: how wide the curve is it comes in on (0 = straight in).',
   'SHIP|liftAlt':'Dropship: how high it hovers on its engines before the nose comes up at take-off (pixels).',
   'SHIP|lightReach':'Dropship: how far ahead of the nose the landing lights reach the ground (pixels).',

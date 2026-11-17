@@ -24,6 +24,8 @@ CASES=[
   ok(lead&&lead.vet&&lead.vet.rank===4&&hasPerk(lead)&&lead.type==='trooper','the ring has a Lieutenant who can throw grenades');
   ok(fight.length===5&&fight.every(u=>u.vet&&u.vet.rank===J.rank),'the fighters are Sergeants ('+fight.map(u=>u.vet&&u.vet.rank).join(',')+')');
   ok(sup.length===3&&sup.every(u=>u.vet&&u.vet.rank===J.supRank),'Medics and Engineer are Corporals');
+  { let m=99; for(const a of sup) for(const b of sup) if(a!==b) m=Math.min(m,Math.hypot(a.x-b.x,a.y-b.y)/TILE); ok(m>PERKS.trooper.radius+0.3,'Medics and Engineer stand apart: one grenade never catches two of them (closest '+m.toFixed(2)+' tiles)');
+    const md=sup.filter(u=>u.def.heal); ok(md.length===2&&Math.hypot(md[0].x-md[1].x,md[0].y-md[1].y)/TILE>=NT_RING.supGap-0.3,'the two Medics are not side by side'); }
   ok(fight.every(u=>Math.abs(u.maxHp-u.def.hp*RANKS[2].hp)<1&&Math.abs(u.dmgMul-RANKS[2].dmg)<0.01),'rank hp and damage on Normal');
   ok(ring.every(u=>u.npc),'never on a roster'); const x0=fight[0].vet.xp; gainXP(fight[0],50); ok(fight[0].vet.xp===x0&&fight[0].vet.rank===J.rank,'they gain no experience');
   ok(G.vars.barricades.length===3&&G.vars.barricades.every(b=>b.faction==='loyal'&&b.type==='barricade'),'three barricades of theirs');
@@ -32,6 +34,18 @@ CASES=[
   }
   goMenu('menu'); const d0=ui.diff; ui.diff='hard'; resetRogue(); const H=start('''+NT+'''); step(1); ui.diff=d0;
   ok(H.diffKey==='hard'&&H.vars.lead.vet.rank===4&&H.ents.filter(e=>!e.dead&&e.ringer&&!e.def.heal&&!e.def.builder&&e!==H.vars.lead).every(u=>u.vet.rank===3),'Hard: Veterans'); goMenu('menu');'''),
+('needle: Medics keep apart while healing','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const c of crew()){ c.invuln=true; c.quiet=true; c.order={type:'hold'}; }
+  const ring=()=>G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'&&e.ringer), md=ring().filter(u=>u.def.heal), f=ring().filter(u=>!u.def.heal&&!u.def.builder);
+  ok(md.length===2&&md.every(m=>m.spread===NT_RING.supGap),'the Medics of the ring keep a distance');
+  const gap=m=>Math.hypot(md[0].x-md[1].x,md[0].y-md[1].y)/TILE;
+  /* one patient: one Medic takes him, the other stays where he is */
+  const p1=f[0]; p1.hp=p1.maxHp*0.2; let lo=99, healed=false; for(let i=0;i<8*30;i++){ __hc.update(1/30); if(md.some(m=>m.beam===p1)) healed=true; lo=Math.min(lo,gap()); if(p1.hp>=p1.maxHp) break; }
+  ok(healed,'he gets healed'); ok(md.filter(m=>m.healTarget===p1).length<=1,'by one Medic only'); ok(lo>PERKS.trooper.radius,'one patient: the Medics never stand within one grenade (closest '+lo.toFixed(2)+' tiles)');
+  /* two patients side by side, out on the ring: each Medic takes one, and they still keep apart */
+  const a=f[1], b=f.find(u=>u!==a&&u!==p1&&Math.hypot(u.x-a.x,u.y-a.y)<3*TILE)||f[2]; a.hp=a.maxHp*0.2; b.hp=b.maxHp*0.25; b.x=a.x+TILE*0.8; b.y=a.y; b.order={type:'hold'}; b.path=null;
+  lo=99; let split=false; for(let i=0;i<15*30;i++){ __hc.update(1/30); lo=Math.min(lo,gap()); if(md[0].healTarget&&md[1].healTarget&&md[0].healTarget!==md[1].healTarget) split=true; if(a.hp>=a.maxHp&&b.hp>=b.maxHp) break; }
+  ok(split,'two patients: each Medic takes his own'); ok(lo>PERKS.trooper.radius,'and they still keep apart (closest '+lo.toFixed(2)+' tiles)'); ok(a.hp>=a.maxHp*0.99&&b.hp>=b.maxHp*0.99,'both are healed ('+Math.round(a.hp/a.maxHp*100)+'%, '+Math.round(b.hp/b.maxHp*100)+'%, '+md.map(m=>(m.healTarget===a?'a':m.healTarget===b?'b':m.healTarget?'?':'-')+':'+(m.beam===a?'A':m.beam===b?'B':'.')).join(' ')+')');
+  step(6); ok(!G.over,'(the job still runs)'); ok(md.every(m=>Math.hypot(m.x-m.ringAt.x,m.y-m.ringAt.y)<TILE),'then back to their places ('+md.map(m=>(Math.hypot(m.x-m.ringAt.x,m.y-m.ringAt.y)/TILE).toFixed(1)+' '+(m.order&&m.order.type)+' '+(m.healTarget?Math.round(m.healTarget.hp/m.healTarget.maxHp*100):'-')).join(' / ')+')');'''),
 ('needle: download, alarm, relief squads','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()) u.invuln=true; const d=crew().find(u=>u.def.heal); for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='building') e.dead=true;
   const ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), J=G.mission.job; let most=0; const watch=s=>{ for(let i=0;i<s*30&&!G.over;i++){ __hc.update(1/30); if(i%15===0){ most=Math.max(most,G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit').length); for(const e of G.ents) if(!e.dead&&e.faction==='loyal'&&e.kind==='unit') types.add(e.type); } } }, types=new Set();
   ok(G.vars.ringMax===9&&ring().length===9,'the ring starts with 9 men ('+ring().length+')');
@@ -56,11 +70,11 @@ CASES=[
   const h=G.ents.find(e=>!e.dead&&e.type==='hive'&&Math.hypot(e.x-C.x,e.y-C.y)<20*TILE); const d=makeUnit('drone','swarm',C.x+10*TILE,C.y); d.order={type:'hold'}; d.invuln=true;
   for(let i=0;i<240*30&&!G.over;i++){ __hc.update(1/30); if(i%10===0) for(const u of ring()){ if(u.def.builder) continue; far=Math.max(far,Math.hypot(u.x-C.x,u.y-C.y)/TILE); if(u.target&&(u.target.type==='hive'||u.target===d)) hive=true; } }
   ok(!hive,'nobody goes for a hive or a drone outside the camp'); ok(far<NT_RING.leash,'they stay in the camp (furthest '+far.toFixed(1)+' tiles)');
-  ok(h&&!h.dead,'the hive nearest the camp is left alone'); ok(ring().filter(u=>u.def.heal).every(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y)<TILE),'the Medics stand in the middle');'''),
+  ok(h&&!h.dead,'the hive nearest the camp is left alone'); { const fr=Math.min(...ring().filter(u=>!u.def.heal&&!u.def.builder).map(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y))); ok(ring().filter(u=>u.def.heal).every(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y)<fr-TILE*0.5),'the Medics stand inside the ring of fighters'); }'''),
 ('needle: grenades and the drop','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='building') e.dead=true;
   const lt=crew().find(u=>u.type==='trooper'); lt.vet.rank=2; applyRank(lt); lt.invuln=true; for(const u of crew()) if(u!==lt){ tp(u,4,40); u.quiet=true; }
   const ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='loyal');
-  const med=ring().filter(u=>u.def.heal), eng=ring().find(u=>u.def.builder); for(const m of med){ m.x=eng.x+10; m.y=eng.y+6; m.invuln=false; }
+  const med=ring().filter(u=>u.def.heal), eng=ring().find(u=>u.def.builder); for(const m of med){ m.x=eng.x+10; m.y=eng.y+6; m.invuln=false; m.spread=0; m.healTarget=null; }   /* this case is about the blast, not about Medics keeping apart */
   for(const u of ring()) u.invuln=false; const hp0=med.map(m=>m.hp); lt.nadeAt=0; tp(lt,Math.floor(eng.x/TILE)+4,Math.floor(eng.y/TILE)); throwGrenade(lt,eng); const sh=G.shots.find(x=>x.k==='grenade'); ok(!!sh,'a Lieutenant throws a grenade at the Engineer and his Medics');
   for(let i=0;i<60&&G.shots.includes(sh);i++){ for(const u of ring()){ u.order={type:'hold'}; u.target=null; } __hc.update(1/30); }
   ok(med.every(m=>!m.dead)&&!eng.dead,'it hurts them, nobody dies of it ('+med.map(m=>Math.round(m.hp)).join('/')+', Engineer '+Math.round(eng.hp)+')'); ok(med.some((m,i)=>m.hp<hp0[i]-10),'but it does hurt');
@@ -113,7 +127,7 @@ CASES=[
 ('intel, trophy wall, dev panel','''goMenu('intel'); intelTab='rogue'; buildIntel(); ok(ROGUE_INTEL.some(x=>x.id==='veil')&&document.querySelectorAll('#intel-list .ili').length===(selfJoined()?7:6)+6+ROGUE_INTEL.length,'The veil in Rogue Intel');
   ok(ROGUE_TROPHIES.some(t=>t.id==='rogue:wolf'),'Wolf in the Fold on the list'); goMenu('trophies'); trophTab='rogue'; buildTrophies(); const wb=document.querySelector('#trophy-wall').getBoundingClientRect(); ok(wb.bottom<=innerHeight&&wb.top>=0,'the Rogue tab still fits on one screen ('+Math.round(wb.bottom)+'/'+innerHeight+')');
   ok(/Wolf in the Fold/.test(document.querySelector('#trophy-wall').textContent),'the plaque hangs on the wall'); goMenu('menu');
-  for(const k of ['ROGUE|stab.formula','ROGUE|veil.taint','ROGUE|veil.broken','M|job.download','M|job.pod','M|job.lull','M|job.stir','M|job.waves','M|job.squad','M|job.lostFor','M|job.call','M|job.rank','M|job.leadRank','M|job.supRank','M|job.reliefRank']) ok(!!devHelp(k),'dev help: '+k);''')
+  for(const k of ['ROGUE|stab.formula','ROGUE|veil.taint','ROGUE|veil.broken','M|job.download','M|job.pod','M|job.lull','M|job.stir','M|job.waves','M|job.squad','M|job.lostFor','M|job.call','M|job.rank','M|job.leadRank','M|job.supRank','M|job.reliefRank','MEDIC_SPREAD|reach','MEDIC_SPREAD|every']) ok(!!devHelp(k),'dev help: '+k);''')
 ]
 res=[]
 with sync_playwright() as p:

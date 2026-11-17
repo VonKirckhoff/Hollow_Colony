@@ -210,6 +210,7 @@ function medicThink(u,dt){
   if(u.healT<=0){ u.healT=0.3;
     const R=(u.order&&u.order.type==='move'?d.healRange:d.sight)*TILE;
     const cands=G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===u.faction&&e.def.bio&&!(e.vet&&e.vet.risen)&&e!==u&&e.hp<e.maxHp&&dist(u,e)<R&&leashed(e));   /* the risen cannot be healed */
+    if(u.spread){ const mine=e=>!G.ents.some(o=>o!==u&&!o.dead&&o.kind==='unit'&&o.faction===u.faction&&o.def.heal&&o.healTarget===e); for(let i=cands.length-1;i>=0;i--) if(!mine(cands[i])) cands.splice(i,1); }   /* a spread-out Medic never shares a patient: he leaves one another Medic is on to him */
     if(cands.length){ const worst=Math.min(...cands.map(hpZone)); const cur=ok(u.healTarget)?u.healTarget:null;
       if(!cur || hpZone(cur)>worst){ u.healTarget=cands.filter(e=>hpZone(e)===worst).reduce((a,b)=>dist(u,a)<=dist(u,b)?a:b); if(u.healTarget!==cur&&Math.random()<0.4) bark(u,'heal'); } }
     else if(!ok(u.healTarget)) u.healTarget=null; }
@@ -231,10 +232,22 @@ function medicThink(u,dt){
     u.home={x:u.x,y:u.y};   /* with the squad: if this order ends, he stays here instead of walking back to where he last stood */
     return; }
   if(u.order && (u.order.type==='move'||u.order.type==='amove')){ const mo=u.order; if(walkOrder(u,dt)&&u.order===mo){ u.order=null; u.home={x:u.x,y:u.y}; } return; }
-  if(t && !inRange) goTo(u,t.x,t.y,dt,0.6);
+  if(t && u.spread) medicSpread(u,t,inRange,dt);
+  else if(t && !inRange) goTo(u,t.x,t.y,dt,0.6);
   else if(!t && (!u.order||u.order.type==='hold') && formationSpot(u)){ const p=formationSpot(u), d=Math.hypot(u.x-p.x,u.y-p.y); if(d>TILE*0.8) u.rejoin=true; if(u.rejoin&&d>4){ goTo(u,p.x,p.y,dt); } else { u.rejoin=false; u.home={x:u.x,y:u.y}; } }   /* patient done: back into his place in the formation */
   else if(!t && u.home && Math.hypot(u.x-u.home.x,u.y-u.home.y)>2*TILE) goTo(u,u.home.x,u.home.y,dt);
 }
+/* u.spread (tiles): a Medic who keeps that far from the other Medics of his side while he heals (so one grenade never catches two of them):
+   he heals from a spot around his patient, within reach, as far as he can get from the others (MEDIC_SPREAD.reach of his heal range) */
+const MEDIC_SPREAD = { reach:0.7, every:0.4 };
+function medicSpread(u,t,inRange,dt){ const gap=u.spread*TILE, others=G.ents.filter(e=>e!==u&&!e.dead&&!e.downed&&e.kind==='unit'&&e.faction===u.faction&&e.def.heal);
+  const far=p=>others.reduce((m,e)=>Math.min(m,Math.hypot(e.x-p.x,e.y-p.y)),Infinity);
+  if(inRange&&far(u)>=gap){ u.path=null; u.spreadP=null; return; }   /* in reach and clear of the others: heal from here */
+  if(!u.spreadP||G.time>=(u.spreadAt||0)){ u.spreadAt=G.time+MEDIC_SPREAD.every; const r=u.def.healRange*MEDIC_SPREAD.reach*TILE; let best=null, bs=-Infinity;
+    for(let i=0;i<16;i++){ const a=i/16*Math.PI*2, p={x:t.x+Math.cos(a)*r,y:t.y+Math.sin(a)*r}; if(!walkableP(p.x,p.y)) continue;
+      const sc=Math.min(far(p),gap)*4-Math.hypot(u.x-p.x,u.y-p.y); if(sc>bs){ bs=sc; best=p; } }
+    u.spreadP=best||{x:t.x,y:t.y}; }
+  const p=u.spreadP; if(Math.hypot(u.x-p.x,u.y-p.y)>6) goTo(u,p.x,p.y,dt,0.5); else u.path=null; }
 function builderThink(u,dt){
   const o=u.order, d=u.def;
   if(d.damage) snapFire(u,dt);   /* keeps building, repairing or packing, but shoots back at anything in range */

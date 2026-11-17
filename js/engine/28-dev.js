@@ -10,7 +10,7 @@ const DEV_TABS = [
   { id:'live', name:'Live' }, { id:'mission', name:'Mission' },
   { id:'diff', name:'Difficulty', roots:['DIFFICULTY','SWARM_DIFF'] },
   { id:'swarm', name:'Brood', roots:['WAVES','PACK','HIVE_DEFENCE','TACTICS','CREEP','MYCEL','HUSK','EGG','MOLT','HIVE_DEATH','SWARM_PLAY','HIVE_SENSE','SWARM_LIGHT','SWARM_SCORCH','FIRST_HUNGER','BROOD_TACTICS','DEMO','AVATAR','BROOD_SURGE','BRUTE_WALK'] },
-  { id:'squad', name:'Squad', roots:['SQUAD','SIGHT','FORMATION','REPAIR_SIDE','AURA','RISEN','VET_XP','OSPREY'] },
+  { id:'squad', name:'Squad', roots:['SQUAD','SIGHT','FORMATION','REPAIR_SIDE','MEDIC_SPREAD','AURA','RISEN','VET_XP','OSPREY'] },
   { id:'fx', name:'Effects', roots:['FIRE','ANIM','NADE','SHOWCASE','ZOOM2D','INTERCOM','VIEW3D','AMBIENT3D','WRECK3D','SENTRY3D','HQ3D','BRUTE3D','MEMB','HIVE3D','MYCEL3D','SHIP'] },
   { id:'rogue', name:'Rogue', roots:['ROGUE'] },
   { id:'units', name:'Units' } ];
