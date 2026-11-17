@@ -96,4 +96,13 @@ function moveGroup(units,wx,wy,type){
       for(const s of SPIRAL){ const k=(tx+s.x)+','+(ty+s.y); if(taken.has(k)||!walkableT(tx+s.x,ty+s.y)) continue; taken.add(k); x=(tx+s.x+.5)*TILE+rand(-4,4); y=(ty+s.y+.5)*TILE+rand(-4,4); break; } }
     const u=o.u; u.order={type:stanceType(u,type),x,y,pace:n>1?pace:null}; u.target=null; setPath(u,x,y); if(u.def.heal) u.healTarget=null; }
 }
+/* Select all: every unit of yours on the whole map (not the downed, the hidden, those aboard the ship, a boss or a feral crewman).
+   Pressed again with the same selection, the camera jumps to them. Top bar button "All" or Ctrl+A. */
+function allMyUnits(){ return G.ents.filter(e=>e.kind==='unit'&&!e.dead&&e.faction===G.side&&!e.downed&&!e.hidden&&!e.aboard&&!(e.feral>0)&&!(e.def&&e.def.boss)&&!(e.def&&e.def.grafter&&!e.avatar)); }
+function selectAllUnits(){ if(!G||G.over||ui.mode!=='game') return; const all=allMyUnits();
+  if(!all.length){ toast('No units to select.',true); return; }
+  const again=G.sel.length===all.length&&all.every(x=>G.sel.includes(x));
+  selectEntities(all,false); uiUsed('selall');
+  if(again){ const cx=all.reduce((s,u)=>s+u.x,0)/all.length, cy=all.reduce((s,u)=>s+u.y,0)/all.length; centerOn(cx,cy); }
+  else toast(`All units selected (${all.length}).`,true); }
 function selectEntities(list,add){ if(!add) stopFollow(); G.sel = add ? [...new Set([...G.sel,...list])] : list; G.selDirty=true; if(list.length){ SFX.play('select'); if(Math.random()<0.5) anyBarker(list,'select'); } }

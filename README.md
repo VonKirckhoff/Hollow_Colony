@@ -111,6 +111,7 @@ Huidige afstelling: *Burn the Brood* gebruikt de per-hive-instellingen hierboven
 | Linker muisknop slepen | Eenheden selecteren met een kader |
 | Klik / dubbelklik | Eén eenheid selecteren / alle eenheden van dat type in beeld |
 | Shift + klik | Toevoegen aan of verwijderen uit de selectie |
+| **Ctrl + A** of knop **All** (bovenbalk) | **Alle** eigen eenheden op de hele kaart selecteren (niet wie neerligt, aan boord is of feral is), bv. om ze samen in één formatie te zetten. Nog eens drukken: de camera springt naar hen. |
 | Rechtermuisknop | Slim bevel: bewegen, aanvallen, krat oprapen, repareren (Engineer), rally point zetten (Command Post), ongeschonden Sentry inpakken (Engineer) |
 | **A** + klik | Attack-move: lopen en onderweg alles aanvallen |
 | **S** / **H** | Stop / positie houden |

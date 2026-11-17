@@ -85,7 +85,7 @@ const soundLabel=()=>{ $('#btn-sound').textContent=SFX.muted?'Sound off':'Sound 
 $('#btn-sound').addEventListener('click',()=>{ uiUsed('sound'); SFX.toggle(); soundLabel(); if(SFX.muted){ BRIEF_VOICE.stop(); if(window.speechSynthesis) speechSynthesis.cancel(); } }); soundLabel();
 const followLabel=()=>{ $('#btn-follow').textContent=ui.follow?'Follow on':'Follow off'; };
 function toggleFollow(){ uiUsed('follow'); ui.follow=!ui.follow; store.set('hc-follow',ui.follow); if(!ui.follow) stopFollow(); followLabel(); toast(ui.follow?'Camera follows your squad.':'Camera follow off.',true); }
-$('#btn-follow').addEventListener('click',toggleFollow); followLabel();
+$('#btn-follow').addEventListener('click',toggleFollow); $('#btn-selall').addEventListener('click',()=>{ selectAllUnits(); if(G) G.selDirty=true; }); followLabel();
 $('#btn-cam-up').addEventListener('click',()=>stepCamHeight(-1)); $('#btn-cam-down').addEventListener('click',()=>stepCamHeight(1));   /* the same as the − and + keys */
 $('#btn-voices').addEventListener('click',()=>toggleVoices());   /* label set at boot (23-main-loop.js) */
 $('#btn-speed').addEventListener('click',()=>{ if(!G) return; uiUsed('speed'+(G.speed===1?'1.5':G.speed===1.5?'2':'1')); G.speed=G.speed===1?1.5:G.speed===1.5?2:1; $('#btn-speed').textContent=G.speed+'×'; });
@@ -118,6 +118,7 @@ window.addEventListener('keydown',e=>{
         /* the group remembers its formation: back into it if they are not in it now */
         const f=(G.groupForm||{})[n], us=myUnits(); if(f&&us.length>1&&!us.every(u=>u.formation===f)&&(f.shape!=='custom'||customForm())){ groupFormUp(us,f); uiUsed('groupform'); toast(`Group ${n}: back in ${FORMATIONS[f.shape].name} formation.`,true); } } }
     return; }
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&k==='a'){ e.preventDefault(); selectAllUnits(); return; }   /* Ctrl+A: every unit of yours (by the letter, so AZERTY works too) */
   if(e.key===' '){ e.preventDefault(); if(G.side==='swarm'&&batchReleaseAll()) return; if(G.alert) centerOn(G.alert.x,G.alert.y); return; }   /* Swarm: Space hatches the batches now */
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   const zk=camHeightKey(e); if(zk){ e.preventDefault(); stepCamHeight(zk); return; }
