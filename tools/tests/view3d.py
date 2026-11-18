@@ -47,8 +47,12 @@ with sync_playwright() as p:
           d.dead=true; return [x,y,o===V3.terrain?'rock':'drone']; } } return null; }""")
     check('rock hides what is behind it', r and r[2]=='rock', r)
     # turn the camera a quarter: the ground under the mouse still matches, the arrow keys move along the turned view
-    J(pg,"()=>{ turnView3D(90); }"); pg.wait_for_timeout(1500)
-    check('camera turned', abs(J(pg,"()=>V3.yawR*180/Math.PI")-90)<3, J(pg,"()=>V3.yawR*180/Math.PI"))
+    # swiftshader can run at ~1 frame a second, so wait for the eased turn to settle instead of a fixed time
+    J(pg,"()=>{ turnView3D(90); }")
+    try: pg.wait_for_function("()=>Math.abs(V3.yawR*180/Math.PI-90)<0.5", timeout=20000)
+    except Exception: pass
+    yaw=J(pg,"()=>V3.yawR*180/Math.PI")
+    check('camera turned', abs(yaw-90)<3, yaw)
     r=J(pg,"""()=>{ const G=__hc.G, x=(G.cam.x+ui.vw/2), y=(G.cam.y+(ui.vh-ui.hudH)/2); const s=v3Screen(x,y,0), w=v3Pick(s.x,s.y,false); return Math.round(Math.hypot(w.x-x,w.y-y)); }""")
     check('pick the ground, turned', r<6, r)
     p0=J(pg,"()=>{ const u=__hc.G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'); window._pu=u; const s=v3Screen(u.x,u.y,0); return [s.x,s.y]; }")
