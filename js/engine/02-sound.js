@@ -27,6 +27,11 @@ const SFX=(()=>{
     contact: [4,   v=>{ tone(880,880,0.07,'square',0.1*v); tone(660,660,0.1,'square',0.1*v,0.1); }],
     weld:    [0.32,v=>{ noise(0.09,5200,'bandpass',4,0.16*v); tone(1400,1700,0.05,'square',0.03*v,0.03); }],
     wrench:  [0.42,v=>{ tone(1250,1250,0.04,'triangle',0.16*v); tone(1650,1650,0.06,'triangle',0.12*v,0.05); noise(0.04,3000,'highpass',1,0.1*v); }],
+    /* building and mending (Nov 2026, Von's pick): each a mix that plays one of its sounds at random, never the same twice running (WORK_MIX) */
+    build:      [0.45,v=>workMix('build',v)],   /* a construction site: weld spark, hammer on steel, rivet gun */
+    buildTower: [0.5, v=>workMix('buildTower',v)],   /* a Relay Tower going up: arc weld and scaffolding */
+    repair:     [0.45,v=>workMix('repair',v)],   /* mending: wrench and ratchet */
+    repairTower:[0.8, v=>workMix('repairTower',v)],   /* mending a Relay Tower: the hydraulic press */
     plasma:  [0.2, v=>{ tone(1600,240,0.22,'sawtooth',0.12*v); noise(0.1,6000,'highpass',1,0.12*v); }],
     hatch:   [0.2, v=>{ noise(0.25,800,'bandpass',2,0.3*v,0,300); tone(300,700,0.15,'sawtooth',0.07*v); }],
     /* the turning of a fallen soldier */
@@ -68,6 +73,19 @@ const SFX=(()=>{
     win:     [1,   ()=>[523,659,784,1047].forEach((f,i)=>tone(f,f,0.25,'triangle',0.2,i*0.14))],
     lose:    [1,   ()=>[392,330,262,196].forEach((f,i)=>tone(f,f*0.98,0.35,'triangle',0.2,i*0.2))]
   };
+  /* the single sounds the work mixes are made of */
+  const WORK={
+    weld:     v=>DEF.weld[1](v),
+    wrench:   v=>DEF.wrench[1](v),
+    hammer:   v=>{ noise(0.02,3500,'highpass',1,0.25*v); [[540,0.35],[1380,0.18],[2650,0.08]].forEach(([f,d])=>tone(f,f*0.995,d,'sine',0.13*v)); },   /* a plate knocked into place */
+    rivet:    v=>{ for(let i=0;i<6;i++){ noise(0.015,2600,'bandpass',3,0.2*v,i*0.045); tone(820,700,0.02,'square',0.03*v,i*0.045); } },   /* a pneumatic rivet gun */
+    arc:      v=>{ for(let i=0;i<5;i++) noise(0.01+Math.random()*0.02,3000+Math.random()*4000,'bandpass',2,(0.08+Math.random()*0.1)*v,i*(0.03+Math.random()*0.03)); noise(0.25,2400,'highpass',0.7,0.05*v); tone(100,100,0.25,'sawtooth',0.02*v); },   /* crackling arc weld */
+    scaffold: v=>{ tone(310,300,0.4,'triangle',0.12*v); tone(880,870,0.25,'sine',0.05*v); noise(0.03,1500,'bandpass',2,0.15*v); noise(0.015,4000,'highpass',1,0.12*v,0.22); tone(1600,1600,0.03,'square',0.03*v,0.22); },   /* pipe on pipe, a coupler clicking shut */
+    ratchet:  v=>{ for(let i=0;i<3;i++){ noise(0.012,3800,'bandpass',4,0.22*v,i*0.07); tone(2200,2000,0.015,'square',0.025*v,i*0.07); } },
+    press:    v=>{ noise(0.35,2600,'bandpass',0.8,0.12*v,0,900); tone(1900,1900,0.03,'square',0.04*v,0.32); noise(0.02,3500,'highpass',1,0.12*v,0.32); }   /* a sigh of compressed air and a metal click */
+  };
+  const WORK_MIX={ build:['weld','hammer','rivet'], buildTower:['arc','scaffold'], repair:['wrench','ratchet'], repairTower:['press'] }, lastWork={};
+  function workMix(k,v){ const l=WORK_MIX[k]; let n=l[Math.floor(Math.random()*l.length)]; if(l.length>1&&n===lastWork[k]) n=l[(l.indexOf(n)+1)%l.length]; lastWork[k]=n; WORK[n](v); }
   function play(name,x,y){
     if(!ac||muted||!DEF[name]) return; const now=ac.currentTime, [gap,fn]=DEF[name];
     if(last[name]!==undefined && now-last[name]<gap) return;

@@ -219,6 +219,14 @@ CASES=[
     for(const p of [{x:25,y:22},{x:25,y:19},{x:25,y:18},{x:24,y:21}]){ const b=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.tx===p.x&&e.ty===p.y); for(const ex of [20.5,23.5,27]){ eng.x=ex*TILE; eng.y=20.5*TILE;
       const sp=repairSpot(eng,b,{},(b.size||1)*TILE/2+eng.r+18,1); if(!sp||Math.hypot(sp.x-H.x,sp.y-H.y)>Math.hypot(b.x-H.x,b.y-H.y)-0.4*TILE) bad.push(p.x+','+p.y+'>'+(sp?Math.floor(sp.x/TILE)+','+Math.floor(sp.y/TILE):'-')); } } }
     ok(!bad.length,'whatever side the crew is on, the spot is inside the camp ('+bad.join(' ')+')'); }'''),
+('work sounds: build, repair, and the Relay Tower its own','''resetRogue(); const G=start('''+NT+'''); step(1); for(const e of G.ents) if(e.crew){ e.invuln=true; e.hidden=true; } G.vars.raidAt=1e9; for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true;
+  const names=new Set(), op=SFX.play; SFX.play=(n,x,y)=>{ names.add(n); return op(n,x,y); }; try{
+  const eng=G.ents.find(e=>!e.dead&&e.ringer&&e.def.builder), relay=G.vars.relay, gun=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry');
+  const run=(b,s)=>{ names.clear(); eng.order={type:'repair',target:b}; for(let i=0;i<s*30;i++) __hc.update(1/30); return [...names]; };
+  relay.hp=relay.maxHp*0.5; let n=run(relay,4); ok(n.includes('repairTower')&&!n.includes('repair'),'mending the Relay Tower: the press ('+n+')');
+  gun.hp=gun.maxHp*0.5; n=run(gun,4); ok(n.includes('repair')&&!n.includes('repairTower'),'mending a Sentry Gun: wrench and ratchet ('+n+')');
+  n=run(makeBuilding('barricade','loyal',18,18,false),3); ok(n.includes('build'),'building a Barricade: weld, hammer, rivets ('+n+')');
+  n=run(makeBuilding('relay','loyal',26,23,false),12); ok(n.includes('buildTower'),'building a Relay Tower: arc and scaffold ('+n+')'); } finally { SFX.play=op; }'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;

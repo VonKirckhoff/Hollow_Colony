@@ -279,7 +279,7 @@ function builderThink(u,dt){
     if(p&&Math.hypot(u.x-p.x,u.y-p.y)>10&&!(o.spotWalk>6&&dist(u,b)<=reach)){ o.spotWalk=(o.spotWalk||0)+dt; goTo(u,p.x,p.y,dt); return; } }
   if(dist(u,b)>reach){ goTo(u,b.x,b.y,dt); return; }
   u.path=null; if(Math.abs(b.x-u.x)>2) u.face=b.x>u.x?1:-1;
-  u.anim+=dt*2; SFX.play(done?'wrench':'weld',b.x,b.y);
+  u.anim+=dt*2; SFX.play((done?'repair':'build')+(b.type==='relay'?'Tower':''),b.x,b.y);   /* the Relay Tower has its own work sounds (02-sound.js, WORK_MIX) */
   if(Math.random()<dt*8) G.fx.push({k:'spark',x:b.x+rand(-b.r,b.r)*0.6,y:b.y+rand(-b.r,b.r)*0.6,vx:rand(-50,50),vy:rand(-70,-10),t:0.3,max:0.3,col:'#ffe2a8'});
   if(!done){
     const bd=b.def;
