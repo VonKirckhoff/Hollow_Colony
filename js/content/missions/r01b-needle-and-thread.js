@@ -11,7 +11,7 @@ const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
 const NT_PAD={x:30,y:20};     /* the relief pad (its middle tile): on the east side of the camp, so the relief squad walks straight in */
-const NT_BARRICADES=[ {x:25,y:22}, {x:17,y:21}, {x:22,y:16}, {x:25,y:18}, {x:20,y:24} ];   /* the garrison's sandbags (tiles, Nov 2026 as Von placed them): east by the gun line, west, north by the right tent, north-east above the east gun, south between the south guns */
+const NT_BARRICADES=[ {x:17,y:21}, {x:22,y:16}, {x:25,y:18} ];   /* the garrison's sandbags (tiles, Nov 2026 as Von placed them): east by the gun line, west, north by the right tent, north-east above the east gun, south between the south guns */
 /* a rank from the job's number: Easy one lower, Hard one higher, never past Lieutenant */
 const ntRank=r=>Math.max(0,Math.min(4,r+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)));
 const NT_MORTAR={x:20,y:20};  /* the garrison's mortar: in the middle of the ring, its Engineer beside it */
@@ -37,7 +37,7 @@ const NT_TAC={ see:12, calm:8, outFor:4, near:6.5, frontAt:4.2, frontMin:1.5, fr
    at the camp, the first one `first` seconds in. A party is `budget` biomass (× difficulty), growing by `grow` per raid up to `growMax` raids.
    Bodies lying within NT_RING.reach tiles of the camp each get a carrier from the raid, up to `haul` per raid, so the dead do not pile up. */
 const NT_RAID={ first:70, every:75, alarmEvery:50, budget:60, grow:0.12, growMax:6, haul:4 };
-const NT_SENTRY_BASE=[ {x:16,y:20}, {x:25,y:19}, {x:24,y:21} ];   /* the Sentry Guns that always stand: west by the tents, east, and east between the two barricades */
+const NT_SENTRY_BASE=[ {x:16,y:20}, {x:25,y:19}, {x:25,y:22} ];   /* the Sentry Guns that always stand: west by the tents, east, and east between the two barricades */
 const NT_SENTRIES=[ {x:20,y:15}, {x:24,y:23}, {x:21,y:24} ];   /* the extra Sentry Guns (top-left tiles), in the order they are added: north by the terminal, east above the relay pad, south beside the relay pad */
 const NT_SENTRIES_BY={ easy:1, normal:2, hard:3 };   /* how many of NT_SENTRIES stand, on top of the three of NT_SENTRY_BASE: 4, 5 or 6 Sentry Guns */
 /* rebuilding (ntRebuild, every half second): any Engineer of the garrison builds a destroyed Sentry Gun or Barricade again on its old spot,
