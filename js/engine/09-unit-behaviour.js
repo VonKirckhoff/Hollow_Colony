@@ -21,7 +21,7 @@ function updateUnit(u,dt){
   if(d.heal){ medicThink(u,dt); return; }
   if(d.builder && (!u.order||u.order.type==='hold')){ u.repScan=(u.repScan||0)-dt;   /* Engineers keep looking after structures, also when defensive */ if(u.repScan<=0){ u.repScan=0.5;
       // Idle engineers repair damaged structures (and finish construction sites) nearby on their own.
-      const b=nearestOf(u,e=>e.kind==='building'&&!e.def.noBlock&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&dist(u,e)<d.autoRepair*TILE);
+      const b=nearestOf(u,e=>e.kind==='building'&&!e.def.noBlock&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&!(e.ntSite&&!e.built)&&dist(u,e)<d.autoRepair*TILE);   /* a site Needle and Thread's garrison rebuilds: only through ntRebuild (it stops under fire) */
       if(b){ u.order={type:'repair',target:b,auto:true}; u.target=null; u.path=null; u.goal=null; } } }
   if(d.builder && u.order && (u.order.type==='build'||u.order.type==='repair'||u.order.type==='pack')){ builderThink(u,dt); return; }
   let o=u.order;
@@ -286,7 +286,7 @@ function builderThink(u,dt){
     const sp=hasPerk(u)?PERKS.engineer.speed:1;   /* Lieutenant Engineer: twice as fast */ b.weldT=0.25;   /* welding sparks on the scaffolding */
     if(b.deploy){ b.progress+=dt*sp/bd.deployTime; b.hp=b.carryHp*(0.3+0.7*Math.min(1,b.progress)); }
     else { b.progress+=dt*sp/bd.buildTime; b.hp=Math.min(b.maxHp,b.hp+b.maxHp*0.9*dt*sp/bd.buildTime); }
-    if(b.progress>=1){ b.built=true; b.progress=1; sentryUnfolds(b); if(!b.deploy){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; SFX.play('complete'); say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }
+    if(b.progress>=1){ b.built=true; b.progress=1; sentryUnfolds(b); const mine=b.faction===G.side; if(!b.deploy&&mine){ G.stats.built++; gainXP(u,VET_XP.build); } b.deploy=false; if(mine||isVisible(b)) SFX.play('complete',b.x,b.y); if(mine) say('Engineer',`${bd.name} online.`,'sys'); G.selDirty=true; }   /* another side's (Needle and Thread's garrison rebuilding): no message, no stats */
   } else { const rr=Math.min(b.maxHp-b.hp,d.repair*dt*(hasPerk(u)?PERKS.engineer.speed:1)); b.hp+=rr; if(u.vet){ u.vet.repaired=(u.vet.repaired||0)+rr; u.vet.rb=(u.vet.rb||0)+rr; if(u.vet.rb>=VET_XP.repairPerXp){ u.vet.rb-=VET_XP.repairPerXp; gainXP(u,1); } } }
 }
 

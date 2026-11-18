@@ -37,6 +37,12 @@ const NT_TAC={ see:12, calm:8, outFor:4, near:6.5, frontAt:4.2, frontMin:1.5, fr
    at the camp, the first one `first` seconds in. A party is `budget` biomass (× difficulty), growing by `grow` per raid up to `growMax` raids.
    Bodies lying within NT_RING.reach tiles of the camp each get a carrier from the raid, up to `haul` per raid, so the dead do not pile up. */
 const NT_RAID={ first:70, every:75, alarmEvery:50, budget:60, grow:0.12, growMax:6, haul:4 };
+const NT_SENTRIES=[ {x:20,y:15}, {x:27,y:22}, {x:19,y:24} ];   /* the extra Sentry Guns (top-left tiles), in the order they are added: north by the terminal, east by the relief pad, south behind the third tent */
+const NT_SENTRIES_BY={ easy:1, normal:2, hard:3 };   /* how many of NT_SENTRIES stand, on top of the two by the west tents and the east side: 3, 4 or 5 Sentry Guns */
+/* rebuilding (ntRebuild, every half second): any Engineer of the garrison builds a destroyed Sentry Gun or Barricade again on its old spot,
+   one at a time, Sentry Guns first (then the nearest), as a construction site that grows like the player's own. Not under fire: he does not start,
+   and stops, while he was hit in the last `hitFor` seconds or while a crew member stands within his weapon's reach plus `margin` tiles of the spot. */
+const NT_REBUILD={ hitFor:3, margin:1 };
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, supGap:2.2, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle, supGap: tiles between two of the support at the least (more than a grenade's radius, PERKS.trooper.radius: one grenade never catches both Medics) (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
@@ -64,14 +70,14 @@ ROGUE_MISSIONS.push(
           for(const t of NT_TENTS) makeBuilding('medtent','none',t.x,t.y,true);
           g.vars.term=makeBuilding('terminal','none',20,18,true);
           g.vars.cases=NT_CASES.map(c=>{ g.cache(c,{ stab:1 }); return G.ents[G.ents.length-1]; });
-          g.loyalB('sentry',{x:16,y:20}); g.loyalB('sentry',{x:25,y:19}); g.vars.relay=g.loyalB('relay',NT_RELAY);
+          const guns=[{x:16,y:20},{x:25,y:19},...NT_SENTRIES.slice(0,NT_SENTRIES_BY[G.diffKey]??NT_SENTRIES_BY.normal)].map(p=>g.loyalB('sentry',p)).filter(Boolean); g.vars.relay=g.loyalB('relay',NT_RELAY);   /* Sentry Guns: two, plus NT_SENTRIES_BY extra by difficulty */
           /* the garrison stands in a defence ring round the middle of the camp: fighters on the ring, Medics and the Engineer inside */
           const R={rank:ntRank(J.rank)}, S={rank:ntRank(J.supRank)};
           const lead=g.loyal('trooper',{x:21,y:21},1,{rank:ntRank(J.leadRank)});   /* the ring's Lieutenant: he throws grenades at a bunched-up crew */ g.vars.lead=lead[0];
           const gar=[...lead,...g.loyal('trooper',{x:21,y:21},1,R),...g.loyal('gunner',{x:24,y:22},1,R),...g.loyal('trooper',{x:19,y:16},1,R),
             ...g.loyal('medic',{x:19,y:22},2,S),...g.loyal('engineer',{x:22,y:20},1,S)];
           gar.push(...g.loyal('trooper',{x:18,y:24},2,R));
-          g.vars.barricades=NT_BARRICADES.map(p=>g.loyalB('barricade',p)).filter(Boolean);
+          g.vars.barricades=NT_BARRICADES.map(p=>g.loyalB('barricade',p)).filter(Boolean); g.vars.sites=[...guns,...g.vars.barricades].map(b=>({type:b.type,tx:b.tx,ty:b.ty}));   /* where an Engineer of theirs builds a destroyed one again (ntRebuild) */
           g.vars.mortar=g.loyalB('mortar',NT_MORTAR); for(const u of gar) if(u.def.builder) u.mortarMan=true;   /* the Engineer mans the mortar (LOYAL_MORTAR in 31-rogue.js) */   /* sandbags on the edge of the ring, most on the side of the pad */   /* the old patrol: no more walks round the basin (it woke the hive in the north-east), it stands in the ring too */
           ntRing(g,gar,true); g.vars.ringMax=gar.length;   /* the ring's full strength: a relief squad never fills it past this */
           g.pad(NT_PAD,'relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
@@ -172,18 +178,18 @@ function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=t
     if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } u.ringAt={x,y}; u.home={x,y};
     if(atOnce){ u.x=x; u.y=y; u.order={type:'hold'}; u.path=null; }
     else if(u.mortarLoader){ if(Math.hypot(u.x-x,u.y-y)>TILE*0.6){ u.target=null; u.order={type:'move',x,y}; setPath(u,x,y); } }   /* a loader goes straight to the mortar, no stopping to fight on the way */
-    else if(!u.target&&!u.repairT){ u.order={type:'amove',x,y}; setPath(u,x,y); } }
+    else if(!u.target&&!u.repairT&&!(u.order&&u.order.type==='repair')){ u.order={type:'amove',x,y}; setPath(u,x,y); } }   /* building or mending: he walks to his place once that is done */
   const place=(grp,r,given)=>{ if(!grp.length) return; const spots=given?given.map(p=>{ let x=p.x, y=p.y; if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; }):grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/4;   /* not straight north: the terminal stands there */  let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
       if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; });
     const a=assignCheapest(grp.map(u=>spots.map(p=>(u.x-p.x)**2+(u.y-p.y)**2)));
     grp.forEach((u,i)=>{ const p=spots[a[i]]; u.ringAt={x:p.x,y:p.y}; u.home={x:p.x,y:p.y};
       if(atOnce){ u.x=p.x; u.y=p.y; u.order={type:'hold'}; u.path=null; }
-      else if(!u.target){ u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } }); };
+      else if(!u.target&&!(u.order&&u.order.type==='repair')){ u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } }); };
   if(T&&T.mode!=='ring'&&T.dir){ const eng=us.find(u=>u.mortarMan&&mortar&&!u.aboard); ntLine(g,fight,sup.filter(u=>u!==eng),T,place,eng&&eng.ringAt); g.vars.ringN=us.length; return; }   /* in a fight: a line facing the crew */
   place(fight,Math.max(R.r,fight.length*R.perMan/(2*Math.PI))); place(sup,sup.length>1?Math.max(R.inner,R.supGap/(2*Math.sin(Math.PI/sup.length))):R.inner);   /* the support spread out evenly, R.supGap apart */
   g.vars.ringN=us.length; }
 /* every half second: the ring closes up when someone falls, and a soldier who is done fighting (or healing, or repairing) goes back to his place and holds */
-function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time+0.5; ntLossTick(g); ntTac(g);
+function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time+0.5; ntLossTick(g); ntTac(g); ntRebuild(g);
   const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer); if(us.length!==g.vars.ringN){ ntRing(g,[]); return; }
   for(const u of us){ const p=u.ringAt; if(!p||u.aboard) continue;
     if(u.target&&Math.hypot(u.x-NT_RING.x*TILE,u.y-NT_RING.y*TILE)>NT_RING.leash*TILE){   /* too far from the camp: break off and walk back (no shooting on the way) */
@@ -254,3 +260,23 @@ function ntRaid(g){ const R=NT_RAID; g.vars.raidAt=g.time+(g.vars.alarm!=null?R.
     out.splice(out.indexOf(u),1); if(free.includes(u)) free.splice(free.indexOf(u),1); u.claim=b; u.claimMode='haul'; u.pack=null; }
   if(out.length&&n===1) g.crewSay('Cnudde','Movement from all three hives. They are going for the camp, not for us. Let them thin that ring out.');
   return out; }
+/* rebuilding: see NT_REBUILD. A site counts as missing when no building of its type stands on its tile; a half-built one is finished first. */
+function ntRebuild(g){ const R=NT_REBUILD, sites=g.vars.sites; if(!sites) return;
+  const at=s=>G.ents.find(e=>!e.dead&&e.kind==='building'&&e.type===s.type&&e.tx===s.tx&&e.ty===s.ty);
+  const crew=g.crew().filter(c=>!c.downed&&!c.hidden&&!c.aboard&&!c.out);
+  const safe=p=>!crew.some(c=>Math.hypot(c.x-p.x,c.y-p.y)<=(c.def.range+(c.rangeBonus||0)+R.margin)*TILE);
+  const engs=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer&&e.def.builder&&!e.aboard);
+  for(const u of engs){ const o=u.order, b=o&&o.type==='repair'?o.target:null, hit=g.time-(u.shotAt||-99)<R.hitFor;
+    if(b&&b.ntSite&&!b.built){ if(hit||!safe(b)){ u.order=null; u.path=null; } continue; }   /* under fire: he leaves the scaffolding and goes back to his place */
+    if(b||hit||u.target) continue;
+    const busy=new Set(engs.map(e=>e.order&&e.order.type==='repair'&&e.order.target).filter(Boolean));
+    const todo=sites.map(s=>({s,b:at(s),p:{x:(s.tx+BUILDINGS[s.type].size/2)*TILE,y:(s.ty+BUILDINGS[s.type].size/2)*TILE}}))
+      .filter(t=>(!t.b||(t.b.ntSite&&!t.b.built&&!busy.has(t.b)))&&safe(t.p)&&(t.b||ntSiteFree(t.s)))
+      .sort((a,c)=>(a.s.type==='sentry'?0:1)-(c.s.type==='sentry'?0:1)||Math.hypot(a.p.x-u.x,a.p.y-u.y)-Math.hypot(c.p.x-u.x,c.p.y-u.y));
+    const t=todo[0]; if(!t) continue;
+    let site=t.b; if(!site){ site=makeBuilding(t.s.type,'loyal',t.s.tx,t.s.ty,false); site.ntSite=true;
+      for(const e of G.ents) if(e.kind==='unit'&&!e.dead&&!walkableP(e.x,e.y)){ const f=nearestWalkable(Math.floor(e.x/TILE),Math.floor(e.y/TILE)); if(f){ e.x=(f.x+.5)*TILE; e.y=(f.y+.5)*TILE; } } }   /* nobody stuck inside it */
+    u.target=null; u.order={type:'repair',target:site}; u.path=null;
+    if(!g.vars.saidRebuild){ g.vars.saidRebuild=true; g.crewSay(selfName(),'Their Engineer is putting the guns back up. Take him down, or we fight that camp twice.'); } } }
+/* a site's tiles are open ground again (no building, no rock) */
+function ntSiteFree(s){ const n=BUILDINGS[s.type].size; for(let y=s.ty;y<s.ty+n;y++) for(let x=s.tx;x<s.tx+n;x++){ const i=y*G.map.w+x; if(!G.map.walk[i]||G.block[i]) return false; } return true; }

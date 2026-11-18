@@ -19,7 +19,7 @@ CASES=[
   { const ring=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'&&e.ringer), f=ring.filter(u=>!u.def.heal&&!u.def.builder), c={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, ds=f.map(u=>Math.hypot(u.x-c.x,u.y-c.y)/TILE);
     ok(ring.length===9&&ring.every(u=>u.order&&u.order.type==='hold'&&u.stance==='hold'&&u.leash),'the garrison holds in a ring, defensive ('+ring.length+')'); ok(!G.ents.some(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'&&!e.ringer),'no patrol outside it'); ok(Math.min(...ds)>1.5&&Math.max(...ds)<3.2,'fighters on the ring ('+ds.map(d=>d.toFixed(1)).join(' ')+')');
     ok(ring.filter(u=>u.def.heal||u.def.builder).every(u=>Math.hypot(u.x-c.x,u.y-c.y)<1.4*TILE),'Medics and the Engineer inside it'); }
-  ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit').length===9,'the hospital garrison'); ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry').length===2,'two Sentry Guns'); ok(G.vars.alarm==null&&!G.timer,'quiet until someone is seen');'''),
+  ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit').length===9,'the hospital garrison'); ok(G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry').length===2+NT_SENTRIES_BY.normal,'four Sentry Guns (Normal)'); ok(G.vars.alarm==null&&!G.timer,'quiet until someone is seen');'''),
 ('needle: a seasoned garrison','''resetRogue(); const G=start('''+NT+'''); step(1); const ring=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'&&e.ringer), J=G.mission.job;
   const lead=G.vars.lead, fight=ring.filter(u=>u!==lead&&!u.def.heal&&!u.def.builder), sup=ring.filter(u=>u.def.heal||u.def.builder);
   ok(lead&&lead.vet&&lead.vet.rank===4&&hasPerk(lead)&&lead.type==='trooper','the ring has a Lieutenant who can throw grenades');
@@ -124,7 +124,7 @@ CASES=[
   const s0=R.stab; start('rogue-dead-air'); step(0.5); ok(__hc.G.rogue.stab===s0+ROGUE.stab.start+ROGUE.stab.formula,'the next job starts with the brewed dose too ('+__hc.G.rogue.stab+')');'''),
 ('needle: only the camp','''resetRogue(); const G=start('''+NT+'''); step(1); for(const u of crew()){ u.invuln=true; u.quiet=true; } ntAlarm(G.api,'test');
   const ring=()=>G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit'), C={x:NT_RING.x*TILE,y:NT_RING.y*TILE}; let far=0, hive=false;
-  const h=G.ents.find(e=>!e.dead&&e.type==='hive'&&Math.hypot(e.x-C.x,e.y-C.y)<20*TILE); const d=makeUnit('drone','swarm',C.x+10*TILE,C.y); d.order={type:'hold'}; d.invuln=true;
+  const h=G.ents.find(e=>!e.dead&&e.type==='hive'&&Math.hypot(e.x-C.x,e.y-C.y)<20*TILE); const d=makeUnit('drone','swarm',C.x+13*TILE,C.y);   /* beyond the reach of the camp and of its east Sentry Gun */ d.order={type:'hold'}; d.invuln=true;
   for(let i=0;i<240*30&&!G.over;i++){ __hc.update(1/30); if(i%10===0) for(const u of ring()){ if(u.def.builder) continue; far=Math.max(far,Math.hypot(u.x-C.x,u.y-C.y)/TILE); if(u.target&&(u.target.type==='hive'||u.target===d)) hive=true; } }
   ok(!hive,'nobody goes for a hive or a drone outside the camp'); ok(far<NT_RING.leash,'they stay in the camp (furthest '+far.toFixed(1)+' tiles)');
   ok(h&&!h.dead,'the hive nearest the camp is left alone'); { const fr=Math.min(...ring().filter(u=>!u.def.heal&&!u.def.builder).map(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y))); ok(ring().filter(u=>u.def.heal).every(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y)<fr-TILE*0.5),'the Medics stand inside the ring of fighters'); }'''),
@@ -191,6 +191,22 @@ CASES=[
   for(const u of ring()) u.dead=true; step(1); ok(G.vars.dueAt==null,'nobody left standing: no call');
   resetRogue(); const G2=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } G2.vars.raidAt=1e9;
   for(const u of G2.ents.filter(u=>!u.dead&&u.ringer&&(u.def.heal||u.def.builder))) u.dead=true; step(1); ok(G2.vars.alarm==null&&G2.vars.dueSup,'before the alarm too');'''),
+('needle: more Sentry Guns, and the Engineer builds them again','''const n={}; for(const d of ['easy','normal','hard']){ resetRogue(); const d0=ui.diff; ui.diff=d; const m=ROGUE_MISSIONS.find(x=>x.id==='rogue-needle-and-thread'); __hc.startMission(m); ui.diff=d0; step(1); n[d]=__hc.G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry').length; }
+  ok(n.easy===3&&n.normal===4&&n.hard===5,'Sentry Guns: Easy 3, Normal 4, Hard 5 ('+JSON.stringify(n)+')');
+  resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; G.vars.raidAt=1e9;
+  ok(G.vars.sites&&G.vars.sites.length===4+NT_BARRICADES.length,'every Sentry Gun and Barricade has its spot kept ('+(G.vars.sites||[]).length+')');
+  const eng=G.ents.find(e=>!e.dead&&e.ringer&&e.def.builder); const bar=G.vars.barricades[0], gun=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry'&&e.tx===16&&e.ty===20); const bs={tx:bar.tx,ty:bar.ty}; bar.invuln=false; gun.invuln=false; kill(bar,null); kill(gun,null); step(1.5);
+  let site=G.ents.find(e=>!e.dead&&e.type==='sentry'&&e.tx===16&&e.ty===20); ok(site&&!site.built&&eng.order&&eng.order.type==='repair'&&eng.order.target===site,'the Engineer starts on the Sentry Gun first (a construction site)');
+  ok(!G.ents.some(e=>!e.dead&&e.type==='barricade'&&e.tx===bs.tx&&e.ty===bs.ty),'the Barricade waits its turn');
+  /* under fire */ const cr=crew().find(u=>u.type==='trooper'); cr.hidden=false; tp(cr,16,24); step(1); ok(!(eng.order&&eng.order.target===site),'a crew member within reach of the spot: he leaves it'); ok(site&&!site.dead&&!site.built,'the half-built gun stays');
+  cr.hidden=true; tp(cr,6,34); eng.shotAt=G.time; step(1); ok(!(eng.order&&eng.order.target===site),'just hit: he does not start'); step(NT_REBUILD.hitFor+1);
+  ok(eng.order&&eng.order.type==='repair'&&eng.order.target===site,'safe again: back to the same site');
+  for(let i=0;i<40*30&&!(site.built&&G.ents.some(e=>!e.dead&&e.type==='barricade'&&e.tx===bs.tx&&e.ty===bs.ty&&e.built));i++) __hc.update(1/30);
+  ok(site.built&&site.faction==='loyal','the Sentry Gun stands again'); ok(G.ents.some(e=>!e.dead&&e.type==='barricade'&&e.tx===bs.tx&&e.ty===bs.ty&&e.built),'then the Barricade');
+  ok(!G.msgs||!G.msgs.some(m=>/online/.test(m.text||'')),'no "online" message for their building');
+  /* a dropped Engineer does it too */ eng.dead=true; for(const u of G.ents) if(!u.dead&&u.ringer&&u.def.heal) u.dead=true; const g2=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry'); g2.invuln=false; const gs={tx:g2.tx,ty:g2.ty}; kill(g2,null);
+  for(let i=0;i<(G.mission.job.call+12)*30;i++){ __hc.update(1/30); if(G.ents.some(e=>!e.dead&&e.type==='sentry'&&e.tx===gs.tx&&e.ty===gs.ty)) break; }
+  ok(G.ents.some(e=>!e.dead&&e.type==='sentry'&&e.tx===gs.tx&&e.ty===gs.ty),'the Engineer from the Engineer/Medic drop starts on it');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;
