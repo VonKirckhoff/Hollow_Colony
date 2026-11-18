@@ -43,6 +43,7 @@ ROGUE_MISSIONS.push(
       'The crew hit Kappa\'s field hospital once before. You were on the other side that night, holding the line until dawn. Now Tycho is emptying the tents under Containment Order 10, and Maas\'s stabilizer and her files go out on the next transport.',
       'Three cases of stabilizer, one in each tent. And the records terminal: if Devreese can stand at it long enough, she pulls Maas\'s formula off it, and we never have to steal a dose again. The moment she starts, the hospital calls for help. Then out through the old shaft in the north wall.'
     ],
+    limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
     job:{ download:50, lostFor:3, call:15, waves:3, squad:4, rank:2, leadRank:4, supRank:1, reliefRank:1 },   /* ranks (RANKS): ring fighters, the ring's Lieutenant, Medics and Engineer, the first relief squad (+1 per squad after it); Easy one lower, Hard one higher (ntRank) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c'],

@@ -143,6 +143,15 @@ CASES=[
   ok(fresh.filter(u=>u.hidden).every(u=>u.invuln&&findTarget(lt,40,true)!==u),'the ones still aboard cannot be hit');
   const pad=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); let shipGoneEarly=false; let linger=0, at=''; const pairT={}; for(let i=0;i<8*30;i++){ __hc.update(1/30); if(ring().some(u=>u.hidden)&&!(pad.ship&&pad.ship.phase==='ground')) shipGoneEarly=true; const v=ring().filter(u=>!u.hidden&&Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)>TILE); for(const a of v) for(const b of v) if(a.id<b.id){ const key=a.id+'-'+b.id, dd=Math.hypot(a.x-b.x,a.y-b.y)/TILE; pairT[key]=dd<PERKS.trooper.radius?(pairT[key]||0)+1/30:0; if(pairT[key]>linger){ linger=pairT[key]; at=a.type+'/'+b.type; } } if(ring().every(u=>!u.hidden)) break; }
   ok(ring().every(u=>!u.hidden&&!u.invuln),'all out'); ok(!shipGoneEarly,'the ship stays on the pad, ramp down, until the last one is off'); for(let i=0;i<2*30&&pad.ship&&pad.ship.phase==='ground';i++) __hc.update(1/30); ok(!pad.ship||pad.ship.phase!=='ground','then it lifts off'); ok(linger<0.5,'on the way to the ring, never two within reach of one grenade for more than a moment (longest '+linger.toFixed(2)+' s '+at+')');'''),
+('needle: at most two crew sentries','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()) u.invuln=true;
+  ok(G.mission.limits&&G.mission.limits.sentry===2&&limitOf('sentry')===2,'Needle and Thread: limit of 2 Sentry Guns');
+  ok(fielded('sentry')===0&&!atLimit('sentry'),'the sentries of the garrison do not count');
+  const eng=crew().find(u=>u.def.builder); G.salvage=999; selectEntities([eng]); const b=cmdButtons().find(x=>x.row==='Build'&&x.key===BUILDINGS.sentry.key); ok(b&&/0\/2/.test(b.tip)&&!b.off,'the build button shows 0/2');
+  const s1=makeBuilding('sentry','corps',8,30,true), s2=makeBuilding('sentry','corps',10,30,true); step(0.2);
+  ok(fielded('sentry')===2&&atLimit('sentry'),'two up: at the limit'); ui.placing=null; startPlacing('sentry'); ok(!ui.placing,'a third cannot be placed');
+  { const b2=cmdButtons().find(x=>x.row==='Build'&&x.key===BUILDINGS.sentry.key); ok(b2&&b2.off&&/2\/2/.test(b2.tip),'the button is greyed out at 2/2'); }
+  kill(s1,null); step(0.2); ok(fielded('sentry')===1&&!atLimit('sentry'),'one destroyed: a place is free again'); startPlacing('sentry'); ok(ui.placing&&ui.placing.type==='sentry','a new one can be placed'); ui.placing=null;
+  makeBuilding('sentry','corps',12,30,true); step(0.2); ok(atLimit('sentry'),'never more than two at once'); goMenu('menu');'''),
 ('needle: seen early','''resetRogue(); const G=start('''+NT+'''); step(1); for(const e of G.ents) if(e.faction==='swarm') e.invuln=true; const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt); u.invuln=true; tp(u,22,24); step(3);
   ok(G.vars.alarm!=null&&!G.vars.dlStart,'seen before the download: the alarm goes early'); ok(G.msgs.some(m=>m.who==='Kappa medical'),'Kappa medical calls Tycho');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
