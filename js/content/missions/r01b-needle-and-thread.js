@@ -11,7 +11,7 @@ const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
 const NT_PAD={x:30,y:20};     /* the relief pad (its middle tile): on the east side of the camp, so the relief squad walks straight in */
-const NT_BARRICADES=[ {x:24,y:20}, {x:25,y:22}, {x:17,y:21}, {x:22,y:16}, {x:25,y:18}, {x:20,y:24} ];   /* the garrison's sandbags (tiles, Nov 2026 as Von placed them): east by the gun line, west, north by the right tent, north-east above the east gun, south between the south guns */
+const NT_BARRICADES=[ {x:25,y:22}, {x:17,y:21}, {x:22,y:16}, {x:25,y:18}, {x:20,y:24} ];   /* the garrison's sandbags (tiles, Nov 2026 as Von placed them): east by the gun line, west, north by the right tent, north-east above the east gun, south between the south guns */
 /* a rank from the job's number: Easy one lower, Hard one higher, never past Lieutenant */
 const ntRank=r=>Math.max(0,Math.min(4,r+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)));
 const NT_MORTAR={x:20,y:20};  /* the garrison's mortar: in the middle of the ring, its Engineer beside it */
