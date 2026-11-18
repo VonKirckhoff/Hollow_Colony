@@ -21,7 +21,7 @@ function updateUnit(u,dt){
   if(d.heal){ medicThink(u,dt); return; }
   if(d.builder && (!u.order||u.order.type==='hold')){ u.repScan=(u.repScan||0)-dt;   /* Engineers keep looking after structures, also when defensive */ if(u.repScan<=0){ u.repScan=0.5;
       // Idle engineers repair damaged structures (and finish construction sites) nearby on their own.
-      const b=nearestOf(u,e=>e.kind==='building'&&!e.def.noBlock&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&!(e.ntSite&&!e.built)&&dist(u,e)<d.autoRepair*TILE);   /* a site Needle and Thread's garrison rebuilds: only through ntRebuild (it stops under fire) */
+      const b=nearestOf(u,e=>e.kind==='building'&&!e.def.noBlock&&e.faction===u.faction&&(e.hp<e.maxHp||(e.kind==='building'&&!e.built))&&!(e.ntSite&&!e.built)&&!(u.spread&&G.ents.some(o=>o!==u&&!o.dead&&o.def&&o.def.builder&&o.order&&o.order.target===e))&&dist(u,e)<d.autoRepair*TILE);   /* a spread-out Engineer (Needle and Thread) never works on what another one is on */   /* a site Needle and Thread's garrison rebuilds: only through ntRebuild (it stops under fire) */
       if(b){ u.order={type:'repair',target:b,auto:true}; u.target=null; u.path=null; u.goal=null; } } }
   if(d.builder && u.order && (u.order.type==='build'||u.order.type==='repair'||u.order.type==='pack')){ builderThink(u,dt); return; }
   let o=u.order;
@@ -297,8 +297,9 @@ function builderThink(u,dt){
    The enemy is whoever is hostile to his side (Nov 2026: so a loyal Engineer in Rogue Strain keeps away from the crew too), his squad is his own side.
    An Engineer with u.repairHome (a point: Needle and Thread's garrison, the middle of its camp) also leans to the side of the structure
    that faces it (REPAIR_SIDE.home): he mends from inside the camp. Nov 2026: he only takes a spot that lies nearer to the home than the structure itself
-   (REPAIR_SIDE.inside), if the structure has one: never from outside the camp's wall. */
-const REPAIR_SIDE = { walk:0.5, enemy:4, squad:2, look:14, home:5, inside:0.5 };   /* inside: with a home, a spot must lie this many tiles nearer to it than the structure (when there is one) */
+   (REPAIR_SIDE.inside), if the structure has one: never from outside the camp's wall. With u.spread he avoids spots within that many tiles
+   of another spread-out Engineer or Medic (REPAIR_SIDE.apart), and the engine's auto-repair never sends him to what another Engineer is on. */
+const REPAIR_SIDE = { walk:0.5, enemy:4, squad:2, look:14, home:5, inside:0.5, apart:6 };   /* inside: with a home, a spot must lie this many tiles nearer to it than the structure (when there is one) */
 function repairSpot(u,b,o,reach,dt){ o.spotT=(o.spotT||0)-dt; if(o.spot&&o.spotT>0) return o.spot; o.spotT=1;
   const R=REPAIR_SIDE, L=R.look*TILE, foes=G.ents.filter(e=>!e.dead&&!e.hidden&&!e.downed&&e.faction!=='wild'&&hostile(u.faction,e.faction)&&(e.kind==='unit'||e.type==='hive')&&Math.hypot(e.x-b.x,e.y-b.y)<L);
   const mates=(u.formation?formMembers(u.formation):G.ents.filter(e=>e.kind==='unit'&&e.faction===u.faction&&Math.hypot(e.x-b.x,e.y-b.y)<10*TILE)).filter(e=>e!==u&&!e.dead&&!e.def.builder);
@@ -309,6 +310,7 @@ function repairSpot(u,b,o,reach,dt){ o.spotT=(o.spotT||0)-dt; if(o.spot&&o.spotT
   for(let ty=b.ty-1;ty<=b.ty+sz;ty++) for(let tx=b.tx-1;tx<=b.tx+sz;tx++){ if(tx>=b.tx&&tx<b.tx+sz&&ty>=b.ty&&ty<b.ty+sz) continue; if(!walkableT(tx,ty)) continue;
     const x=(tx+.5)*TILE, y=(ty+.5)*TILE, dx=x-b.x, dy=y-b.y, n=Math.hypot(dx,dy); if(n>reach-2) continue; if(anyIn&&!inside(x,y)) continue;
     let sc=Math.hypot(u.x-x,u.y-y)/TILE*R.walk; if(fd) sc+=(dx*fd.x+dy*fd.y)/n*R.enemy; if(md) sc-=(dx*md.x+dy*md.y)/n*R.squad; if(hd) sc-=(dx*hd.x+dy*hd.y)/n*R.home;
+    if(u.spread&&G.ents.some(e=>e!==u&&!e.dead&&!e.downed&&e.kind==='unit'&&e.faction===u.faction&&e.spread&&Math.hypot(e.x-x,e.y-y)<u.spread*TILE)) sc+=R.apart;   /* a spread-out Engineer keeps clear of the other Engineers and Medics (one grenade, one of them) */
     if(o.spot&&Math.hypot(x-o.spot.x,y-o.spot.y)<4) sc-=1;   /* he keeps his spot unless another is clearly better: no shuffling about */
     if(sc<bs){ bs=sc; best={x,y}; } }
   if(best&&(!o.spot||Math.hypot(best.x-o.spot.x,best.y-o.spot.y)>4)) o.spotWalk=0;

@@ -110,7 +110,7 @@ const BUILDINGS = {
                desc:'Seismic charge site. An Engineer standing still on it arms a charge.' },
   charge:    { name:'Seismic Charge', faction:'corps', size:1, hp:320, sight:4, art:'charge', fuse:75, blast:4.5, blastDamage:450,
                desc:'Armed seismic charge. It must survive until the fuse runs out. Engineers can repair it.' },
-  mortar:    { name:'Mortar', faction:'corps', size:1, hp:300, sight:3, art:'mortar',
+  mortar:    { name:'Mortar', faction:'corps', size:1, hp:300, sight:3, art:'mortar', buildTime:12,   /* buildTime: Needle and Thread's Engineers build a destroyed one again */
                desc:'A Corps field mortar behind sandbags. While an Engineer stands at it, it lobs a shell every few seconds at the thickest group of enemies it knows about, out to long range. A red ring shows where the shell will land.' },
   terminal:  { name:'Records Terminal', faction:'none', size:1, hp:1, sight:0, art:'terminal', scenery:true,
                desc:'The field hospital\'s records console. A Medic who knows what she is looking for can pull Dr. Maas\'s files off it.' },

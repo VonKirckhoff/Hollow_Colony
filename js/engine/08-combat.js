@@ -96,6 +96,7 @@ function damage(t,amt,src){
     else if(z.noBody&&z.noBody()){ t.noBody=true; kill(t,src); return; } }
   if(t.kind==='unit'&&t.faction==='corps'&&t.hp>0&&was>=t.maxHp*0.3&&t.hp<t.maxHp*0.3) bark(t,'hurt'); if(t.def.cloak) t.revealT=Math.max(t.revealT||0,2);
   if(t.faction===G.side && src && src.faction && hostile(src.faction,t.faction)) raiseAlert(t);
+  if(src&&src.faction){ t.hitF=src.faction; t.hitFAt=G.time; }   /* which side hit it last (Needle and Thread: the crew hitting the garrison raises the alarm) */
   if(t.kind==='building') t.hitBy=src;
   else if(t.kind==='unit'&&src&&src.kind==='unit'){ t.shotBy=src; t.shotAt=G.time; }   /* who hit him last, and when (Needle and Thread's garrison reads it) */
   if(t.kind==='unit' && src && !src.dead){
