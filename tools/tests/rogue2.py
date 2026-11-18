@@ -59,7 +59,7 @@ CASES=[
   { const md=ring().filter(u=>u.def.heal), en=ring().find(u=>u.def.builder), sp=[...md,en].filter(Boolean); let m=99; for(const a of sp) for(const b of sp) if(a!==b) m=Math.min(m,Math.hypot(a.ringAt.x-b.ringAt.x,a.ringAt.y-b.ringAt.y)/TILE); ok(m>PERKS.trooper.radius,'behind the line no grenade catches two of the Medics and the Engineer ('+m.toFixed(2)+')'); }
   /* a man falls: the line closes up where it stands */
   const before=new Map(fighters().map(u=>[u,{...u.ringAt}])); const end=fighters().sort((a,b)=>along(a.ringAt,{x:-d.y,y:d.x})-along(b.ringAt,{x:-d.y,y:d.x}))[0]; end.dead=true; step(1);
-  const moved=Math.max(...fighters().map(u=>Math.hypot(u.ringAt.x-before.get(u).x,u.ringAt.y-before.get(u).y)/TILE)); ok(moved<1.5&&fighters().every(u=>along(u.ringAt,d)>0.5),'a man falls: the line closes up, nobody walks in from the far side (most '+moved.toFixed(1)+' tiles)');
+  const moved=Math.max(...fighters().map(u=>Math.hypot(u.ringAt.x-before.get(u).x,u.ringAt.y-before.get(u).y)/TILE)); ok(moved<2&&fighters().every(u=>along(u.ringAt,d)>0.5),'a man falls: the line closes up, nobody walks in from the far side (under 2 tiles: a spot on the south barricade or gun is pushed to the next open tile) (most '+moved.toFixed(1)+' tiles)');
   /* crater camping: the crew stays put while the garrison bleeds: step back out of reach, patch up, forward again */
   for(const u of fighters()) u.hp=u.maxHp*0.5; const md2=ring().filter(u=>u.def.heal); for(const m of md2) m.healT=99;   /* the Medics wait a moment */
   for(let i=0;i<(NT_TAC.campFor+3)*30&&G.vars.tac.mode!=='regroup';i++){ for(const m of md2) m.healT=99; __hc.update(1/30); }
@@ -207,6 +207,18 @@ CASES=[
   /* a dropped Engineer does it too */ eng.dead=true; for(const u of G.ents) if(!u.dead&&u.ringer&&u.def.heal) u.dead=true; const g2=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.type==='sentry'); g2.invuln=false; const gs={tx:g2.tx,ty:g2.ty}; kill(g2,null);
   for(let i=0;i<(G.mission.job.call+12)*30;i++){ __hc.update(1/30); if(G.ents.some(e=>!e.dead&&e.type==='sentry'&&e.tx===gs.tx&&e.ty===gs.ty)) break; }
   ok(G.ents.some(e=>!e.dead&&e.type==='sentry'&&e.tx===gs.tx&&e.ty===gs.ty),'the Engineer from the Engineer/Medic drop starts on it');'''),
+('needle: the Engineer mends the edge of the camp from inside','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; G.vars.raidAt=1e9;
+  const eng=G.ents.find(e=>!e.dead&&e.ringer&&e.def.builder), H=eng.repairHome, out=[];
+  { const c=crew().find(u=>u.type==='gunner'); c.hidden=false; tp(c,13,22); c.order={type:'hold'}; c.quiet=true; c.stance='hold'; const s=makeUnit('drone','swarm',(31.5)*TILE,(13.5)*TILE); s.invuln=true; s.order={type:'hold'}; s.quiet=true; }   /* the crew to the west, the Brood to the north-east: the side away from them is outside the camp */
+  for(const p of [{x:25,y:19},{x:25,y:18},{x:24,y:21},{x:25,y:22}]){ const b=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.tx===p.x&&e.ty===p.y); b.invuln=false; b.hp=b.maxHp*0.4;
+    for(const o of G.ents) if(o!==b&&!o.dead&&o.kind==='building'&&o.faction==='loyal') o.hp=o.maxHp;
+    eng.order={type:'repair',target:b}; let at=null, hp=b.hp; for(let i=0;i<20*30&&b.hp<b.maxHp;i++){ __hc.update(1/30); if(b.hp>hp+0.01&&!at) at={x:eng.x,y:eng.y}; hp=b.hp; }   /* where he stands when the mending starts */
+    ok(at&&Math.hypot(at.x-H.x,at.y-H.y)<Math.hypot(b.x-H.x,b.y-H.y)-0.4*TILE&&Math.floor(at.x/TILE)<=24,b.type+' at ('+p.x+','+p.y+'): mended from inside the camp ('+(at?(at.x/TILE).toFixed(1)+','+(at.y/TILE).toFixed(1):'-')+')'); ok(b.hp>=b.maxHp,'and mended'); }
+  /* the spot itself, with the crew west or south of the camp (Nov 2026: then the barricade at (25,22) was mended from (25,21), outside the wall) */
+  { const c=crew().find(u=>u.type==='trooper'), bad=[]; c.hidden=false; for(const [cx,cy] of [[13,22],[17,22],[20,25],[21,19]]){ tp(c,cx,cy);
+    for(const p of [{x:25,y:22},{x:25,y:19},{x:25,y:18},{x:24,y:21}]){ const b=G.ents.find(e=>!e.dead&&e.faction==='loyal'&&e.tx===p.x&&e.ty===p.y); for(const ex of [20.5,23.5,27]){ eng.x=ex*TILE; eng.y=20.5*TILE;
+      const sp=repairSpot(eng,b,{},(b.size||1)*TILE/2+eng.r+18,1); if(!sp||Math.hypot(sp.x-H.x,sp.y-H.y)>Math.hypot(b.x-H.x,b.y-H.y)-0.4*TILE) bad.push(p.x+','+p.y+'>'+(sp?Math.floor(sp.x/TILE)+','+Math.floor(sp.y/TILE):'-')); } } }
+    ok(!bad.length,'whatever side the crew is on, the spot is inside the camp ('+bad.join(' ')+')'); }'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;

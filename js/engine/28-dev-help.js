@@ -479,6 +479,7 @@ const DEV_HELP = {
   'SQUAD|voice.gap':'Seconds between two spoken lines.',
   'SQUAD|moveFire.rate':'Time between shots while walking, × (higher = slower).',
   'REPAIR_SIDE|walk':'Engineer building or repairing: how much each tile of walking to a spot around the structure counts against it.',
+  'REPAIR_SIDE|inside':'Engineer with a home (Needle and Thread\'s garrison): he only repairs or builds from a spot this many tiles nearer to the middle of his camp than the structure (if it has one): never from outside the camp.',
   'REPAIR_SIDE|home':'Engineer with a home (Needle and Thread\'s garrison): how much he prefers the side of the structure that faces the middle of his camp.',
   'REPAIR_SIDE|enemy':'Engineer: how much he avoids the side of the structure his enemies are on (the Brood, or the crew for a loyal Engineer) (higher = he walks further round to stay away from them).',
   'REPAIR_SIDE|squad':'Engineer: how much he prefers the side of the structure his squad is on.',
