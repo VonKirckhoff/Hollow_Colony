@@ -32,7 +32,7 @@ const DEV_HELP = {
   'INTERCOM|musicDuck':'The music while the intercom speaks, × its volume (1 = it does not sink).',
   'NT_REBUILD|hitFor':'Needle and Thread: an Engineer of the garrison does not start (and stops) rebuilding a Sentry Gun or Barricade while he was hit in the last this many seconds.',
   'NT_REBUILD|margin':'Needle and Thread: ...nor while a crew member stands within his weapon\'s reach plus this many tiles of the spot.',
-  'NT_SENTRIES_BY|easy':'Needle and Thread: extra Sentry Guns in the camp on Easy, on top of the two by the west tents and the east side (from NT_SENTRIES: north, east by the pad, south). Takes effect at the next start.',
+  'NT_SENTRIES_BY|easy':'Needle and Thread: extra Sentry Guns in the camp on Easy, on top of the three that always stand (NT_SENTRY_BASE), taken from NT_SENTRIES in order: north by the terminal, east above the relay pad, south beside it. Takes effect at the next start.',
   'NT_SENTRIES_BY|normal':'Needle and Thread: extra Sentry Guns on Normal.',
   'NT_SENTRIES_BY|hard':'Needle and Thread: extra Sentry Guns on Hard.',
   'NT_RAID|first':'Needle and Thread: seconds into the job before the first raid, when every hive sends a party at the camp (× the difficulty\'s interval).',

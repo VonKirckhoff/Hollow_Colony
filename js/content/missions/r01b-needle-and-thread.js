@@ -11,7 +11,7 @@ const NT_TENTS=[ {x:16,y:16}, {x:23,y:16}, {x:16,y:22} ];   /* top-left tiles of
 const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer case in front of each tent */
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
 const NT_PAD={x:30,y:20};     /* the relief pad (its middle tile): on the east side of the camp, so the relief squad walks straight in */
-const NT_BARRICADES=[ {x:24,y:20}, {x:24,y:22}, {x:17,y:21} ];   /* the garrison's sandbags: two on the east side (the pad), one on the west (tiles) */
+const NT_BARRICADES=[ {x:24,y:20}, {x:25,y:22}, {x:17,y:21}, {x:22,y:16}, {x:25,y:18}, {x:20,y:24} ];   /* the garrison's sandbags (tiles, Nov 2026 as Von placed them): east by the gun line, west, north by the right tent, north-east above the east gun, south between the south guns */
 /* a rank from the job's number: Easy one lower, Hard one higher, never past Lieutenant */
 const ntRank=r=>Math.max(0,Math.min(4,r+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)));
 const NT_MORTAR={x:20,y:20};  /* the garrison's mortar: in the middle of the ring, its Engineer beside it */
@@ -37,8 +37,9 @@ const NT_TAC={ see:12, calm:8, outFor:4, near:6.5, frontAt:4.2, frontMin:1.5, fr
    at the camp, the first one `first` seconds in. A party is `budget` biomass (× difficulty), growing by `grow` per raid up to `growMax` raids.
    Bodies lying within NT_RING.reach tiles of the camp each get a carrier from the raid, up to `haul` per raid, so the dead do not pile up. */
 const NT_RAID={ first:70, every:75, alarmEvery:50, budget:60, grow:0.12, growMax:6, haul:4 };
-const NT_SENTRIES=[ {x:20,y:15}, {x:27,y:22}, {x:19,y:24} ];   /* the extra Sentry Guns (top-left tiles), in the order they are added: north by the terminal, east by the relief pad, south behind the third tent */
-const NT_SENTRIES_BY={ easy:1, normal:2, hard:3 };   /* how many of NT_SENTRIES stand, on top of the two by the west tents and the east side: 3, 4 or 5 Sentry Guns */
+const NT_SENTRY_BASE=[ {x:16,y:20}, {x:25,y:19}, {x:24,y:21} ];   /* the Sentry Guns that always stand: west by the tents, east, and east between the two barricades */
+const NT_SENTRIES=[ {x:20,y:15}, {x:24,y:23}, {x:21,y:24} ];   /* the extra Sentry Guns (top-left tiles), in the order they are added: north by the terminal, east above the relay pad, south beside the relay pad */
+const NT_SENTRIES_BY={ easy:1, normal:2, hard:3 };   /* how many of NT_SENTRIES stand, on top of the three of NT_SENTRY_BASE: 4, 5 or 6 Sentry Guns */
 /* rebuilding (ntRebuild, every half second): any Engineer of the garrison builds a destroyed Sentry Gun or Barricade again on its old spot,
    one at a time, Sentry Guns first (then the nearest), as a construction site that grows like the player's own. Not under fire: he does not start,
    and stops, while he was hit in the last `hitFor` seconds or while a crew member stands within his weapon's reach plus `margin` tiles of the spot. */
@@ -70,7 +71,7 @@ ROGUE_MISSIONS.push(
           for(const t of NT_TENTS) makeBuilding('medtent','none',t.x,t.y,true);
           g.vars.term=makeBuilding('terminal','none',20,18,true);
           g.vars.cases=NT_CASES.map(c=>{ g.cache(c,{ stab:1 }); return G.ents[G.ents.length-1]; });
-          const guns=[{x:16,y:20},{x:25,y:19},...NT_SENTRIES.slice(0,NT_SENTRIES_BY[G.diffKey]??NT_SENTRIES_BY.normal)].map(p=>g.loyalB('sentry',p)).filter(Boolean); g.vars.relay=g.loyalB('relay',NT_RELAY);   /* Sentry Guns: two, plus NT_SENTRIES_BY extra by difficulty */
+          const guns=[...NT_SENTRY_BASE,...NT_SENTRIES.slice(0,NT_SENTRIES_BY[G.diffKey]??NT_SENTRIES_BY.normal)].map(p=>g.loyalB('sentry',p)).filter(Boolean); g.vars.relay=g.loyalB('relay',NT_RELAY);   /* Sentry Guns: NT_SENTRY_BASE, plus NT_SENTRIES_BY extra by difficulty */
           /* the garrison stands in a defence ring round the middle of the camp: fighters on the ring, Medics and the Engineer inside */
           const R={rank:ntRank(J.rank)}, S={rank:ntRank(J.supRank)};
           const lead=g.loyal('trooper',{x:21,y:21},1,{rank:ntRank(J.leadRank)});   /* the ring's Lieutenant: he throws grenades at a bunched-up crew */ g.vars.lead=lead[0];
@@ -179,7 +180,7 @@ function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=t
     if(atOnce){ u.x=x; u.y=y; u.order={type:'hold'}; u.path=null; }
     else if(u.mortarLoader){ if(Math.hypot(u.x-x,u.y-y)>TILE*0.6){ u.target=null; u.order={type:'move',x,y}; setPath(u,x,y); } }   /* a loader goes straight to the mortar, no stopping to fight on the way */
     else if(!u.target&&!u.repairT&&!(u.order&&u.order.type==='repair')){ u.order={type:'amove',x,y}; setPath(u,x,y); } }   /* building or mending: he walks to his place once that is done */
-  const place=(grp,r,given)=>{ if(!grp.length) return; const spots=given?given.map(p=>{ let x=p.x, y=p.y; if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; }):grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/4;   /* not straight north: the terminal stands there */  let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
+  const place=(grp,r,given)=>{ if(!grp.length) return; const used=new Set(); const spots=given?given.map(p=>{ let x=p.x, y=p.y; if(!walkableP(x,y)){ const tx=Math.floor(x/TILE), ty=Math.floor(y/TILE), o=SPIRAL.find(o=>walkableT(tx+o.x,ty+o.y)&&!used.has((tx+o.x)+','+(ty+o.y)));   /* on a barricade or a gun: the nearest open tile no other man was pushed onto */ if(o){ x=(tx+o.x+.5)*TILE; y=(ty+o.y+.5)*TILE; used.add((tx+o.x)+','+(ty+o.y)); } } return {x,y}; }):grp.map((_,i)=>{ const a=i/grp.length*Math.PI*2-Math.PI/4;   /* not straight north: the terminal stands there */  let x=cx+Math.cos(a)*r*TILE, y=cy+Math.sin(a)*r*TILE;
       if(!walkableP(x,y)){ const t=nearestWalkable(Math.floor(x/TILE),Math.floor(y/TILE)); if(t){ x=(t.x+.5)*TILE; y=(t.y+.5)*TILE; } } return {x,y}; });
     const a=assignCheapest(grp.map(u=>spots.map(p=>(u.x-p.x)**2+(u.y-p.y)**2)));
     grp.forEach((u,i)=>{ const p=spots[a[i]]; u.ringAt={x:p.x,y:p.y}; u.home={x:p.x,y:p.y};
@@ -217,7 +218,7 @@ function ntLine(g,fight,sup,T,place,eng){ const A=NT_TAC, C={x:NT_RING.x*TILE,y:
   else if(T.mode==='regroup') fd=Math.max(-A.back,Math.min(A.frontMax,T.dist/TILE-(T.reach||6)-A.safe));   /* just out of the crew's reach, never past the back line */
   else { fd=Math.max(A.frontMin,Math.min(A.frontMax,T.dist/TILE-A.frontAt));
     const bar=(g.vars.barricades||[]).filter(b=>!b.dead).map(b=>({b,along:((b.x-C.x)*d.x+(b.y-C.y)*d.y)/TILE,side:Math.abs((b.x-C.x)*p.x+(b.y-C.y)*p.y)/TILE}))
-      .filter(o=>o.side<2.5&&o.along>=fd-1&&o.along<=A.frontMax+1).sort((a,b)=>a.side-b.side)[0];   /* a barricade that way, about where the line would stand: right behind it */
+      .filter(o=>o.side<2.5&&o.along>=fd-0.4&&o.along<=A.frontMax+1).sort((a,b)=>a.side-b.side)[0];   /* a barricade that way, about where the line would stand (not much short of it, Nov 2026: else the line behind it cannot reach the crew): right behind it */
     if(bar) fd=bar.along-1; }
   const F={x:C.x+d.x*fd*TILE,y:C.y+d.y*fd*TILE}, n=fight.length, row=(c,k,off,bk)=>({x:c.x+p.x*off*TILE-d.x*bk*TILE,y:c.y+p.y*off*TILE-d.y*bk*TILE});
   place(fight,0,fight.map((_,i)=>{ const off=(i-(n-1)/2)*A.spacing; return row(F,0,off,A.bend*off*off); }));
