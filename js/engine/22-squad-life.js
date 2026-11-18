@@ -473,7 +473,7 @@ function updateBodies(dt){ const B=SQUAD.body;
     const mine=G.ents.filter(e=>!e.dead&&e.claim===b), R=B.seek*TILE*(G.side==='swarm'?1.8:1);
     /* nobody came for it: the nearest nest sends a Crawler, however far away it lies (one at a time) */
     if(G.side!=='swarm'&&!b.carrier&&!mine.length){ b.lonely=(b.lonely||0)+1;
-      if(b.lonely>=B.fetch&&nests().length){ b.lonely=0; const h=nearestOf(b,isNest), u=h&&spawnNearBuilding('crawler','swarm',h,b); if(u){ u.role='hunt'; u.claim=b; u.claimMode='haul'; } } }
+      if(b.lonely>=B.fetch&&nests().length){ b.lonely=0; const ns=nests(), h=G.swarm.cfg.fetchAny?ns[(G.swarm.fetchN=(G.swarm.fetchN||0)+1)%ns.length]:nearestOf(b,isNest), u=h&&spawnNearBuilding('crawler','swarm',h,b); if(u){ u.role='hunt'; u.claim=b; u.claimMode='haul'; } } }   /* swarm.fetchAny (Needle and Thread): the nests take turns, not always the nearest */
     else b.lonely=0;
     if(nests().length&&!b.carrier&&!mine.some(e=>e.claimMode==='haul')){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='haul'; u.target=null; } }
     if(mine.filter(e=>e.claimMode==='guard').length<B.escorts){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='guard'; } } } }

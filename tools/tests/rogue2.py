@@ -155,6 +155,21 @@ CASES=[
   makeBuilding('sentry','corps',12,30,true); step(0.2); ok(atLimit('sentry'),'never more than two at once'); goMenu('menu');'''),
 ('needle: seen early','''resetRogue(); const G=start('''+NT+'''); step(1); for(const e of G.ents) if(e.faction==='swarm') e.invuln=true; const u=crew().find(x=>x.type==='trooper'&&!x.vet.capt); u.invuln=true; tp(u,22,24); step(3);
   ok(G.vars.alarm!=null&&!G.vars.dlStart,'seen before the download: the alarm goes early'); ok(G.msgs.some(m=>m.who==='Kappa medical'),'Kappa medical calls Tycho');'''),
+('needle: raids on the camp from every hive','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; }
+  ok(Math.abs(G.vars.raidAt-(G.time-1+NT_RAID.first*G.diff.interval))<1.5,'the first raid is planned ('+G.vars.raidAt.toFixed(0)+' s)');
+  const hs=G.ents.filter(e=>!e.dead&&e.type==='hive'), C={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, garr=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.kind==='unit');
+  for(const u of garr.slice(0,3)){ u.invuln=false; kill(u,null); } const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&Math.hypot(b.x-C.x,b.y-C.y)<NT_RING.reach*TILE); ok(bodies.length===3,'three of the garrison lie dead in the camp ('+bodies.length+')');
+  for(const u of G.ents) if(u.faction==='loyal'&&u.kind==='unit') u.stance='hold';
+  const before=new Set(G.ents.filter(e=>e.faction==='swarm')); G.vars.raidAt=G.time; step(0.3); const raid=G.ents.filter(e=>!e.dead&&e.faction==='swarm'&&e.kind==='unit'&&!before.has(e));
+  const from=new Set(raid.map(u=>hs.slice().sort((a,b)=>Math.hypot(a.x-u.x,a.y-u.y)-Math.hypot(b.x-u.x,b.y-u.y))[0].id)); ok(hs.length===3&&from.size===3,'a party from all three hives ('+raid.length+' from '+from.size+')');
+  ok(raid.filter(u=>!u.claim).every(u=>u.order&&Math.hypot(u.order.x-C.x,u.order.y-C.y)<2*TILE),'they march on the camp');
+  ok(bodies.every(b=>raid.some(u=>u.claim===b&&u.claimMode==='haul')),'every body in the camp gets a carrier from the raid');
+  ok(Math.abs(G.vars.raidAt-(G.time+NT_RAID.every*G.diff.interval))<1,'the next one comes '+NT_RAID.every+' s later');
+  for(const e of G.ents) if(e.faction==='loyal') e.dead=true; step(45); const gone=bodies.filter(b=>b.dead||b.home||b.carrier).length; ok(gone>=2,'with the garrison gone the raiders drag the dead out of the camp ('+gone+'/3)');
+  ntAlarm(G.api,'test'); G.vars.raidAt=G.time; step(0.3); ok(Math.abs(G.vars.raidAt-(G.time+NT_RAID.alarmEvery*G.diff.interval))<1,'after the alarm every '+NT_RAID.alarmEvery+' s'); ok(G.vars.raidN===2,'raid two');
+  const B={x:30*TILE,y:28*TILE}; makeBody({x:B.x,y:B.y,def:UNITS.trooper,type:'trooper'}); const b=G.ents[G.ents.length-1]; for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true;
+  const homes=new Set(); for(let i=0;i<4;i++){ const pre=new Set(G.ents); b.lonely=SQUAD.body.fetch; b.seekT=0; step(0.1); const c=G.ents.find(e=>!pre.has(e)&&e.type==='crawler'); if(c){ homes.add(hs.slice().sort((a,h)=>Math.hypot(a.x-c.x,a.y-c.y)-Math.hypot(h.x-c.x,h.y-c.y))[0].id); c.dead=true; c.claim=null; } }
+  ok(homes.size>=3,'a lonely body: the hives take turns sending a Crawler ('+homes.size+')');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;

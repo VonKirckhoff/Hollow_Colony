@@ -33,6 +33,10 @@ const NT_MORTAR={x:20,y:20};  /* the garrison's mortar: in the middle of the rin
    Nobody seen for `calm` seconds: back to the ring. */
 const NT_TAC={ see:12, calm:8, outFor:4, near:6.5, frontAt:4.2, frontMin:1.5, frontMax:4.5, spacing:1.1, bend:0.12, medBack:2.2, back:2.5,
   campR:2, campFor:10, hurt:0.75, healed:0.95, safe:1.5, regroupMax:30, regroupCool:15, turn:25 };
+/* the basin's raids (ntRaid): every `every` seconds (`alarmEvery` once the sirens have gone; × the difficulty's interval) EVERY hive sends a party
+   at the camp, the first one `first` seconds in. A party is `budget` biomass (× difficulty), growing by `grow` per raid up to `growMax` raids.
+   Bodies lying within NT_RING.reach tiles of the camp each get a carrier from the raid, up to `haul` per raid, so the dead do not pile up. */
+const NT_RAID={ first:70, every:75, alarmEvery:50, budget:60, grow:0.12, growMax:6, haul:4 };
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, supGap:2.2, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle, supGap: tiles between two of the support at the least (more than a grenade's radius, PERKS.trooper.radius: one grenade never catches both Medics) (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
@@ -49,8 +53,8 @@ ROGUE_MISSIONS.push(
       units:[], buildings:[], hives:['a','b','c'],
       shafts:[ {x:17,y:2,wall:'n',exit:true,label:'North shaft'} ],
       swarmUnits:[ ['drone','a',3], ['crawler','a',2], ['drone','b',3], ['spitter','b',1], ['drone','c',2], ['crawler','c',2] ] },
-    swarm:{ biomass:40, rate:0.3, guardMax:4, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:150, brute:9999 },
-      hunt:{ every:45, afterEvery:20, budget:35, afterBudget:60, grow:0.15, growMax:8 } },
+    swarm:{ fetchAny:true, biomass:40, rate:0.3, guardMax:4, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:150, brute:9999 },
+      hunt:{ every:45, afterEvery:20, budget:35, afterBudget:60, grow:0.15, growMax:8 } },   /* fetchAny: a Crawler for a lonely body comes from each hive in turn; the raids on the camp: NT_RAID */
     objectives:[
       { id:'records', text:'Pull Dr. Maas\'s files off the records terminal (a Medic stands at it)' },
       { id:'stab',    text:'Take the stabilizer from the three hospital tents (0/3)' }
@@ -72,7 +76,7 @@ ROGUE_MISSIONS.push(
           ntRing(g,gar,true); g.vars.ringMax=gar.length;   /* the ring's full strength: a relief squad never fills it past this */
           g.pad(NT_PAD,'relief'); g.vars.dl=0; g.vars.dlT=g.time; g.vars.sent=0;
           g.marker('term',{x:20,y:18},'Records terminal');
-          g.reveal({x:20,y:20},6,1e6); } },   /* the hospital is lit all night: the crew can watch it from afar */
+          g.reveal({x:20,y:20},6,1e6); g.vars.raidAt=g.time+NT_RAID.first*G.diff.interval; } },   /* the hospital is lit all night: the crew can watch it from afar */
       { when:g=>g.time>1, do:g=>g.crewSay('Capt. Kerckhoffs',`Kappa Basin again. Last time they held us off till dawn. ${selfName()}, you were in that ring. Tell me where it is thin.`) },
       { when:g=>g.time>5, do:g=>g.crewSay(selfName(),'West side, by the tents. They stand in a ring round the middle and never leave the camp, Medics in the middle. And they will call Tycho the moment they see us.') },
       { when:g=>g.time>9, do:g=>g.crewSay('Devreese','The terminal in the middle of the tents. Get me there and keep them off me. It takes time to find her files, and they will hear me looking.') },
@@ -115,7 +119,9 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.unloadPad=null; u.aboard=null; u.hidden=false; u.invuln=false;
           const p=u.ringAt||u; u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } } },   /* straight into the camp, to his place in the ring or the line (going round the crew was tried in Nov 2026 and taken out again) */
       /* the sirens wake the basin */
-      { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.wave(45,{x:20,y:18}); g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
+      { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.vars.raidAt=g.time; g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
+      /* the basin's raids: every hive at once goes for the camp, and fetches the dead lying there (NT_RAID) */
+      { repeat:true, when:g=>g.vars.raidAt!=null&&g.time>=g.vars.raidAt&&!g.vars.won, do:g=>ntRaid(g) },
       /* both done: out through the north shaft */
       { when:g=>g.vars.dlDone&&g.vars.stabDone, do:g=>{ g.vars.escape=true; g.addObjective('escape','Everyone into the old shaft in the north wall (right-click it)'); g.exitMark('exit'); g.openExit();
           g.crewSay('Capt. Kerckhoffs','That is what we came for. North wall, the old shaft. Nobody stays behind.'); } },
@@ -214,3 +220,14 @@ function ntTac(g){ const A=NT_TAC, T=g.vars.tac||(g.vars.tac={mode:'ring',outT:0
     else if(T.mode==='regroup'&&((!down&&fighters.every(u=>u.hp>=u.maxHp*A.healed))||!camping||g.time-T.regAt>A.regroupMax)){ T.mode='front'; T.regroupEnd=g.time; T.lineAt=g.time; T.lineL=L; ntRing(g,[]);
       const s=g.vars.lead&&!g.vars.lead.dead?g.vars.lead:fighters[0]; if(s&&camping) g.say(s.vet?`${RANKS[s.vet.rank].abbr} ${s.vet.name}`:'Kappa garrison','Patched up. Back on the line!'); } }
   else if(T.mode!=='ring'&&g.time-T.seen>A.calm){ T.mode='ring'; T.K=null; ntRing(g,[]); } }
+/* a raid: every hive sends a party at the camp (in turn, so no hive always gets the room first), and the dead lying in the camp get carriers */
+function ntRaid(g){ const R=NT_RAID; g.vars.raidAt=g.time+(g.vars.alarm!=null?R.alarmEvery:R.every)*G.diff.interval;
+  const n=g.vars.raidN=(g.vars.raidN||0)+1, budget=R.budget*(1+R.grow*Math.min(n-1,R.growMax))*G.diff.budget, aim={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, out=[];
+  const hs=hives(); if(!hs.length) return out; const k=n%hs.length, order=[...hs.slice(k),...hs.slice(0,k)];
+  for(const h of order){ const s=spawnSpotToward(h,aim), w=launchWaveAt(budget,{x:Math.floor(s.x/TILE),y:Math.floor(s.y/TILE)},aim); out.push(...w); }
+  /* the dead in the camp: each gets the nearest raider as its carrier */
+  const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier&&!G.ents.some(e=>!e.dead&&e.claim===b&&e.claimMode==='haul')&&Math.hypot(b.x-aim.x,b.y-aim.y)<NT_RING.reach*TILE).slice(0,R.haul);
+  const free=out.filter(u=>u.def.attack==='melee');   /* a melee runner carries; the Spitters keep shooting */ for(const b of bodies){ const u=(free.length?free:out).sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y))[0]; if(!u) break;
+    out.splice(out.indexOf(u),1); if(free.includes(u)) free.splice(free.indexOf(u),1); u.claim=b; u.claimMode='haul'; u.pack=null; }
+  if(out.length&&n===1) g.crewSay('Cnudde','Movement from all three hives. They are going for the camp, not for us. Let them thin that ring out.');
+  return out; }
