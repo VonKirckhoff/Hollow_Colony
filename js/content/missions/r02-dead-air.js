@@ -14,6 +14,7 @@ ROGUE_MISSIONS.push(
       'Kappa Station is a supply post again: three caches on the station platform, a small garrison, two Sentry Guns, and two Relay Towers, one on the station and one on the northern ridge. Those towers are the danger. The moment anyone at Kappa sees us, they start calling Tycho.',
       'If Tycho hears where we are, a clean-up team is on top of us within the hour, and this is over. Stay out of their sight. The Brood hates Kappa as much as we do: let it wear the garrison down first, and a tower that is already rubble cannot call anyone. If they do see us, both towers go down within thirty seconds, or we are finished. Take all three caches and leave through the old mine shaft in the east wall.'
     ],
+    limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['c','a'],
       shafts:[ {x:79,y:35,wall:'e',exit:true,label:'East shaft'}, {x:8,y:8,wall:'w'} ],

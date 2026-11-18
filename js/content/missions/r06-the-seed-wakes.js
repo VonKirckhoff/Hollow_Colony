@@ -16,6 +16,7 @@ ROGUE_MISSIONS.push(
       'Bleed the Heir. When she is hurt badly enough she will tear her roots loose and run, and leave the Seed behind. Then there are two things we can do with it. Devreese can put it into one of us, and through him into all of us, and we stop being Corps for good. Or Mortier burns it, and every sample we ever took with it, and whatever we are now ends with us. The crew will follow your call.'
     ],
     stab:2,
+    limits:{ sentry:4 },   /* the crew's own Sentry Guns: at most 4 in the field at once (a destroyed or packed-up one frees a place) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c'], hiveHp:4,
       swarmUnits:[ ['drone','a',3], ['crawler','a',2], ['drone','b',4], ['spitter','b',1], ['drone','c',4], ['spitter','c',1], ['brute','c',1] ] },

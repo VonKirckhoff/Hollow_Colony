@@ -39,6 +39,7 @@ ROGUE_MISSIONS.push(
       'The trouble: a Corps sweep team landed in the east this morning, and they are burning the hives one by one. Get him to a hive before they burn them all. Then we leave through the old shaft in the south.'
     ],
     stab:1,
+    limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c','d','e'], hiveHp:1.4,
       shafts:[ {x:31,y:2,wall:'n'}, {x:74,y:2,wall:'n'}, {x:56,y:40,wall:'s',exit:true,label:'South shaft'} ],

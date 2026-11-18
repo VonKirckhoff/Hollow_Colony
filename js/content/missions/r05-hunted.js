@@ -13,6 +13,7 @@ ROGUE_MISSIONS.push(
       'They sent Sgt. Kessler, and they sent Dust with him. Your squad. The last time you stood on these highlands, you held those same beacons for the Corps with Kessler at your side. He knew some of us before the crash. His orders are to contain us. Out here there is nowhere to hide.',
       'Cnudde knows an ore hauler, the Magpie, whose pilot asks no questions. Take any of the three old uplink beacons and call her, then hold that beacon until she lands. And if you can, let Kessler walk away. He is not the enemy. He just thinks we are.'
     ],
+    limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
     start:{ salvage:0, camera:{x:5,y:50}, crewAt:{x:5,y:50},
       units:[], buildings:[], hives:['a','b','c','d'], hiveHp:1.3,
       uplinks:[ ['1','West ridge'], ['2','East ridge'], ['3','Centre mesa'] ],

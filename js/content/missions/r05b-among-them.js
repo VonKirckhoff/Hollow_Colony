@@ -20,6 +20,7 @@ ROGUE_MISSIONS.push(
     ],
     stab:1,
     job:{ pod:12, lull:90, stir:65, burrow:3 },
+    limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c','d','e'], hiveHp:1.5,
       shafts:[ {x:35,y:2,wall:'n',exit:true,label:'The way down'}, {x:17,y:46,wall:'s',creep:3,eggs:0} ],

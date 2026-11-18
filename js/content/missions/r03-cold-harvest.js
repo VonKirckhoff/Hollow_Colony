@@ -13,6 +13,7 @@ ROGUE_MISSIONS.push(
       'Kill three hives without fire. A burnt hive is worth nothing. When we have three, we leave through the old mine shaft in the south-west.'
     ],
     dark:{ sight:0.5 }, flares:2,
+    limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
     start:{ salvage:0, camera:{x:24,y:53}, crewAt:{x:24,y:53},
       units:[], buildings:[], hives:['a','b','c',{at:{x:50,y:39}}], hiveHp:1.2,
       shafts:[ {x:16,y:36,exit:true,label:'Mine shaft'} ],
