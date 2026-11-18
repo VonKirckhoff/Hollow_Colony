@@ -127,7 +127,9 @@ ROGUE_MISSIONS.push(
           g.say('Kappa medical',n.eng&&n.med?'Kappa medical to Tycho: our Engineer and our Medics are down. We cannot keep anyone alive out here. Send us Medics and Engineers!'
             :n.eng?'Kappa medical to Tycho: we have lost our Engineer. Nobody to work the mortar or fix the guns. Send Engineers!'
             :'Kappa medical to Tycho: no Medic left on the perimeter. Our wounded are bleeding out. Send a Medic!'); } },
-      { repeat:true, when:g=>g.vars.dueAt!=null&&!g.vars.landAt&&!g.vars.won&&g.time>=g.vars.dueAt-3.2, do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
+      /* the drop lands only once the last ship has lifted off and is gone (ntPadFree, Nov 2026): until then the timer stays at the landing time */
+      { repeat:true, when:g=>g.vars.dueAt!=null&&!g.vars.landAt&&!g.vars.won&&g.time>=g.vars.dueAt-3.2&&!ntPadFree(), do:g=>{ g.vars.dueAt=g.time+3.2; if(G.timer) G.timer.end=G.time+3.2; } },
+      { repeat:true, when:g=>g.vars.dueAt!=null&&!g.vars.landAt&&!g.vars.won&&g.time>=g.vars.dueAt-3.2&&ntPadFree(), do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
           const J=G.mission.job, relief=!!g.vars.dueRelief, brood=!!g.vars.dueBrood, sup=ntNeedSupport(g,true,relief||brood); g.vars.dueRelief=false; g.vars.dueBrood=false; g.vars.dueSup=false;
           const most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), k=relief?g.vars.sent++:-1, sq=[];
@@ -170,6 +172,8 @@ ROGUE_MISSIONS.push(
 function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.say('Kappa medical',line);
   g.ping(NT_PAD);
   g.crewSay('Capt. Kerckhoffs','That is the alarm. Thin out that ring and Tycho drops more people on that pad. Get Devreese her files and get the cases, fast.'); }
+/* the relief pad has no ship on it (landed, unloading or lifting off) and nobody is still waiting inside one */
+function ntPadFree(){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); return !b||(!b.ship&&!b.flight&&!G.ents.some(u=>!u.dead&&u.aboard&&u.ntOffAt!=null)); }
 /* the relief squad: everyone waits inside the ship (hidden, safe) and walks off the ramp NT_DROP.gap seconds after the one before him, the one going deepest into the camp first */
 const NT_DROP={ gap:2.4 };
 function ntUnload(g,sq){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); let f=b?rampFoot(b):null;

@@ -252,6 +252,15 @@ CASES=[
   /* the mortar destroyed: built again */ const mo=G.vars.mortar; mo.invuln=false; kill(mo,null); for(let i=0;i<40*30&&!(G.vars.mortar&&!G.vars.mortar.dead&&G.vars.mortar.built);i++) __hc.update(1/30);
   ok(G.vars.mortar&&G.vars.mortar!==mo&&G.vars.mortar.built&&G.vars.mortar.tx===NT_MORTAR.x&&G.vars.mortar.ty===NT_MORTAR.y,'a destroyed mortar is built again on its spot');
   for(let i=0;i<(LOYAL_MORTAR.first+3)*30&&!G.vars.mortar.manned;i++) __hc.update(1/30); ok(G.vars.mortar.manned,'and manned again');'''),
+('needle: the next dropship lands only once the last one has lifted off','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } G.vars.raidAt=1e9;
+  const pad=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'), J=G.mission.job; ntAlarm(G.api,'test');
+  for(const u of G.ents.filter(e=>!e.dead&&e.ringer&&!e.def.heal&&!e.def.builder).slice(0,5)) u.dead=true; G.vars.dueRelief=true; G.vars.dueAt=G.time+4;
+  let landed1=null, gone1=null, flightWhileShip=false, landed2=null, n=0;
+  for(let i=0;i<70*30;i++){ __hc.update(1/30); if(pad.ship&&pad.flight) flightWhileShip=true;
+    if(!landed1&&pad.ship&&!G.vars.landAt){ landed1=G.time; G.vars.broodGap=3; G.vars.dueBrood=true; G.vars.dueAt=G.time+2; }   /* the next drop is due while the first is still unloading */
+    if(landed1&&!gone1&&!pad.ship) gone1=G.time; if(gone1&&!landed2&&pad.ship) landed2=G.time; if(landed2) break; }
+  ok(landed1&&gone1&&landed2,'two drops land ('+[landed1,gone1,landed2].map(t=>t&&t.toFixed(1))+')'); ok(!flightWhileShip,'never a ship on its way in while one is on the pad');
+  ok(landed2>gone1,'the second lands after the first has lifted off and is gone'); ok(G.timer==null||G.timer.end>=G.time-0.1,'the timer waits with it');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;

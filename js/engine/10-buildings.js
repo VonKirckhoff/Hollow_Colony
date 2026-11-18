@@ -22,7 +22,7 @@ function updateBuilding(b,dt){
     if(b.state==='theirs'){ b.cap=Math.max(0,(b.cap||0)-dt/d.loseTime); if(b.cap<=0 && b.owned){ b.owned=false; SFX.play('alarm'); say('Alert',`${b.label||'Beacon'} lost to ${G.ents.some(e=>!e.dead&&e.osprey&&!e.ospBroke&&dist(e,b)<R2)?'the Osprey crew':'the Brood'}!`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); } }
   }
   if(d.reinforce) updateShip(b,dt);
-  if(d.reinforce && b.flight){ b.flight.t-=dt; if(b.flight.ang===undefined) b.flight.ang=rand(-2.7,-0.45);
+  if(d.reinforce && b.flight){ b.flight.t-=dt; if(b.ship&&b.flight.t<5.01) b.flight.t=5.01;   /* the last ship is still on the pad or lifting off: the next one waits before its approach (Nov 2026) */ if(b.flight.ang===undefined) b.flight.ang=rand(-2.7,-0.45);
     if(b.flight.t<5 && !b.flight.heard){ b.flight.heard=true; SFX.play('engine',b.x,b.y); }
     if(b.flight.t<1.6 && Math.random()<dt*30) dustPuff(b.x,b.y,1);
     if(b.flight.t<=0){ const cargo=b.flight.cargo, rally=b.flight.rally||b.rally, otype=b.flight.rally?'amove':'move', pickup=b.flight.pickup, wait=b.flight.wait, sname=b.flight.name, ang=b.flight.ang; b.flight=null; if(rally!==b.rally) b.rallyN=0;
