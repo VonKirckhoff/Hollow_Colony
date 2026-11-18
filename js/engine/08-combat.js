@@ -103,6 +103,7 @@ function damage(t,amt,src){
     else if((!t.target||t.target.kind==='building') && src.kind==='unit' && (!t.order||t.order.type!=='move') && t.def.damage && hostile(t.faction,src.faction) && !(t.truce&&src.faction===t.truce) && !(src.truce&&src.truce===t.faction)) t.target=src;
   }
   if(t.type==='hive' && src) hiveAlarm(t,src);
+  if(t.hp<=0&&t.kind==='unit'){ t.fellTo=src&&src.faction||null; if(G.mission&&G.mission.onFall) G.mission.onFall(t,src); }   /* which side brought him down, and the mission hears of it (Needle and Thread counts only the crew's) */
   if(t.hp<=0 && canGoDown(t,src)){ goDown(t,src); if(src&&src.type==='husk'&&!src.dead) huskScream(src); return; }   /* a Husk screams when it brings one down, too */   /* a soldier first goes down; a Medic can still patch him up */
   if(t.hp<=0) kill(t,src);
 }

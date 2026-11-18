@@ -40,7 +40,7 @@ const NT_RAID={ first:70, every:75, alarmEvery:50, budget:60, grow:0.12, growMax
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, supGap:2.2, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle, supGap: tiles between two of the support at the least (more than a grenade's radius, PERKS.trooper.radius: one grenade never catches both Medics) (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
-    id:'rogue-needle-and-thread', title:'Needle and Thread', map:'kappa', rogue:true, loyalCover:true,   /* the garrison takes cover behind its barricades (coverDamage) */
+    id:'rogue-needle-and-thread', title:'Needle and Thread', map:'kappa', rogue:true, loyalCover:true, onFall:(u,src)=>ntFall(u,src),   /* the garrison takes cover behind its barricades (coverDamage) */
     summary:'Hit the Kappa field hospital a second time, for Maas\'s stabilizer and her formula.',
     briefing:[
       'One case of stabilizer from Maas\'s freezer, and it is half gone. Devreese says it will not last the month. Without it, the strain takes us one by one, and you first: you have had it the shortest.',
@@ -102,19 +102,32 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>!!g.vars.ringOn, do:g=>ntRingTick(g) },
       /* Tycho's relief squads: only once the ring has lost job.lostFor men does the hospital call one in (job.call seconds before it lands),
          at most job.waves of them; it lands on the pad, walks to the middle of the camp and fills the ring back up to its first strength */
-      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&g.vars.dueAt==null&&ntMissing(g)>=G.mission.job.lostFor, do:g=>{
-          g.vars.dueAt=g.time+G.mission.job.call; g.setTimer(G.mission.job.call,'Relief squad'); g.ping(NT_PAD);
+      /* Tycho's relief squads: only once the CREW has brought down job.lostFor men of the ring (since the last call; men the Brood killed do not count,
+         ntCrewLost) does the hospital call one in (job.call seconds before it lands), at most job.waves of them; it lands on the pad, walks to the
+         middle of the camp and fills the ring back up to its first strength (also the places of men the Brood killed) */
+      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&!g.vars.dueRelief&&ntCrewLost(g)>=G.mission.job.lostFor, do:g=>{
+          g.vars.dueRelief=true; g.vars.crewLost=0; g.vars.callN=(g.vars.callN||0)+1; const fresh=g.vars.dueAt==null; if(fresh){ g.vars.dueAt=g.time+G.mission.job.call; g.setTimer(G.mission.job.call,'Relief squad'); } g.ping(NT_PAD);   /* a support drop already on its way: the relief squad comes with it */
           g.say('Kappa medical',['Kappa medical to Tycho: we are losing people in the perimeter. Send the relief squad, now!','Kappa medical, the ring is thinning again. Tycho, we need another squad!','Kappa medical to Tycho, we are bleeding out here. Whatever you have left, send it!'][g.vars.sent]||'Kappa medical requests a relief squad.'); } },
+      /* no Engineer and no Medic left standing, but someone else still holds: the hospital asks Tycho for both (any time, as often as it happens; not one of the job.waves) */
+      { repeat:true, when:g=>!g.vars.won&&g.vars.dueAt==null&&ntNeedSupport(g), do:g=>{
+          g.vars.dueAt=g.time+G.mission.job.call; g.vars.dueSup=true; g.setTimer(G.mission.job.call,'Engineer and Medic'); g.ping(NT_PAD);
+          g.say('Kappa medical',g.vars.alarm!=null?'Kappa medical to Tycho: our Engineer and our Medics are down. We cannot keep anyone alive out here. Send us a Medic and an Engineer!'
+            :'Kappa medical to Tycho: the brood got our Engineer and our Medics. Request a Medic and an Engineer on the next drop.'); } },
       { repeat:true, when:g=>g.vars.dueAt!=null&&!g.vars.landAt&&!g.vars.won&&g.time>=g.vars.dueAt-3.2, do:g=>{ g.landShip('relief',3,false); g.vars.landAt=g.time+3.2; } },
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
-          const J=G.mission.job, most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), n=Math.max(1,Math.min(most,ntMissing(g))), k=g.vars.sent++;
-          const RR={rank:ntRank(J.reliefRank+k)}, sq=[...g.loyal(k===2&&n>1?'medic':'trooper',NT_PAD,1,RR)]; if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR));   /* Tycho sends better people each time */
+          const J=G.mission.job, relief=!!g.vars.dueRelief, sup=ntNeedSupport(g,true); g.vars.dueRelief=false; g.vars.dueSup=false;
+          const most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), k=relief?g.vars.sent++:-1, sq=[];
+          if(sup) sq.push(...g.loyal('engineer',NT_PAD,1,{rank:ntRank(J.supRank)}),...g.loyal('medic',NT_PAD,1,{rank:ntRank(J.supRank)}));   /* the support drop: an Engineer for the mortar and a Medic */
+          if(relief){ const n=Math.max(1,Math.min(most,ntMissing(g)-sq.length)), RR={rank:ntRank(J.reliefRank+k)};   /* the relief fills the ring up, the support drop's two included */
+            sq.push(...g.loyal(k===2&&n>1&&!sup?'medic':'trooper',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal(k===1?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR)); }   /* Tycho sends better people each time */
+          for(const u of sq) if(u.def.builder) u.mortarMan=true;   /* a new Engineer takes the mortar back */
           ntRing(g,sq); ntUnload(g,sq);
-          g.say(['Lt. Van Der Planck','Sgt. Brandt','Lt. Van Der Planck'][k]||'Corps radio',[
+          if(relief) g.say(['Lt. Van Der Planck','Sgt. Brandt','Lt. Van Der Planck'][k]||'Corps radio',[
             'Relief squad on the ground at Kappa. Into the ring, all of you. Weapons free, mind the tents.',
             'Second squad down. Close up the ring with Van Der Planck\'s people. Flamer on the line, keep them out of the tents.',
             'This is Van Der Planck again, last squad Tycho can spare. And if Dust\'s deserter is with them: you are not leaving Kappa.'][k]||'Relief squad down.');
-          if(g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
+          else if(sup) g.say('Tycho','Medic and Engineer on the ground at Kappa. Get that mortar firing and get your wounded up.');
+          if(relief&&g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
       /* the relief squad comes down the ramp one by one, so it never stands bunched up on the pad */
       { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.unloadPad=null; u.aboard=null; u.hidden=false; u.invuln=false;
           const p=u.ringAt||u; u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } } },   /* straight into the camp, to his place in the ring or the line (going round the crew was tried in Nov 2026 and taken out again) */
@@ -170,7 +183,7 @@ function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=t
   place(fight,Math.max(R.r,fight.length*R.perMan/(2*Math.PI))); place(sup,sup.length>1?Math.max(R.inner,R.supGap/(2*Math.sin(Math.PI/sup.length))):R.inner);   /* the support spread out evenly, R.supGap apart */
   g.vars.ringN=us.length; }
 /* every half second: the ring closes up when someone falls, and a soldier who is done fighting (or healing, or repairing) goes back to his place and holds */
-function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time+0.5; ntTac(g);
+function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time+0.5; ntLossTick(g); ntTac(g);
   const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer); if(us.length!==g.vars.ringN){ ntRing(g,[]); return; }
   for(const u of us){ const p=u.ringAt; if(!p||u.aboard) continue;
     if(u.target&&Math.hypot(u.x-NT_RING.x*TILE,u.y-NT_RING.y*TILE)>NT_RING.leash*TILE){   /* too far from the camp: break off and walk back (no shooting on the way) */
@@ -181,6 +194,16 @@ function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time
     if(d>TILE*0.6){ if(!u.order||u.order.type==='hold'){ u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } }
     else if(!u.order){ u.order={type:'hold'}; u.path=null; } } }
 /* how many men the ring is short of its first strength */
+/* the men of the ring the crew brought down since the last call (ntFall counts them as they fall, ntLossTick takes back one patched up in time) */
+function ntCrewLost(g){ ntLossTick(g); return g.vars.crewLost||0; }
+function ntLossTick(g){ g.vars.crewLost=g.vars.crewLost||0;
+  for(const u of G.ents) if(u.kind==='unit'&&u.ringer&&u.ntLost&&!u.dead&&!u.downed){ if(u.ntLost==='crew'&&u.ntCall===(g.vars.callN||0)) g.vars.crewLost=Math.max(0,g.vars.crewLost-1); u.ntLost=null; } }   /* patched up before the call: he no longer counts */
+/* mission.onFall (damage in 08-combat.js): a man of the ring goes down or dies; it counts for the relief only when the crew (faction 'corps': a crew member, their Sentry Gun, a grenade) brought him down */
+function ntFall(u,src){ const V=G.vars; if(!u.ringer||u.ntLost) return; u.ntLost=u.fellTo==="corps"?"crew":"other"; u.ntCall=V.callN||0; if(u.ntLost==="crew") V.crewLost=(V.crewLost||0)+1; }
+/* no Engineer and no Medic of the garrison on his feet (one still on board of a drop counts as there), but at least one other soldier is.
+   landing: the check when the ship touches down */
+function ntNeedSupport(g,landing){ const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer);
+  return !us.some(u=>u.def.builder||u.def.heal)&&us.some(u=>!u.def.builder&&!u.def.heal&&(landing||!u.aboard)); }
 function ntMissing(g){ return Math.max(0,(g.vars.ringMax||0)-G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer).length); }
 /* the fight line (front) or the line pulled back (back): fighters in a line across T.dir, the Medics spread out behind it */
 function ntLine(g,fight,sup,T,place,eng){ const A=NT_TAC, C={x:NT_RING.x*TILE,y:NT_RING.y*TILE}, d=T.dir, p={x:-d.y,y:d.x};

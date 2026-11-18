@@ -5,6 +5,7 @@ errs=[]
 HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ const G=__hc.G; for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); },
   crew=()=>__hc.G.ents.filter(e=>!e.dead&&e.crew), tp=(u,x,y)=>{ u.x=(x+.5)*TILE; u.y=(y+.5)*TILE; u.path=null; u.order=null; u.target=null; u.home={x:u.x,y:u.y}; },
   calm=()=>{ for(const e of __hc.G.ents) if(e.faction==='swarm'||e.faction==='loyal') e.invuln=true; },
+  fall=u=>{ u.fellTo='corps'; ntFall(u); u.dead=true; },   /* the crew brings him down (counts for the relief) */
   obj=id=>(__hc.G.objectives.find(o=>o.id===id)||{}).state,
   start=id=>{ __hc.startMission(ROGUE_MISSIONS.find(m=>m.id===id)); return __hc.G; }; try{ '''
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
@@ -90,7 +91,7 @@ CASES=[
   /* a relief squad that lands during a fight goes round the crew */
   cs.forEach(u=>{ u.invuln=true; }); step(2); ok(G.vars.tac&&G.vars.tac.mode!=='ring','a fight on');
   ring().filter(u=>!u.def.heal&&u!==G.vars.lead).slice(0,2).forEach(u=>u.dead=true); const had=new Set(G.ents);   /* three short: a squad of three */
-  G.vars.alarm=G.time; G.vars.sent=0; G.vars.dueAt=G.time+1; for(let i=0;i<5*30&&!G.vars.sent;i++) __hc.update(1/30); const fresh=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&!had.has(e));
+  G.vars.alarm=G.time; G.vars.sent=0; G.vars.dueAt=G.time+1; G.vars.dueRelief=true; for(let i=0;i<5*30&&!G.vars.sent;i++) __hc.update(1/30); const fresh=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&!had.has(e));
   step(fresh.length*NT_DROP.gap+1); ok(fresh.length>=2&&fresh.every(u=>!u.flank&&u.ringer),'the relief squad walks straight into the camp, no going round ('+fresh.length+')');
   ok(fresh.every(u=>Math.hypot(u.ringAt.x-C.x,u.ringAt.y-C.y)<(NT_TAC.frontMax+2)*TILE),'to its place in the line'); step(8); ok(fresh.every(u=>u.dead||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<1.5*TILE),'and gets there');'''),
 ('needle: the Engineer mends from inside the camp','''resetRogue(); const G=start('''+NT+'''); step(1); for(const e of G.ents) if(e.faction==='swarm') e.dead=true;
@@ -108,15 +109,15 @@ CASES=[
   for(const e of G.ents) if(e.faction==='loyal'&&e.kind==='unit'&&!e.ringer) e.dead=true;
   tp(d,21,18); watch(2); ok(G.vars.dlStart&&G.vars.alarm!=null,'Devreese at the terminal: the hospital raises the alarm'); ok(!G.timer&&G.vars.dueAt==null,'no relief yet: the ring is whole'); const p1=G.vars.dl; ok(p1>0.02&&p1<0.1,'the download runs ('+Math.round(p1*100)+'%)');
   tp(d,30,30); watch(3); ok(Math.abs(G.vars.dl-p1)<0.06,'she walks away: it stops'); tp(d,21,18);
-  ring().slice(0,J.lostFor-1).forEach(u=>u.dead=true); watch(3); ok(G.vars.dueAt==null,(J.lostFor-1)+' fallen: still no call');
-  ring()[0].dead=true; watch(1); ok(G.vars.dueAt!=null&&G.timer&&G.timer.label==='Relief squad',J.lostFor+' fallen: the hospital calls a relief squad');
+  ring().filter(u=>!u.def.heal&&!u.def.builder).slice(0,J.lostFor-1).forEach(fall); watch(3); ok(G.vars.dueAt==null,(J.lostFor-1)+' fallen: still no call');
+  fall(ring().find(u=>!u.def.heal&&!u.def.builder)); watch(1); ok(G.vars.dueAt!=null&&G.timer&&G.timer.label==='Relief squad',J.lostFor+' fallen: the hospital calls a relief squad');
   const before=new Set(ring()); watch(J.call+1); ok(G.vars.sent===1,'the first relief squad lands'); const fresh=ring().filter(u=>!before.has(u));
   ok(fresh.length===J.lostFor&&ring().length===G.vars.ringMax,'it fills the ring back up, no more ('+fresh.length+' new)'); ok(fresh.every(u=>!u.hunter),'the relief squad does not hunt');
   watch(18); ok(fresh.every(u=>u.dead||u.flank||Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<TILE),'joins the garrison: in its line, or round the crew ('+(G.vars.tac&&G.vars.tac.mode)+' '+fresh.map(u=>u.dead?'x':(Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)/TILE).toFixed(1)+(u.hidden?'h':'')+(u.order?u.order.type:'-')+(u.target?'T':'')).join(' ')+')'); ok(fresh.every(u=>u.dead||u.flank||Math.hypot(u.ringAt.x-NT_RING.x*TILE,u.ringAt.y-NT_RING.y*TILE)<(NT_TAC.frontMax+2)*TILE),'round the middle of the camp');
   for(const u of G.ents) if(u.faction==='loyal') u.invuln=true; tp(d,21,18); for(let i=0;i<50&&!G.vars.dlDone;i++){ tp(d,21,18); watch(1); } ok(G.vars.dlDone&&obj('records')==='done'&&G.rogue.formula,'the files: Maas\\'s formula');
   ok(obj('stab')==='active'&&!G.rogue.exitOpen,'shaft shut until the cases are taken'); for(const c of G.vars.cases){ tp(d,Math.floor(c.x/TILE),Math.floor(c.y/TILE)); watch(0.4); } watch(1);
   ok(obj('stab')==='done'&&G.rogue.exitOpen,'three cases: the north shaft opens'); ok(G.rogue.stab>=3,'the doses are in the bag ('+G.rogue.stab+')');
-  for(let w=0;w<J.waves+2;w++){ ring().forEach(u=>u.dead=true); calm(); watch(J.call+5); }
+  for(let w=0;w<J.waves+2;w++){ ring().forEach(fall); calm(); watch(J.call+5); }
   ok(G.vars.sent===J.waves,'at most '+J.waves+' drops, however many fall ('+G.vars.sent+')'); ok(most<=G.vars.ringMax,'never more than '+G.vars.ringMax+' Corps soldiers on the field ('+most+')'); ok(types.has('pyro'),'the second one brought a flamer');
   { const sp=exitSpot(G.ents.find(e=>e.exit)); for(const x of crew()) tp(x,Math.floor(sp.x/TILE),Math.floor(sp.y/TILE)); } step(1); ok(G.over&&G.over.win,'down the north shaft: won');
   const R=rogueStore(); ok(R.flags.formula&&G.rogueResult.formula,'the formula is kept'); ok(/formula/.test(rogueEndHtml()),'the end screen says so'); ok(/brews/.test(rogueBriefNote()),'the next briefing counts the brewed dose');
@@ -138,7 +139,7 @@ CASES=[
   { const d=makeUnit('drone','swarm',lt.x+90,lt.y), d2=makeUnit('drone','swarm',lt.x+95,lt.y+5); d.hp=d.maxHp=200; d2.hp=d2.maxHp=200; d.invuln=false; lt.nadeAt=0; const hpd=d.hp; throwGrenade(lt,d); const s2=G.shots.find(x=>x.k==='grenade'&&x!==sh); for(let i=0;i<60&&s2&&G.shots.includes(s2);i++) __hc.update(1/30); ok(s2&&hpd-d.hp>PERKS.trooper.damage*0.9,'against the Brood it hits as hard as ever ('+Math.round(hpd-d.hp)+')'); d.dead=true; d2.dead=true; }
   lt.quiet=true; lt.nadeAt=0; const n0=G.shots.filter(x=>x.k==='grenade').length; throwGrenade(lt,eng); ok(G.shots.filter(x=>x.k==='grenade').length===n0,'hold fire (Q): no grenade, not even with an order'); lt.quiet=false;
   tp(lt,4,40); lt.quiet=true; G.vars.tac={mode:'ring',outT:0,flankAt:-99,seen:-99};   /* no fight on: this part is about the quiet walk off the ramp (going round the crew: case 'the garrison fights as a unit') */
-  for(const u of ring()) u.dead=true; G.vars.alarm=G.time; G.vars.dueAt=G.time+1; for(let i=0;i<5*30&&!G.vars.sent;i++) __hc.update(1/30); __hc.update(1/30);
+  for(const u of ring()) u.dead=true; G.vars.alarm=G.time; G.vars.dueAt=G.time+1; G.vars.dueRelief=true; for(let i=0;i<5*30&&!G.vars.sent;i++) __hc.update(1/30); __hc.update(1/30);
   const fresh=ring(); ok(G.vars.sent===1&&fresh.length>=2,'a relief squad lands ('+fresh.length+')'); ok(fresh.every(u=>u.vet&&u.vet.rank===G.mission.job.reliefRank),'the first relief squad are Corporals'); ok(fresh.filter(u=>!u.hidden).length===1,'they come down the ramp one by one ('+fresh.filter(u=>!u.hidden).length+' out)');
   ok(fresh.filter(u=>u.hidden).every(u=>u.invuln&&findTarget(lt,40,true)!==u),'the ones still aboard cannot be hit');
   const pad=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); let shipGoneEarly=false; let linger=0, at=''; const pairT={}; for(let i=0;i<8*30;i++){ __hc.update(1/30); if(ring().some(u=>u.hidden)&&!(pad.ship&&pad.ship.phase==='ground')) shipGoneEarly=true; const v=ring().filter(u=>!u.hidden&&Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)>TILE); for(const a of v) for(const b of v) if(a.id<b.id){ const key=a.id+'-'+b.id, dd=Math.hypot(a.x-b.x,a.y-b.y)/TILE; pairT[key]=dd<PERKS.trooper.radius?(pairT[key]||0)+1/30:0; if(pairT[key]>linger){ linger=pairT[key]; at=a.type+'/'+b.type; } } if(ring().every(u=>!u.hidden)) break; }
@@ -170,6 +171,26 @@ CASES=[
   const B={x:30*TILE,y:28*TILE}; makeBody({x:B.x,y:B.y,def:UNITS.trooper,type:'trooper'}); const b=G.ents[G.ents.length-1]; for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true;
   const homes=new Set(); for(let i=0;i<4;i++){ const pre=new Set(G.ents); b.lonely=SQUAD.body.fetch; b.seekT=0; step(0.1); const c=G.ents.find(e=>!pre.has(e)&&e.type==='crawler'); if(c){ homes.add(hs.slice().sort((a,h)=>Math.hypot(a.x-c.x,a.y-c.y)-Math.hypot(h.x-c.x,h.y-c.y))[0].id); c.dead=true; c.claim=null; } }
   ok(homes.size>=3,'a lonely body: the hives take turns sending a Crawler ('+homes.size+')');'''),
+('needle: only the crew\'s kills call the relief, Engineer and Medic drop','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; } for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; G.vars.raidAt=1e9;
+  const J=G.mission.job, ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer&&!e.aboard), fighters=()=>ring().filter(u=>!u.def.heal&&!u.def.builder), cr=crew().find(u=>u.type==='trooper'), dr=makeUnit('drone','swarm',0,0); dr.hidden=true; dr.invuln=true;
+  ntAlarm(G.api,'test'); const hit=(u,src)=>{ u.invuln=false; damage(u,1e6,src); };
+  for(let i=0;i<2;i++) hit(fighters()[0],dr); step(1); ok(G.vars.dueAt==null&&(G.vars.crewLost||0)===0,'two killed by the Brood: they do not count ('+G.vars.crewLost+')');
+  hit(fighters()[0],cr); hit(fighters()[0],cr); step(1); ok(G.vars.crewLost===2&&G.vars.dueAt==null,'two by the crew: still no call');
+  { const sent=new Set(G.ents); const m=G.ents.find(u=>!u.dead&&u.ringer&&u.downed&&u.ntLost==='crew'); if(m){ m.downed=null; m.hp=m.maxHp; } step(1); ok(!m||G.vars.crewLost===1,'one patched up again: he no longer counts ('+G.vars.crewLost+')'); }
+  hit(fighters()[0],cr); hit(fighters()[0],cr); step(1); ok(G.vars.dueAt!=null&&G.vars.dueRelief&&G.timer.label==='Relief squad',J.lostFor+' by the crew: the relief is called');
+  const miss=ntMissing(G.api), had=new Set(G.ents); for(let i=0;i<(J.call+3)*30&&G.vars.sent<1;i++) __hc.update(1/30); step(0.2); const fresh=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.ringer&&!had.has(e));
+  ok(G.vars.sent===1&&fresh.length===Math.min(miss,Math.max(2,J.squad)),'it fills the ring up, the Brood\\'s dead too ('+fresh.length+' for '+miss+' missing)');
+  /* support: Engineer and both Medics gone, a soldier still stands */
+  for(const u of G.ents) if(!u.dead&&u.ringer) u.invuln=true; step(15); const sent=G.vars.sent;
+  for(const u of ring().filter(u=>u.def.heal||u.def.builder)) u.dead=true; step(1);
+  ok(G.vars.dueAt!=null&&G.vars.dueSup&&G.timer.label==='Engineer and Medic','no Engineer, no Medic: the hospital calls for both');
+  const had2=new Set(G.ents); for(let i=0;i<(J.call+3)*30&&G.vars.dueAt!=null;i++) __hc.update(1/30); step(0.2); const f2=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.ringer&&!had2.has(e));
+  ok(f2.length===2&&f2.some(u=>u.type==='engineer'&&u.mortarMan)&&f2.some(u=>u.type==='medic'),'an Engineer (at the mortar) and a Medic land ('+f2.map(u=>u.type)+')'); ok(G.vars.sent===sent,'not one of the '+J.waves+' relief drops');
+  step(8); ok(G.vars.dueAt==null,'no second call once they are there');
+  for(const u of ring().filter(u=>u.def.heal||u.def.builder)) u.dead=true; step(1); ok(G.vars.dueSup,'gone again: again (as often as it happens)'); G.vars.dueAt=null; G.vars.dueSup=false; G.clearTimer&&0;
+  for(const u of ring()) u.dead=true; step(1); ok(G.vars.dueAt==null,'nobody left standing: no call');
+  resetRogue(); const G2=start('''+NT+'''); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } G2.vars.raidAt=1e9;
+  for(const u of G2.ents.filter(u=>!u.dead&&u.ringer&&(u.def.heal||u.def.builder))) u.dead=true; step(1); ok(G2.vars.alarm==null&&G2.vars.dueSup,'before the alarm too');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;
