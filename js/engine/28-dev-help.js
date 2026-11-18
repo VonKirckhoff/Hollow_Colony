@@ -557,6 +557,7 @@ const DEV_HELP = {
   'M|job.nsUnder':'Night Shift: seconds the raiders spend in the hive tunnels before they come up at the side of the next push.', 'M|job.nsBrute':'Night Shift: from this push on the brood brings a Brute (two, two pushes later).',
   'M|job.nsWave':'Night Shift: budget of the Brood wave with the sirens and the first push.', 'M|job.nsWaveGrow':'Night Shift: extra wave budget for every next push.',
   'M|job.download':'Needle and Thread: seconds a Medic has to stand at the records terminal.',
+  'M|job.giveUpAt':'Needle and Thread: once the garrison is down to this many men on their feet, Tycho sends no more drops of any kind (a drop not yet landed is called off), so the crew can finish the last of them.',
   'M|job.lostFor':'Needle and Thread: how many men the defence ring must lose (after the alarm) before the hospital calls in a relief squad.',
   'M|job.call':'Needle and Thread: seconds from the call until the relief squad lands on the pad.',
   'M|job.waves':'Needle and Thread: the most relief squads Tycho sends (drops).',

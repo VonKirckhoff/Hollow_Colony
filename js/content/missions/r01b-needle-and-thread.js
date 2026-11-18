@@ -57,7 +57,7 @@ ROGUE_MISSIONS.push(
       'Three cases of stabilizer, one in each tent. And the records terminal: if Devreese can stand at it long enough, she pulls Maas\'s formula off it, and we never have to steal a dose again. The moment she starts, the hospital calls for help. Then out through the old shaft in the north wall.'
     ],
     limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
-    job:{ download:50, lostFor:3, call:15, waves:5, squad:9, rank:2, leadRank:4, supRank:1, reliefRank:1 },   /* waves: relief squads for the crew's kills (Nov 2026: 5); squad: most men in one relief squad (9 = the whole ring: a relief squad fills it up). ranks (RANKS): ring fighters, the ring's Lieutenant, Medics and Engineer, the first relief squad (+1 per squad after it); Easy one lower, Hard one higher (ntRank) */
+    job:{ download:50, lostFor:3, giveUpAt:3, call:15, waves:5, squad:9, rank:2, leadRank:4, supRank:1, reliefRank:1 },   /* giveUpAt: once the garrison is down to this many men on their feet, Tycho sends nobody any more (no relief, no reinforcements, no support; Nov 2026: else the crew never gets the last of them, the Brood eats every new drop). waves: relief squads for the crew's kills (Nov 2026: 5); squad: most men in one relief squad (9 = the whole ring: a relief squad fills it up). ranks (RANKS): ring fighters, the ring's Lieutenant, Medics and Engineer, the first relief squad (+1 per squad after it); Easy one lower, Hard one higher (ntRank) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c'],
       shafts:[ {x:17,y:2,wall:'n',exit:true,label:'North shaft'} ],
@@ -109,20 +109,26 @@ ROGUE_MISSIONS.push(
           if(n>=3){ g.vars.stabDone=true; g.complete('stab'); g.crewSay('Mortier','Three cases. Cold as ice. Somebody at Tycho is going to have a very bad morning.'); } } },
       /* the defence ring: everyone back to his place once the fight is over, and the ring closes up when someone falls */
       { repeat:true, when:g=>!!g.vars.ringOn, do:g=>ntRingTick(g) },
+      /* Tycho gives up on Kappa: job.giveUpAt men or fewer on their feet (one still on board of a landed drop counts) and no more drops come,
+         a drop on its way that has not landed yet is called off */
+      { when:g=>!g.vars.won&&g.vars.ringMax&&!g.vars.landAt&&ntStanding(g)<=G.mission.job.giveUpAt, do:g=>{ g.vars.noDrops=true;
+          if(g.vars.dueAt!=null){ g.vars.dueAt=null; g.vars.dueRelief=g.vars.dueBrood=g.vars.dueSup=false; g.clearTimer(); }
+          g.say('Tycho','Kappa, Tycho. We cannot keep feeding people into that basin. No more drops. Hold on to those tents with what you have.');
+          g.crewSay('Capt. Kerckhoffs','Tycho has given up on them. That is the last of the garrison. Finish it.'); } },
       /* Tycho's relief squads: once the CREW has brought down job.lostFor men of the ring (since the last call, ntCrewLost) the hospital calls one in
          (job.call seconds before it lands), at most job.waves of them; it lands on the pad, walks to the middle of the camp and fills the ring back up
          to its first strength, whoever made the gaps. Once they are spent, the crew's kills stay gone: that is how the crew wears the camp down. */
-      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&g.vars.sent<G.mission.job.waves&&!g.vars.dueRelief&&ntCrewLost(g)>=G.mission.job.lostFor, do:g=>{
+      { repeat:true, when:g=>g.vars.alarm!=null&&!g.vars.won&&!g.vars.noDrops&&g.vars.sent<G.mission.job.waves&&!g.vars.dueRelief&&ntCrewLost(g)>=G.mission.job.lostFor, do:g=>{
           g.vars.dueRelief=true; g.vars.crewLost=0; g.vars.callN=(g.vars.callN||0)+1; if(g.vars.dueAt==null){ g.vars.dueAt=g.time+G.mission.job.call; g.setTimer(G.mission.job.call,'Relief squad'); } g.ping(NT_PAD);   /* another drop already on its way: the relief squad comes with it */
           g.say('Kappa medical',['Kappa medical to Tycho: we are losing people in the perimeter. Send the relief squad, now!','Kappa medical, the ring is thinning again. Tycho, we need another squad!','Kappa medical to Tycho, they keep picking us off. Another squad, please!','Kappa medical, still under fire from the raiders. Tycho, we need more people!','Kappa medical to Tycho, we are bleeding out here. Whatever you have left, send it!'][g.vars.sent]||'Kappa medical requests a relief squad.'); } },
       /* the Brood's dead: job.lostFor of them (since its last call, ntBroodLost) and Tycho sends people for them, as often as it happens and not one of
          the job.waves; that drop only fills the places the Brood took (g.vars.broodGap) */
-      { repeat:true, when:g=>!g.vars.won&&!g.vars.dueBrood&&ntBroodLost(g)>=G.mission.job.lostFor, do:g=>{
+      { repeat:true, when:g=>!g.vars.won&&!g.vars.noDrops&&!g.vars.dueBrood&&ntBroodLost(g)>=G.mission.job.lostFor, do:g=>{
           g.vars.dueBrood=true; g.vars.broodLost=0; g.vars.broodN=(g.vars.broodN||0)+1; if(g.vars.dueAt==null){ g.vars.dueAt=g.time+G.mission.job.call; g.setTimer(G.mission.job.call,'Reinforcements'); } g.ping(NT_PAD);
           g.say('Kappa medical',pick(['Kappa medical to Tycho: the brood is coming out of the basin and taking our people. Send replacements!','Kappa medical, we lost men to the creatures again. Tycho, we need more hands on the perimeter!'])); } },
       /* no Engineer, or no Medic, left on his feet, but a fighter still holds: the hospital asks Tycho for them (NT_SUPPORT: two Engineers, a Medic;
          any time, as often as it happens, not one of the job.waves) */
-      { repeat:true, when:g=>!g.vars.won&&g.vars.dueAt==null&&!!ntNeedSupport(g), do:g=>{ const n=ntNeedSupport(g), what=n.eng&&n.med?'Engineers and Medic':n.eng?'Engineers':'Medic';
+      { repeat:true, when:g=>!g.vars.won&&!g.vars.noDrops&&g.vars.dueAt==null&&!!ntNeedSupport(g), do:g=>{ const n=ntNeedSupport(g), what=n.eng&&n.med?'Engineers and Medic':n.eng?'Engineers':'Medic';
           g.vars.dueAt=g.time+G.mission.job.call; g.vars.dueSup=true; g.setTimer(G.mission.job.call,what); g.ping(NT_PAD);
           g.say('Kappa medical',n.eng&&n.med?'Kappa medical to Tycho: our Engineer and our Medics are down. We cannot keep anyone alive out here. Send us Medics and Engineers!'
             :n.eng?'Kappa medical to Tycho: we have lost our Engineer. Nobody to work the mortar or fix the guns. Send Engineers!'

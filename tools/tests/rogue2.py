@@ -7,7 +7,7 @@ HEAD='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{
   calm=()=>{ for(const e of __hc.G.ents) if(e.faction==='swarm'||e.faction==='loyal') e.invuln=true; },
   fall=u=>{ u.fellTo='corps'; ntFall(u); u.dead=true; },   /* the crew brings him down (counts for the relief) */
   obj=id=>(__hc.G.objectives.find(o=>o.id===id)||{}).state,
-  start=id=>{ __hc.startMission(ROGUE_MISSIONS.find(m=>m.id===id)); return __hc.G; }; try{ '''
+  start=(id,giveUp)=>{ const m=ROGUE_MISSIONS.find(m=>m.id===id); if(m.job) m.job.giveUpAt=giveUp?3:-1; __hc.startMission(m); return __hc.G; };   /* Needle and Thread: Tycho never gives up unless a case asks for it (most cases kill off the ring) */ try{ '''
 TAIL=''' }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 NT="'rogue-needle-and-thread'"; AT="'rogue-among-them'"
 CASES=[
@@ -261,6 +261,14 @@ CASES=[
     if(landed1&&!gone1&&!pad.ship) gone1=G.time; if(gone1&&!landed2&&pad.ship) landed2=G.time; if(landed2) break; }
   ok(landed1&&gone1&&landed2,'two drops land ('+[landed1,gone1,landed2].map(t=>t&&t.toFixed(1))+')'); ok(!flightWhileShip,'never a ship on its way in while one is on the pad');
   ok(landed2>gone1,'the second lands after the first has lifted off and is gone'); ok(G.timer==null||G.timer.end>=G.time-0.1,'the timer waits with it');'''),
+('needle: down to 3 men, Tycho sends no more drops','''resetRogue(); const G=start('''+NT+''',true); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } G.vars.raidAt=1e9;
+  const J=G.mission.job, ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), cr=crew().find(u=>u.type==='trooper'), dr=makeUnit('drone','swarm',0,0); dr.hidden=true; dr.invuln=true; ntAlarm(G.api,'test');
+  ok(J.giveUpAt===3,'the limit is 3');
+  const fighters=()=>ring().filter(u=>!u.def.heal&&!u.def.builder); for(const u of fighters().slice(0,3)){ u.invuln=false; damage(u,1e6,cr); } step(1); ok(G.vars.dueRelief&&!G.vars.noDrops,'still 6 on their feet: the relief is called ('+[G.vars.crewLost,ntStanding(G.api),G.vars.alarm,G.vars.won,G.vars.noDrops,G.vars.sent,J.waves,G.vars.dueRelief,J.lostFor].join(' ')+')');
+  for(const u of ring().slice(0,ring().length-J.giveUpAt)){ u.invuln=false; damage(u,1e6,dr); } step(1);
+  ok(ntStanding(G.api)===J.giveUpAt&&G.vars.noDrops,'down to '+J.giveUpAt+': Tycho gives up'); ok(G.vars.dueAt==null&&!G.vars.dueRelief&&G.timer==null,'the relief on its way is called off');
+  for(const u of ring()){ if(u.def.heal||u.def.builder){ u.invuln=false; damage(u,1e6,dr); } } const had=new Set(G.ents); step(J.call*2+10);
+  ok(!G.ents.some(e=>!e.dead&&e.ringer&&!had.has(e))&&G.vars.dueAt==null,'no relief, no reinforcements, no Engineer or Medic drop any more');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;
