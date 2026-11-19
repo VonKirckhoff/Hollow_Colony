@@ -188,7 +188,7 @@ CASES=[
   for(const u of ring().filter(u=>u.def.heal||u.def.builder)) u.dead=true; step(1);
   ok(G.vars.dueAt!=null&&G.vars.dueSup&&G.timer.label==='Engineers and Medic','no Engineer, no Medic: the hospital calls for both');
   const had2=new Set(G.ents); for(let i=0;i<(J.call+3)*30&&G.vars.dueAt!=null;i++) __hc.update(1/30); step(0.2); const f2=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.ringer&&!had2.has(e));
-  ok(f2.length===NT_SUPPORT.engineers+NT_SUPPORT.medics&&f2.filter(u=>u.type==='engineer').length===NT_SUPPORT.engineers&&f2.filter(u=>u.type==='engineer'&&u.mortarMan).length===1&&f2.some(u=>u.type==='medic'),'two Engineers (one at the mortar) and a Medic land ('+f2.map(u=>u.type+(u.mortarMan?'*':''))+')'); ok(G.vars.sent===sent,'not one of the '+J.waves+' relief drops');
+  ok(f2.length===NT_SUPPORT.engineers+NT_SUPPORT.medics&&f2.filter(u=>u.type==='engineer').length===NT_SUPPORT.engineers&&f2.filter(u=>u.type==='engineer'&&u.mortarMan).length===1&&f2.some(u=>u.type==='medic'),'two Engineers (one at the mortar) and two Medics land ('+f2.map(u=>u.type+(u.mortarMan?'*':''))+')'); ok(G.vars.sent===sent,'not one of the '+J.waves+' relief drops');
   step(8); ok(G.vars.dueAt==null,'no second call once they are there');
   for(const u of ring().filter(u=>u.def.heal||u.def.builder)) u.dead=true; step(1); ok(G.vars.dueSup,'gone again: again (as often as it happens)'); G.vars.dueAt=null; G.vars.dueSup=false; G.clearTimer&&0;
   for(const u of ring()) u.dead=true; step(1); ok(!G.vars.dueSup,'nobody left standing: no support drop (a relief squad may still come)');
@@ -251,7 +251,7 @@ CASES=[
   let same=false, close=99; for(let i=0;i<24*30;i++){ __hc.update(1/30); const T=engs.map(u=>u.order&&u.order.type==='repair'?u.order.target:null); if(T[0]&&T[0]===T[1]) same=true; if(T[0]&&T[1]&&engs.every(u=>!u.path)) close=Math.min(close,Math.hypot(engs[0].x-engs[1].x,engs[0].y-engs[1].y)/TILE); }
   ok(!same,'each Engineer on a different structure'); ok(close>=PERKS.trooper.radius,'working, never within one grenade of each other ('+(close===99?'-':close.toFixed(1))+')'); ok(b1.hp>=b1.maxHp&&b2.hp>=b2.maxHp,'both mended');
   /* only the Medics gone: a Medic */ for(const u of ring().filter(u=>u.def.heal)) u.dead=true; step(1); ok(G.vars.dueSup&&G.timer.label==='Medic','no Medic left: a Medic drop');
-  for(let i=0;i<(J.call+3)*30&&G.vars.dueAt!=null;i++) __hc.update(1/30); step(1); ok(G.ents.filter(e=>!e.dead&&e.ringer&&e.def.heal).length===NT_SUPPORT.medics,'one Medic lands');
+  for(let i=0;i<(J.call+3)*30&&G.vars.dueAt!=null;i++) __hc.update(1/30); step(1); ok(G.ents.filter(e=>!e.dead&&e.ringer&&e.def.heal).length===NT_SUPPORT.medics,'Medics land ('+NT_SUPPORT.medics+')');
   /* the mortar destroyed: built again */ const mo=G.vars.mortar; mo.invuln=false; kill(mo,null); for(let i=0;i<40*30&&!(G.vars.mortar&&!G.vars.mortar.dead&&G.vars.mortar.built);i++) __hc.update(1/30);
   ok(G.vars.mortar&&G.vars.mortar!==mo&&G.vars.mortar.built&&G.vars.mortar.tx===NT_MORTAR.x&&G.vars.mortar.ty===NT_MORTAR.y,'a destroyed mortar is built again on its spot');
   for(let i=0;i<(LOYAL_MORTAR.first+3)*30&&!G.vars.mortar.manned;i++) __hc.update(1/30); ok(G.vars.mortar.manned,'and manned again');'''),
@@ -283,6 +283,12 @@ CASES=[
   ok(ring().length===10,'back to 10 again ('+ring().length+')');
   G.vars.alarm=G.time-J.fullFor-1; for(const u of fighters().slice(0,J.lostFor)){ u.invuln=false; damage(u,1e6,cr); } step(1);
   ok(!G.vars.dueFull&&G.vars.dueRelief,'after 15 minutes: the normal relief squads again'); land(); ok(G.vars.sent===1,'and that one counts');'''),
+('needle: never more than two Medics','''resetRogue(); const G=start('''+NT+''',false,true); step(1); calm(); for(const u of crew()){ u.invuln=true; u.quiet=true; u.hidden=true; } G.vars.raidAt=1e9;
+  const J=G.mission.job, ring=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer), med=()=>G.ents.filter(e=>!e.dead&&e.ringer&&e.def.heal).length, cr=crew().find(u=>u.type==='trooper'); ntAlarm(G.api,'test'); let most=med();
+  for(let w=0;w<6;w++){ for(const u of ring().filter(u=>!u.def.heal&&!u.def.builder&&!u.aboard).slice(0,J.lostFor)){ u.invuln=false; damage(u,1e6,cr); } for(let i=0;i<(J.call+J.squad*NT_DROP.gap+8)*30;i++){ __hc.update(1/30); most=Math.max(most,med()); } for(const u of ring()) u.invuln=true; }
+  ok(most<=NT_SUPPORT.maxMedics,'six full refills: never more than '+NT_SUPPORT.maxMedics+' Medics (most '+most+')');
+  for(const u of G.ents.filter(e=>!e.dead&&e.ringer&&e.def.heal)) u.dead=true; for(let i=0;i<(J.call+10)*30;i++){ __hc.update(1/30); most=Math.max(most,med()); }
+  ok(med()>=1&&most<=NT_SUPPORT.maxMedics,'all Medics gone: a new one comes, still at most two ('+med()+')');'''),
 ('needle: no Medic, no files','''resetRogue(); const G=start('''+NT+'''); step(1); calm(); const d=crew().find(u=>u.def.heal); damage(d,1e6,null); step(1); ok(!G.over,'Devreese down: not over yet'); kill(d,null); step(1);
   ok(G.over&&!G.over.win&&/formula/.test(G.over.text),'Devreese dead: the job is lost');'''),
 ('veil: the brood looks through him','''resetRogue(); const G=start('''+AT+'''); step(1); const v=crew().find(x=>x.type==='trooper'&&!x.vet.capt), c=crew().find(x=>x.type==='gunner'); v.vet.taint=ROGUE.veil.taint+5; for(const e of G.ents) if(e.faction==='wild') e.dead=true; v.hp=v.maxHp=1e6; c.hp=c.maxHp=1e6;

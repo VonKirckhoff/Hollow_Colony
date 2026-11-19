@@ -239,7 +239,7 @@ function medicThink(u,dt){
 }
 /* u.spread (tiles): a Medic who keeps that far from the other Medics of his side while he heals (so one grenade never catches two of them):
    he heals from a spot around his patient, within reach, as far as he can get from the others (MEDIC_SPREAD.reach of his heal range) */
-const MEDIC_SPREAD = { reach:0.7, every:0.4 };
+const MEDIC_SPREAD = { reach:0.7, every:0.4, guard:1.8 };   /* guard (tiles): on his way he never steps closer to another Medic than this (Nov 2026: two walking past each other came within one grenade) */
 function medicSpread(u,t,inRange,dt){ const gap=u.spread*TILE, others=G.ents.filter(e=>e!==u&&!e.dead&&!e.downed&&e.kind==='unit'&&e.faction===u.faction&&e.def.heal);
   const goal=e=>e.spreadP||(e.order&&e.order.x!=null?e.order:null), far=p=>others.reduce((m,e)=>{ const q=goal(e); return Math.min(m,Math.hypot(e.x-p.x,e.y-p.y),q?Math.hypot(q.x-p.x,q.y-p.y):Infinity); },Infinity);   /* where the others stand, and where they are going */
   if(inRange&&far(u)>=gap){ u.path=null; u.spreadP=null; return; }   /* in reach and clear of the others: heal from here */
@@ -247,7 +247,9 @@ function medicSpread(u,t,inRange,dt){ const gap=u.spread*TILE, others=G.ents.fil
     for(let i=0;i<16;i++){ const a=i/16*Math.PI*2, p={x:t.x+Math.cos(a)*r,y:t.y+Math.sin(a)*r}; if(!walkableP(p.x,p.y)) continue;
       const sc=Math.min(far(p),gap)*4-Math.hypot(u.x-p.x,u.y-p.y); if(sc>bs){ bs=sc; best=p; } }
     u.spreadP=best||{x:t.x,y:t.y}; }
-  const p=u.spreadP; if(Math.hypot(u.x-p.x,u.y-p.y)>6) goTo(u,p.x,p.y,dt,0.5); else u.path=null; }
+  const p=u.spreadP; if(Math.hypot(u.x-p.x,u.y-p.y)>6){ const near=()=>others.reduce((m,e)=>Math.min(m,Math.hypot(e.x-u.x,e.y-u.y)),Infinity), d0=near(), ox=u.x, oy=u.y; goTo(u,p.x,p.y,dt,0.5);
+    const d1=near(); if(d1<MEDIC_SPREAD.guard*TILE&&d1<d0){ u.x=ox; u.y=oy; } }   /* a step that brings him within a grenade of another Medic: he waits for the other to get clear */
+  else u.path=null; }
 function builderThink(u,dt){
   const o=u.order, d=u.def;
   if(d.damage) snapFire(u,dt);   /* keeps building, repairing or packing, but shoots back at anything in range */

@@ -481,6 +481,8 @@ const DEV_HELP = {
   'REPAIR_SIDE|walk':'Engineer building or repairing: how much each tile of walking to a spot around the structure counts against it.',
   'REPAIR_SIDE|apart':'Engineer who keeps apart (Needle and Thread\'s garrison): penalty for a spot within NT_RING.supGap tiles of another Engineer or Medic of his side (one grenade never catches two of them).',
   'NT_SUPPORT|engineers':'Needle and Thread: how many Engineers a support drop (or a relief squad) brings when the garrison has none on his feet.',
+  'NT_SUPPORT|maxMedics':'Needle and Thread: never more Medics in the garrison than this; a drop brings a Trooper in place of a Medic beyond it.',
+  'MEDIC_SPREAD|guard':'A spread-out Medic (Needle and Thread\'s garrison) never takes a step that brings him closer than this many tiles to another Medic of his side: he waits until the other is clear.',
   'NT_SUPPORT|medics':'Needle and Thread: how many Medics it brings when the garrison has none on his feet.',
   'REPAIR_SIDE|inside':'Engineer with a home (Needle and Thread\'s garrison): he only repairs or builds from a spot this many tiles nearer to the middle of his camp than the structure (if it has one): never from outside the camp.',
   'REPAIR_SIDE|home':'Engineer with a home (Needle and Thread\'s garrison): how much he prefers the side of the structure that faces the middle of his camp.',

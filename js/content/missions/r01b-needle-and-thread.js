@@ -47,7 +47,7 @@ const NT_SENTRIES_BY={ easy:1, normal:2, hard:3 };   /* how many of NT_SENTRIES 
    and stops, while he was hit in the last `hitFor` seconds or while a crew member stands within his weapon's reach plus `margin` tiles of the spot. */
 const NT_REBUILD={ hitFor:3, margin:1 };
 /* the support drops (ntNeedSupport): how many Engineers come when none is left, how many Medics when none is left */
-const NT_SUPPORT={ engineers:2, medics:1 };
+const NT_SUPPORT={ engineers:2, medics:2, maxMedics:2 };   /* maxMedics: never more Medics in the garrison than this (on board of a drop counts; Nov 2026: four of them stood at one time) */
 const NT_RING={ x:20.5, y:20.5, r:2.2, perMan:0.9, inner:0.6, supGap:2.2, leash:7.5, reach:9 };   /* the defence ring: centre (tiles), least radius, tiles of ring per soldier, the support's inner circle, supGap: tiles between two of the support at the least (more than a grenade's radius, PERKS.trooper.radius: one grenade never catches both Medics) (Medics in the middle), how far from the middle of the camp a soldier chases before he goes back (the pad lies within it), how far from the middle a target may stand (no further: they only defend the camp, never go for a hive) */
 ROGUE_MISSIONS.push(
   {
@@ -147,9 +147,9 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
           const J=G.mission.job, full=!!g.vars.dueFull, relief=!!g.vars.dueRelief, brood=!!g.vars.dueBrood, sup=ntNeedSupport(g,true,relief||brood||full); g.vars.dueRelief=false; g.vars.dueBrood=false; g.vars.dueSup=false; g.vars.dueFull=false;
           const most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), k=relief?g.vars.sent++:full?Math.min(2,(g.vars.fullN=(g.vars.fullN||0)+1)-1):-1, sq=[];   /* a full refill (job.fullFor) is not one of the job.waves */
-          if(sup){ const SR={rank:ntRank(J.supRank)}; if(sup.eng) sq.push(...g.loyal('engineer',NT_PAD,sup.eng,SR)); if(sup.med) sq.push(...g.loyal('medic',NT_PAD,sup.med,SR)); }   /* the support: Engineers for the mortar and the guns, a Medic */
+          if(sup){ const SR={rank:ntRank(J.supRank)}; if(sup.eng) sq.push(...g.loyal('engineer',NT_PAD,sup.eng,SR)); if(sup.med) sq.push(...g.loyal('medic',NT_PAD,Math.max(0,Math.min(sup.med,NT_SUPPORT.maxMedics-ntMedics(g))),SR)); }   /* the support: Engineers for the mortar and the guns, a Medic */
           if(relief||full){ const n=Math.max(1,Math.min(most,ntMissing(g)-sq.length)), RR={rank:ntRank(J.reliefRank+k)};   /* the relief fills the ring up, the support drop's men included */
-            sq.push(...g.loyal(k===2&&n>1&&!(sup&&sup.med)?'medic':'trooper',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal(k===1||k===3?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR)); g.vars.broodGap=0; }   /* Tycho sends better people each time */
+            sq.push(...g.loyal(k===2&&n>1&&ntMedics(g)+sq.filter(u=>u.def.heal).length<NT_SUPPORT.maxMedics?'medic':'trooper',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal(k===1||k===3?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR)); g.vars.broodGap=0; }   /* Tycho sends better people each time */
           else { const n=Math.max(0,Math.min(g.vars.broodGap||0,ntMissing(g)-sq.length)), RR={rank:ntRank(J.reliefRank)};   /* the Brood's drop (or a support drop): only the places the Brood took */
             if(n) sq.push(...g.loyal('gunner',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal('trooper',NT_PAD,n-1,RR)); g.vars.broodGap=Math.max(0,(g.vars.broodGap||0)-n); }
           
@@ -260,6 +260,8 @@ function ntFall(u,src){ const V=G.vars; if(!u.ringer||u.ntLost) return; u.ntLost
 function ntNeedSupport(g,landing,relief){ const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer);
   if(!relief&&!us.some(u=>!u.def.builder&&!u.def.heal&&(landing||!u.aboard))) return null;   /* nobody left to hold: no support drop (a relief squad still brings them) */
   const n={ eng:us.some(u=>u.def.builder)?0:NT_SUPPORT.engineers, med:us.some(u=>u.def.heal)?0:NT_SUPPORT.medics }; return n.eng||n.med?n:null; }
+/* the garrison's Medics, those still on board of a drop included (a downed one too: he may be patched up) */
+function ntMedics(g){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.ringer&&e.def.heal).length; }
 /* how many men of the ring are on their feet (one still on board of a drop counts) */
 function ntStanding(g){ return G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer).length; }
 /* the first job.fullFor seconds after the alarm: every drop fills the ring right up (Nov 2026) */
