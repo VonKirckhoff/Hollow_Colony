@@ -165,7 +165,7 @@ ROGUE_MISSIONS.push(
           else if(sup) g.say('Tycho',sup.eng&&sup.med?'Medic and Engineers on the ground at Kappa. Get that mortar firing and get your wounded up.':sup.eng?'Engineers on the ground at Kappa. Get that mortar firing and those guns back up.':'Medic on the ground at Kappa. Get your wounded up.');
           if(relief&&g.vars.sent>=J.waves) g.say('Tycho','Kappa, that was the last squad we can spare. You hold with what you have.'); } },
       /* the relief squad comes down the ramp one by one, so it never stands bunched up on the pad */
-      { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.unloadPad=null; u.aboard=null; u.hidden=false; u.invuln=false;
+      { repeat:true, when:g=>G.ents.some(e=>e.ntOffAt!=null&&!e.dead), do:g=>{ for(const u of G.ents) if(u.ntOffAt!=null&&!u.dead&&g.time>=u.ntOffAt){ u.ntOffAt=null; u.unloadPad=null; u.aboard=null; u.hidden=false; u.invuln=true; u.ntSafe=g.time+NT_DROP.safeMax;   /* untouchable until he is inside the camp (ntSafeTick; Nov 2026: the Brood killed men straight off the ramp) */
           const p=u.ringAt||u; u.order={type:'amove',x:p.x,y:p.y}; setPath(u,p.x,p.y); } } },   /* straight into the camp, to his place in the ring or the line (going round the crew was tried in Nov 2026 and taken out again) */
       /* the sirens wake the basin */
       { when:g=>g.vars.alarm!=null&&g.time>g.vars.alarm+50, do:g=>{ g.vars.raidAt=g.time; g.crewSay('Cnudde','Those sirens carry. Something in the basin is waking up. Movement from the hives!'); } },
@@ -188,10 +188,14 @@ ROGUE_MISSIONS.push(
 function ntAlarm(g,line){ if(g.vars.alarm!=null) return; g.vars.alarm=g.time; g.say('Kappa medical',line);
   g.ping(NT_PAD);
   g.crewSay('Capt. Kerckhoffs','That is the alarm. Thin out that ring and Tycho drops more people on that pad. Get Devreese her files and get the cases, fast.'); }
+/* a man off the ramp stays untouchable until he is inside the camp (within NT_DROP.safeR tiles of its middle, or at his place), at most NT_DROP.safeMax seconds */
+function ntSafeTick(g){ const C={x:NT_RING.x*TILE,y:NT_RING.y*TILE};
+  for(const u of G.ents) if(u.ntSafe!=null&&!u.dead&&!u.aboard){ const inside=Math.hypot(u.x-C.x,u.y-C.y)<=NT_DROP.safeR*TILE||(u.ringAt&&Math.hypot(u.x-u.ringAt.x,u.y-u.ringAt.y)<TILE);
+    if(inside||g.time>=u.ntSafe){ u.ntSafe=null; u.invuln=false; } } }
 /* the relief pad has no ship on it (landed, unloading or lifting off) and nobody is still waiting inside one */
 function ntPadFree(){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); return !b||(!b.ship&&!b.flight&&!G.ents.some(u=>!u.dead&&u.aboard&&u.ntOffAt!=null)); }
 /* the relief squad: everyone waits inside the ship (hidden, safe) and walks off the ramp NT_DROP.gap seconds after the one before him, the one going deepest into the camp first */
-const NT_DROP={ gap:2.4 };
+const NT_DROP={ gap:2.4, safeR:4.5, safeMax:40 };   /* safeR/safeMax: off the ramp a man is untouchable until he is within safeR tiles of the camp's middle (or at his place), at most safeMax seconds */
 function ntUnload(g,sq){ const b=G.ents.find(e=>!e.dead&&e.tag==='relief'&&e.type==='lz'); let f=b?rampFoot(b):null;
   if(f&&!walkableP(f.x,f.y)){ const t=nearestWalkable(Math.floor(f.x/TILE),Math.floor(f.y/TILE)); f=t?{x:(t.x+.5)*TILE,y:(t.y+.5)*TILE}:null; } if(!f&&b) f={x:b.x,y:b.y};
   const far=u=>u.ringAt&&f?Math.hypot(u.ringAt.x-f.x,u.ringAt.y-f.y):0; [...sq].sort((a,b)=>far(b)-far(a)||b.def.speed-a.def.speed).forEach((u,i)=>{   /* the one going deepest into the camp first: nobody walks past one who already stopped (Nov 2026: a full ring's worth comes in one drop) */ if(f){ u.x=f.x; u.y=f.y; } u.aboard=true; u.hidden=true; u.invuln=true; u.target=null; u.ntOffAt=g.time+i*NT_DROP.gap; if(b) u.unloadPad=b.id; });   /* unloadPad: the ship stays on the pad until he is off */ }
@@ -230,7 +234,7 @@ function ntRing(g,list,atOnce){ for(const u of list||[]) if(!u.dead){ u.ringer=t
 function ntRingOff(n,r,cx,cy){ for(let k=0;k<36;k++){ const o=-Math.PI/4+(k&1?1:-1)*Math.ceil(k/2)*Math.PI/36; let ok=true;
     for(let i=0;i<n&&ok;i++){ const a=i/n*Math.PI*2+o; if(!walkableP(cx+Math.cos(a)*r*TILE,cy+Math.sin(a)*r*TILE)) ok=false; } if(ok) return o; } return -Math.PI/4; }
 /* every half second: the ring closes up when someone falls, and a soldier who is done fighting (or healing, or repairing) goes back to his place and holds */
-function ntRingTick(g){ if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time+0.5;
+function ntRingTick(g){ ntSafeTick(g); if(g.time<(g.vars.ringT||0)) return; g.vars.ringT=g.time+0.5;
   if(g.vars.alarm==null&&G.ents.some(e=>!e.dead&&e.faction==='loyal'&&e.hitF==='corps'&&g.time-(e.hitFAt||-99)<1.5)) ntAlarm(g,'Kappa medical, we are taking fire! Raiders on the perimeter, Corps weapons! Kappa medical to Tycho, we need a relief squad!');   /* hit by the crew, seen or not: the alarm (Nov 2026: a crew out of their sight killed men and nobody called) */ ntLossTick(g); ntTac(g); ntRebuild(g);
   const us=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.ringer); if(us.length!==g.vars.ringN){ ntRing(g,[]); return; }
   for(const u of us){ const p=u.ringAt; if(!p||u.aboard) continue;
