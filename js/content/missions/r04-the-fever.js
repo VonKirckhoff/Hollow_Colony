@@ -8,11 +8,28 @@ const FV_ORDER=['d','e','c','b','a'];   /* the order in which the sweep team bur
    Engineer in the middle) and hold there against whatever comes. Once nothing of the Swarm is within `clear` tiles of the circle (or going for one of them) for `quiet` seconds,
    the rifles go in to shoot the hive from range; the Pyro joins once it is below `pyroAt` health. If the Swarm comes again, back into the circle. */
 const FV_SWEEP={ stand:6.5, ring:1.7, clear:5.5, quiet:4, pyroAt:0.5 };
+/* Where the sweep team makes its circle: `stand` tiles from the hive, on open ground (the circle fits), with a clear line of fire to the hive
+   (no rock wall in between) and on the hive's near side by foot (the walk from there to the hive is not much longer than the straight line).
+   Of those, the one the team reaches soonest. Without any such spot: the old way, straight towards the team. */
+function sweepSpot(team,hive){ const cx=team.reduce((s,u)=>s+u.x,0)/team.length, cy=team.reduce((s,u)=>s+u.y,0)/team.length;
+  const plen=p=>{ let L=0; for(let i=1;i<p.length;i++) L+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y); return L; };
+  const r=Math.ceil(FV_SWEEP.ring), cands=[];
+  for(const d of [FV_SWEEP.stand,FV_SWEEP.stand-1.5,FV_SWEEP.stand+1.5,FV_SWEEP.stand-3]) for(let i=0;i<32;i++){ const a=i/32*Math.PI*2, tx=Math.floor((hive.x+Math.cos(a)*d*TILE)/TILE), ty=Math.floor((hive.y+Math.sin(a)*d*TILE)/TILE);
+    if(!walkableT(tx,ty)||cands.some(c=>c.tx===tx&&c.ty===ty)) continue;
+    let open=0; for(let y=-r;y<=r;y++) for(let x=-r;x<=r;x++) if(walkableT(tx+x,ty+y)) open++; if(open<(2*r+1)*(2*r+1)*0.7) continue;
+    const x=(tx+.5)*TILE, y=(ty+.5)*TILE; if(fireBlocked({x,y},hive)) continue; cands.push({tx,ty,x,y,d}); }
+  let best=null, bs=Infinity;
+  for(const c of cands.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy)).slice(0,14)){
+    const toHive=findPath(c.x,c.y,hive.x,hive.y), end=toHive&&toHive[toHive.length-1]; if(!end||Math.hypot(end.x-hive.x,end.y-hive.y)>(hive.size||2)*TILE) continue;
+    if(plen([c,...toHive])>Math.hypot(c.x-hive.x,c.y-hive.y)*1.4+2*TILE) continue;   /* round a wall: the far side */
+    const go=findPath(cx,cy,c.x,c.y), last=go&&go[go.length-1]; if(!last||Math.hypot(last.x-c.x,last.y-c.y)>TILE) continue;
+    const sc=plen([{x:cx,y:cy},...go])+Math.abs(c.d-FV_SWEEP.stand)*TILE*2; if(sc<bs){ bs=sc; best=c; } }
+  if(best) return { x:best.x, y:best.y };
+  const a=Math.atan2(cy-hive.y,cx-hive.x), sx=hive.x+Math.cos(a)*FV_SWEEP.stand*TILE, sy=hive.y+Math.sin(a)*FV_SWEEP.stand*TILE, t=freeTilesNear(Math.floor(sx/TILE),Math.floor(sy/TILE),1)[0]||{x:Math.floor(sx/TILE),y:Math.floor(sy/TILE)};
+  return { x:(t.x+.5)*TILE, y:(t.y+.5)*TILE }; }
 function sweepTick(g){ const V=g.vars, team=g.loyals().filter(u=>u.sweep); if(!team.length) return;
   let k=FV_ORDER[V.sweepI]; while(k&&!g.hiveAt(k)){ V.sweepI++; k=FV_ORDER[V.sweepI]; } if(!k) return; const w=g.where(k), hive=hives().find(h=>dist(h,w)<2*TILE); if(!hive) return;
-  if(!V.sw||V.sw.k!==k){ const cx=team.reduce((s,u)=>s+u.x,0)/team.length, cy=team.reduce((s,u)=>s+u.y,0)/team.length, a=Math.atan2(cy-hive.y,cx-hive.x);
-    const sx=hive.x+Math.cos(a)*FV_SWEEP.stand*TILE, sy=hive.y+Math.sin(a)*FV_SWEEP.stand*TILE, t=freeTilesNear(Math.floor(sx/TILE),Math.floor(sy/TILE),1)[0]||{x:Math.floor(sx/TILE),y:Math.floor(sy/TILE)};
-    V.sw={ k, x:(t.x+.5)*TILE, y:(t.y+.5)*TILE, state:'march', quiet:0, since:g.time }; }
+  if(!V.sw||V.sw.k!==k){ const t=sweepSpot(team,hive); V.sw={ k, x:t.x, y:t.y, state:'march', quiet:0, since:g.time }; }
   const S=V.sw, inner=u=>u.def.heal||u.def.builder||u.type==='pyro';
   /* each soldier's place in the circle */
   const outer=team.filter(u=>!inner(u)), mid=team.filter(inner);
