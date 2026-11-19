@@ -45,7 +45,7 @@ function v3Init(){
   const sc=sun.shadow.camera; sc.left=-30; sc.right=30; sc.top=30; sc.bottom=-30; sc.near=1; sc.far=90; sun.shadow.bias=-0.0008; sun.shadow.normalBias=0.03;
   V3.scene.add(sun); V3.scene.add(sun.target);
   V3.lights=[]; for(let i=0;i<10;i++){ const l=new THREE.PointLight(0xffd690,0,9,1.5); l.position.set(0,-50,0); V3.scene.add(l); V3.lights.push(l); }
-  V3.u={ fog:{value:null}, size:{value:new THREE.Vector2(1,1)}, lift:{value:new THREE.Vector2(0,0)}, dec:{value:null}, decR:{value:new THREE.Vector4(0,0,1,1)}, time:{value:0}, myc:{value:new THREE.Vector4(1,1,1,0.55)} };
+  V3.u={ fog:{value:null}, size:{value:new THREE.Vector2(1,1)}, lift:{value:new THREE.Vector2(0,0)}, dec:{value:null}, top:{value:null}, decR:{value:new THREE.Vector4(0,0,1,1)}, time:{value:0}, myc:{value:new THREE.Vector4(1,1,1,0.55)} };
   V3.ray=new THREE.Raycaster(); V3.ray.layers.enableAll();
   v3MakeShared();
   V3.ok=true; return true;
@@ -53,15 +53,16 @@ function v3Init(){
 function v3Restored(){ refreshAllGrounds(); }
 function v3GroundChanged(m){ if(V3.terrain&&G&&G.map===m&&V3.terrain.material.map) V3.terrain.material.map.needsUpdate=true; }
 const GEO={}, MAT={};
-/* every material: darkened by the fog of war, lit up where your units see, tinted by creep; the ground also gets the painted 2D animations */
+/* every material: darkened by the fog of war, lit up where your units see; the ground also gets the mycel and the painted 2D animations.
+   Only the ground is tinted by the mycel: soldiers, buildings and rings keep their own colours on it (Nov 2026). */
 function v3Fogify(m,decal){
   m.customProgramCacheKey=()=>decal?'v3dec':'v3';   /* the two variants differ only inside the closure: without this three.js may hand the ground the program without decals (or a hull the one with) */
-  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{ v3Fog:V3.u.fog, v3Size:V3.u.size, v3Lift:V3.u.lift, v3Dec:V3.u.dec, v3DecR:V3.u.decR });
+  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{ v3Fog:V3.u.fog, v3Size:V3.u.size, v3Lift:V3.u.lift, v3Dec:V3.u.dec, v3Top:V3.u.top, v3DecR:V3.u.decR });
     sh.uniforms.v3Time=V3.u.time; sh.uniforms.v3Myc=V3.u.myc;
     sh.vertexShader=(decal?'#define V3_DECAL\n':'')+sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size;')
       .replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef V3_DECAL\n { vec4 wp0=modelMatrix*vec4(transformed,1.0); transformed.y+=texture2D(v3Fog,wp0.xz/v3Size).r*0.16; }\n#endif')
       .replace('#include <project_vertex>','#include <project_vertex>\n#ifdef USE_INSTANCING\n v3W=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz;\n#else\n v3W=(modelMatrix*vec4(transformed,1.0)).xyz;\n#endif');
-    sh.fragmentShader=(decal?'#define V3_DECAL\n':'')+sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size; uniform vec2 v3Lift; uniform sampler2D v3Dec; uniform vec4 v3DecR; uniform float v3Time;'+(decal?V3_MYC_GLSL:''))
+    sh.fragmentShader=(decal?'#define V3_DECAL\n':'')+sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 v3W; uniform sampler2D v3Fog; uniform vec2 v3Size; uniform vec2 v3Lift; uniform sampler2D v3Dec; uniform sampler2D v3Top; uniform vec4 v3DecR; uniform float v3Time;'+(decal?V3_MYC_GLSL:''))
       .replace('#include <dithering_fragment>',`#include <dithering_fragment>
  vec4 v3f=texture2D(v3Fog,v3W.xz/v3Size);
  #ifdef V3_DECAL
@@ -71,8 +72,7 @@ function v3Fogify(m,decal){
  gl_FragColor.rgb=gl_FragColor.rgb*(1.0+v3Lift.x*v3f.g)+v3Lift.y*v3f.g;
  #ifdef V3_DECAL
  gl_FragColor.rgb=v3Mycel(gl_FragColor.rgb,v3W.xz,v3f.r);   /* the mycel: crust, veinlets, glowing spots (MYCEL3D) */
- #else
- gl_FragColor.rgb=mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(0.62,0.42,0.78)+vec3(0.09,0.02,0.11),v3f.r);
+ if(v3d.x>0.0&&v3d.y>0.0&&v3d.x<1.0&&v3d.y<1.0){ vec4 tc=texture2D(v3Top,vec2(v3d.x,1.0-v3d.y)); gl_FragColor.rgb=mix(gl_FragColor.rgb,tc.rgb,tc.a); }   /* rings, ranges, markers: on top of the mycel */
  #endif
  gl_FragColor.rgb*=1.0-v3f.a;`); };
   return m; }
@@ -119,6 +119,9 @@ function v3MakeShared(){
   /* the painted ground layer (2D ground animations), redrawn every frame around the point the camera looks at */
   V3.dec=document.createElement('canvas'); V3.dec.width=V3.dec.height=1024; V3.decCtx=V3.dec.getContext('2d');
   const dt=new THREE.CanvasTexture(V3.dec); dt.minFilter=THREE.LinearFilter; dt.generateMipmaps=false; V3.u.dec.value=dt;
+  /* the same, for what lies on top of the mycel (rings, ranges, markers): mixed in after the mycel so the crust never covers it */
+  V3.top=document.createElement('canvas'); V3.top.width=V3.top.height=1024; V3.topCtx=V3.top.getContext('2d');
+  const tt=new THREE.CanvasTexture(V3.top); tt.minFilter=THREE.LinearFilter; tt.generateMipmaps=false; V3.u.top.value=tt;
 }
 
 /* ---------- terrain ---------- */
@@ -1223,7 +1226,7 @@ function v3PoseRelic(e,U,T){ const R=RELIC3D;
   for(const s of U.seams){ s.material.opacity=0.35+0.65*k; } U.core.material.opacity=0.5+0.5*k; U.core.scale.set(0.05*(1+0.4*k),0.05*(1+0.4*k),0.03);
   U.halo.material.opacity=0.06+0.14*k+0.12*hatch; U.halo.scale.set(0.36*(1+0.1*b),0.42*(1+0.1*b),0.36*(1+0.1*b));
   if(U.heat) U.heat.forEach((h,i)=>{ const f=((T*0.5+i/3)%1); h.position.y=0.55+f*0.6; h.material.opacity=0.12*Math.sin(f*Math.PI); h.scale.setScalar(0.05+f*0.08); });
-  const vals=[e.secure||0,hatch]; U.rings.forEach((m,i)=>{ const v=vals[i]; m.visible=v>0.002; if(!m.visible) return; const n=Math.max(1,Math.round(v*48)), key='relarc'+n;
+  const vals=[e.secure||0,hatch], lift=v3CreepLift(e.x/TILE,e.y/TILE,RELIC3D.ringSecure)+0.04; U.rings.forEach((m,i)=>{ const v=vals[i]; m.visible=v>0.002; if(!m.visible) return; m.position.y=lift;   /* over the mycel crust */ const n=Math.max(1,Math.round(v*48)), key='relarc'+n;
     m.geometry=GEO[key]||(GEO[key]=new THREE.RingGeometry(0.86,1,48,1,Math.PI/2-Math.PI*2*n/48,Math.PI*2*n/48).rotateX(-Math.PI/2)); m.rotation.y=-U.inner.rotation.y; }); }
 function v3Small(e){
   const g=new THREE.Group();
@@ -1860,9 +1863,9 @@ function render3D(now){
     r.scale.set(rad*k,1,rad*k); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad*k)+0.04,z); r.material.color.set(hv?(Math.floor(now/250)%2?'#ffd23f':'#fff3b0'):e.faction===G.side?'#5fe3b0':'#ff5a4f'); r.material.opacity=hv?1:0.9; }
   hidePool(V3.ringPool,n);
   n=0; const ping=pool(V3.pingPool,()=>new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, depthWrite:false })));
-  for(const p of G.pings){ const r=ping(n++), rad=(10+p.t*28)/TILE, x=p.x/TILE, z=p.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set(p.col); r.material.opacity=Math.max(0,1-p.t/3); }
-  for(const f of G.fx){ if(f.k!=='order') continue; const k=1-f.t/f.max, r=ping(n++), rad=(6+k*22)/TILE, x=f.x/TILE, z=f.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set('rgb('+f.col+')'); r.material.opacity=1-k; }
-  for(const s of G.shots){ if(s.k!=='grenade'||s.t<0) continue; const k=s.t/s.dur, r=ping(n++), rad=s.splash*(1.1-0.3*k)/TILE, x=s.tx/TILE, z=s.ty/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+0.06,z); r.material.color.set('#ff5a4f'); r.material.opacity=0.35+0.5*k; }   /* where a grenade will land, as in 2D */
+  for(const p of G.pings){ const r=ping(n++), rad=(10+p.t*28)/TILE, x=p.x/TILE, z=p.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.06,z); r.material.color.set(p.col); r.material.opacity=Math.max(0,1-p.t/3); }
+  for(const f of G.fx){ if(f.k!=='order') continue; const k=1-f.t/f.max, r=ping(n++), rad=(6+k*22)/TILE, x=f.x/TILE, z=f.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.06,z); r.material.color.set('rgb('+f.col+')'); r.material.opacity=1-k; }
+  for(const s of G.shots){ if(s.k!=='grenade'||s.t<0) continue; const k=s.t/s.dur, r=ping(n++), rad=s.splash*(1.1-0.3*k)/TILE, x=s.tx/TILE, z=s.ty/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.06,z); r.material.color.set('#ff5a4f'); r.material.opacity=0.35+0.5*k; }   /* where a grenade will land, as in 2D */
   hidePool(V3.pingPool,n);
   n=0; const shot=pool(V3.shotPool,()=>new THREE.Mesh(GEO.ball,new THREE.MeshBasicMaterial({ color:0x4fae22 })));
   for(const s of G.shots){ if(s.t<0) continue; const t=s.t/s.dur, x=(s.sx+(s.tx-s.sx)*t)/TILE, z=(s.sy+(s.ty-s.sy)*t)/TILE, egg=s.k==='egglob'||s.k==='broodlob', arc=s.k==='plasma'?0:Math.sin(t*Math.PI)*(egg?2.2:1.3);
@@ -1927,28 +1930,42 @@ function render3D(now){
 }
 /* The ground animations of the 2D view (footprints, drag trails, casings, acid pools, burning ground, decals, zones, capture rings, the
    building you are placing …) are drawn by the 2D code onto the game canvas, copied into a texture and laid on the 3D ground. */
-const V3_GROUND_FX=new Set(['tendril','casing','melt','shock','stomp','landring','bulge','screech','shaftspit','helmet','topple']);
+const V3_GROUND_FX=new Set(['tendril','casing','melt','stomp','bulge','shaftspit','helmet','topple']);   /* lie in the mycel */
+const V3_TOP_FX=new Set(['shock','landring','screech']);   /* rings: on top of the mycel */
 function v3GroundLayer(now){
   const on=VIEW3D.groundAnims; if(!on){ V3.u.decR.value.set(-1e4,-1e4,1,1); return; }
   const side=Math.max(ui.vw,ui.vh)+256, x0=G.cam.x+ui.vw/2-side/2, y0=G.cam.y+(ui.vh-ui.hudH)/2-side/2, W=cv.width, H=cv.height, sx=W/side, sy=H/side;
-  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H); ctx.setTransform(sx,0,0,sy,-x0*sx,-y0*sy); ctx.imageSmoothingEnabled=false;
   const vx0=x0, vy0=y0, vx1=x0+side, vy1=y0+side, inView=e=>e.x>vx0&&e.x<vx1&&e.y>vy0&&e.y<vy1;
+  const begin=()=>{ ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H); ctx.setTransform(sx,0,0,sy,-x0*sx,-y0*sy); ctx.imageSmoothingEnabled=false; };
+  const copy=(dc,tex)=>{ ctx.setTransform(1,0,0,1,0,0); dc.clearRect(0,0,1024,1024); dc.drawImage(cv,0,0,W,H,0,0,1024,1024); tex.needsUpdate=true; };
+  const fxOnly=set=>{ const all=G.fx; G.fx=all.filter(f=>set.has(f.k)); try{ drawFx(); } finally { G.fx=all; } };
+  /* 1. what lies in the ground: under the mycel crust */
+  begin();
   try{
     for(const d of G.decals){ if(!inView(d)) continue; ctx.fillStyle=d.col; for(let i=0;i<5;i++){ const a=d.seed+i*1.7, rr=d.r*(0.35+0.25*((i*37+d.seed)%1)); ctx.fillRect(Math.round(d.x+Math.cos(a)*d.r*0.5-rr/2),Math.round(d.y+Math.sin(a)*d.r*0.35-rr/3),Math.round(rr),Math.round(rr*0.66)); } }
     { const vv=MYCEL.veins; MYCEL.veins=vv&&!MYCEL3D.veins; try{ drawMycel(now,vx0,vy0,vx1,vy1); } finally { MYCEL.veins=vv; } } drawCreepLife(now,vx0,vy0,vx1,vy1); drawPools(now); v3WreckGround(); drawDrags(); drawPrints(); drawFires(now);
-    for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||!inView(e)) continue; if(e.wall){ drawTunnel(e,now); continue; } const a=ARTC[e.def.art]; if(a){ ctx.globalAlpha=0.9; ctx.drawImage(a,e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); ctx.globalAlpha=1; }
+    for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||!inView(e)) continue; if(e.wall){ drawTunnel(e,now); continue; } const a=ARTC[e.def.art]; if(a){ ctx.globalAlpha=0.9; ctx.drawImage(a,e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); ctx.globalAlpha=1; } }
+    fxOnly(V3_GROUND_FX);
+  }catch(err){ if(!V3.layerErr){ V3.layerErr=true; console.warn('3D ground layer:',err); } }
+  copy(V3.decCtx,V3.u.dec.value);
+  /* 2. what lies on top of it: capture rings, selection, rally lines, orders, ranges, zones, a choir pod's progress */
+  begin();
+  try{
+    for(const e of G.ents){ if(e.dead||!e.def||!e.def.ground||e.wall||!inView(e)) continue;
       if(e.def.capture){ const r=e.size*TILE*0.62, col=e.state==='contested'?'#ff9a3c':e.owned?'#5fe3b0':e.state==='theirs'?'#ff5a4f':'#ffb347';
         ctx.lineWidth=5; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.beginPath(); ctx.arc(e.x,e.y,r,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle=col; ctx.beginPath(); ctx.arc(e.x,e.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*(e.cap||0)); ctx.stroke(); }
       if(e.flight){ ctx.strokeStyle=`rgba(255,179,71,${0.4+0.4*Math.sin(now/150)})`; ctx.lineWidth=2; ctx.strokeRect(e.tx*TILE+2,e.ty*TILE+2,e.size*TILE-4,e.size*TILE-4); }
       if(G.sel.includes(e)){ ctx.strokeStyle='#5fe3b0'; ctx.lineWidth=3; ctx.strokeRect(e.tx*TILE,e.ty*TILE,e.size*TILE,e.size*TILE); } }
+    for(const b of G.ents){ if(b.dead||b.type!=='choirpod'||b.quiet||!(b.quietP>0)||!inView(b)) continue; const r=TILE*1.15;   /* how quiet a choir pod is: a purple ring that fills */
+      ctx.lineWidth=8; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.beginPath(); ctx.arc(b.x,b.y,r,0,Math.PI*2); ctx.stroke();
+      ctx.lineWidth=5; ctx.strokeStyle='#e4c8ff'; ctx.beginPath(); ctx.arc(b.x,b.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,b.quietP)); ctx.stroke(); }
     if(ui.placing&&BUILDINGS[ui.placing.type].needsSite) for(const s of G.map.sites){ ctx.strokeStyle='rgba(255,179,71,.75)'; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.strokeRect(s.x*TILE+2,s.y*TILE+2,TILE*2-4,TILE*2-4); ctx.setLineDash([]); }
     for(const e of G.sel){ if(e.kind==='building'&&e.rally){ ctx.strokeStyle='rgba(95,227,176,.6)'; ctx.lineWidth=2; ctx.setLineDash([3,5]); ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(e.rally.x,e.rally.y); ctx.stroke(); ctx.setLineDash([]); } }
-    const all=G.fx; G.fx=all.filter(f=>V3_GROUND_FX.has(f.k)); try{ drawFx(); } finally { G.fx=all; }
+    fxOnly(V3_TOP_FX);
     if(G.side==='swarm'){ drawSwarmOrders(now); drawScorch(now); }
     drawPlacement(); for(const z of G.rings||[]) drawRing(z,now);
   }catch(err){ if(!V3.layerErr){ V3.layerErr=true; console.warn('3D ground layer:',err); } }
-  ctx.setTransform(1,0,0,1,0,0);
-  const dc=V3.decCtx; dc.clearRect(0,0,1024,1024); dc.drawImage(cv,0,0,W,H,0,0,1024,1024); V3.u.dec.value.needsUpdate=true;
+  copy(V3.topCtx,V3.u.top.value);
   V3.u.decR.value.set(x0/TILE,y0/TILE,side/TILE,side/TILE); }
 /* screen position of a world point (px, from the top-left of the window) */
 const _v=typeof THREE!=='undefined'?new THREE.Vector3():null;
@@ -1971,6 +1988,8 @@ function v3Overlay(now){
     if(e.kind==='building'&&!e.built){ ctx.fillStyle='#000'; ctx.fillRect(x-1,y+4,w+2,4); ctx.fillStyle='#ffb347'; ctx.fillRect(x,y+5,Math.round(w*(e.progress||0)),2); }
     if(e.type==='cocoon'){ ctx.fillStyle='#a6ff4a'; ctx.fillRect(x,y+4,Math.round(w*(1-e.hatchT/(e.hatchMax||BUILDINGS.cocoon.hatch))),2); }
     try{ if(crew) drawTaintBar(e,x,y,w,now); if(e.osprey) ospreyBarMark(e,x,y,w); }catch(err){} }
+  for(const [e,g] of V3.objs){ if(!g.visible||e.type!=='choirpod'||e.quiet||!(e.quietP>0)) continue; const p=v3Screen(e.x,e.y,(g.userData.top||1)+0.35); if(!p.ok) continue;   /* how quiet a choir pod is, over its head (as in 2D) */
+    const x=Math.round(p.x-17), y=Math.round(p.y); ctx.fillStyle='#000'; ctx.fillRect(x,y,34,5); ctx.fillStyle='#c38bff'; ctx.fillRect(x+1,y+1,Math.round(32*Math.min(1,e.quietP)),3); }
   for(const [e,g] of V3.objs){ if(!g.visible||e.kind!=='unit') continue; const p=v3Screen(e.x,e.y,(g.userData.top||1)+0.25); if(!p.ok) continue;
     if(e.vet&&e.vet.rank>0&&RANKS[e.vet.rank].mark) label(RANKS[e.vet.rank].mark,e.vet.rank>=5?'#ffd23f':'#e8ecf2',{x:p.x,y:p.y-4});
     if(e.vet&&e.vet.hero){ ctx.fillStyle='#000'; ctx.fillRect(Math.round(p.x)-3,p.y-21,7,7); ctx.fillStyle='#ffd23f'; ctx.fillRect(Math.round(p.x)-1,p.y-20,3,5); }
