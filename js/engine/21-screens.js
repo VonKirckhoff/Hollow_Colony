@@ -106,15 +106,16 @@ $('#s-cenotaph').addEventListener('click',e=>{
 const CUP_SVG=`<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="4" y="2" width="8" height="6"/><rect x="5" y="8" width="6" height="1"/><rect x="6" y="9" width="4" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="5" y="12" width="6" height="1"/><rect x="4" y="13" width="8" height="2"/><rect x="1" y="3" width="3" height="1"/><rect x="1" y="4" width="1" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="3" width="3" height="1"/><rect x="14" y="4" width="1" height="2"/><rect x="12" y="6" width="2" height="1"/></svg>`;
 /* a role or Flawless cell: cup, name, one line, bar (details in the tooltip) */
 function tPlaque(cls,won,name,line,f,tip){ return `<div class="plaque ${cls} ${won?'won':''}" title="${tip||name}">${CUP_SVG}<span class="pt"><b>${name}</b><i>${line}</i>${!won&&f!=null?`<span class="tbar"><span style="width:${Math.round(Math.min(1,f)*100)}%"></span></span>`:''}</span></div>`; }
-/* a plaque with its explanation: cup, name, what to do, date or progress, bar */
-function tBig(cls,won,name,what,line,f){ return `<div class="plaque big ${cls} ${won?'won':''}" title="${name}|${what}">${CUP_SVG}<b>${name}</b><i class="what">${what}</i><i>${line}</i>${!won&&f!=null?`<span class="tbar"><span style="width:${Math.round(Math.min(1,f)*100)}%"></span></span>`:''}</div>`; }
+/* a plaque with its explanation: cup, name, what to do, date or progress, bar. Hover: the game's tooltip (data-tip) with `tip`, a longer how-to, or else `what` */
+const attrQ=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+function tBig(cls,won,name,what,line,f,tip){ return `<div class="plaque big ${cls} ${won?'won':''}" data-tip="${attrQ(name+'|'+(tip||what))}">${CUP_SVG}<b>${name}</b><i class="what">${what}</i><i>${line}</i>${!won&&f!=null?`<span class="tbar"><span style="width:${Math.round(Math.min(1,f)*100)}%"></span></span>`:''}</div>`; }
 const tDate=w=>new Date(w.at||w).toLocaleDateString();
 /* the Trophy wall in tabs: Lunar Corps, Swarm, Rogue Strain, Relics. The text on the left follows the tab; the count covers the whole wall. */
 let trophTab='corps';
 const TROPH_TABS=[
   { id:'corps', name:'Lunar Corps', text:'One trophy for every difficulty, for your own soldier (a Trooper). To earn one, your soldier must win every campaign mission in order, from mission 1, walking out of each one alive. A mission where your soldier falls does not count: play it again. The Flawless row: win any campaign mission without losing a single soldier, one trophy per difficulty. Hollow Light, the grand trophy, takes every one of them. A win on Hard also counts for Normal and Easy.' },
   { id:'swarm', name:'The Brood', text:'Three trophies for the Brood campaign, one per difficulty: win every Brood mission on it. A win on Hard also counts for Normal and Easy, so each mission only needs its hardest win.' },
-  { id:'rogue', name:'Rogue Strain', text:'The Osprey crew went rogue. Three trophies for winning every Rogue job on a difficulty (a win on Hard also counts for Normal and Easy), two for the ways the story can end, two for how far you take the strain, and one for walking among them unseen.' },
+  { id:'rogue', name:'Rogue Strain', text:'The Osprey crew went rogue. Three trophies for winning every Rogue job on a difficulty (a win on Hard also counts for Normal and Easy), one for how the story ends, two for how far you take the strain, and one for walking among them unseen.' },
   { id:'relics', name:'Relics', text:'Hidden in the Lunar Corps campaign: relics of the old colony and ancient eggs. Take every relic, and every egg before the Brood wakes it. Read what you found in Intel, tab Relics.' } ];
 function trophyTabs(){ const T=trophies(), hero=heroOf(), gs=grandStatus(), rs=relicStatus(), out={};
   const has=(list,k)=>list.filter(c=>T[k(c)]&&(!Array.isArray(T[k(c)])||T[k(c)].length)).length;
@@ -135,7 +136,7 @@ function trophyTabs(){ const T=trophies(), hero=heroOf(), gs=grandStatus(), rs=r
   out.swarm={ html:diffs(SWARM_TROPHIES,swarmDiffCount,SWARM_MISSIONS.length,'Brood','swarm'), have:has(SWARM_TROPHIES,t=>t.id), need:SWARM_TROPHIES.length };
   const RD=ROGUE_TROPHIES.filter(t=>t.diff), RS=ROGUE_TROPHIES.filter(t=>!t.diff);
   out.rogue={ html:`<div class="tsub">By difficulty</div>`+diffs(RD,rogueDiffCount,ROGUE_MISSIONS.length,'Rogue Strain','rogue')
-      +`<div class="tsub">The story</div><div class="tgrid four">${RS.map(t=>{ const w=T[t.id]; return tBig('rogue',!!w,t.name,t.what,w?tDate(w):'not yet',null); }).join('')}</div>`,
+      +`<div class="tsub">The story</div><div class="tgrid four">${RS.map(t=>{ const w=T[t.id]; return tBig('rogue',!!w,t.name,t.what,w?tDate(w):'not yet',null,typeof t.tip==='function'?t.tip():t.tip); }).join('')}</div>`,
     have:has(ROGUE_TROPHIES,t=>t.id), need:ROGUE_TROPHIES.length };
   out.relics={ html:`<div class="tgrid two">${[['item','Archivist','Every hidden relic of the campaign'],['egg','Egg Hunter','Every ancient egg, taken before the Brood woke it']].map(([k,name,what])=>{ const r=rs[k];
       return tBig('relic',!!r.at,name,what,r.at?tDate(r.at):`${r.have} / ${r.need} found`,r.have/Math.max(1,r.need)); }).join('')}</div>`,

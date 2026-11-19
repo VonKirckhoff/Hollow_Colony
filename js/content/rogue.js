@@ -95,7 +95,9 @@ const ROGUE_TROPHIES = [
   { id:'rogue:ascend', name:'Ascension',    what:'End the Rogue campaign by taking the Seed into your blood' },
   { id:'rogue:full',   name:'Full Strain',  what:'One crew member carries all six strains' },
   { id:'rogue:cold',   name:'Cold Blood',   what:'Win every Rogue mission without a crew member ever going feral' },
-  { id:'rogue:wolf',   name:'Wolf in the Fold', what:'Win Among Them without a veil ever being torn' },
+  { id:'rogue:wolf',   name:'Wolf in the Fold', what:'Win Among Them without a veil ever being torn',
+    /* tip: the longer how-to in the tooltip when you hover the plaque (Trophy wall) */
+    tip:()=>`Win Among Them without a veil ever being torn. A crew member is veiled from ${ROGUE.veil.taint}% taint, or with Hive Scent. The veil tears when a veiled crew member fires a single shot or goes feral.<br><br>Put the veiled ones on Hold fire (Q) before they walk into the nest. Keep their taint above ${ROGUE.veil.taint}% (a stabilizer dose can push them under the line) and below ${ROGUE.taint.feral}%. The clean soldiers on the ridge may shoot all they like: they do not count.` },
   /* one per difficulty, on their own row: every Rogue mission won on it (a win on Hard also counts for Normal and Easy) */
   { id:'rogue:easy',   name:'Deserter',     what:'Win every Rogue Strain mission on Easy', diff:'easy' },
   { id:'rogue:normal', name:'Turncoat',     what:'Win every Rogue Strain mission on Normal', diff:'normal' },
