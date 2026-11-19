@@ -106,11 +106,17 @@ function rogueSettle(){
   if(G.rogue.ending){ R.ending=G.rogue.ending; if(G.rogue.ending==='ascend') for(const v of R.crew) if(!v.strains.includes('mother')) v.strains.push('mother'); }
   saveRogue(); G.rogueResult=res; G.rogueWon=checkRogueTrophies(); }
 /* ---- trophies of the Rogue campaign (a row on the Trophy wall) ---- */
+/* the end screen's lines for trophies just won: the difficulty trophies (often won together at the end of the campaign) share one sentence */
+function rogueWonLines(ids){ const ts=ids.map(id=>ROGUE_TROPHIES.find(x=>x.id===id)).filter(Boolean), story=ts.filter(t=>!t.diff), diff=ts.filter(t=>t.diff);
+  const and=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+  const out=story.map(t=>`${t.name}: ${t.what.toLowerCase()}. It hangs on the Trophy wall.`);
+  if(diff.length) out.push(`${and(diff.map(t=>t.name))}: win every Rogue Strain mission on ${and(diff.map(t=>DIFFICULTY[t.diff].label))}. ${diff.length>1?'They hang':'It hangs'} on the Trophy wall.`);
+  return out; }
 /* Rogue missions won on difficulty k or harder (the best win per mission is in hc-progress) */
 function rogueDiffCount(k){ return ROGUE_MISSIONS.filter(m=>{ const r=resultOf(m.id); return r&&DIFF_RANK[r.diff]>=DIFF_RANK[k]; }).length; }
 function rogueTrophyHave(id){ const t=ROGUE_TROPHIES.find(x=>x.id===id); if(t&&t.diff) return ROGUE_MISSIONS.length>0&&rogueDiffCount(t.diff)>=ROGUE_MISSIONS.length;
   const R=rogueStore(), all=ROGUE_MISSIONS.length&&ROGUE_MISSIONS.every(m=>isDone(m.id));
-  if(id==='rogue:ascend') return R.ending==='ascend'; if(id==='rogue:ashes') return R.ending==='ashes';
+  if(id==='rogue:ascend') return R.ending==='ascend';
   if(id==='rogue:full') return R.crew.some(v=>STRAIN_ORDER.every(k=>v.strains.includes(k))); if(id==='rogue:cold') return all&&!R.flags.feral; if(id==='rogue:wolf') return !!R.flags.wolf; return false; }
 function checkRogueTrophies(){ const T=trophies(), won=[]; for(const t of ROGUE_TROPHIES){ if(!T[t.id]&&rogueTrophyHave(t.id)){ T[t.id]={ at:Date.now() }; won.push(t.id); } }
   if(won.length) store.set('hc-trophies',T); return won; }
@@ -487,7 +493,7 @@ function rogueEndHtml(){ const r=G.rogueResult; if(!r) return ''; const out=[];
   if(r.back.length) out.push(`<div class="vsec fallen"><span class="lbl">Back from the dead</span><div>${r.back.join(', ')}: the strain stitched ${r.back.length>1?'them':pron(rogueStore().crew.find(v=>v.name===r.back[0]),'him')} back together (+${ROGUE.taint.fallen} taint).</div></div>`);
   if(r.promoted.length) out.push(`<div class="vsec"><span class="lbl">Promotions</span><div>${r.promoted.map(p=>`${p.name}: ${RANKS[p.rank].name}`).join(', ')}</div></div>`);
   out.push(`<div class="vsec"><span class="lbl">Taint</span><div>${r.taint.map(x=>`${x.name} ${x.to}%`).join(' · ')}</div></div>`);
-  if((G.rogueWon||[]).length) out.push(`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${G.rogueWon.map(id=>{ const t=ROGUE_TROPHIES.find(x=>x.id===id); return `<div>${t.name}: ${t.what.toLowerCase()}. It hangs on the Trophy wall.</div>`; }).join('')}</div>`);
+  if((G.rogueWon||[]).length) out.push(`<div class="vsec troph"><span class="lbl">🏆 Trophy earned</span>${rogueWonLines(G.rogueWon).map(l=>`<div>${l}</div>`).join('')}</div>`);
   return out.join(''); }
 /* on the Trophy wall (21-screens.js): the story plaques go into the special block, the difficulty ones into the Rogue row */
 
