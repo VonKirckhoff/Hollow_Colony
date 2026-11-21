@@ -466,49 +466,62 @@ function v3Grazer(e,sick){
    an ammo drum with a belt, a sensor head with a red lens, a radar dish and an antenna.
    Moves: unfolds when set up and folds when packed (legs out, turret rises, barrel swings up), recoil, muzzle flash and casings flying out,
    scans slowly with no target, the dish turns; below plateAt a side plate flies off, below smokeAt it sparks and smokes. ---------- */
-const SENTRY3D = { size:1.15, scan:0.7, scanSpeed:0.55, scanDelay:2, recoil:0.07, flash:1, casings:true, plateAt:0.5, smokeAt:0.25, smoke:5, sparks:4 };
-function v3SentryTex(kind){ const k='sentryTex'+kind; if(MAT[k]) return MAT[k];
+const SENTRY3D = { camo:true, camoSpan:0.42, size:1.15, scan:0.7, scanSpeed:0.55, scanDelay:2, recoil:0.07, flash:1, casings:true, plateAt:0.5, smokeAt:0.25, smoke:5, sparks:4 };
+function v3SentryTex(kind){ const k='sentryTex'+kind+(kind==='lc'&&SENTRY3D.camo?'C':''); if(MAT[k]) return MAT[k];
   const c=document.createElement('canvas'), x=c.getContext('2d',CPU2D);
   if(kind==='jacket'){ c.width=64; c.height=64; x.fillStyle='#363c45'; x.fillRect(0,0,64,64); x.fillStyle='#0b0c0e';
     for(let j=0;j<6;j++) for(let i=0;i<8;i++){ x.beginPath(); x.arc(4+i*8,5+j*10+(i%2)*5,2.3,0,7); x.fill(); }
     const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,1); return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
   /* 'lc': a worn plate with the Lunar Corps stencil */
-  c.width=128; c.height=64; x.fillStyle='#323944'; x.fillRect(0,0,128,64);
+  c.width=128; c.height=64; x.fillStyle='#323944'; x.fillRect(0,0,128,64); if(SENTRY3D.camo) v3Camo(x,128,64,14,14,CAMO_CORPS,79);   /* the camo cells as big as on the rest of the gun */
   for(let i=0;i<40;i++){ x.fillStyle=`rgba(${i%2?20:90},${i%2?22:96},${i%2?26:106},.35)`; x.fillRect(hash2(i,1,3)*128,hash2(i,2,3)*64,2+hash2(i,3,3)*10,1); }   /* scratches and grime */
-  x.save(); x.globalAlpha=0.7; x.fillStyle='#b9c0c8'; x.font='bold 40px Impact, "Arial Black", sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LC',64,34); x.restore();
+  x.save(); x.globalAlpha=0.7; x.fillStyle='#b9c0c8'; x.font='bold 40px Impact, "Arial Black", sans-serif'; x.textAlign='center'; x.textBaseline='middle'; if(SENTRY3D.camo){ x.globalAlpha=0.9; x.strokeStyle='#1a1f26'; x.lineWidth=5; x.strokeText('LC',64,34); } x.fillText('LC',64,34); x.restore();   /* on camo: a dark edge so the stencil still reads */
   x.globalCompositeOperation='destination-out'; x.fillStyle='#000'; x.fillRect(52,14,2,40); x.fillRect(76,14,2,40); x.globalCompositeOperation='source-over';   /* stencil bridges */
   x.fillStyle='rgba(185,192,200,.55)'; x.fillRect(6,6,116,1); x.fillRect(6,57,116,1);
   const t=new THREE.CanvasTexture(c); t.anisotropy=4; return MAT[k]=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
+/* the Sentry Gun's camouflage (Nov 2026): the dropship's pixel pattern and colours. Camo parts get their own geometry with uvs in
+   model units, so the cells are the same size on a big plate and a thin leg (SENTRY3D.camoSpan = model units per tile). */
+function v3SentryCamo(){ if(MAT.sentryCamo) return MAT.sentryCamo; const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d',CPU2D);
+  v3Camo(x,256,256,16,16,CAMO_CORPS,73);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=4; t.magFilter=THREE.NearestFilter; return MAT.sentryCamo=v3Fogify(new THREE.MeshLambertMaterial({ map:t })); }
+function v3CamoUv(g,faces){ const uv=g.attributes.uv, idx=g.index, sp=SENTRY3D.camoSpan;
+  g.groups.forEach((gr,gi)=>{ const [su,sv]=faces(gi), ou=hash2(gi,su*97|0,11), ov=hash2(gi,sv*89|0,12), done=new Set();
+    for(let i=gr.start;i<gr.start+gr.count;i++){ const v=idx?idx.getX(i):i; if(done.has(v)) continue; done.add(v); uv.setXY(v,uv.getX(v)*su/sp+ou,uv.getY(v)*sv/sp+ov); } });
+  uv.needsUpdate=true; return g; }
+function camoBox(m,w,h,d,x,y,z){ const k='cbox'+[w,h,d].join(','), g=GEO[k]||(GEO[k]=v3CamoUv(new THREE.BoxGeometry(w,h,d),i=>i<2?[d,h]:i<4?[w,d]:[w,h]));
+  const o=new THREE.Mesh(g,m); o.position.set(x,y,z); o.castShadow=true; return o; }
+function camoCyl(m,r,h,x,y,z){ const k='ccyl'+r+','+h, g=GEO[k]||(GEO[k]=v3CamoUv(new THREE.CylinderGeometry(r,r,h,12),i=>i===0?[2*Math.PI*r,h]:[2*r,2*r]));
+  const o=new THREE.Mesh(g,m); o.position.set(x,y,z); o.castShadow=true; return o; }
 function v3Sentry(e){
   const g=new THREE.Group(), U=g.userData; U.own=[]; GEO.plane=GEO.plane||new THREE.PlaneGeometry(1,1);
-  const hull=mat('#262c34'), plate=mat('#313843'), dark=mat('#121418'), gunM=shiny('#363c45',{ specular:0x4a505a, shininess:45 }), yel=mat('#8a6d22'),
+  const cm=SENTRY3D.camo, hull=cm?v3SentryCamo():mat('#262c34'), plate=cm?hull:mat('#313843'), cbox=cm?camoBox:box, ccyl=cm?((m,w,h,d,x,y,z)=>camoCyl(m,w,h,x,y,z)):cyl, dark=mat('#121418'), gunM=shiny('#363c45',{ specular:0x4a505a, shininess:45 }), yel=mat('#8a6d22'),
         brass=shiny('#7a5d1e',{ specular:0x665533, shininess:55 }), rub=mat('#0a0b0c'), lc=v3SentryTex('lc');
   const S=grp(); S.scale.setScalar(SENTRY3D.size); g.add(S); U.S=S;
   const L=0.6; U.L=L;
   /* the ammo/battery box on the ground between two legs, a cable up to the hub */
   const ba=Math.PI+Math.PI/3, B=grp(Math.sin(ba)*0.34,0,Math.cos(ba)*0.34); B.rotation.y=ba; S.add(B);
-  B.add(box(plate,0.24,0.14,0.16,0,0.07,0)); B.add(box(dark,0.25,0.02,0.17,0,0.145,0)); B.add(box(yel,0.245,0.025,0.165,0,0.1,0));
+  B.add(cbox(plate,0.24,0.14,0.16,0,0.07,0)); B.add(box(dark,0.25,0.02,0.17,0,0.145,0)); B.add(box(yel,0.245,0.025,0.165,0,0.1,0));
   B.add(box(dark,0.1,0.02,0.02,0,0.165,0)); B.add(box(glow('#5fe3b0'),0.02,0.02,0.01,0.08,0.12,0.083)); for(const k of [-1,1]) B.add(box(dark,0.02,0.1,0.17,k*0.12,0.07,0));
   const bw=new THREE.Vector3(Math.sin(ba)*0.34,0.15,Math.cos(ba)*0.34), V=(x,y,z)=>new THREE.Vector3(x,y,z);
   const cg=v3Tube([bw,V(bw.x*0.75,0.24,bw.z*0.75),V(bw.x*0.3,0.3,bw.z*0.3),V(0,0.4,0)],0.014,0.014,10,5); U.own.push(cg);
   U.cable=new THREE.Mesh(cg,rub); U.cable.castShadow=true; S.add(U.cable);
   /* the hub: legs hang from it, the slewing ring and turret sit on it (its height follows the legs) */
   const hub=grp(0,0.45,0); S.add(hub); U.hub=hub;
-  hub.add(cyl(dark,0.1,0.14,0.1,0,0.0,0)); hub.add(cyl(hull,0.17,0.05,0.17,0,0.08,0)); hub.add(part(GEO.torus,gunM,0.17,0.5,0.17,0,0.08,0));
+  hub.add(cyl(dark,0.1,0.14,0.1,0,0.0,0)); hub.add(ccyl(hull,0.17,0.05,0.17,0,0.08,0)); hub.add(part(GEO.torus,gunM,0.17,0.5,0.17,0,0.08,0));
   for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; hub.add(ball(dark,0.012,0.012,0.012,Math.sin(a)*0.15,0.106,Math.cos(a)*0.15)); }   /* bolts on the ring */
   U.legs=[];
   for(let i=0;i<3;i++){ const r=grp(); r.rotation.y=Math.PI+i*2*Math.PI/3; hub.add(r); r.add(box(dark,0.07,0.06,0.09,0,-0.02,0.07));
     const h=grp(0,-0.02,0.1); r.add(h);
-    h.add(box(hull,0.06,L*0.55,0.07,0,-L*0.275,0)); h.add(ball(dark,0.045,0.045,0.045,0,-L*0.55,0)); h.add(box(dark,0.045,L*0.47,0.05,0,-L*0.77,0));
+    h.add(cbox(hull,0.06,L*0.55,0.07,0,-L*0.275,0)); h.add(ball(dark,0.045,0.045,0.045,0,-L*0.55,0)); h.add(box(dark,0.045,L*0.47,0.05,0,-L*0.77,0));
     h.add(cyl(gunM,0.014,L*0.45,0.014,0,-L*0.3,-0.05)); h.add(box(yel,0.062,0.03,0.072,0,-L*0.12,0));   /* hydraulic piston, a yellow band */
     const f=grp(0,-L,0); h.add(f); f.add(cyl(dark,0.075,0.025,0.075,0,0.012,0)); f.add(rotX(part(GEO.cone,gunM,0.022,0.09,0.022,0,-0.035,0),Math.PI));
     U.legs.push({ h, f }); }
   /* the turret: forward is +z */
   const T=grp(0,0.11,0); hub.add(T); U.turret=T;
-  T.add(box(dark,0.3,0.04,0.34,0,0.02,0)); T.add(box(hull,0.3,0.22,0.36,0,0.14,0));
-  const gl=box(plate,0.32,0.17,0.05,0,0.16,0.19); gl.rotation.x=-0.55; T.add(gl);   /* slanted front plate */
-  const top=grp(0,0.26,-0.02); top.add(box(plate,0.31,0.03,0.3,0,0,0)); const tl=new THREE.Mesh(GEO.plane,lc); tl.scale.set(0.24,0.12,1); tl.rotation.x=-Math.PI/2; tl.position.set(0,0.016,-0.05); top.add(tl); T.add(top);
-  const side=(k)=>{ const p=grp(k*0.165,0.14,0); p.add(box(plate,0.03,0.2,0.32,0,0,0)); p.rotation.z=-k*0.1;
+  T.add(box(dark,0.3,0.04,0.34,0,0.02,0)); T.add(cbox(hull,0.3,0.22,0.36,0,0.14,0));
+  const gl=cbox(plate,0.32,0.17,0.05,0,0.16,0.19); gl.rotation.x=-0.55; T.add(gl);   /* slanted front plate */
+  const top=grp(0,0.26,-0.02); top.add(cbox(plate,0.31,0.03,0.3,0,0,0)); const tl=new THREE.Mesh(GEO.plane,lc); tl.scale.set(0.24,0.12,1); tl.rotation.x=-Math.PI/2; tl.position.set(0,0.016,-0.05); top.add(tl); T.add(top);
+  const side=(k)=>{ const p=grp(k*0.165,0.14,0); p.add(cbox(plate,0.03,0.2,0.32,0,0,0)); p.rotation.z=-k*0.1;
     for(const [yy,zz] of [[0.08,0.13],[0.08,-0.13],[-0.08,0.13],[-0.08,-0.13]]) p.add(ball(dark,0.012,0.012,0.012,k*0.016,yy,zz));
     const s=new THREE.Mesh(GEO.plane,lc); s.scale.set(0.24,0.12,1); s.rotation.y=k*Math.PI/2; s.position.set(k*0.016,0,-0.02); p.add(s); T.add(p); return p; };
   U.plate=side(-1); side(1);
@@ -516,16 +529,16 @@ function v3Sentry(e){
   for(const k of [-1,1]) T.add(box(dark,0.02,0.02,0.1,k*0.1,0.1,-0.2));   /* grab handles */
   /* the gun */
   const gn=grp(0,0.13,0.17); T.add(gn); U.gun=gn; U.gz=0.17;
-  gn.add(box(dark,0.11,0.11,0.16,0,0,0.02)); gn.add(box(hull,0.115,0.04,0.1,0,0.06,0.0));
+  gn.add(box(dark,0.11,0.11,0.16,0,0,0.02)); gn.add(cbox(hull,0.115,0.04,0.1,0,0.06,0.0));
   gn.add(rotX(cyl(v3SentryTex('jacket'),0.048,0.32,0.048,0,0,0.26),Math.PI/2)); gn.add(rotX(cyl(dark,0.052,0.02,0.052,0,0,0.11),Math.PI/2)); gn.add(rotX(cyl(dark,0.052,0.02,0.052,0,0,0.42),Math.PI/2));
   gn.add(rotX(cyl(gunM,0.024,0.18,0.024,0,0,0.5),Math.PI/2));
   gn.add(box(dark,0.075,0.055,0.1,0,0,0.62)); for(const k of [-1,1]) gn.add(box(rub,0.077,0.012,0.012,0,k*0.012,0.6+k*0.02));   /* muzzle brake with slots */
   U.muzzle=grp(0,0,0.68); gn.add(U.muzzle); U.port=grp(0.06,0.02,0.04); gn.add(U.port);
   /* ammo drum on the right with the belt running into the gun */
-  const dr=grp(0.25,0.13,0.0); T.add(dr); dr.add(rotZ(cyl(hull,0.11,0.1,0.11,0,0,0),Math.PI/2)); dr.add(rotZ(cyl(dark,0.08,0.104,0.08,0,0,0),Math.PI/2)); dr.add(rotZ(part(GEO.torus,gunM,0.11,0.6,0.11,0.05,0,0),Math.PI/2));
+  const dr=grp(0.25,0.13,0.0); T.add(dr); dr.add(rotZ(ccyl(hull,0.11,0.1,0.11,0,0,0),Math.PI/2)); dr.add(rotZ(cyl(dark,0.08,0.104,0.08,0,0,0),Math.PI/2)); dr.add(rotZ(part(GEO.torus,gunM,0.11,0.6,0.11,0.05,0,0),Math.PI/2));
   for(let i=0;i<7;i++){ const t=i/6, x=0.24-t*0.18, y=0.24+Math.sin(t*Math.PI)*0.04-t*0.02, z=0.05+t*0.11; const l=box(brass,0.022,0.012,0.04,x,y,z); l.rotation.y=0.6; T.add(l); }
   /* sensor head with the red lens, radar dish, antenna */
-  const sh=grp(-0.1,0.31,0.11); T.add(sh); sh.add(box(dark,0.1,0.075,0.09,0,0,0)); sh.add(box(hull,0.11,0.015,0.11,0,0.044,0.01));
+  const sh=grp(-0.1,0.31,0.11); T.add(sh); sh.add(box(dark,0.1,0.075,0.09,0,0,0)); sh.add(cbox(hull,0.11,0.015,0.11,0,0.044,0.01));
   U.lens=ball(glow('#ff3b2f'),0.026,0.026,0.012,0,0,0.047); sh.add(U.lens); sh.add(rotX(part(GEO.torus,gunM,0.03,0.4,0.03,0,0,0.046),Math.PI/2));
   U.ext=[];
   const dm=grp(0.07,0.275,-0.11); T.add(dm); dm.add(cyl(gunM,0.012,0.07,0.012,0,0.035,0)); U.dish=grp(0,0.075,0); dm.add(U.dish);
@@ -564,7 +577,7 @@ function v3SentryFx(now,dt,put,lights){ const C=SENTRY3D, w=V3._sw||(V3._sw=new 
         const o=cyl(MAT.sentryBrass||(MAT.sentryBrass=shiny('#b08a2c',{ specular:0x998855, shininess:60 })),0.014,0.045,0.014,w.x,w.y,w.z); V3.g.add(o);
         V3.bits.push({ o, vx:side.x*rand(1.0,1.6), vy:rand(1.4,2.0), vz:side.z*rand(1.0,1.6), sx:rand(10,20), sz:rand(5,12), t:0, life:0.9, fade:0.3 }); } }
     if(U.fly){ U.fly=false; U.plate.getWorldPosition(w); U.plate.getWorldQuaternion(V3._sq||(V3._sq=new THREE.Quaternion()));
-      const o=box(mat('#313843'),0.035,0.23,0.37,w.x,w.y,w.z); o.quaternion.copy(V3._sq); V3.g.add(o); const side=new THREE.Vector3(-1,0,0).applyQuaternion(V3._sq);
+      const o=SENTRY3D.camo?camoBox(v3SentryCamo(),0.035,0.23,0.37,w.x,w.y,w.z):box(mat('#313843'),0.035,0.23,0.37,w.x,w.y,w.z); o.quaternion.copy(V3._sq); V3.g.add(o); const side=new THREE.Vector3(-1,0,0).applyQuaternion(V3._sq);
       V3.bits.push({ o, vx:side.x*rand(1.5,2.2), vy:rand(2.2,3), vz:side.z*rand(1.5,2.2), sx:rand(4,8), sz:rand(2,5), t:0, life:6, fade:1.5, flat:true });
       for(let i=0;i<8;i++) V3.sparks.push({ x:w.x, y:w.y, z:w.z, vx:rand(-0.8,0.8), vy:rand(0.6,1.6), vz:rand(-0.8,0.8), t:0, life:rand(0.4,0.9), col:pick(['#ffd23f','#fff3c4','#ff8a2a']) }); }
     if(U.burning){ U.acc=(U.acc||0)+dt*C.smoke; U.sacc=(U.sacc||0)+dt*C.sparks; U.turret.getWorldPosition(w2);

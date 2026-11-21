@@ -203,6 +203,8 @@ const DEV_HELP = {
   'HQ3D|smokeAt':'3D Command Post: below this share of its health it smokes from the roof, sparks from the hole, and the screen and searchlights flicker.',
   'HQ3D|smoke':'3D Command Post: smoke puffs per second while badly hurt.',
   'HQ3D|sparks':'3D Command Post: sparks per second from the hole while badly hurt.',
+  'SENTRY3D|camo':'3D Sentry Gun: the dropship\'s pixel camouflage on its plates and legs (off = the old dark grey). Applies to Sentry Guns placed after the change.',
+  'SENTRY3D|camoSpan':'3D Sentry Gun: how big the camouflage pattern is (model units per pattern tile; smaller = smaller cells). New Sentry Guns only.',
   'SENTRY3D|size':'3D Sentry Gun: size of the model (1 = the old size; a little bigger so you tell it apart from a soldier).',
   'SENTRY3D|scan':'3D Sentry Gun: how far the turret swings left and right while it scans with nothing to shoot at (radians, 0 = no scanning).',
   'SENTRY3D|scanSpeed':'3D Sentry Gun: how fast it swings while scanning.',

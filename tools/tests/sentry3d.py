@@ -20,9 +20,11 @@ with sync_playwright() as p:
       window._step=(sec)=>{ const t1=G.time+sec; for(let i=0;i<2000&&G.time<t1;i++){ __hc.update(1/20); _T+=1000/20; render(_T); } }; _step(0.3); }""")
     print('built',flush=True)
     r=J(pg,"""()=>{ const g=V3.objs.get(_s), U=g&&g.userData; if(!U) return null; let m=0; g.traverse(o=>{ if(o.isMesh) m++; });
-      return [!!U.sentry, m, U.legs.length, !!(MAT.sentryTexlc&&MAT.sentryTexlc.map), !!MAT.sentryTexjacket, +U.hub.position.y.toFixed(2), U.cable.visible, U.ext.every(o=>o.visible), +U.top.toFixed(2)]; }""")
+      return [!!U.sentry, m, U.legs.length, !!((MAT.sentryTexlcC||MAT.sentryTexlc)||{}).map, !!MAT.sentryTexjacket, +U.hub.position.y.toFixed(2), U.cable.visible, U.ext.every(o=>o.visible), +U.top.toFixed(2)]; }""")
     print('model',r)
     check('the sentry model is built (many parts, three legs, LC and jacket textures)', r and r[0] and r[1]>=70 and r[2]==3 and r[3] and r[4], r)
+    rc=J(pg,"""()=>{ const g=V3.objs.get(_s); let c=0; g.traverse(o=>{ if(o.isMesh&&o.material===MAT.sentryCamo) c++; }); return [SENTRY3D.camo, c, !!MAT.sentryTexlcC]; }""")
+    check('the dropship camouflage on plates, turret, legs, drum and box; the LC plates too', rc[0] and rc[1]>=12 and rc[2], rc)
     check('standing up: hub high, cable, dish and antenna shown, a bit taller than before', r[5]>0.4 and r[6] and r[7] and r[8]>0.9, r)
     # scanning with no target
     r=J(pg,"""()=>{ const U=V3.objs.get(_s).userData; SENTRY3D.scanDelay=0.3; SENTRY3D.scanSpeed=2; _s.target=null; _step(1.2); const ys=[]; for(let i=0;i<8;i++){ _step(0.2); ys.push(U.turret.rotation.y); } const d0=U.dishA; _step(0.5);
