@@ -9,7 +9,7 @@
 const RELICS = [
   { id:'blackbox', mission:'dust-landing', kind:'item', at:{x:78,y:8}, name:'Flight Recorder',
     text:'The black box of the supply lander Ibis-2. The last thing on the tape is the pilot: "There is movement in the dust. Lots of it. Coming to the ship." Then nothing.' },
-  { id:'mug', mission:'hold-kappa', kind:'item', at:{x:53,y:37}, name:'Station Chief\'s Mug',
+  { id:'mug', mission:'hold-kappa', kind:'item', at:{x:2,y:37}, name:'Station Chief\'s Mug',
     text:'"World\'s Okayest Station Chief." Still half full of coffee, frozen solid. Whoever left it here meant to come back for it.' },
   { id:'drone', mission:'burn-the-brood', kind:'item', at:{x:69,y:2}, name:'Survey Scuttler Core',
     text:'An orbital survey scuttler, crashed. Its last image shows five hives where the maps show none, and a sixth shape far below them, much larger.' },
