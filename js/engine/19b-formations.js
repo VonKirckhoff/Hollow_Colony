@@ -283,7 +283,15 @@ function groupFormUp(us,f){ us.forEach(u=>u.formation=f); f.march=null; reformSq
    back to their old place afterwards. Two or more moved together keep the shape between them. Called with the whole selection. */
 function leaveFormation(sel){ const byForm=new Map(); for(const u of sel) if(u.formation){ if(!byForm.has(u.formation)) byForm.set(u.formation,[]); byForm.get(u.formation).push(u); }
   for(const [f,us] of byForm){ const members=G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.formation===f); if(members.every(m=>us.includes(m))) continue;
-    if(us.length>1){ const nf={...f,march:null,seq:0,engaged:null}; us.forEach(u=>u.formation=nf); } else us.forEach(u=>{ u.formation=null; u.slot=null; u.rejoin=false; }); } }
+    if(us.length>1){ const nf={...f,march:null,seq:0,engaged:null}; us.forEach(u=>u.formation=nf); } else us.forEach(u=>{ u.formation=null; u.slot=null; u.rejoin=false; }); }
+  mixedSelection(sel); }
+/* A selection that is not one formation (a whole squad plus a soldier you moved away from it before, or two squads) would get a plain
+   group move, and afterwards every formation member would walk back to his old place. So: one formation plus loose soldiers becomes
+   that formation again (the loose ones take a place in it); several formations together let go of their old spot. */
+function mixedSelection(sel){ const us=sel.filter(u=>u.kind==='unit'&&!u.dead&&!u.downed), forms=[...new Set(us.map(u=>u.formation).filter(Boolean))];
+  if(!forms.length||(forms.length===1&&us.every(u=>u.formation===forms[0]))) return;
+  if(forms.length===1){ const f=forms[0]; for(const u of us) if(!u.formation){ u.formation=f; u.slot=null; u.formSeq=null; u.rejoin=false; } f.march=null; f.engaged=null; rememberGroupForm(us,f); return; }
+  for(const f of forms){ f.seq=(f.seq||0)+1; f.march=null; f.at=null; f.engaged=null; } }
 /* where a soldier belongs in his formation now (it follows the squad when it moves on without him), or null */
 function formationSpot(u){ const f=u.formation; if(!f||!u.slot||u.faction!=='corps') return null;
   if(u.formSeq!=null&&u.formSeq!==f.seq) return null;   /* his place belongs to an older line-up */
