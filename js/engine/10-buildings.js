@@ -53,27 +53,46 @@ function updateGenerator(b,dt){
   else if(b.powered && b.hp<b.maxHp*d.failAt){ b.powered=false; b.flickT=1.4;   /* its lights flicker out */ SFX.play('alarm',b.x,b.y); say('Alert',`${b.label||'Generator'} is down! Repair it.`,'alert'); G.pings.push({x:b.x,y:b.y,t:0,col:'#ff5a4f'}); G.selDirty=true; }
   b.status = b.powered ? {txt:'ONLINE',col:'#ffd23f'} : {txt:`OFFLINE ${Math.floor(b.hp/b.maxHp*100)}%`,col:'#ff9a3c'};
 }
-/* Seismic charges: an Engineer standing still on a site arms a charge; the charge must survive its fuse. */
+/* Seismic charges: an Engineer standing still on a site arms a charge; the charge must survive its fuse.
+   b.opt (from g.chargeSite(at,tag,opt), Dust Landing's breaching charge): arm/fuse seconds, blast radius, reset (a hit or a step off starts the arming over),
+   own (damage to your own soldiers in the blast, with a red ring while the fuse burns), opens (the wall tag it blows away), name (what the barks call it). */
+function chargeOpt(b){ return b.opt||{}; }
 function updateChargeSite(b,dt){
-  const eng=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.def.builder&&!e.moving&&Math.hypot(e.x-b.x,e.y-b.y)<1.6*TILE);
+  const o=chargeOpt(b), armTime=o.arm||b.def.armTime;
+  let eng=G.ents.find(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.def.builder&&!e.moving&&Math.hypot(e.x-b.x,e.y-b.y)<1.6*TILE);
+  if(eng&&o.reset&&G.time-(eng.hitAt??-9)<0.3) eng=null;   /* hit while arming: he flinches and loses his place */
   const C=G.charges&&G.charges[b.tag];
-  if(eng){ b.arm+=dt*(hasPerk(eng)?PERKS.engineer.speed:1)/b.def.armTime; if(C) C.state='arming'; eng.face=b.x>eng.x?1:-1; if(Math.random()<dt*6) G.fx.push({k:'spark',x:b.x+rand(-6,6),y:b.y-4,vx:rand(-30,30),vy:rand(-50,-10),t:0.3,max:0.3,col:'#ffd23f'}); }
-  else if(C && C.state==='arming' && b.arm>0) C.state='site';
-  b.status={ txt: b.arm>0 ? `ARMING ${Math.floor(b.arm*100)}%` : 'CHARGE SITE', col:'#ff9a3c' };
-  if(b.arm>=1){ b.dead=true; const c=makeBuilding('charge','corps',b.tx,b.ty,true); c.tag=b.tag; c.fuse=c.def.fuse; G.stats.built--;
-    if(C){ C.state='armed'; C.charge=c; } SFX.play('ack',b.x,b.y); say('Engineer',`Charge armed. ${c.def.fuse} seconds. Keep them off it!`,'sys'); G.selDirty=true; }
+  if(eng){ b.arm+=dt*(hasPerk(eng)?PERKS.engineer.speed:1)/armTime; if(C) C.state='arming'; eng.face=b.x>eng.x?1:-1; if(Math.random()<dt*6) G.fx.push({k:'spark',x:b.x+rand(-6,6),y:b.y-4,vx:rand(-30,30),vy:rand(-50,-10),t:0.3,max:0.3,col:'#ffd23f'}); }
+  else if(b.arm>0){ if(C && C.state==='arming') C.state='site';
+    if(o.reset){ b.arm=0; G.fx.push({k:'text',x:b.x,y:b.y-20,t:1.2,max:1.2,txt:'INTERRUPTED',col:'#ff5a4f'}); if(C) C.resets=(C.resets||0)+1;
+      if(G.time>(b.resetSaid||-99)){ b.resetSaid=G.time+8; say('Engineer',`Lost the ${o.name||'charge'}! I have to start over.`,'alert'); } } }
+  b.status={ txt: b.arm>0 ? `ARMING ${Math.floor(b.arm*100)}%` : (o.label||'CHARGE SITE'), col:'#ff9a3c' };
+  if(b.arm>=1){ b.dead=true; const c=makeBuilding('charge','corps',b.tx,b.ty,true); c.tag=b.tag; c.opt=b.opt; c.fuse=o.fuse||c.def.fuse; G.stats.built--;
+    if(o.own){ c.ring={ x:c.x, y:c.y, r:(o.blast||c.def.blast)*TILE, col:'#ff5a4f', label:'BLAST', fill:0.12, blink:120, charge:c.tag }; (G.rings=G.rings||[]).push(c.ring); }
+    if(C){ C.state='armed'; C.charge=c; } SFX.play('ack',b.x,b.y);
+    say('Engineer',o.own?`${o.name?o.name[0].toUpperCase()+o.name.slice(1):'Charge'} armed. ${c.fuse} seconds. Get clear!`:`Charge armed. ${c.fuse} seconds. Keep them off it!`,'sys'); G.selDirty=true; }
 }
+function chargeRingOff(c){ if(G.rings&&c.ring){ const i=G.rings.findIndex(z=>z.charge===c.tag); if(i>=0) G.rings.splice(i,1); } c.ring=null; }
 function updateCharge(b,dt){
   b.fuse-=dt; b.status={ txt:`${Math.ceil(b.fuse)}`, col: b.fuse<10 && Math.floor(b.fuse*4)%2 ? '#ffffff' : '#ff5a4f' };
   if(b.fuse>0) return;
-  const d=b.def; b.blown=true; b.dead=true; setBlock(b,0);
-  for(const e of G.ents){ if(e.dead||e.faction==='corps'||e.kind==='crate'||e.invuln||(e.def&&e.def.scenery)) continue; if(Math.hypot(e.x-b.x,e.y-b.y)<d.blast*TILE) damage(e,d.blastDamage,{faction:'corps',dead:true}); }
+  const d=b.def, o=chargeOpt(b), R=(o.blast||d.blast)*TILE; b.blown=true; b.dead=true; setBlock(b,0); chargeRingOff(b);
+  for(const e of G.ents){ if(e.dead||e.kind==='crate'||e.invuln||(e.def&&e.def.scenery)) continue; const r=Math.hypot(e.x-b.x,e.y-b.y); if(r>=R) continue;
+    if(e.faction!=='corps') damage(e,d.blastDamage,{faction:'corps',dead:true});
+    else if(o.own&&e.kind==='unit') damage(e,o.own*(1-0.5*r/R),{faction:'none',dead:true});   /* your own soldiers: full near the charge, half at the rim */ }
   for(let i=0;i<60;i++) G.fx.push({k:'ember',x:b.x+rand(-20,20),y:b.y+rand(-20,20),vx:rand(-220,220),vy:rand(-260,40),t:rand(.6,1.4),max:1.4,col:pick(['#ff8a2a','#ffd23f','#ffffff','#8a8f9c'])});
-  G.fx.push({k:'boom',x:b.x,y:b.y,t:0.9,max:0.9,r:d.blast*TILE}); addDecal(b.x,b.y,d.blast*TILE*0.7,'rgba(10,10,12,.7)'); SFX.play('boom',b.x,b.y); G.shake=Math.max(G.shake||0,0.8); debrisBurst(b.x,b.y,30,['#8a7a6a','#5a4632','#b3a58f','#3a3c43'],170);   /* rock hangs in the air a long time */
+  G.fx.push({k:'boom',x:b.x,y:b.y,t:0.9,max:0.9,r:R}); addDecal(b.x,b.y,R*0.7,'rgba(10,10,12,.7)'); SFX.play('boom',b.x,b.y); G.shake=Math.max(G.shake||0,0.8); debrisBurst(b.x,b.y,30,['#8a7a6a','#5a4632','#b3a58f','#3a3c43'],170);   /* rock hangs in the air a long time */
+  if(o.opens) blowWall(o.opens);
   if(G.charges&&G.charges[b.tag]) G.charges[b.tag].state='blown';
 }
+/* a blast takes a wall away: every tile of it bursts into twisted steel, sparks and smoke, and leaves a black scar */
+function blowWall(tag){ for(const e of G.ents){ if(e.dead||e.tag!==tag||!(e.type==='membrane'||e.def&&e.def.scenery)) continue;
+    e.dead=true; e.hp=0; e.blownUp=true; setBlock(e,0); addDecal(e.x,e.y,TILE*0.8,'rgba(14,14,16,.75)');
+    debrisBurst(e.x,e.y,10,e.type==='door'?['#59616f','#3a3c43','#ffd23f','#8a8f9c']:['#6b3b7a','#3a1f44','#a6ff4a'],200);
+    for(let i=0;i<10;i++) G.fx.push({k:'spark',x:e.x+rand(-12,12),y:e.y+rand(-8,8),vx:rand(-120,120),vy:rand(-160,-20),t:0.7,max:0.7,col:pick(['#ffd23f','#ff8a2a','#ffffff'])});
+    for(let i=0;i<4;i++) G.fx.push({k:'ember',x:e.x+rand(-10,10),y:e.y,vx:rand(-20,20),vy:rand(-50,-20),t:rand(1.5,2.5),max:2.5,col:pick(['#5a5a62','#3a3c43','#8a8f9c'])}); } }
 /* A destroyed charge leaves its site behind, so an Engineer can arm a new one. */
-function chargeLost(c){ const s=makeBuilding('chargesite','corps',c.tx,c.ty,true); s.tag=c.tag; s.invuln=true; s.arm=0; G.stats.built--;
+function chargeLost(c){ chargeRingOff(c); const s=makeBuilding('chargesite','corps',c.tx,c.ty,true); s.tag=c.tag; s.opt=c.opt; s.invuln=true; s.arm=0; G.stats.built--;
   if(G.charges&&G.charges[c.tag]) G.charges[c.tag].state='site'; say('Alert','The charge is destroyed! Arm it again.','alert'); }
 
 /* ---------- supply drops: a folded-up structure flown in by dropship (g.supplyDrop) ----------

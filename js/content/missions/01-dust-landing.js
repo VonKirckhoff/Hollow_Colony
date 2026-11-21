@@ -1,10 +1,13 @@
 'use strict';
 /* Mission 1: Dust Landing
    Route: drop zone → canyons → Kappa Station (ambush) → dropship on the station pad
-          → blast doors open → north caverns (two hives) → back to the station for pickup.
+          → the door controls are slagged: an Engineer blows the blast doors with a breaching charge → north caverns (two hives) → back to the station for pickup.
    Two old mine shafts: one in the east wall (where the ambush comes from), one in the west wall behind the north-west hive.
    Extra Swarm keeps climbing out of them, also once both hives are burnt, so the squad has to stay alert on the way out. */
 const DUST_SHAFT_E={x:79,y:35}, DUST_SHAFT_W={x:8,y:8};
+/* the breaching charge on the blast doors (Nov 2026): arm 10 s standing still (a hit or a step off starts it over), then a 10 s fuse;
+   the blast blows the doors away and hurts your own soldiers inside the red ring (own = damage at the charge, half at the rim) */
+const DUST_BREACH={ at:{x:44,y:26}, arm:10, fuse:10, blast:4.5, own:40, wave:40 };
 /* a group out of a mine shaft: picks types for the budget (× difficulty), they come up at the shaft and hunt the squad */
 function dustShaftWave(g,shaft,budget){
   let left=budget*g.diffBudget(), out=[], guard=0;
@@ -63,17 +66,29 @@ MISSIONS.push(
       // 2. the dropship lands on the station pad
       { when:g=>g.vars.ambush && g.alive(g.vars.ambush)===0, do:g=>{
           g.complete('ambush');
-          g.say('Cmdr. Varga','Good work, Dust. Icarus is inbound to the station pad with two rifles and a Pyro. Hold the platform.');
-          g.airdrop([['trooper',2],['pyro',1]],18); g.addObjective('drop','Wait for reinforcements on the landing pad'); g.marker('lz',{x:46,y:38},'Landing pad'); g.vars.drop1=true; } },
+          g.say('Cmdr. Varga','Good work, Dust. Icarus is inbound to the station pad with two rifles, a Pyro and an Engineer. Hold the platform.');
+          g.airdrop([['trooper',2],['pyro',1],['engineer',1]],18); g.addObjective('drop','Wait for reinforcements on the landing pad'); g.marker('lz',{x:46,y:38},'Landing pad'); g.vars.drop1=true; } },
 
-      // 3. the blast doors open
-      { when:g=>g.vars.drop1 && g.has('pyro')>0, do:g=>{
+      // 3. the blast doors: the controls are slagged, so the Engineer blows them
+      { when:g=>g.vars.drop1 && g.has('engineer')>0, do:g=>{
           g.complete('drop'); g.unmark('lz');
-          g.say('Sgt. Kessler','Station log: the crew sealed the north tunnel and ran. Whatever they locked in is still behind those doors. I can open them from here.');
-          g.vars.openAt=g.time+5; } },
-      { when:g=>g.vars.openAt && g.time>g.vars.openAt, do:g=>{
-          g.openWall('north'); g.ping({x:44,y:24}); g.setSwarm({ aggro:7 });
-          g.say('Cmdr. Varga','Doors are open. Biomass signature in the caverns beyond. Find the nest and destroy it.');
+          g.say('Sgt. Kessler','Station log: the crew sealed the north tunnel and ran. Whatever they locked in is still behind those doors. And they fried the door controls on the way out.');
+          g.vars.breachAt=g.time+4; } },
+      { when:g=>g.vars.breachAt && g.time>g.vars.breachAt, do:g=>{ const B=DUST_BREACH;
+          g.chargeSite(B.at,'breach',{ arm:B.arm, fuse:B.fuse, blast:B.blast, own:B.own, reset:true, opens:'north', name:'breaching charge' });
+          g.marker('breach',B.at,'Breach point'); g.ping(B.at); g.reveal(B.at,3,4);
+          g.addObjective('breach','Blow the blast doors: an Engineer arms the breaching charge');
+          g.say('Cmdr. Varga','Then we go through them. Engineer, put a breaching charge on that door. Everyone else, cover him, and stay out of the blast when it is live.'); g.vars.breach=true; } },
+      // the Brood hears the drilling: a small group climbs out of the east shaft while he works
+      { when:g=>g.vars.breach && g.charge('breach')==='arming', do:g=>{
+          g.say('Sgt. Kessler','Movement in the east shaft. They can hear the drill. Keep them off the Engineer, if he gets hit he has to start over!'); dustShaftWave(g,DUST_SHAFT_E,DUST_BREACH.wave); } },
+      { when:g=>g.charge('breach')==='armed', do:g=>{ g.unmark('breach'); g.say('Sgt. Kessler',`Charge is live! ${DUST_BREACH.fuse} seconds, everybody out of the red ring!`); } },
+      { repeat:true, when:g=>g.vars.breach && !g.vars.engCalled && g.charge('breach')!=='armed' && g.charge('breach')!=='blown' && g.has('engineer')===0, do:g=>{
+          g.vars.engCalled=true; g.say('Cmdr. Varga','You lost your Engineer. Icarus is bringing another one to the pad. Keep him alive this time.'); g.airdrop([['engineer',1]],20); } },
+      { repeat:true, when:g=>g.vars.engCalled && g.has('engineer')>0, do:g=>{ g.vars.engCalled=false; } },
+      { when:g=>g.charge('breach')==='blown', do:g=>{
+          g.complete('breach'); g.unmark('breach'); g.ping({x:44,y:24}); g.setSwarm({ aggro:7 });
+          g.say('Cmdr. Varga','That woke them up. Biomass signature in the caverns beyond. Find the nest and destroy it.');
           g.addObjective('nest','Destroy the hive in the western cavern'); g.marker('tunnel','3','Tunnel'); g.vars.open=true; } },
       { when:g=>g.vars.open && g.near('corps','3',3)>0, do:g=>{ g.unmark('tunnel'); g.reveal('c',4,10); g.ping('c'); g.marker('nest','c','Hive'); } },
 

@@ -38,10 +38,13 @@ function makeApi(){
       if(lz.flight) lz.flight.cargo.push(...cargo); else lz.flight={ t:Math.max(5,delay), total:Math.max(5,delay), cargo };
       if(rallyAt) lz.flight.rally=ptWorld(rallyAt); G.selDirty=true; },
     /* troops(): living Corps soldiers on the map (all of them, wherever they are). */
-    /* Seismic charges: chargeSite(at,tag) marks a site; charge(tag) is 'site', 'arming', 'armed' or 'blown'. */
-    chargeSite(at,tag){ const p=pt(at); if(!p) return; const s=makeBuilding('chargesite','corps',p.x,p.y,true); s.tag=tag; s.invuln=true; s.arm=0; G.stats.built--;
+    /* Seismic charges: chargeSite(at,tag[,opt]) marks a site; charge(tag) is 'site', 'arming', 'armed' or 'blown'.
+       opt (all optional): { arm, fuse, blast (tiles), reset:true (a hit or stepping off restarts the arming), own (damage to your own soldiers in the blast, red ring while it burns),
+       opens:'wallTag' (the blast blows that wall away), name:'breaching charge', label:'BREACH POINT' }. chargeResets(tag): how often the arming was interrupted. */
+    chargeSite(at,tag,opt){ const p=pt(at); if(!p) return; const s=makeBuilding('chargesite','corps',p.x,p.y,true); s.tag=tag; s.invuln=true; s.arm=0; if(opt) s.opt=opt; G.stats.built--;
       (G.charges=G.charges||{})[tag]={ state:'site', at:p }; },
     charge:tag=>(G.charges&&G.charges[tag])?G.charges[tag].state:null,
+    chargeResets:tag=>(G.charges&&G.charges[tag]&&G.charges[tag].resets)||0,
     chargeFuse:tag=>{ const c=G.ents.find(e=>!e.dead&&e.type==='charge'&&e.tag===tag); return c?Math.ceil(c.fuse):null; },
     /* Generators: online() = how many run right now; generatorAt(at) = the generator on that point. */
     online:()=>G.ents.filter(e=>!e.dead&&e.def&&e.def.generator&&e.powered).length,

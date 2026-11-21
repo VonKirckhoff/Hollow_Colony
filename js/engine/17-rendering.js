@@ -261,5 +261,6 @@ function drawTunnel(b,now){ const a=WALL_ROT[b.wall]||0, art=ARTC.tunnel, w=art.
 /* a zone on the ground: a slowly turning dashed circle with a small label */
 function drawRing(z,now){ ctx.save(); ctx.strokeStyle=z.col||'#ffb347'; ctx.globalAlpha=0.45+0.15*Math.sin(now/400); ctx.lineWidth=2; ctx.setLineDash([10,8]); ctx.lineDashOffset=-now/80;
   ctx.beginPath(); ctx.ellipse(z.x,z.y,z.r,z.r*0.92,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  if(z.fill){ ctx.globalAlpha=z.fill*(0.75+0.25*Math.sin(now/(z.blink||400))); ctx.fillStyle=z.col||'#ffb347'; ctx.fill(); }   /* a filled zone (a live breaching charge's blast) */
   if(z.label){ ctx.globalAlpha=0.85; ctx.font='9px Silkscreen, monospace'; ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.fillText(z.label,z.x+1,z.y-z.r*0.92-5); ctx.fillStyle=z.col||'#ffb347'; ctx.fillText(z.label,z.x,z.y-z.r*0.92-6); }
   ctx.restore(); }

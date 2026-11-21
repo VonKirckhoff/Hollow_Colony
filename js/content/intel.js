@@ -26,7 +26,7 @@ const INTEL_NOTES = {
   charge:   'Mission object: armed by an Engineer, then it has to survive its fuse.',
   generator:'Mission object: an Engineer repairs it to full to bring it online. It goes down when badly damaged.',
   uplink:   'Mission object (High Ground, Hunted). A beacon nobody stands at stays as it is: leave a squad or a Sentry Gun there, or it changes hands behind your back.',
-  chargesite:'Mission object (Dead Signal): the spot next to a nest where a charge has to go. The Engineer must stand still on it the whole time.',
+  chargesite:'Mission object (Dead Signal, Dust Landing): the spot where a charge has to go, next to a nest or against the blast doors. The Engineer must stand still on it the whole time; in Dust Landing a hit makes him start over.',
   medtent:  'Mission object (Night Shift). Twelve wounded and a case of stabilizer in front of each tent. Nothing shoots at the tents themselves: the raiders want what is in them.',
   terminal: 'Mission object (Night Shift). The raiders\' Medic has to stand right next to it. What she has pulled off it, she keeps: break her off early and often.',
   door:     'Mission object (The Hollow Colony): Dr. Maas locked herself in behind it. It opens when your squad comes close.',
