@@ -578,6 +578,7 @@ const DEV_HELP = {
   'M|landingZone.max':'Troop cap: the Landing Zone only flies in replacements up to this many soldiers.',
   'M|landingZone.delay':'Seconds a dropship flight takes.',
   'M|limits.sentry':'Most Sentry Guns in the field at once.',
+  'M|buildMax.sentry':'Most Sentry Guns the Engineers may build in all this mission; a destroyed one does not free a place (packing one up and setting it down again is no new build).',
   'M|swarm.biomass':'Biomass the Brood starts with (pays for hive guards).',
   'M|swarm.rate':'Biomass per second per hive.',
   'M|swarm.guardMax':'Guards every hive keeps.',

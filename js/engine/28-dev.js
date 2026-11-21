@@ -15,7 +15,7 @@ const DEV_TABS = [
   { id:'rogue', name:'Rogue', roots:['ROGUE','NT_TAC','NT_RAID','NT_REBUILD','NT_SUPPORT','NT_DROP','NT_SENTRIES_BY','LOYAL_MORTAR'] },
   { id:'units', name:'Units' } ];
 /* mission settings that may be missing in a mission but can be set (empty = the default) */
-const DEV_MISSION_KEYS = ['start.salvage','flares','landingZone.max','landingZone.delay','limits.sentry',
+const DEV_MISSION_KEYS = ['start.salvage','flares','landingZone.max','landingZone.delay','limits.sentry','buildMax.sentry',
   'swarm.biomass','swarm.rate','swarm.guardMax','swarm.guardEvery','swarm.aggro','swarm.aggroBrood','swarm.brood','swarm.hiveRage','swarm.maxAlive',
   'swarm.waves.first','swarm.waves.every','swarm.waves.budget','swarm.waves.growth','swarm.waves.growWaves','swarm.waves.max','swarm.shaftScale','swarm.shaftHeirs',
   'swarm.unlock.spitter','swarm.unlock.brute'];
@@ -23,7 +23,7 @@ const devClone=o=>JSON.parse(JSON.stringify(o,(k,v)=>typeof v==='function'?undef
 const DEV_ORIG={}; for(const [k,v] of Object.entries(DEV_ROOTS)) DEV_ORIG[k]=devClone(v);
 const DEV_MORIG={};   /* per mission id: its settings as written in the mission file */
 function devAllMissions(){ return [...MISSIONS,...(typeof SWARM_MISSIONS!=='undefined'?SWARM_MISSIONS:[]),...Object.values(typeof TRAINING!=='undefined'?TRAINING:{}),...(typeof ROGUE_MISSIONS!=='undefined'?ROGUE_MISSIONS:[])]; }
-function devMissionOrig(m){ return DEV_MORIG[m.id]||(DEV_MORIG[m.id]=devClone({ start:{salvage:m.start&&m.start.salvage}, flares:m.flares, landingZone:m.landingZone, limits:m.limits, swarm:m.swarm })); }
+function devMissionOrig(m){ return DEV_MORIG[m.id]||(DEV_MORIG[m.id]=devClone({ start:{salvage:m.start&&m.start.salvage}, flares:m.flares, landingZone:m.landingZone, limits:m.limits, buildMax:m.buildMax, swarm:m.swarm })); }
 devAllMissions().forEach(devMissionOrig);
 const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?undefined:a[k],o);
 function setP(o,p,v){ const ks=p.split('.'); let a=o; for(const k of ks.slice(0,-1)){ if(a[k]==null||typeof a[k]!=='object') a[k]={}; a=a[k]; } if(v===undefined) delete a[ks.at(-1)]; else a[ks.at(-1)]=v; }

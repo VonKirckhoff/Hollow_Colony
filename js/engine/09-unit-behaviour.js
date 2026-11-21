@@ -267,6 +267,7 @@ function builderThink(u,dt){
       if(!canPlace(o.btype,o.tx,o.ty,true)){ if(!o.deploy) G.salvage+=bd.cost; toast('Construction site is blocked.'); u.order=null; return; }
       if(o.deploy && !u.carry){ u.order=null; return; }
       const site=makeBuilding(o.btype,'corps',o.tx,o.ty,false);
+      if(!o.deploy){ G.builtNew=G.builtNew||{}; G.builtNew[o.btype]=(G.builtNew[o.btype]||0)+1; }   /* mission.buildMax counts every new build, also ones later destroyed */
       if(o.deploy){ site.deploy=true; site.carryHp=u.carry.hp; site.hp=u.carry.hp*0.3; u.carry=null; G.selDirty=true; }
       for(const e of G.ents) if(e.kind==='unit'&&!e.dead&&!walkableP(e.x,e.y)){ const f=nearestWalkable(Math.floor(e.x/TILE),Math.floor(e.y/TILE)); if(f){ e.x=(f.x+.5)*TILE; e.y=(f.y+.5)*TILE; } }
       u.order={type:'repair',target:site}; return;

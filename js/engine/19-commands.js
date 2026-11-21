@@ -24,7 +24,7 @@ function stanceOf(units){ if(!units.length) return null;
   if(units.every(u=>u.stance==='hold')) return 'hold';
   const f=units.filter(u=>u.def.damage&&!u.def.heal);   /* Medics and unarmed units never take the attack stance */
   return f.length&&f.every(u=>u.stance==='attack')?'attack':null; }
-function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(!deploy&&noBuild(type)){ toast(`No ${d.name}s can be built in this mission.`); return; } if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; }
+function startPlacing(type,deploy){ const d=BUILDINGS[type]; if(!deploy&&noBuild(type)){ toast(`No ${d.name}s can be built in this mission.`); return; } if(atLimit(type)){ toast(limitMsg(type)); return; } if(!deploy&&atBuildMax(type)){ toast(buildMaxMsg(type)); return; } if(!deploy && G.salvage<d.cost){ toast('Not enough salvage.'); return; } ui.placing={type,deploy:!!deploy}; ui.picking=null; ui.amove=false; ui.flare=false; cv.classList.remove('amove'); G.selDirty=true; }
 function tryPlace(keep){
   const s=placementSpot(), d=BUILDINGS[ui.placing.type];
   if(atLimit(ui.placing.type)){ toast(limitMsg(ui.placing.type)); ui.placing=null; G.selDirty=true; return; }
@@ -34,6 +34,7 @@ function tryPlace(keep){
     const cx=(s.tx+d.size/2)*TILE, cy=(s.ty+d.size/2)*TILE; carriers.sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy));
     const u=carriers[0]; SFX.play('place'); bark(u,'build'); u.order={type:'build',btype:ui.placing.type,tx:s.tx,ty:s.ty,deploy:true}; u.target=null; u.path=null; u.goal=null;
     G.fx.push({k:'boom',x:cx,y:cy,t:0.3,max:0.3,r:14,col:'#ffe2a8'}); if(!keep||carriers.length<2){ ui.placing=null; } G.selDirty=true; return; }
+  if(atBuildMax(ui.placing.type)){ toast(buildMaxMsg(ui.placing.type)); ui.placing=null; G.selDirty=true; return; }
   if(G.salvage<d.cost){ toast('Not enough salvage.'); return; }
   if(!s.ok){ toast(d.needsSite?'Relay Towers must be built on a free, explored relay pad.':'Cannot build there.'); return; }
   const eng=myUnits().filter(u=>u.def.builder&&!u.carry); if(!eng.length){ ui.placing=null; return; }

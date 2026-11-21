@@ -35,6 +35,13 @@ function fielded(type){ let n=0; for(const e of G.ents){ if(e.dead||e.faction!==
     if(e.kind==='building'&&e.type===type) n++; else if(e.kind==='unit'&&e.order&&e.order.type==='build'&&!e.order.site&&e.order.btype===type) n++; } return n; }
 /* mission.noBuild:['sentry'] = Engineers cannot build that type here; it only comes folded up (start carry or a supply drop) */
 function noBuild(type){ return (G.mission.noBuild||[]).includes(type); }
+/* mission.buildMax:{ sentry:2 } = how many of that type the Engineers may build in all this mission (Nov 2026, Dust Landing).
+   A destroyed one does not free a place; packing one up and setting it down again does not count (that is no new build).
+   G.builtNew[type]: sites started so far; a build order on its way counts too. */
+function buildMaxOf(type){ const l=(G.mission.buildMax||{})[type]; return l===undefined?Infinity:l; }
+function buildsSpent(type){ let n=(G.builtNew&&G.builtNew[type])||0; for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.order&&e.order.type==='build'&&!e.order.site&&!e.order.deploy&&e.order.btype===type) n++; return n; }
+function atBuildMax(type){ return buildsSpent(type)>=buildMaxOf(type); }
+function buildMaxMsg(type){ return `No more ${BUILDINGS[type].name}s: ${buildMaxOf(type)} is all this mission allows, and a lost one is not replaced.`; }
 function limitOf(type){ const l=(G.mission.limits||{})[type]; return l===undefined?Infinity:l; }
 function atLimit(type){ return fielded(type)>=limitOf(type); }
 function limitMsg(type){ return `Limit reached: ${limitOf(type)} ${BUILDINGS[type].name}s in this mission. Pack one up first.`; }
