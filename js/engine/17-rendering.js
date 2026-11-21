@@ -81,6 +81,7 @@ function render(now){
   ctx.globalCompositeOperation='source-over';
   // fog
   paintFog(); ctx.imageSmoothingEnabled=true; ctx.drawImage(fogCanvas,0,0,m.w,m.h,0,0,m.w*TILE,m.h*TILE); ctx.imageSmoothingEnabled=false;
+  drawProxPings();   /* tracker pings of enemies in the dark close to what you see (22-squad-life.js) */
   // bars
   for(const e of list){ if(e.kind==='crate'||e.kind==='body'||e.ospTunnel) continue; const crew=e.crew&&e.vet&&isRogue(), show=G.sel.includes(e)||e.hp<e.maxHp||(e.kind==='building'&&!e.built)||(crew&&e.vet.taint>=15); if(!show) continue;
     const w=e.kind==='building'?e.size*TILE*0.8:24, x=Math.round(e.x-w/2), y=Math.round(e.kind==='building'?e.y-e.size*TILE/2-8:e.y-(SPR[e.def.sprite].h*(e.def.scale||2))-6);

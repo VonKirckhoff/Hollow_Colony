@@ -1864,6 +1864,8 @@ function render3D(now){
   hidePool(V3.ringPool,n);
   n=0; const ping=pool(V3.pingPool,()=>new THREE.Mesh(GEO.ring,new THREE.MeshBasicMaterial({ transparent:true, depthWrite:false })));
   for(const p of G.pings){ const r=ping(n++), rad=(10+p.t*28)/TILE, x=p.x/TILE, z=p.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.06,z); r.material.color.set(p.col); r.material.opacity=Math.max(0,1-p.t/3); }
+  { const sw=G.side==='swarm'; for(const p of proxPingList()){ const k=(G.time-p.t)/PROX_PING.life, x=p.x/TILE, z=p.y/TILE;   /* dark pings (22-squad-life.js): a growing ring and a small core */
+    for(const [rad,col,op] of [[(4+k*PROX_PING.grow)/TILE,sw?'#c38bff':'#5fe3b0',0.9*(1-k)],[0.12,sw?'#ff5a4f':'#beffd7',1-k]]){ const r=ping(n++); r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.07,z); r.material.color.set(col); r.material.opacity=op; } } }
   for(const f of G.fx){ if(f.k!=='order') continue; const k=1-f.t/f.max, r=ping(n++), rad=(6+k*22)/TILE, x=f.x/TILE, z=f.y/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.06,z); r.material.color.set('rgb('+f.col+')'); r.material.opacity=1-k; }
   for(const s of G.shots){ if(s.k!=='grenade'||s.t<0) continue; const k=s.t/s.dur, r=ping(n++), rad=s.splash*(1.1-0.3*k)/TILE, x=s.tx/TILE, z=s.ty/TILE; r.scale.set(rad,1,rad); r.position.set(x,v3H(x,z)+v3CreepLift(x,z,rad)+0.06,z); r.material.color.set('#ff5a4f'); r.material.opacity=0.35+0.5*k; }   /* where a grenade will land, as in 2D */
   hidePool(V3.pingPool,n);

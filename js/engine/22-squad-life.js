@@ -50,6 +50,41 @@ function drawTracker(now){
   // the beep: faster and higher the closer the nearest contact is
   if(near!=null && !G.paused){ const k=near/R, gap=0.22+1.3*k; if(now/1000>(G.trkBeep||0)){ G.trkBeep=now/1000+gap; SFX.play(k<0.3?'trk3':k<0.6?'trk2':'trk1'); } }
 }
+/* ---- dark pings (Nov 2026): an enemy in the dark but close to what you see gives a tracker ping on the map ----
+   Not on his exact spot: the ping lands up to jitter tiles off. One that moves pings every `moving` s, one that stands still every `still` s.
+   Playing the Swarm the ping is Hive Sense's: a purple ring round a red heart. Drawn over the fog in 2D (17-rendering.js) and 3D (33-view3d.js).
+   PROX_PING: edge = tiles beyond your sight it reaches · moving/still = seconds between pings · moved = px per second that counts as moving
+   jitter = tiles off his real spot · life = seconds a ping lasts · grow = px its ring grows. Not saved: the pings start over after a load. */
+const PROX_PING = { on:true, edge:4, moving:1.1, still:3.5, moved:6, jitter:0.7, life:1.4, grow:30 };
+let proxPings=[], proxOf=new WeakMap(), proxG=null;
+function nearSight(tx,ty){ const W=G.map.w, H=G.map.h, R=Math.ceil(PROX_PING.edge), r2=PROX_PING.edge*PROX_PING.edge+0.5;
+  for(let j=-R;j<=R;j++) for(let i=-R;i<=R;i++){ if(i*i+j*j>r2) continue; const X=tx+i, Y=ty+j; if(X<0||Y<0||X>=W||Y>=H) continue; if(G.vis[Y*W+X]) return true; }
+  return false; }
+/* ticks on game time (nothing new while paused) and gives the pings to draw */
+function proxPingList(){
+  if(!G||G.over||!PROX_PING.on||afterDefeat()||G.devReveal){ proxPings=[]; return proxPings; }
+  if(proxG!==G){ proxG=G; proxPings=[]; proxOf=new WeakMap(); }
+  const P=PROX_PING, now=G.time, W=G.map.w;
+  proxPings=proxPings.filter(p=>now-p.t<P.life&&now>=p.t);
+  for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.hidden||e.ospTunnel||e.under||e.aboard||e.downed||!hostile(G.side,e.faction)) continue;
+    if(e.def.cloak&&!(e.revealT>0)) continue;
+    let s=proxOf.get(e); if(!s){ s={lx:e.x,ly:e.y,lt:now,v:0,next:now+Math.random()*P.moving}; proxOf.set(e,s); }
+    if(now-s.lt>=0.25){ s.v=Math.hypot(e.x-s.lx,e.y-s.ly)/(now-s.lt); s.lx=e.x; s.ly=e.y; s.lt=now; }
+    const tx=Math.floor(e.x/TILE), ty=Math.floor(e.y/TILE); if(tx<0||ty<0||tx>=W||ty>=G.map.h) continue;
+    if(G.vis[ty*W+tx]||!nearSight(tx,ty)) continue;
+    if(now<s.next) continue; const moving=s.v>P.moved; s.next=now+(moving?P.moving:P.still)*(0.85+Math.random()*0.3);
+    const a=Math.random()*Math.PI*2, d=Math.random()*P.jitter*TILE;
+    proxPings.push({x:e.x+Math.cos(a)*d,y:e.y+Math.sin(a)*d,t:now,moving}); }
+  return proxPings; }
+/* 2D, in map space, right after the fog */
+function drawProxPings(){ const L=proxPingList(); if(!L.length) return; const P=PROX_PING, sw=G.side==='swarm', ring=sw?'195,139,255':'95,227,176', core=sw?'255,90,79':'190,255,215';
+  ctx.save();
+  for(const p of L){ const k=(G.time-p.t)/P.life, r=4+k*P.grow;
+    ctx.strokeStyle=`rgba(${ring},${0.9*(1-k)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.stroke();
+    if(k<0.5){ ctx.strokeStyle=`rgba(${ring},${0.5*(1-k*2)})`; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(p.x,p.y,r*0.55,0,Math.PI*2); ctx.stroke(); }
+    ctx.fillStyle=`rgba(${core},${1-k})`; ctx.beginPath(); ctx.arc(p.x,p.y,sw?3:2.5,0,Math.PI*2); ctx.fill(); }
+  ctx.restore(); }
+
 function toggleTracker(){ uiUsed('tracker'); ui.tracker=!ui.tracker; store.set('hc-tracker',ui.tracker); trackerLabel(); toast(G&&G.side==='swarm'?(ui.tracker?'Hive Sense on.':'Hive Sense off.'):(ui.tracker?'Motion tracker on.':'Motion tracker off.'),true); }
 const trackerLabel=()=>{ const b=$('#btn-tracker'); if(b) b.textContent=(G&&G.side==='swarm'?'Sense ':'Tracker ')+(ui.tracker?'on':'off'); };
 
