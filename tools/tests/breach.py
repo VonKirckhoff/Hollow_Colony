@@ -1,6 +1,7 @@
 # Dust Landing's blast doors (Nov 2026): the controls are slagged, the Icarus brings an Engineer who arms a breaching charge on the
 # Breach point (10 s standing still; a hit or a step off starts it over), a small group climbs out of the east shaft while he works,
 # then a 10 s fuse with a red ring: the blast blows the doors away and hurts your own soldiers in the ring. Lost Engineer: a new one.
+# The Waking (the Brood's side) uses the same charge: their Engineer blows the doors, hit him and he starts over, two replacements at most.
 # Must end with ALL OK.
 from playwright.sync_api import sync_playwright
 import sys
@@ -41,6 +42,19 @@ CASES=[
   ok(G.api.charge('breach')==='armed','armed'); ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); const G2=__hc.G; step(0.2);
   ok(G2.api.chargeFuse('breach')>0&&(G2.rings||[]).some(z=>z.charge==='breach'),'charge and ring come back'); tp(eng(),44,34); for(let i=0;i<12&&G2.api.charge('breach')!=='blown';i++){ for(const x of G2.ents) if(x.faction==='swarm'&&x.kind==='unit') x.dead=true; step(1); }
   ok(G2.api.charge('breach')==='blown'&&doors()===0&&!(G2.rings||[]).length,'it still blows the doors'); goMenu('menu');'''),
+('the waking: their Engineer blows the doors','''__hc.startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-waking')); const G=__hc.G; step(0.5);
+  for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; G.vars.station=G.time; G.vars.drop1=G.time-30; step(1);
+  ok(doors()===9,'shut at first'); G.api.spawn('engineer',{x:45,y:37},1); step(3); ok(G.vars.breach&&G.ents.some(e=>!e.dead&&e.type==='chargesite'&&e.tag==='breach'),'the Breach point is set');
+  let armedAt=null; for(let i=0;i<60&&G.api.charge('breach')!=='blown';i++){ if(!armedAt&&G.api.charge('breach')==='armed') armedAt=G.time; step(1); }
+  ok(armedAt!=null,'their Engineer walks up and arms it'); ok(G.api.charge('breach')==='blown'&&doors()===0&&G.vars.open,'the doors are blown, the way is open');
+  const near=G.api.corps().filter(e=>Math.hypot(e.x/TILE-44.5,e.y/TILE-26.5)<4.5).length; ok(true,'squad near the blast afterwards: '+near);
+  ok(G.api.corps().every(e=>!e.breacher),'nobody keeps the breacher flag');'''),
+('the waking: hit him and he starts over; two replacements, then the doors stay shut','''__hc.startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-waking')); const G=__hc.G; step(0.5);
+  for(const e of G.ents) if(e.faction==='swarm'&&e.kind==='unit') e.dead=true; G.vars.station=G.time; G.vars.drop1=G.time-30; G.api.spawn('engineer',{x:44,y:28},1); step(3);
+  const e=eng(); for(let i=0;i<60&&!(G.ents.find(x=>!x.dead&&x.type==='chargesite').arm>0.3);i++) step(0.5); const site=G.ents.find(x=>!x.dead&&x.type==='chargesite');
+  ok(site.arm>0.3,'he is arming ('+site.arm.toFixed(2)+')'); damage(e,1,{faction:'swarm',dead:true}); step(0.2); ok(site.arm<0.05,'a hit: he starts over');
+  let calls=0; for(let k=0;k<4;k++){ const x=eng(); if(x) x.dead=true; step(2); if(G.vars.engCalled&&!G.vars.noDoor) calls++; for(let i=0;i<40&&!eng()&&!G.vars.noDoor;i++) step(1); }
+  ok(G.vars.noDoor&&G.vars.engLost===3,'after two replacements no more Engineers ('+G.vars.engLost+')'); step(20); ok(doors()===9&&!G.vars.open,'the doors stay shut');'''),
 ]
 res=[]
 with sync_playwright() as p:

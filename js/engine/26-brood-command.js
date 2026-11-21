@@ -196,7 +196,7 @@ function corpsMove(us,x,y,mode){ for(const u of us){ u.home=null; u.stance=null;
 function updateCorpsAI(dt){ if(!swarmSide()) return; G.corpsT=(G.corpsT||0)-dt; if(G.corpsT>0) return; G.corpsT=0.5;
   const hit=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.hitAt!=null&&G.time-e.hitAt<3);
   if(!hit.length) return;
-  for(const u of G.ents){ if(u.dead||u.downed||u.kind!=='unit'||u.faction!=='corps'||u.target||u.def.escort||!u.def.damage||u.drill) continue;   /* a drill squad (training) has its own brain */ if(u.order&&u.order.type!=='hold') continue;
+  for(const u of G.ents){ if(u.dead||u.downed||u.kind!=='unit'||u.faction!=='corps'||u.target||u.def.escort||!u.def.damage||u.drill||u.breacher) continue;   /* a breacher (The Waking) stays on his charge; a drill squad (training) has its own brain */ if(u.order&&u.order.type!=='hold') continue;
     const h=hit.find(e=>e!==u&&dist(e,u)<14*TILE); if(!h) continue;
     const foe=h.hitBy&&!h.hitBy.dead&&h.hitBy.kind?h.hitBy:nearestOf(h,e=>e.faction==='swarm'&&e.kind==='unit'&&dist(e,h)<8*TILE);
     if(foe){ u.target=foe; if(!u.home) u.home={x:u.x,y:u.y}; } } }

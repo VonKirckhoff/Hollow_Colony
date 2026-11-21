@@ -3,7 +3,10 @@
    The two hives sleep in the northern caverns behind the blast doors the station crew welded shut.
    A small brood waits in the east tunnel. Squad Dust lands in the canyons and walks to Kappa Station.
    Until the doors open, the only way out of the caverns is to burrow (B). The Lunar Corps flies in two more teams;
-   once a Pyro is on the ground they open the doors and come for the nests. */
+   once the second ship is down, their Engineer blows the doors with a breaching charge (as in Dust Landing, DUST_BREACH) and they come for the nests.
+   Kill or hit the Engineer while he arms it and he has to start over; two lost Engineers and Varga sends no more: the doors stay shut. */
+const WAKING_BREACH={ replace:2, guard:{x:44,y:30}, clear:{x:44,y:33} };   /* replace: Engineers Varga sends after the first; guard: where the squad covers him; clear: where it waits for the blast */
+function wakingEngineer(g){ return g.corps().find(e=>e.type==='engineer'&&!e.downed); }
 SWARM_MISSIONS.push(
   {
     id:'swarm-waking', side:'swarm', title:'The Waking', map:'canyons',
@@ -39,11 +42,28 @@ SWARM_MISSIONS.push(
       { when:g=>g.near('corps','1',5)>=2, do:g=>{ g.vars.station=g.time; g.say('Sgt. Kessler','We are at the station. Doors forced open from the inside. No crew.'); } },
       // first reinforcements: after a while at the station, or as soon as the squad is hurting
       { when:g=>!g.vars.drop1 && ((g.vars.station && g.time>g.vars.station+35) || (g.time>20 && g.corps().length<=3)), do:g=>{ g.vars.drop1=g.time;
-          g.say('Cmdr. Varga','Icarus is inbound to the station pad with rifles and a Pyro. Hold the platform, Dust.'); g.airdrop([['trooper',g.n(2)],['pyro',1]],18); } },
-      // once the Pyro is down, they open the doors and come for the nests
-      { when:g=>g.vars.drop1 && g.time>g.vars.drop1+20 && g.inbound()===0 && !g.vars.doorAt, do:g=>{ g.vars.doorAt=g.time+(g.has('pyro')?20:5); } },
-      { when:g=>g.vars.doorAt && g.time>g.vars.doorAt, do:g=>{ g.openWall('north'); g.ping({x:44,y:24}); g.vars.open=true;
-          g.say('Sgt. Kessler','Station log says the crew sealed the north tunnel and ran. Opening it now.'); g.brood_say('They opened the doors. Everything in the nests can reach them now. And they are coming for the nests.');
+          g.say('Cmdr. Varga','Icarus is inbound to the station pad with rifles, a Pyro and an Engineer. Hold the platform, Dust.'); g.airdrop([['trooper',g.n(2)],['pyro',1],['engineer',1]],18); } },
+      // once the ship is down, their Engineer puts a breaching charge on the doors; the rest cover him
+      { when:g=>g.vars.drop1 && g.time>g.vars.drop1+20 && g.inbound()===0 && !g.vars.breach, do:g=>{ const B=DUST_BREACH; g.vars.breach=true;
+          g.chargeSite(B.at,'breach',{ arm:B.arm, fuse:B.fuse, blast:B.blast, own:B.own, reset:true, opens:'north', name:'breaching charge' });
+          g.say('Sgt. Kessler','Station log says the crew sealed the north tunnel and ran, and fried the door controls. Engineer, blow it. Everyone else, cover him.');
+          g.brood_say('One of them kneels at our doors with something that ticks. Strike him while he works and he must begin again. When it beeps, get away from the doors.');
+          g.ping(B.at); g.orderCorps(g.corps().filter(e=>e.type!=='engineer'),WAKING_BREACH.guard,'amove'); } },
+      // the Engineer walks to the Breach point and stays there until the charge is live
+      { repeat:true, when:g=>g.vars.breach && !g.vars.live && g.time>(g.vars.engNext||0), do:g=>{ g.vars.engNext=g.time+2; const e=wakingEngineer(g); if(!e) return; e.breacher=true;
+          const at=ptWorld(DUST_BREACH.at); if(Math.hypot(e.x-at.x,e.y-at.y)>0.8*TILE&&!e.moving) g.orderCorps([e],DUST_BREACH.at,'move'); } },
+      { when:g=>g.charge('breach')==='armed', do:g=>{ g.vars.live=true; for(const e of g.corps()) e.breacher=false;
+          g.say('Sgt. Kessler',`Charge is live! ${DUST_BREACH.fuse} seconds, clear the door!`); g.orderCorps('all',WAKING_BREACH.clear,'move');
+          g.brood_say('It beeps. Away from the doors, now!'); } },
+      // a lost Engineer: Varga sends another, twice; after that the doors stay shut
+      { repeat:true, when:g=>g.vars.breach && !g.vars.live && !g.vars.engCalled && !wakingEngineer(g) && g.inbound()===0 && g.corps().length>0, do:g=>{
+          g.vars.engLost=(g.vars.engLost||0)+1; g.vars.engCalled=true;
+          if(g.vars.engLost>WAKING_BREACH.replace){ g.say('Cmdr. Varga','No more Engineers to spare, Dust. Hold the station.'); g.brood_say('They have no one left to open the doors. Our nests are safe, for now.'); g.vars.noDoor=true; return; }
+          g.say('Cmdr. Varga','You lost your Engineer. Icarus is bringing another. Keep him alive this time.'); g.airdrop([['engineer',1]],20); } },
+      { repeat:true, when:g=>g.vars.engCalled && !g.vars.noDoor && wakingEngineer(g), do:g=>{ g.vars.engCalled=false; } },
+      // the blast: the doors are gone and they come for the nests
+      { when:g=>g.charge('breach')==='blown', do:g=>{ g.vars.open=true; g.ping({x:44,y:24});
+          g.say('Sgt. Kessler','Doors are down. Moving in.'); g.brood_say('They broke the doors. Everything in the nests can reach them now. And they are coming for the nests.');
           g.orderCorps('all','3','amove'); } },
       { when:g=>g.vars.open && g.near('corps','3',4)>=1, do:g=>{ g.say('Cmdr. Varga','Biomass signature in the western cavern. Burn it.'); g.orderCorps('all',g.hiveAt('c')?'c':'a','amove'); g.vars.push=true; } },
       { when:g=>g.vars.push && !g.hiveAt('c') && !g.vars.east, do:g=>{ g.vars.east=true; g.say('Cmdr. Varga','West nest is ash. Second signature, east cavern. Move.'); g.orderCorps('all','a','amove'); } },
