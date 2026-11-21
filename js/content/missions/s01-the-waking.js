@@ -4,6 +4,7 @@
    A small brood waits in the east tunnel. Squad Dust lands in the canyons and walks to Kappa Station.
    Until the doors open, the only way out of the caverns is to burrow (B). The Lunar Corps flies in two more teams;
    once the second ship is down, their Engineer blows the doors with a breaching charge (as in Dust Landing, DUST_BREACH) and they come for the nests.
+   Two Sentry Guns already stand at the station (start.buildings): one watches the mouth of the north tunnel, one the way in from the east shaft.
    Kill or hit the Engineer while he arms it and he has to start over; two lost Engineers and Varga sends no more: the doors stay shut. */
 const WAKING_BREACH={ replace:2, guard:{x:44,y:30}, clear:{x:44,y:33} };   /* replace: Engineers Varga sends after the first; guard: where the squad covers him; clear: where it waits for the blast */
 function wakingEngineer(g){ return g.corps().find(e=>e.type==='engineer'&&!e.downed); }
@@ -13,12 +14,13 @@ SWARM_MISSIONS.push(
     summary:'Beneath Kappa Station, the Brood stirs. Small warm things land in the canyons.',
     briefing:[
       'We slept under the station and we ate what the station gave us. Then the soft ones sealed us in with steel and ran.',
-      'Now more of them fall out of the sky into the canyons. Their voices crackle. They walk towards the station. <i>Let them come. Let them come close.</i>',
+      'Now more of them fall out of the sky into the canyons. Their voices crackle. They walk towards the station, where two of their guns already stand: one watches the tunnel to our nests, one the way in from the east. <i>Let them come. Let them come close.</i>',
       'A few of us wait in the east tunnel. Our nests lie behind the doors. What hatches there cannot walk to the station until the soft ones open them, so it tunnels through the rock and comes up at the gathering point. And with <b>Burrow</b> (B) a small brood digs up wherever they are not looking.',
       'Leave none of them alive. Keep at least one nest breathing.'
     ],
     start:{ camera:'2', rally:'2',
       units:[ ['trooper','P',4], ['gunner','P',1], ['medic','P',1] ],
+      buildings:[ ['sentry',{x:41,y:32}], ['sentry',{x:53,y:35}] ],   /* Nov 2026: two Sentry Guns already set up at Kappa Station, one on the north tunnel, one on the east approach (Dust Landing's buildMax is 2) */
       swarmUnits:[ ['drone','2',5], ['crawler','2',5] ], hives:['c','a'], hiveHp:2 },
     landingZone:{ tx:45, ty:37, scripted:true },
     swarm:{ biomass:150, rate:1.2, guardMax:2, guardEvery:25, aggro:6, waves:null, cap:30, seedling:true, unlock:{ spitter:90, brute:9999, seedling:60 } },
@@ -36,6 +38,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.time>14, do:g=>g.brood_say('Our nests are sealed in, so what hatches there tunnels through the rock to the gathering point. Press B to dig a small brood up anywhere they are not standing.') },
       { repeat:true, when:()=>true, do:g=>{ const n=g.corps().length+g.inbound(); g.setText('kill',`Leave none of them alive (${n} left${g.vars.drop2?'':', more will come'})`);
           const f=Math.min(2,g.stat('fed')); g.setText('feed',`Bring 2 of the fallen home to a hive (${f}/2)`); if(f>=2) g.complete('feed'); if((G.swarm.founded||0)>0) g.complete('egg'); } },
+      { when:g=>g.time>40, do:g=>g.brood_say('Two guns of metal stand at the station and never sleep. One watches the tunnel, one the east. Go round them, or go at them many at once.') },
       { when:g=>g.time>25, do:g=>g.brood_say('There is an old egg in the east, near our tunnel. Older than the station. Stand some of us by it and keep the soft ones away: it will wake into a nest.') },
       { when:g=>g.time>62, do:g=>g.brood_say('Our nests can grow a Seedling now (Z). Carry it somewhere quiet, far from them and from our other nests, and press F: it becomes a new nest.') },
       // the squad reaches the station
