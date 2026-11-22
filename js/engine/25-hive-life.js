@@ -1,6 +1,7 @@
 'use strict';
 /* ---------- 2r. hive life: the creep around a hive, and the Husk ----------
-   CREEP: a living carpet grows out from every hive, from `start` tiles to `max` tiles over `grow` seconds
+   CREEP: a living carpet grows out from every hive, from `start` tiles to `max` tiles over `grow` seconds; nests that stand there when a
+          mission begins start fully grown (G.creepReady), only nests that come later grow
           (per hive or per mission: creep:<tiles>, creep:0 for none). Swarm units standing on it heal `heal` HP/s.
           When the hive dies, the creep withers away.
    HUSK:  hatches from a body a Grafter infected (see the stages below). The Twitcher fights, the Shambler withdraws from the battle
@@ -18,9 +19,9 @@ function updateCreep(dt){
   const m=G.map, W=m.w, H=m.h;   /* creep grows round every nest: hives and shafts with creep (nests()) */
   if(!G.creep){ G.creep=new Float32Array(W*H); G.creepTgt=new Float32Array(W*H); G.creepT=0; }
   if(!G.creepCv){ G.creepCv=document.createElement('canvas'); G.creepCv.width=W; G.creepCv.height=H; }   /* (also after loading a saved game: canvases are not saved) */
-  const hs=nests();
-  for(const h of hs){ const max=hiveOpt(h,'creep',CREEP.max); if(h.creepR==null) h.creepR=Math.min(max,CREEP.start); if(h.creepR<max) h.creepR=Math.min(max,h.creepR+dt*Math.max(0.5,max-CREEP.start)/CREEP.grow); }
-  G.creepT-=dt;
+  const hs=nests(), first=!G.creepReady;   /* the first update of a mission: every nest already there starts with its mycel fully grown (Nov 2026) */
+  for(const h of hs){ const max=hiveOpt(h,'creep',CREEP.max); if(h.creepR==null) h.creepR=first?max:Math.min(max,CREEP.start); if(h.creepR<max) h.creepR=Math.min(max,h.creepR+dt*Math.max(0.5,max-CREEP.start)/CREEP.grow); }
+  G.creepT-=dt; if(first) G.creepT=0;
   if(G.creepT<=0){ const step=CREEP.every-G.creepT; G.creepT=CREEP.every;
     const C=G.creep, T=G.creepTgt; T.fill(0);
     for(const h of hs){ const R=h.creepR; if(!(R>0)) continue; const cx=h.x/TILE, cy=h.y/TILE;
@@ -29,11 +30,11 @@ function updateCreep(dt){
         const r=R*(0.78+0.4*creepNoise(x,y)), d=Math.hypot(x+.5-cx,y+.5-cy), v=d<r-1?1:d<r?r-d:0; if(v>T[k]) T[k]=v; } }
     let any=false; const cv=G.creepCv, c2=cv.getContext('2d'), img=c2.createImageData(W,H), px=img.data;
     for(let k=0;k<W*H;k++){ const t=T[k]; let c=C[k];
-      if(c<t) c=Math.min(t,c+CREEP.rise*step); else if(c>t) c=Math.max(t,c-CREEP.fade*step);
+      if(first) c=t; else if(c<t) c=Math.min(t,c+CREEP.rise*step); else if(c>t) c=Math.max(t,c-CREEP.fade*step);
       C[k]=c; if(c<=0.01||!G.seen[k]) continue; any=true; const o=k*4;
       if(c>t+0.01){ px[o]=74; px[o+1]=64; px[o+2]=70; } else { px[o]=96; px[o+1]=40+Math.round(26*c); px[o+2]=112; }   /* dying creep turns grey */
       px[o+3]=Math.round(150*Math.min(1,c*1.4)); }
-    c2.putImageData(img,0,0); G.creepAny=any; }
+    c2.putImageData(img,0,0); G.creepAny=any; G.creepReady=true; }
   /* the Swarm heals on it */
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='swarm'||u.def.boss||u.hp>=u.maxHp) continue;
     const c=G.creep[Math.floor(u.y/TILE)*W+Math.floor(u.x/TILE)]; if(!(c>CREEP.at)) continue;

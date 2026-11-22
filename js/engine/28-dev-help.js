@@ -367,9 +367,9 @@ const DEV_HELP = {
   'TACTICS|weights.lure':'Chance a wave sends bait first and the rest a few seconds later.',
   'TACTICS|weights.flank':'Chance half of a wave swings around and comes in from the side.',
   /* creep */
-  'CREEP|start':'Tiles of mycel around a new hive.',
+  'CREEP|start':'Tiles of mycel around a nest that appears during a mission (nests there at the start begin fully grown).',
   'CREEP|max':'Tiles the mycel grows to.',
-  'CREEP|grow':'Seconds the mycel takes to grow from start to max.',
+  'CREEP|grow':'Seconds the mycel of a new nest takes to grow from start to max.',
   'CREEP|rise':'How fast a mycel tile fills in (per second).',
   'CREEP|fade':'How fast mycel withers away after its hive dies (per second).',
   'CREEP|heal':'Health per second Brood creatures heal while they stand on mycel.',
