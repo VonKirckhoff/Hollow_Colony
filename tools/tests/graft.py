@@ -15,8 +15,6 @@ CASES='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   ok(broodCap()===10+GRAFT_BROOD.cap&&G.swarm.biomass>=b0+GRAFT_BROOD.biomass-1,'the Seedling is out: limit '+broodCap()+', biomass '+Math.round(G.swarm.biomass)+' (was '+Math.round(b0)+')');
   ok(!broodUnlocked('brute')&&broodUnlocked('spitter'),'Spitters now, no Brutes yet');
   { const t0=G.time; G.time+=GRAFT_BROOD.brute+1; ok(broodUnlocked('brute'),'Brutes after '+GRAFT_BROOD.brute+' s'); G.time=t0; }
-  { const st=ptWorld('1'); G.vars.patrolAt=0; for(let k=0;k<6;k++){ G.vars.patrolAt=0; step(1); } step(20);
-    const at=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!(G.vars.hunters||[]).includes(e)&&Math.hypot(e.x-st.x,e.y-st.y)<7*TILE).length; ok(at>=GRAFT_BROOD.keep,'after six patrols '+at+' soldiers still hold the station'); }
   ok(!avatarButtons().some(b=>b.tip.startsWith('Take root|Grow a new hive')),'the Husk has no root button of its own');
   const sd=graftSeedling(); ok(!!sd&&sd.type==='seedling'&&V.seedPhase,'the nest laid a Seedling once the Husk was whole');
   ok(/Seedling/.test((G.objectives.find(o=>o.id==='life')||{}).text||''),'the objective speaks of the Seedling ('+(G.objectives.find(o=>o.id==='life')||{}).text+')');
@@ -44,7 +42,9 @@ CASES='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   avatarButtons().find(b=>b.key==='F').act(); ok(sd2.rootT!=null,'a quiet spot: the Seedling digs in');
   step(S.root+2); ok(!G.over&&(G.swarm.founded||0)===1&&G.vars.rooted,'it becomes the nest, but soldiers still live: not won yet');
   ok(/left/.test((G.objectives.find(o=>o.id==='purge')||{}).text||''),'the objective counts the soldiers ('+(G.objectives.find(o=>o.id==='purge')||{}).text+')');
-  for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'){ e.invuln=false; kill(e,null); } step(1);
+  for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.graftPost==='tunnel'){ e.invuln=false; kill(e,null); } step(1);
+  ok(!G.over,'the tower still stands: not won');
+  kill(graftRelay(),null); step(1); for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'){ e.invuln=false; kill(e,null); } for(const l of G.ents) if(l.type==='lz') l.flight=null; step(1);
   ok(G.over&&G.over.win,'every soldier dead and the nest stands: won ('+JSON.stringify(G.over)+')');
   }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
 LOSE='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
@@ -65,12 +65,33 @@ STAGES='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m
   ok(G.ents.some(e=>e.kind==='body'&&!e.dead&&e.fauna&&Math.hypot(e.x-g2.x,e.y-g2.y)<TILE),'a grazer your Husk kills leaves a carcass');
   const h=makeUnit('husk','swarm',u.x+60,u.y+60); huskHatched(h); ok(h.stage===HUSK_STAGES.length-1&&!h.stageName,'a Husk of the Brood crawls out full grown');
   }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
+RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
+  step(1); const r=graftRelay(); ok(!!r&&r.clickOnly&&r.ty<12,'a Relay Tower in the north cavern ('+(r&&r.tx)+','+(r&&r.ty)+')');
+  ok(graftGarrison().length===7&&G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel').length===2,'seven in the garrison, two in the tunnel');
+  ok(!!G.ents.find(e=>!e.dead&&e.type==='lz'),'a Landing Zone at the station');
+  /* the brood leaves the tower alone until you send it */
+  const ds=[]; for(let i=0;i<3;i++){ const d=makeUnit('drone','swarm',r.x+30+i*10,r.y+40); d.role='brood'; d.mine=true; d.post={x:d.x,y:d.y}; ds.push(d); }
+  const hp0=r.hp; step(6); ok(r.hp===hp0&&!ds.some(d=>d.target===r),'brood next to the tower leaves it alone');
+  selectEntities(ds,false); swarmRight(r.x,r.y); step(3); ok(r.hp<hp0,'right-clicked: they tear at it ('+Math.round(r.hp)+'/'+Math.round(hp0)+')');
+  for(const d of ds) d.dead=true;
+  /* the garrison loses two: a ship brings them back */
+  const tr=graftGarrison().filter(u=>u.type==='trooper').slice(0,2); for(const u of tr) kill(u,null); step(1);
+  ok(G.ents.some(e=>e.type==='lz'&&e.flight&&e.flight.cargo.length===2),'two lost: a ship with two Troopers is on its way');
+  step(GRAFT_CORPS.call+25); ok(graftGarrison().length===7,'they land and join the garrison ('+graftGarrison().length+')');
+  /* the tunnel two are not replaced */
+  for(const u of G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel')) kill(u,null); step(2); ok(G.ents.filter(e=>e.type==='lz'&&e.flight).length===0,'the tunnel patrol is not replaced');
+  /* the tower falls: no more ships */
+  kill(r,null); step(1); ok(V.cut&&G.objectives.find(o=>o.id==='relay').state==='done','the tower is down: objective done');
+  kill(graftGarrison()[0],null); step(3); ok(!G.ents.some(e=>e.type==='lz'&&e.flight),'no tower: no ship for the next loss');
+  }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
 res=[]
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
     pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text else None)
     pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
     pg.evaluate(JS_START); pg.wait_for_timeout(400); res.append(pg.evaluate(STAGES))
+    pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
+    pg.evaluate(JS_START); pg.wait_for_timeout(400); res.append(pg.evaluate(RELAY))
     for js in (CASES,LOSE):
         pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
         pg.evaluate(JS_START); pg.wait_for_timeout(400); pg.evaluate(JS_HUSK)

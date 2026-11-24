@@ -8,11 +8,21 @@
    To win, the Seedling must root AND every soldier on the map must be dead (objective 'purge'); once the nest stands,
    only losing every hive loses the mission.
    The whole Brood is yours from the start (hatch, A, H, teams); once the Seedling is out it grows (GRAFT_BROOD).
-   The doors are open; the Lunar Corps holds the station (GRAFT_BROOD.keep soldiers always stay there), sends a patrol up the tunnel
-   and, once you are a Shambler, a hunter team after you. */
-/* GRAFT_BROOD: when the Seedling comes out, the brood limit grows by `cap`, you get `biomass` extra, Brutes can hatch `brute` s later
-   · keep: soldiers the patrol always leaves at the station */
-const GRAFT_BROOD = { cap:10, biomass:150, brute:120, keep:3 };
+   The doors are open; the Lunar Corps holds the station with a garrison of seven (u.graftPost 'station'), the two in the tunnel
+   (graftPost 'tunnel') walk the patrol and, once you are a Shambler, a hunter team comes after you.
+   Nov 2026: a Relay Tower on the pad in the north cavern. While it stands, every soldier the garrison loses is flown in again
+   (GRAFT_CORPS) to the Landing Zone at the station; the patrol and the hunters are not replaced. Torn down: no more ships.
+   The Brood never attacks the tower on its own (b.clickOnly): you have to send them at it (right-click it, or A + click on it). */
+/* GRAFT_BROOD: when the Seedling comes out, the brood limit grows by `cap`, you get `biomass` extra, Brutes can hatch `brute` s later */
+const GRAFT_BROOD = { cap:10, biomass:150, brute:120 };
+/* GRAFT_CORPS: the station garrison (kept at full strength while the Relay Tower stands) · call: seconds a ship needs to bring replacements
+   · relay: the tower's middle (on the R pad of the north cavern) */
+const GRAFT_CORPS = { garrison:{ trooper:4, gunner:2, medic:1 }, call:30, relay:{x:49,y:5} };
+const graftRelay=()=>G.ents.find(e=>!e.dead&&e.type==='relay'&&e.faction==='corps'&&e.graft);
+function graftGarrison(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.graftPost==='station'); }
+/* the soldiers the garrison is short of, by kind (what died is what comes back) */
+function graftShort(){ const have={}; for(const u of graftGarrison()) have[u.type]=(have[u.type]||0)+1;
+  return Object.entries(GRAFT_CORPS.garrison).map(([t,n])=>[t,Math.max(0,n-(have[t]||0))]).filter(([,n])=>n>0); }
 /* the old nest lays a Seedling at its foot for your Husk */
 function graftLaySeed(g){ const h=(g.vars.hive&&!g.vars.hive.dead)?g.vars.hive:hives().find(x=>!x.offshoot); if(!h) return null;
   const f=freeTilesNear(Math.floor(h.x/TILE)+2,Math.floor(h.y/TILE)+1,1)[0]; if(!f) return null;
@@ -38,15 +48,29 @@ SWARM_MISSIONS.push(
       'The whole Brood is yours too: hatch it (Q, W, E), send it (A), bring the fallen home (H). Once the Seedling is out the nest grows stronger: more brood, and Brutes after a while. But if your creature dies before the Seedling is out, the seed is lost.'
     ],
     start:{ camera:'c', rally:{x:20,y:10},
-      units:[ ['trooper','1',4], ['gunner','1',2], ['medic','1',1], ['trooper','3',2] ],   /* seven at the station, two in the tunnel */
+      units:[ ...Object.entries(GRAFT_CORPS.garrison).map(([t,n])=>[t,'1',n]), ['trooper','3',2] ],   /* the garrison at the station (seven), two in the tunnel */
+      buildings:[ ['relay',GRAFT_CORPS.relay] ],
       hives:[ { at:'c', guardMax:2, guardEvery:20, aggro:5, eggs:3 } ], hiveHp:1.5 },
+    landingZone:{ tx:45, ty:37, scripted:true, rally:'1' },   /* replacements walk to the station */
     swarm:{ biomass:60, rate:0.35, guardMax:2, waves:null, cap:10, unlock:{ spitter:0, brute:9999 }, husks:0, spareFauna:true },
     objectives:[
       { id:'life', text:'Wait for the body' },
       { id:'seed', text:'Keep your creature alive' },
-      { id:'purge', text:'Kill every soldier' }
+      { id:'purge', text:'Kill every soldier' },
+      { id:'relay', text:'Tear down their Relay Tower (send the brood at it): no more ships will come', optional:true }
     ],
     triggers:[
+      // who is who: the garrison at the station, the two in the tunnel; the tower is only hit when you send the brood at it
+      { when:g=>g.time>0.1, do:g=>{ const s1=ptWorld('1'); for(const u of g.corps()) u.graftPost=Math.hypot(u.x-s1.x,u.y-s1.y)<8*TILE?'station':'tunnel';
+          for(const b of G.ents) if(!b.dead&&b.type==='relay'&&b.faction==='corps'){ b.graft=true; b.clickOnly=true; } } },
+      // whoever comes off a ship joins the garrison
+      { repeat:true, when:g=>g.time>0.5, do:g=>{ for(const u of g.corps()) if(!u.graftPost&&!(g.vars.hunters||[]).includes(u)) u.graftPost='station'; } },
+      // the garrison is short: while the tower stands, Varga flies in what it lost (one ship at a time)
+      { repeat:true, when:g=>g.time>1&&!g.vars.cut&&g.inbound()===0&&graftShort().length, do:g=>{ const list=graftShort(); g.airdrop(list,GRAFT_CORPS.call,'1');
+          if(!g.vars.callSaid||g.time>g.vars.callSaid+60){ g.vars.callSaid=g.time; g.say('Cmdr. Varga',`Kappa, replacements are on their way: ${list.reduce((s,[,n])=>s+n,0)} of them, ${GRAFT_CORPS.call} seconds out.`); } } },
+      // the tower falls: no more ships
+      { when:g=>g.time>0.5&&!graftRelay(), do:g=>{ g.vars.cut=true; g.complete('relay'); g.say('Sgt. Kessler','The relay is down! Varga, do you copy? ... Nothing. Nobody is coming.');
+          g.brood_say('Their voice is broken. No more of them will fall from the sky.'); } },
       // a drone drags a body home; the egg nearest to it is yours
       { when:g=>g.time>0.2, do:g=>{ const h=hives()[0]; g.vars.hive=h;
           const f=freeTilesNear(Math.floor(h.x/TILE)+9,Math.floor(h.y/TILE)+1,1)[0]; makeBody({x:(f.x+.5)*TILE,y:(f.y+.5)*TILE,def:UNITS.trooper,face:-1});
@@ -69,9 +93,9 @@ SWARM_MISSIONS.push(
           if(V.seedPhase) g.setText('life',sd?(sd.rootT!=null?`Seedling taking root (${Math.ceil(sd.rootT)} s): guard it`:`${avatarAlive()?'Husk: lead':'Lead'} the Seedling to a quiet spot, select it and press F`)
             :V.seedAt!=null?`The nest lays a new Seedling (${Math.max(0,Math.ceil(V.seedAt-g.time))} s)`:'A nest of your own');
           else if(txt) g.setText('life',txt);
-          { const n=g.corps().length; g.setText('purge',n?`Kill every soldier (${n} left)`:'Kill every soldier'); }
+          { const n=g.corps().length+g.inbound(); g.setText('purge',n?`Kill every soldier (${n} left${g.vars.cut?'':', more will come'})`:'Kill every soldier'); }
           if(V.rooted&&!V.won){ g.setText('life','A nest of your own');
-            if(!g.corps().length){ V.won=true; g.complete('purge'); g.win('A new nest breathes in the canyons, and not one of them is left to see it. You were a seed in a dead man; now you are the Brood.'); return; }
+            if(!g.corps().length&&!g.inbound()){ V.won=true; g.complete('purge'); g.win('A new nest breathes in the canyons, and not one of them is left to see it. You were a seed in a dead man; now you are the Brood.'); return; }
             if(!hives().length){ V.won=true; g.fail('purge'); g.lose('Every nest is ash. The soft ones hold the canyons.'); return; } }
           if(V.seedPhase&&!V.won&&!V.rooted){ graftFollow(g);
             if((G.swarm.founded||0)>0){ V.rooted=true; g.complete('life'); g.complete('seed'); const n=g.corps().length;
@@ -95,8 +119,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.vars.body&&g.vars.body.dead&&avatarStage()==='grafter', do:g=>{ g.fail('seed'); g.lose('The body is gone before you could take it.'); } },
       // the patrol walks the tunnel and looks into the cavern
       { repeat:true, when:g=>g.time>(g.vars.patrolAt||(g.vars.patrolAt=25)), do:g=>{ g.vars.patrolAt=g.time+30; g.vars.pi=(g.vars.pi||0)+1;
-          const st1=ptWorld('1'), d1=u=>Math.hypot(u.x-st1.x,u.y-st1.y), free=g.corps().filter(u=>!g.vars.hunters||!g.vars.hunters.includes(u)), keep=free.filter(u=>!u.downed).sort((a,b)=>d1(a)-d1(b)).slice(0,GRAFT_BROOD.keep);   /* the nearest few always stay at the station */
-          const team=free.filter(u=>!keep.includes(u)).filter(u=>d1(u)>6*TILE||g.vars.pi%3===0).slice(0,3);
+          const team=g.corps().filter(u=>u.graftPost==='tunnel'&&!u.downed);   /* only the two from the tunnel: the garrison stays at the station */
           const deep=g.vars.seedPhase||['shambler','husk'].includes(avatarStage());   /* they only search the cavern once something big walks around in it */
           g.orderCorps(team,(deep?[ '3',{x:38,y:10},'3',{x:44,y:28} ]:[ '3',{x:44,y:28} ])[g.vars.pi%(deep?4:2)],'amove'); } },   /* once it is big, the patrol looks into the mouth of the cavern */
       // the hunters go where they last saw it, if it is close enough to track

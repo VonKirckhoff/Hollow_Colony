@@ -123,7 +123,7 @@ function sendWave(x,y,sync){ sync=sync??ui.amoveSync; ui.amove=false; ui.amoveSy
   const sel=selSwarm(), us=sel.length?sel:myBrood(); if(!us.length){ toast('No brood is waiting at the gathering point. Hatch some first.'); return; }
   for(const u of us){ freeFromJobs(u); u.post=null; }
   const t=entityAt(x,y,e=>e.faction==='corps'&&e.kind!=='crate');
-  for(const u of us){ u.role='wave'; u.target=t||null; u.order={type:'amove',x:x+rand(-24,24),y:y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); }
+  for(const u of us){ u.role='wave'; u.target=t||null; u.order={type:'amove',x:x+rand(-24,24),y:y+rand(-24,24)}; setPath(u,u.order.x,u.order.y); if(t&&t.clickOnly){ u.order={type:'attack',target:t}; u.path=null; } }   /* A + click on a target the brood leaves alone by itself (The Graft's tower): they go for it */
   if(sync){   /* together: who is closer waits, so they all get there at the same time */
     const eta=u=>{ let L=0, px=u.x, py=u.y; for(const p of (u.path||[])){ L+=Math.hypot(p.x-px,p.y-py); px=p.x; py=p.y; } return L/Math.max(20,u.def.speed||60); }, T=us.map(eta), mx=Math.max(...T);
     us.forEach((u,i)=>{ const w=mx-T[i]; if(w>0.5){ u.waveDelay=w; u.waveGoal={x:u.order.x,y:u.order.y}; u.order=null; u.path=null; u.target=null; } }); }

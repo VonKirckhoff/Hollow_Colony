@@ -449,7 +449,11 @@ const DEV_HELP = {
   'GRAFT_BROOD|cap':'The Graft: once the Seedling is out, the brood limit grows by this many (10 at the start).',
   'GRAFT_BROOD|biomass':'The Graft: extra biomass when the Seedling comes out.',
   'GRAFT_BROOD|brute':'The Graft: seconds after the Seedling comes out before Brutes can hatch.',
-  'GRAFT_BROOD|keep':'The Graft: soldiers the patrol always leaves at the station (the ones nearest to it).',
+  'GRAFT_CORPS|garrison.trooper':'The Graft: Troopers in the station garrison; while the Relay Tower stands, replacements keep it at this many.',
+  'GRAFT_CORPS|garrison.gunner':'The Graft: Gunners in the station garrison.',
+  'GRAFT_CORPS|garrison.medic':'The Graft: Medics in the station garrison.',
+  'GRAFT_CORPS|call':'The Graft: seconds a ship needs to fly in replacements for the garrison (one ship at a time, only while the Relay Tower stands).',
+  'GRAFT_CORPS|relay.x':'The Graft: where the Relay Tower stands (its middle, tile x; next start).', 'GRAFT_CORPS|relay.y':'The Graft: ...tile y.',
   /* squad */
   'SQUAD|medic.leash':'Tiles a Medic without orders goes from his place (in the formation, or where you left him) to heal a soldier. Further away, he lets him go and stays with the squad.',
   'SQUAD|medic.downedLeash':'The same, for a downed soldier: a Medic goes further for someone who is down.',
