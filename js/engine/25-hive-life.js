@@ -4,14 +4,14 @@
           mission begins start fully grown (G.creepReady), only nests that come later grow
           (per hive or per mission: creep:<tiles>, creep:0 for none). Swarm units standing on it heal `heal` HP/s.
           When the hive dies, the creep withers away.
-   HUSK:  hatches from a body a Grafter infected (see the stages below). The Twitcher fights, the Shambler withdraws from the battle
-          (keeps `hide` tiles from your troops), and the finished Husk is a warrior that hunts. Only the creature you steer in The Graft
+   HUSK:  hatches from a body a Grafter infected (see the stages below). The Brood's own Husks hatch full grown (skipShambler);
+          a Shambler withdraws from the battle (keeps `hide` tiles from your troops), and the finished Husk is a warrior that hunts. Only the creature you steer in The Graft
           can take root (`root` seconds) and become a young hive with `hiveHp` of a normal hive's health and `guardMax` guards. */
 const CREEP = { start:2, max:8, grow:150, rise:0.5, fade:0.07, heal:4, at:0.3, every:0.5 };
 /* how the mycel looks (Nov 2026): a network of veins from every nest with green pulses running out through them, tracks where something
    walked over it, and thin threads that creep to the feet of a creature healing on it */
 const MYCEL = { veins:true, branches:7, pulseSpeed:0.45, tracks:true, trackLife:6, healThreads:true };
-const HUSK  = { hiveHp:0.55, guardMax:2, hide:11, reach:34, skipShambler:true };   /* hide: tiles a withdrawing Shambler keeps from your troops · skipShambler: a Husk of the Swarm molts from Twitcher straight into a Husk (the creature you steer in The Graft still goes through all three) */
+const HUSK  = { hiveHp:0.55, guardMax:2, hide:11, reach:34, skipShambler:true };   /* hide: tiles a withdrawing Shambler keeps from your troops · skipShambler: a Husk of the Swarm crawls out of its cocoon full grown (the creature you steer in The Graft is a Shambler first) */
 
 /* ---- creep ---- */
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
@@ -81,26 +81,28 @@ function drawCreep(now,vx0,vy0,vx1,vy1){
 
 /* ---- the Husk: the turning of a fallen soldier ----
    A Crawler burrows into the body (it twitches and turns green), the body becomes a cocoon that beats like a heart,
-   faster and faster until the shell cracks. What crawls out is not a Husk yet: it grows through three stages,
-   and between them it stops to molt (its skin splits; it takes 50% more damage while it does).
-     Twitcher: crawls on all fours, weak and slow · Shambler: upright, half armour, half flesh · Husk: the final form.
+   faster and faster until the shell cracks. What crawls out of it is a Husk, full grown (the Twitcher stage was cut in Nov 2026).
+   Only with HUSK.skipShambler off, and always for the creature you steer in The Graft, it is a Shambler first and molts once
+   (its skin splits; it takes 50% more damage while it does).
+     Shambler: upright, half armour, half flesh · Husk: the final form.
    hp/speed/dmg are shares of the Husk's own numbers. */
 const HUSK_STAGES = [
-  { name:'Twitcher', sprite:'husk1', hp:0.4,  speed:0.7, dmg:0.6,  time:7 },
   { name:'Shambler', sprite:'husk2', hp:0.7,  speed:0.9, dmg:0.75, time:8 },
   { name:'Husk',     sprite:'husk',  hp:1,    speed:1,   dmg:1 }
 ];
 const MOLT = { time:1.6, vuln:1.5 };
 /* the stage a molt leads to: the Swarm's own Husks skip the Shambler (HUSK.skipShambler); the creature you steer does not */
-function nextStage(u){ const last=HUSK_STAGES.length-1, n=Math.min(last,u.stage+1); return (HUSK.skipShambler&&!u.avatar&&HUSK_STAGES[n].name==='Shambler')?Math.min(last,n+1):n; }
+function nextStage(u){ return Math.min(HUSK_STAGES.length-1,u.stage+1); }
+/* the stage a fresh Husk crawls out of its cocoon in: full grown, or a Shambler (The Graft's creature, or with HUSK.skipShambler off) */
+function firstStage(avatar){ return (HUSK.skipShambler&&!avatar)?HUSK_STAGES.length-1:0; }
 function huskStage(u,i){ const st=HUSK_STAGES[i], f=u.maxHp?u.hp/u.maxHp:1, base=toughHp(u.type)*G.diff.hp;
   u.stage=i; u.sprite=st.sprite; u.stageName=i<HUSK_STAGES.length-1?st.name:null; u.speedMul=st.speed; u.dmgMul=(G.diff.dmg||1)*st.dmg;
   u.maxHp=base*st.hp; u.hp=Math.min(u.maxHp,Math.max(u.maxHp*f,u.maxHp*0.5)); u.stageT=st.time||0; }
-function huskHatched(u){ u.role='hunt'; huskStage(u,0); u.foundT=0;
+function huskHatched(u,avatar){ u.role='hunt'; const s0=firstStage(avatar); huskStage(u,s0); u.foundT=0; const full=s0===HUSK_STAGES.length-1;
   const vis=isVisible(u); G.fx.push({k:'boom',x:u.x,y:u.y,t:0.6,max:0.6,r:34,col:'#c38bff'}); addDecal(u.x,u.y,18,'rgba(70,30,90,.6)');
   for(let i=0;i<26;i++) G.fx.push({k:'ember',x:u.x+rand(-6,6),y:u.y-6+rand(-6,6),vx:rand(-120,120),vy:rand(-170,-20),t:rand(.5,1.1),max:1.1,col:pick(['#a6ff4a','#c38bff','#7a5a8e','#d23a3a','#eef2f5'])});
   if(vis){ SFX.play('huskborn',u.x,u.y); G.shake=Math.max(G.shake||0,0.3); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'IT LIVES',col:'#c38bff'}); }
-  if(vis&&!G.saidHusk){ G.saidHusk=true; say('Dr. Maas','That thing was one of ours. It is still changing, safe on the mycel: once it is a full Husk it comes for us. Kill it while it is weak!','alert'); } }
+  if(vis&&!G.saidHusk){ G.saidHusk=true; say('Dr. Maas',full?'That thing was one of ours. A Husk: it leaves the mycel now, and it is coming for us.':'That thing was one of ours. It is still changing, safe on the mycel: once it is a full Husk it comes for us. Kill it while it is weak!','alert'); if(full) G.saidHuskFull=true; } }
 /* growing up: returns true while it is molting (it stands still and cannot attack) */
 function huskGrow(u,dt){
   if(u.molt>0){ u.molt-=dt; u.order={type:'hold'}; u.path=null; u.target=null; u.cd=Math.max(u.cd,0.3);
@@ -165,7 +167,7 @@ function withdraw(u,dt){
   else if(!u.order||u.order.type!=='move'){ u.order={type:'move',x:u.hide.x,y:u.hide.y}; setPath(u,u.hide.x,u.hide.y); }
   return true; }
 function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
-/* The Husk is a warrior. While it is still turning (Twitcher, Shambler) it stays on the creep of its hive and only fights what comes there;
+/* The Husk is a warrior. While it is still turning (a Shambler) it stays on the creep of its hive and only fights what comes there;
    full grown, it leaves the creep and hunts (role 'hunt', see swarmThink). Only the creature you steer yourself in The Graft takes root (F).
    When a Husk kills a soldier it screams: the soldiers close by flinch (suppressed). Returns true while it is busy (molting). */
 const HUSK_WARRIOR = { stay:true, screamR:3.5, mendAt:0.65, mendDone:0.95, escort:3, escortR:14, escortEvery:12 };   /* mendAt: a Husk that brings a soldier down while below this share of its health goes back to the creep to heal; mendDone: it hunts again from this share.

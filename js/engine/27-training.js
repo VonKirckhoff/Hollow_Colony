@@ -6,31 +6,29 @@
               setup:g=>{…} (when the step starts), done:g=>bool (checked 4× per second), pause:seconds before the next step }
      The objective 'tut' shows "Step 3/12: …". Press N to skip a step (training missions only). The card does not pause the game.
    AVATAR: in a Swarm mission the player can steer one creature through its whole life (G.avatar):
-     a Grafter from an egg → latches onto a body → cocoon → Twitcher → Shambler → Husk (a warrior, it never roots).
-     Twitcher: grows by feeding (AVATAR.food kills; a soldier counts double). Shambler: grows by staying hidden
-     (no soldier within HUSK.hide tiles for AVATAR.hide seconds). Husk: the old nest lays a Seedling (u.graftSeed) for it to guard;
+     a Grafter from an egg → latches onto a body → cocoon → Shambler → Husk (a warrior, it never roots).
+     Shambler: grows by staying hidden (no soldier within HUSK.hide tiles for AVATAR.hide seconds). A kill heals it a quarter. Husk: the old nest lays a Seedling (u.graftSeed) for it to guard;
      the Seedling takes root with F (SWARM_PLAY.seed rules) into the new nest. Moving the selected Seedling, your Husk follows it.
    AVATAR.seedAgain: seconds before the nest lays a new Seedling when one dies · seedSpare: how many new ones (Normal; Easy +1, Hard −1)
      · follow: tiles the Husk keeps from the Seedling it follows · guard: tiles round the Seedling where the following Husk takes on a foe */
-const AVATAR = { food:3, hide:10, seedAgain:30, seedSpare:2, follow:2.5, guard:5 };
+const AVATAR = { hide:10, seedAgain:30, seedSpare:2, follow:2.5, guard:5 };
 /* ---- the avatar: one creature you steer through its life ---- */
 function avatarAlive(){ const a=G.avatar; return !!a && !a.dead; }
 function avatarStage(){ const a=G.avatar; if(!a||a.dead) return 'dead'; if(a.type==='egg') return 'egg'; if(a.type==='grafter') return 'grafter'; if(a.type==='cocoon') return 'cocoon';
-  if(a.type==='hive') return 'hive'; return ['twitcher','shambler','husk'][a.stage||0]; }
+  if(a.type==='hive') return 'hive'; return ['shambler','husk'][a.stage||0]; }
 function setAvatar(e){ G.avatar=e; e.avatar=true; if(e.kind==='unit'){ selectEntities([e],false); G.following=true; } G.selDirty=true; }
 /* a Grafter you steer: walk where you click; on a body at home it latches on */
 function avatarGrafter(u,dt){ if(u.latched) return;
   if(u.order&&u.order.type==='move'){ if(stepMove(u,dt)) u.order=null; }
   const b=nearestOf(u,e=>e.kind==='body'&&!e.dead&&e.home); u.graft=b&&Math.hypot(b.x-u.x,b.y-u.y)<TILE*1.1?b:null;
   if(!u.graft&&b&&Math.hypot(b.x-u.x,b.y-u.y)<TILE*2.5&&!(u.order&&u.order.type==='move')){ goTo(u,b.x,b.y,dt,0.6); } }
-/* growing up when you steer it: the Twitcher has to feed, the Shambler has to stay hidden */
+/* growing up when you steer it: the Shambler has to stay hidden */
 function avatarReady(u,dt){
-  if(u.stage===0) return (u.food||0)>=AVATAR.food;
-  if(u.stage===1){ const n=nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed);
+  if(u.stage===0){ const n=nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed);
     if(n&&dist(u,n)<HUSK.hide*TILE){ if((u.hidden2||0)>0.5&&isVisible(u)) toast('Seen! Get away from them.',true); u.hidden2=0; } else u.hidden2=(u.hidden2||0)+dt;
     return u.hidden2>=AVATAR.hide; }
   return false; }
-function avatarFed(src,e){ if(!src||!src.avatar) return; src.food=(src.food||0)+(e.faction==='corps'?2:1); src.hp=Math.min(src.maxHp,src.hp+src.maxHp*0.25);
+function avatarFed(src,e){ if(!src||!src.avatar) return; src.hp=Math.min(src.maxHp,src.hp+src.maxHp*0.25);
   G.fx.push({k:'text',x:src.x,y:src.y-26,t:1,max:1,txt:'FED',col:'#a6ff4a'}); G.selDirty=true; }
 /* The Graft: the Seedling the old nest lays for your Husk (alive, not yet rooting) and its F button */
 function graftSeedling(){ return G.ents.find(e=>!e.dead&&e.graftSeed)||null; }

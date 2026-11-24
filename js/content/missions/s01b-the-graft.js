@@ -1,7 +1,7 @@
 'use strict';
 /* Swarm mission 2: The Graft — one creature, one life, from egg to nest.
    A drone drags one of squad Dust home to the western nest. An egg opens: that Grafter is you.
-   Latch onto the body → survive the cocoon → feed as a Twitcher (grazers or soldiers) → hide as a Shambler
+   Latch onto the body → survive the cocoon → hide as a Shambler
    → as a Husk (a warrior, it never roots) guard the Seedling the old nest lays: lead it to a quiet spot, F roots it into your nest.
    Move the selected Seedling and your Husk follows it. A Seedling that dies is laid again after AVATAR.seedAgain s (graftSeedSpare times);
    your Husk may fall once the Seedling is out, then you lead the Seedling alone. Before that, if you die, it is over.
@@ -27,7 +27,7 @@ SWARM_MISSIONS.push(
     briefing:[
       'The station is quiet, but not empty. More soft ones came down after Dust, and they guard the platform and walk the tunnel.',
       'One of Dust was dragged home to the western nest. An egg on the mycel is opening. <i>That is you.</i>',
-      'You steer one creature through its whole life. <b>Right-click</b> to move it. As a Grafter, latch onto the body. As a <b>Twitcher</b>, feed: kill grazers or soldiers. As a <b>Shambler</b>, hide: stay far from every soldier until you change. As a <b>Husk</b>, guard the <b>Seedling</b> the nest gives you: select it, lead it to a quiet place and press <b>F</b> to take root. Move the Seedling and your Husk follows it.',
+      'You steer one creature through its whole life. <b>Right-click</b> to move it. As a Grafter, latch onto the body. As a <b>Shambler</b>, hide: stay far from every soldier until you change. As a <b>Husk</b>, guard the <b>Seedling</b> the nest gives you: select it, lead it to a quiet place and press <b>F</b> to take root. Move the Seedling and your Husk follows it.',
       'If your creature dies before the Seedling is out, the seed is lost. The nest can hatch a little brood to help (Q, W), but the hunger is yours.'
     ],
     start:{ camera:'c', rally:{x:20,y:10},
@@ -55,7 +55,6 @@ SWARM_MISSIONS.push(
       // the life, stage by stage
       { repeat:true, when:()=>true, do:g=>{ const st=avatarStage(), u=G.avatar, last=g.vars.stage;
           const txt={ grafter:'Grafter: reach the body and latch on (right-click it)', cocoon:'Cocoon: survive while you change',
-            twitcher:`Twitcher: feed on grazers or soldiers (${Math.min(AVATAR.food,(u&&u.food)||0)}/${AVATAR.food})`,
             shambler:`Shambler: hide, no soldier within ${HUSK.hide} tiles (${Math.min(AVATAR.hide,Math.floor((u&&u.hidden2)||0))}/${AVATAR.hide} s)`,
             husk:'Husk: wait for the Seedling' }[st];
           const V=g.vars, sd=graftSeedling();
@@ -75,8 +74,7 @@ SWARM_MISSIONS.push(
             if(!sd&&V.seedAt!=null&&g.time>=V.seedAt){ if(graftLaySeed(g)) g.brood_say('A new Seedling crawls from the nest. Go and get it.'); else { g.fail('seed'); g.lose('The old nest is gone. No seed is left.'); return; } } }
           if(st===last) return; g.vars.stage=st;
           if(st==='cocoon') g.brood_say('The body closes around you. Something is coming up the tunnel: the nest\'s guards will meet it.');
-          if(st==='twitcher'){ g.brood_say(`You crawl out small and weak. Feed. Grazers wander the cavern; a soldier counts double. ${AVATAR.food} kills and you grow.`); }
-          if(st==='shambler'){ g.brood_say(`You are bigger now, and they can smell you. Do not fight. Get away from every one of them and stay hidden for ${AVATAR.hide} seconds.`);
+          if(st==='shambler'){ g.brood_say(`You crawl out on two legs, and they can smell you. Do not fight. Get away from every one of them and stay hidden for ${AVATAR.hide} seconds.`);
             g.say('Cmdr. Varga','Something walked out of that nest on two legs. Hunter team, find it and burn it.'); g.vars.hunters=[...g.spawn('trooper','1',g.n(2),{faction:'corps'}),...(G.diffKey==='hard'?g.spawn('pyro','1',1,{faction:'corps'}):[])]; }   /* a Pyro joins the hunt on Hard */
           if(st==='husk'&&!V.seedPhase){ V.seedPhase=true; graftLaySeed(g); g.setText('seed','Keep the Seedling alive'); const SD=SWARM_PLAY.seed;
             g.brood_say(`You are whole: a warrior, and warriors do not root. The nest has grown a Seedling for you. Select it and lead it to open ground, at least ${SD.clear} tiles from them and ${SD.gap} from any nest, then press F. Where it goes, you follow. Guard it.`); }

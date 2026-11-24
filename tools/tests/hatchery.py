@@ -1,5 +1,5 @@
 # Hive life: no eggs until a body lies in the creep; the body is carried up to the hive; the egg is laid right next to the hive;
-# the Swarm's Husk skips the Shambler; creep is smaller (CREEP.max 8).
+# the Swarm's Husk crawls out of its cocoon full grown (no Twitcher, no Shambler); creep is smaller (CREEP.max 8).
 from playwright.sync_api import sync_playwright
 errs=[]; ok=True
 with sync_playwright() as p:
@@ -19,9 +19,9 @@ with sync_playwright() as p:
         if(body.dead&&G.ents.some(c=>!c.dead&&c.type==='cocoon')) cocoon=true; }
       return { creepMax:CREEP.max, eggs0, d0:+d0.toFixed(1), homeGap:homeGap==null?null:+homeGap.toFixed(2), eggGap:eggGap==null?null:+eggGap.toFixed(2), cocoon }; }""")
     print(r); ok&= r['creepMax']==8 and r['eggs0']==0 and r['homeGap'] is not None and r['homeGap']<1.3 and r['eggGap'] is not None and r['eggGap']<1.0 and r['cocoon']
-    r=pg.evaluate("""()=>{ const G=__hc.G, h=hives()[0]; const u=makeUnit('husk','swarm',h.x+2*TILE,h.y+2*TILE); huskHatched(u); const seen=[u.stageName];
+    r=pg.evaluate("""()=>{ const G=__hc.G, h=hives()[0]; const u=makeUnit('husk','swarm',h.x+2*TILE,h.y+2*TILE); huskHatched(u); const seen=[u.stage===HUSK_STAGES.length-1?'Husk':u.stageName];
       for(let i=0;i<30*20;i++){ __hc.update(1/30); const n=u.stage===HUSK_STAGES.length-1?'Husk':u.stageName; if(seen[seen.length-1]!==n) seen.push(n); }
       return seen; }""")
-    print(r); ok&= r==['Twitcher','Husk']
+    print(r); ok&= r==['Husk']
     b.close()
 print(errs); print('ALL OK' if ok and not errs else 'FAIL')

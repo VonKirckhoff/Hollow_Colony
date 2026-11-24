@@ -4,7 +4,7 @@
    → the Husk → the top bar → burrowing → tearing down an outpost. Press N to skip a step. Brood Tactics (t-brood-tactics.js) goes on from here.
    Every step has a demo(g,D) for Watch mode (27b-demo.js): what the demo does to show the step. */
 /* FIRST_HUNGER: preyEvery = seconds before a new pair of soldiers wanders into the open once the last ones are down · prey = how many come
-   · huskMax = no new prey while this many soldiers are turned or turning (bodies on the field, cocoons, Twitchers and Husks):
+   · huskMax = no new prey while this many soldiers are turned or turning (bodies on the field, cocoons and Husks):
      fewer only by losing some in a fight
    · swarmMax = no new prey while this many Swarm creatures roam (hive guards and Grafters do not count) */
 const FIRST_HUNGER = { preyEvery:12, prey:2, huskMax:4, swarmMax:30 };
@@ -76,7 +76,7 @@ TRAINING.swarm = {
         done:()=>G.ents.some(e=>!e.dead&&((e.kind==='body'&&!e.fauna&&e.home)||(e.type==='cocoon'&&e.husk)||e.type==='husk')) },
       { say:'The Grafter does the same with a soldier, but what grows out of him is something else. Watch.', obj:'Watch the Grafter turn the body', demo:(g,D)=>{ const c=G.ents.find(e=>!e.dead&&((e.type==='cocoon'&&e.husk)||(e.kind==='body'&&!e.fauna&&e.home)||e.type==='husk')); if(c) demoLook(D,c); },
         done:()=>G.ents.some(e=>!e.dead&&((e.type==='cocoon'&&e.husk)||e.type==='husk')) },
-      { say:`The cocoon beats faster and faster. What crawls out is a Twitcher, weak while it turns; it molts once and becomes a Husk, a warrior. It joins the brood at the gathering point and goes where you send it. Soldiers keep wandering into the open, but never while ${FIRST_HUNGER.huskMax} of them are turned or turning: to make room, spend some Husks in a fight.`, obj:'Watch it grow', demo:(g,D)=>{ const c=G.ents.find(e=>!e.dead&&(e.type==='husk'||(e.type==='cocoon'&&e.husk))); if(c) demoLook(D,c); },
+      { say:`The cocoon beats faster and faster. What crawls out is a Husk, a warrior. It joins the brood at the gathering point and goes where you send it. Soldiers keep wandering into the open, but never while ${FIRST_HUNGER.huskMax} of them are turned or turning: to make room, spend some Husks in a fight.`, obj:'Watch it grow', demo:(g,D)=>{ const c=G.ents.find(e=>!e.dead&&(e.type==='husk'||(e.type==='cocoon'&&e.husk))); if(c) demoLook(D,c); },
         done:g=>G.ents.some(e=>e.type==='husk'&&!e.dead&&e.stage>=1)||g.time>g.vars.tutStart+45 },
       ...topbarSteps('swarm'),
       { keys:['B'], say:'Press [B] and click open ground, away from their eyes: a small brood digs up out of the rock. (For this step the brood limit stretches, so there is always room.)', obj:'Burrow up a brood (B + click)', demo:(g,D)=>{ if(D.mem.b) return; const p=demoBurrowSpot(); if(!p) return; demoLook(D,p); if(D.t<3) return; D.mem.b=1; demoTap(p); burrowAt(p.x,p.y); },

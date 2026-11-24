@@ -1,6 +1,7 @@
 # The Graft (Nov 2026): your Husk never roots. Once it is whole, the old nest lays a Seedling for it; moving the selected Seedling
 # the Husk follows it; F roots the Seedling into the nest that wins the mission. A dead Seedling is laid again (spares by difficulty),
 # a fallen Husk after the Seedling is out does not end it, the last seed dead does.
+# No Twitcher (Nov 2026): the cocoon opens on a Shambler; a grazer your Shambler kills is eaten (no carcass), one your Husk kills leaves a carcass.
 from playwright.sync_api import sync_playwright
 errs=[]
 JS_START='''()=>{ startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-graft')); }'''
@@ -40,10 +41,25 @@ LOSE='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'F
   step(1); const u=G.avatar; u.hp=0; u.dead=true; step(1); ok(!G.over,'Husk dead, Seedling alive: still going');
   const sd=graftSeedling(); sd.hp=0; sd.dead=true; step(2); ok(G.over&&!G.won,'Husk and Seedling dead: lost');
   }catch(e){ out.push('FAIL error '+e.message); } return out.join('\\n'); }'''
+STAGES='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
+  ok(!HUSK_STAGES.some(s=>s.name==='Twitcher'),'no Twitcher stage left');
+  for(let i=0;i<30*60&&!(G.avatar&&G.avatar.type==='cocoon');i++){ const a=G.avatar, b=G.vars.body; if(a&&a.type==='grafter'&&b){ a.order={type:'move',x:b.x,y:b.y}; setPath(a,b.x,b.y); } __hc.update(1/30); }
+  ok(G.avatar&&G.avatar.type==='cocoon','your Grafter turned the body into a cocoon');
+  for(let i=0;i<30*40&&G.avatar&&G.avatar.type==='cocoon';i++) __hc.update(1/30);
+  const u=G.avatar; ok(u&&u.type==='husk'&&u.stage===0&&avatarStage()==='shambler','the cocoon opens on a Shambler ('+avatarStage()+')');
+  for(const e of G.ents) if(e.faction==='corps'&&e.kind==='unit') e.invuln=true;
+  const g1=makeUnit('grazer','wild',u.x+20,u.y); const n0=G.ents.filter(e=>e.kind==='body').length; damage(g1,9999,u); step(0.2);
+  ok(G.ents.filter(e=>e.kind==='body').length===n0,'a grazer your Shambler kills is eaten: no carcass');
+  u.stage=HUSK_STAGES.length-1; const g2=makeUnit('grazer','wild',u.x+20,u.y); damage(g2,9999,u); step(0.2);
+  ok(G.ents.some(e=>e.kind==='body'&&!e.dead&&e.fauna&&Math.hypot(e.x-g2.x,e.y-g2.y)<TILE),'a grazer your Husk kills leaves a carcass');
+  const h=makeUnit('husk','swarm',u.x+60,u.y+60); huskHatched(h); ok(h.stage===HUSK_STAGES.length-1&&!h.stageName,'a Husk of the Brood crawls out full grown');
+  }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
 res=[]
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
     pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text else None)
+    pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
+    pg.evaluate(JS_START); pg.wait_for_timeout(400); res.append(pg.evaluate(STAGES))
     for js in (CASES,LOSE):
         pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
         pg.evaluate(JS_START); pg.wait_for_timeout(400); pg.evaluate(JS_HUSK)

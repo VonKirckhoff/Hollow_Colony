@@ -53,7 +53,7 @@ function decodeGame(save){
     if(v.__map){ const m=new Map(); refs.set(v.__i,m); for(const [k,x] of v.__map) m.set(dec(k),dec(x)); return m; }
     if(v.__a){ const a=[]; refs.set(v.__i,a); for(const x of v.__a) a.push(dec(x)); return a; }
     const o={}; if(v.__i!=null) refs.set(v.__i,o); for(const k of Object.keys(v)) if(!k.startsWith('__')) o[k]=dec(v[k]); return o; };
-  const ents=save.ents.map(r=>{ const o=entById.get(r.id); if(r.__i!=null) refs.set(r.__i,o); for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=dec(r[k]); o.path=null; if(o.type==='matriarch'){ o.type='husk'; o.rootT=null; o.site=null; } return o; });
+  const ents=save.ents.map(r=>{ const o=entById.get(r.id); if(r.__i!=null) refs.set(r.__i,o); for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=dec(r[k]); o.path=null; if(o.type==='matriarch'){ o.type='husk'; o.rootT=null; o.site=null; } if(o.type==='husk'&&o.stage!=null){ const k=HUSK_STAGES.findIndex(s=>s.sprite===o.sprite); o.stage=k>=0?k:o.sprite==='husk1'?0:HUSK_STAGES.length-1; if(o.sprite==='husk1') o.sprite=HUSK_STAGES[0].sprite; o.stageName=o.stage<HUSK_STAGES.length-1?HUSK_STAGES[o.stage].name:null; } return o; });   /* a Twitcher from an old save (before Nov 2026) is a Shambler now */
   const g={}; for(const k of Object.keys(save.G)) g[k]=dec(save.G[k]);
   const triggers=save.triggers.map(t=>{ const o={}; for(const k of Object.keys(t)) o[k]=dec(t[k]); return o; });
   return { ents, g, triggers }; }
