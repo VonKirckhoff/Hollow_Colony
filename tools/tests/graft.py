@@ -53,7 +53,7 @@ LOSE='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'F
   }catch(e){ out.push('FAIL error '+e.message); } return out.join('\\n'); }'''
 STAGES='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
   ok(!HUSK_STAGES.some(s=>s.name==='Twitcher'),'no Twitcher stage left');
-  { const st=ptWorld('1'), n=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-st.x,e.y-st.y)<6*TILE).length; ok(n===7,'seven soldiers at the station ('+n+')'); }
+  { const st=ptWorld('1'), n=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-st.x,e.y-st.y)<6*TILE).length; ok(n===14,'fourteen soldiers at the station ('+n+')'); }
   for(let i=0;i<30*60&&!(G.avatar&&G.avatar.type==='cocoon');i++){ const a=G.avatar, b=G.vars.body; if(a&&a.type==='grafter'&&b){ a.order={type:'move',x:b.x,y:b.y}; setPath(a,b.x,b.y); } __hc.update(1/30); }
   ok(G.avatar&&G.avatar.type==='cocoon','your Grafter turned the body into a cocoon');
   for(let i=0;i<30*40&&G.avatar&&G.avatar.type==='cocoon';i++) __hc.update(1/30);
@@ -67,17 +67,26 @@ STAGES='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m
   }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
 RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
   step(1); const r=graftRelay(); ok(!!r&&r.clickOnly&&r.ty<12,'a Relay Tower in the north cavern ('+(r&&r.tx)+','+(r&&r.ty)+')');
-  ok(graftGarrison().length===7&&G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel').length===2,'seven in the garrison, two in the tunnel');
+  ok(graftGarrison().length===14&&G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel').length===2,'fourteen in the garrison, two in the tunnel');
   ok(!!G.ents.find(e=>!e.dead&&e.type==='lz'),'a Landing Zone at the station');
   /* the brood leaves the tower alone until you send it */
   const ds=[]; for(let i=0;i<3;i++){ const d=makeUnit('drone','swarm',r.x+30+i*10,r.y+40); d.role='brood'; d.mine=true; d.post={x:d.x,y:d.y}; ds.push(d); }
   const hp0=r.hp; step(6); ok(r.hp===hp0&&!ds.some(d=>d.target===r),'brood next to the tower leaves it alone');
   selectEntities(ds,false); swarmRight(r.x,r.y); step(3); ok(r.hp<hp0,'right-clicked: they tear at it ('+Math.round(r.hp)+'/'+Math.round(hp0)+')');
   for(const d of ds) d.dead=true;
-  /* the garrison loses two: a ship brings them back */
-  const tr=graftGarrison().filter(u=>u.type==='trooper').slice(0,2); for(const u of tr) kill(u,null); step(1);
-  ok(G.ents.some(e=>e.type==='lz'&&e.flight&&e.flight.cargo.length===2),'two lost: a ship with two Troopers is on its way');
-  step(GRAFT_CORPS.call+25); ok(graftGarrison().length===7,'they land and join the garrison ('+graftGarrison().length+')');
+  /* the tower is hurt: a repair team with an Engineer */
+  step(1); const lz=G.ents.find(e=>e.type==='lz'); ok(lz.flight&&lz.flight.cargo.includes('engineer')&&lz.flight.cargo.length===4,'the tower is hurt: an Engineer and three Troopers are on their way ('+(lz.flight&&lz.flight.cargo)+')');
+  for(let i=0;i<30*(GRAFT_CORPS.call+120)&&!(r.hp>=r.maxHp);i++) __hc.update(1/30);
+  const rt=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='repair'); ok(rt.length===4&&rt.some(e=>e.type==='engineer'),'the repair team is down ('+rt.map(e=>e.type)+')');
+  ok(r.hp>=r.maxHp&&rt.every(e=>dist(e,r)<12*TILE),'they walked to the tower and mended it ('+Math.round(r.hp)+'/'+r.maxHp+')');
+  /* the garrison loses two: not enough for a ship; four: a ship brings them back, shielded */
+  let tr=graftGarrison().filter(u=>u.type==='trooper'&&!u.invuln).slice(0,2); for(const u of tr) kill(u,null); step(2);
+  ok(!lz.flight,'two lost: no ship yet (never in ones and twos)');
+  tr=graftGarrison().filter(u=>u.type==='trooper'&&!u.invuln).slice(0,2); for(const u of tr) kill(u,null); step(1);
+  ok(lz.flight&&lz.flight.cargo.length===4,'four lost: a ship with four is on its way');
+  const before=new Set(G.ents); for(let i=0;i<30*(GRAFT_CORPS.call+25)&&graftGarrison().length<14;i++) __hc.update(1/30); step(1);
+  const nw=graftGarrison().filter(u=>!before.has(u)); ok(graftGarrison().length===14&&nw.length===4,'they land and join the garrison ('+graftGarrison().length+')');
+  { const u=nw[0], h=u.hp; damage(u,50,null); ok(u.invuln&&u.hp===h,'off the ship: they cannot be hurt'); step(GRAFT_CORPS.safe+1); damage(u,10,null); ok(!u.invuln&&u.hp<h,'after '+GRAFT_CORPS.safe+' s they can'); }
   /* the tunnel two are not replaced */
   for(const u of G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel')) kill(u,null); step(2); ok(G.ents.filter(e=>e.type==='lz'&&e.flight).length===0,'the tunnel patrol is not replaced');
   /* the tower falls: no more ships */

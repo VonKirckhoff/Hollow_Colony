@@ -452,6 +452,10 @@ const DEV_HELP = {
   'GRAFT_CORPS|garrison.trooper':'The Graft: Troopers in the station garrison; while the Relay Tower stands, replacements keep it at this many.',
   'GRAFT_CORPS|garrison.gunner':'The Graft: Gunners in the station garrison.',
   'GRAFT_CORPS|garrison.medic':'The Graft: Medics in the station garrison.',
+  'GRAFT_CORPS|bulk':'The Graft: a ship with replacements only goes once the garrison misses this many (never one man alone).',
+  'GRAFT_CORPS|safe':'The Graft: seconds a soldier off the ship cannot be hurt (SHIELDED).',
+  'GRAFT_CORPS|repairTeam.engineer':'The Graft: Engineers in the team Varga flies in when the Relay Tower is hurt (it walks to the tower, mends it and stays on guard).',
+  'GRAFT_CORPS|repairTeam.trooper':'The Graft: Troopers escorting that Engineer.',
   'GRAFT_CORPS|call':'The Graft: seconds a ship needs to fly in replacements for the garrison (one ship at a time, only while the Relay Tower stands).',
   'GRAFT_CORPS|relay.x':'The Graft: where the Relay Tower stands (its middle, tile x; next start).', 'GRAFT_CORPS|relay.y':'The Graft: ...tile y.',
   /* squad */

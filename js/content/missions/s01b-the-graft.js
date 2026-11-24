@@ -8,16 +8,19 @@
    To win, the Seedling must root AND every soldier on the map must be dead (objective 'purge'); once the nest stands,
    only losing every hive loses the mission.
    The whole Brood is yours from the start (hatch, A, H, teams); once the Seedling is out it grows (GRAFT_BROOD).
-   The doors are open; the Lunar Corps holds the station with a garrison of seven (u.graftPost 'station'), the two in the tunnel
+   The doors are open; the Lunar Corps holds the station with a garrison of fourteen (u.graftPost 'station'), the two in the tunnel
    (graftPost 'tunnel') walk the patrol and, once you are a Shambler, a hunter team comes after you.
    Nov 2026: a Relay Tower on the pad in the north cavern. While it stands, every soldier the garrison loses is flown in again
-   (GRAFT_CORPS) to the Landing Zone at the station; the patrol and the hunters are not replaced. Torn down: no more ships.
+   (GRAFT_CORPS) to the Landing Zone at the station, always in bulk (at least GRAFT_CORPS.bulk at once, never one man alone);
+   the patrol and the hunters are not replaced. Whoever comes off a ship cannot be hurt for GRAFT_CORPS.safe seconds.
+   Once the tower is hurt, Varga flies in a repair team (GRAFT_CORPS.repairTeam, graftPost 'repair'): it walks to the tower,
+   its Engineer mends it and the team stays there on guard. A new team only once that one is gone. Torn down: no more ships.
    The Brood never attacks the tower on its own (b.clickOnly): you have to send them at it (right-click it, or A + click on it). */
 /* GRAFT_BROOD: when the Seedling comes out, the brood limit grows by `cap`, you get `biomass` extra, Brutes can hatch `brute` s later */
 const GRAFT_BROOD = { cap:10, biomass:150, brute:120 };
 /* GRAFT_CORPS: the station garrison (kept at full strength while the Relay Tower stands) · call: seconds a ship needs to bring replacements
    · relay: the tower's middle (on the R pad of the north cavern) */
-const GRAFT_CORPS = { garrison:{ trooper:4, gunner:2, medic:1 }, call:30, relay:{x:49,y:5} };
+const GRAFT_CORPS = { garrison:{ trooper:8, gunner:4, medic:2 }, call:30, relay:{x:49,y:5}, bulk:4, safe:60, repairTeam:{ engineer:1, trooper:3 } };   /* bulk: a ship only goes once this many are missing · safe: seconds a man off the ship cannot be hurt */
 const graftRelay=()=>G.ents.find(e=>!e.dead&&e.type==='relay'&&e.faction==='corps'&&e.graft);
 function graftGarrison(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.graftPost==='station'); }
 /* the soldiers the garrison is short of, by kind (what died is what comes back) */
@@ -63,11 +66,23 @@ SWARM_MISSIONS.push(
       // who is who: the garrison at the station, the two in the tunnel; the tower is only hit when you send the brood at it
       { when:g=>g.time>0.1, do:g=>{ const s1=ptWorld('1'); for(const u of g.corps()) u.graftPost=Math.hypot(u.x-s1.x,u.y-s1.y)<8*TILE?'station':'tunnel';
           for(const b of G.ents) if(!b.dead&&b.type==='relay'&&b.faction==='corps'){ b.graft=true; b.clickOnly=true; } } },
-      // whoever comes off a ship joins the garrison
-      { repeat:true, when:g=>g.time>0.5, do:g=>{ for(const u of g.corps()) if(!u.graftPost&&!(g.vars.hunters||[]).includes(u)) u.graftPost='station'; } },
-      // the garrison is short: while the tower stands, Varga flies in what it lost (one ship at a time)
-      { repeat:true, when:g=>g.time>1&&!g.vars.cut&&g.inbound()===0&&graftShort().length, do:g=>{ const list=graftShort(); g.airdrop(list,GRAFT_CORPS.call,'1');
+      // whoever comes off a ship: the repair team first (by kind), the rest joins the garrison; none of them can be hurt for a while
+      { repeat:true, when:g=>g.time>0.5, do:g=>{ const V=g.vars, rp=V.repairNeed||{}, team=[];
+          for(const u of g.corps()){ if(u.graftPost||(V.hunters||[]).includes(u)) continue;
+            if(rp[u.type]>0){ rp[u.type]--; u.graftPost='repair'; team.push(u); } else u.graftPost='station';
+            u.invuln=true; u.graftSafe=g.time+GRAFT_CORPS.safe; G.fx.push({k:'text',x:u.x,y:u.y-24,t:1.2,max:1.2,txt:'SHIELDED',col:'#7fd3ff'}); }
+          if(team.length){ const r=graftRelay(); if(r) g.orderCorps(team,{x:r.tx,y:r.ty+3},'amove'); }
+          for(const u of g.corps()) if(u.graftSafe&&g.time>=u.graftSafe){ u.graftSafe=null; u.invuln=false; } } },
+      // the garrison is short: while the tower stands, Varga flies in what it lost, in bulk (one ship at a time)
+      { repeat:true, when:g=>g.time>1&&!g.vars.cut&&g.inbound()===0&&graftShort().reduce((s,[,n])=>s+n,0)>=Math.min(GRAFT_CORPS.bulk,Object.values(GRAFT_CORPS.garrison).reduce((a,b)=>a+b,0)), do:g=>{ const list=graftShort(); g.airdrop(list,GRAFT_CORPS.call,'1');
           if(!g.vars.callSaid||g.time>g.vars.callSaid+60){ g.vars.callSaid=g.time; g.say('Cmdr. Varga',`Kappa, replacements are on their way: ${list.reduce((s,[,n])=>s+n,0)} of them, ${GRAFT_CORPS.call} seconds out.`); } } },
+      // the tower is hurt: a repair team with an Engineer (only when no team is left or on its way)
+      { repeat:true, when:g=>{ const r=graftRelay(); return r&&!g.vars.cut&&r.hp<r.maxHp&&!G.ents.some(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='repair')&&!Object.values(g.vars.repairNeed||{}).some(n=>n>0); },
+        do:g=>{ const list=Object.entries(GRAFT_CORPS.repairTeam); g.vars.repairNeed=Object.fromEntries(list); g.airdrop(list,GRAFT_CORPS.call,'1');
+          g.say('Cmdr. Varga','The relay in the north cavern is taking damage. I am sending an Engineer with an escort to patch it up. Keep that line open.'); } },
+      // the repair team at the tower: the Engineer mends it while it is hurt
+      { repeat:true, when:g=>g.time>(g.vars.mendAt||0), do:g=>{ g.vars.mendAt=g.time+1; const r=graftRelay(); if(!r) return;
+          for(const u of g.corps()) if(u.graftPost==='repair'&&u.def.builder&&!u.downed&&r.hp<r.maxHp&&dist(u,r)<10*TILE&&!(u.order&&u.order.type==='repair')){ u.order={type:'repair',target:r}; u.target=null; } } },
       // the tower falls: no more ships
       { when:g=>g.time>0.5&&!graftRelay(), do:g=>{ g.vars.cut=true; g.complete('relay'); g.say('Sgt. Kessler','The relay is down! Varga, do you copy? ... Nothing. Nobody is coming.');
           g.brood_say('Their voice is broken. No more of them will fall from the sky.'); } },
