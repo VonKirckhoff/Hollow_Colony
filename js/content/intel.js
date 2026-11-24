@@ -34,7 +34,7 @@ const INTEL_NOTES = {
   rubble:   'Left behind where a seismic charge brought the cave down (Dead Signal). It blocks the way for good.',
   shaft:    'Some shafts belong to a hive and take over its guards and waves once you burn it. Others are old mine shafts the Osprey crew uses to get away, and to come back.',
   crawler:  'Fast and fragile, often in numbers. Cheap to lose, so the Brood throws them first.',
-  seedling: 'A swollen pod on thin legs that a hive grows to carry the Brood somewhere new. It cannot fight. Where it digs in, far from people and other nests, a young nest grows within seconds. Kill it before it roots.',
+  seedling: 'A swollen pod on eight writhing tentacles that a hive grows to carry the Brood somewhere new. It cannot fight. Where it digs in, far from people and other nests, a young nest grows within seconds. Kill it before it roots.',
   bloater:  'Lunar fauna the Brood killed, dragged home to a hive and remade. Slow and tough, and when it dies it bursts in a cloud of acid that burns your soldiers (and the Brood). Kill it at range.',
   grafter:  'The parasite of the Brood. It only hatches from a hive egg when a body (a soldier, or a grazer) lies in the mycel of its hive. It runs to the body, latches on and infects it in a few seconds: then the body becomes a cocoon. It cannot fight. One shot kills it.',
   egg:      'A hive keeps no eggs waiting: it lays one right at its own foot the moment a body lies in its mycel, and the Grafter inside goes for the body. Shoot the egg before it opens.',

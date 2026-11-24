@@ -416,13 +416,29 @@ function v3Creature(e){
     const ra=grp(0.2,0.3,0); ra.add(box(F,0.08,0.24,0.08,0,-0.12,0)); const re=grp(0,-0.24,0); re.add(box(F,0.07,0.22,0.07,0,-0.11,0)); const cl=claws(mat('#d8d0bc'),3,0.2,0.02,0.035); cl.position.set(0,-0.22,0.03); cl.rotation.x=0.9; re.add(cl); re.rotation.x=-0.7; ra.add(re); ra.rotation.x=-0.6; ra.userData.base=-0.6; torso.add(ra); U.arms.push(ra);
     const la=grp(-0.2,0.3,0); la.add(box(Su,0.08,0.2,0.08,0,-0.1,0)); la.add(box(F,0.07,0.2,0.07,0,-0.3,0.02)); la.rotation.x=-0.2; la.userData.base=-0.2; torso.add(la); U.arms.push(la);
     U.top=0.95; return g; }
-  if(t==='seedling'){ const pod=grp(0,0.95,0); pod.add(ball(shiny('#5c3e6e'),0.3,0.36,0.3,0,0,0)); for(let i=0;i<5;i++) pod.add(ball(glow('#c58cff'),0.05,0.05,0.05,Math.cos(i*1.26)*0.27,0.08,Math.sin(i*1.26)*0.27)); g.add(pod); U.sac=pod;
-    for(let i=0;i<4;i++){ const a=i*Math.PI/2+0.4, hip=grp(Math.cos(a)*0.18,0.85,Math.sin(a)*0.18); hip.rotation.set(Math.sin(a)*0.5,0,-Math.cos(a)*0.5); hip.add(box(C,0.04,0.85,0.04,0,-0.42,0)); g.add(hip); U.legs.push(hip); }
-    U.top=1.35; return g; }
+  if(t==='seedling'){ const pod=grp(0,0.75,0); pod.add(ball(shiny('#5c3e6e'),0.3,0.36,0.3,0,0,0)); for(let i=0;i<5;i++) pod.add(ball(glow('#c58cff'),0.05,0.05,0.05,Math.cos(i*1.26)*0.27,0.08,Math.sin(i*1.26)*0.27)); g.add(pod); U.sac=pod;
+    U.tents=v3Tentacles(g,fung('#45304f'),fung('#7a5a8e')); U.top=1.15; return g; }
   if(t==='broodmother'||t==='heir') return v3Matron(e);   /* the Heir: the same model, smaller (scale below) */
   if(t==='grazer') return v3Grazer(e,false);
   return null; }
 
+/* the Seedling's eight octopus tentacles (TENTACLES in 17-rendering.js): a chain of six tapering joints each, laid out in an
+   S-bend from under the pod down to the ground with the tip curled up (TENT3D.bend, angles from straight down). v3PoseTentacles
+   lets a wave run from root to tip and from one tentacle to the next, lifts them in turn while walking, writhes them sideways,
+   rolls the tips; taking root they lie flatter and nearly still. */
+const TENT3D = { n:8, seg:0.14, width:0.08, root:0.42, ring:0.12, bend:[1.15,0.85,0.55,0.5,1.25,2.0], lift:0.35, writhe:0.12 };
+function v3Tentacles(g,mB,mT){ const C=TENT3D, out=[]; GEO.tent=GEO.tent||new THREE.CylinderGeometry(1,0.7,1,8).translate(0,-0.5,0);
+  for(let i=0;i<C.n;i++){ const a=(i+0.5)/C.n*Math.PI*2, root=grp(Math.cos(a)*C.ring,C.root,Math.sin(a)*C.ring); root.rotation.y=-a; g.add(root);
+    const joints=[]; let par=root, prev=0;
+    C.bend.forEach((ab,k)=>{ const f=k/C.bend.length, w=C.width*(1-0.75*f), j=grp(0,k?-C.seg:0,0); j.rotation.z=ab-prev; j.userData.base=j.rotation.z; prev=ab;
+      j.add(part(GEO.tent,f>0.6?mT:mB,w,C.seg,w,0,0,0)); j.add(ball(f>0.6?mT:mB,w,w,w,0,0,0)); par.add(j); par=j; joints.push(j); });
+    out.push(joints); }
+  return out; }
+function v3PoseTentacles(e,U,T,mv){ const C=TENTACLES, D=TENT3D, rooting=e.rootT!=null, sp=rooting?0.4:mv?C.walk:C.idle, n=D.bend.length;
+  U.tents.forEach((js,i)=>{ const ph=T*sp-i*C.ripple+e.id, dir=i%2?1:-1, up=mv?Math.max(0,Math.sin(ph))*D.lift:0;
+    js.forEach((j,k)=>{ const f=k/n, w=Math.sin(ph-k*0.9)*C.wave*(rooting?0.2:1)*(0.25+f)*0.6, curl=k>=n-2?(0.5+0.5*Math.sin(ph*0.7))*C.curl*0.6:0;
+      j.rotation.z=j.userData.base+w+curl+(rooting&&k===0?0.25:0)+(k===0?-up:k===1?up*0.4:0);
+      j.rotation.x=Math.sin(ph*0.8-k*0.7)*D.writhe*(mv?2:1)*dir*(rooting?0.2:1); }); }); }
 /* the grazer: docile lunar fauna in dusty ochre with a pale belly. A folded hide, two rows of slanted dark plates down the back,
    a long neck, big dark eyes, flap ears, two short back-swept horns, feelers under the snout to scrape lichen off the rock,
    knees and broad flat hooves for the dust, a stubby tail. Infected (the Sporebag) it is the same beast, swollen: the hide split
@@ -1479,6 +1495,7 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
     U.legs.forEach((l,i)=>{ const b=l.userData.bx??(l.userData.bx=l.rotation.x); l.rotation.x=b+(i%2?sw:-sw); if(l.userData.knee){ const k=l.userData.knee; k.rotation.x=(k.userData.kb||0)+(mv?Math.max(0,Math.sin(ph+(i%2?Math.PI:0)))*0.6:0); } });
     U.arms.forEach((a,i)=>{ const b=a.userData.base||0; a.rotation.x=U.gun?b+(mv?Math.sin(ph)*0.06:0):b+(e.lunge>0?-0.9:(mv?(i%2?sw:-sw)*0.6:Math.sin(T*1.5+e.id+i)*0.08)); });
     if(U.tail) U.tail.rotation.y=Math.sin(T*2.2+e.id)*0.35;
+    if(U.tents) v3PoseTentacles(e,U,T,mv);
     if(U.feelers) U.feelers.forEach((f,i)=>f.rotation.z=Math.sin(T*2+i)*0.25);
     if(U.head&&!mv) U.head.rotation.y=Math.sin(T*0.7+e.id*1.3)*0.3;
     if(U.sac){ const beat=(e.type==='broodmother'||e.type==='heir')?Math.pow(Math.max(0,Math.sin(T*3.2)),12)*0.07:0.05*Math.sin(T*(e.chargeT>0?14:3)+e.id); U.sac.scale.setScalar(1+beat); }

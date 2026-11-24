@@ -42,7 +42,7 @@ const UNITS = {
     desc:'Hatches from the egg a hive lays at its foot when a body is brought home. It scuttles to the body, latches on and infects it. It cannot fight.' },
   seedling: { name:'Seedling', faction:'swarm', sprite:'seedling', role:'Seed of a nest',
     hp:110, speed:42, radius:9, sight:5, range:0, biomass:250, seed:true,
-    desc:'A swollen pod on thin legs that a hive grows for one purpose: to carry the Brood somewhere new. It cannot fight. Bring it to a quiet place, away from other hives and out of their sight, and press F: it takes root and becomes a young nest.' },
+    desc:'A swollen pod on eight writhing tentacles that a hive grows for one purpose: to carry the Brood somewhere new. It cannot fight. Bring it to a quiet place, away from other hives and out of their sight, and press F: it takes root and becomes a young nest.' },
   bloater: { name:'Sporebag', faction:'swarm', sprite:'bloater', role:'Infected fauna',
     hp:120, speed:40, radius:10, sight:5, range:0.8, damage:6, cooldown:1.3, attack:'melee', burst:{ radius:1.8, damage:28 },
     desc:'A grazer the Brood killed and dragged home to a hive, remade. Slow and swollen with acid: when it dies it bursts, burning everything around it.' },

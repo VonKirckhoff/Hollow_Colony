@@ -123,6 +123,26 @@ function render(now){
   if(G.paused&&!G.over&&$('#s-settings').hidden){ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,ui.vw,ui.vh); }
 }
 function drawStars(cam){ ctx.fillStyle='#2a2d3a'; for(let i=0;i<70;i++){ const x=((hash2(i,1,9)*ui.vw*2-cam.x*0.05)%ui.vw+ui.vw)%ui.vw, y=((hash2(i,2,9)*ui.vh*2-cam.y*0.05)%ui.vh+ui.vh)%ui.vh; ctx.fillRect(x|0,y|0,1+(i%3===0),1); } }
+/* the Seedling's octopus tentacles (2D, the Intel picture and the 3D model): eight from under the pod, thick at the pod and thin
+   at the tip, an S-bend down to the ground and a tip that curls up. Walking they ripple one after another round the pod, a wave
+   running from root to tip, each lifting off and setting down in turn; standing still they drift slowly and the tips feel the
+   ground. Taking root (F) they spread wider and nearly still.
+   TENTACLES: n tentacles in 2D · reach 2D length in px at scale 2 · lift px the pod floats above the ground in 2D · walk / idle
+   wave speed · wave how far a tentacle swings · curl how hard the tip rolls up · ripple delay from one tentacle to the next. */
+const TENTACLES = { n:8, reach:14, lift:6, walk:9, idle:1.4, wave:0.45, curl:0.9, ripple:0.8 };
+function drawTentacles(c,cx,cy,gy,sc,t,mv,front,seed=0,rooting=false){ const T=TENTACLES, n=T.n, segs=7, sp=rooting?0.4:mv?T.walk:T.idle;
+  const K='#0a0b10', B='#45304f', P='#7a5a8e';
+  for(let i=0;i<n;i++){ const a=(i+0.5)/n*Math.PI*2; if((Math.sin(a)>0)!==front) continue;
+    const ph=t*sp-i*T.ripple+seed, dir=i%2?1:-1, L=T.reach*sc/segs*(rooting?1.25:1), pts=[]; let h=a, x=cx, fy=0;
+    for(let k=0;k<=segs;k++){ const f=k/segs, up=(gy-cy)*(1-f)*(1-f)+(mv?Math.max(0,Math.sin(ph-f*2))*2.5*sc*Math.sin(Math.PI*f):0);
+      pts.push([x,gy+fy-up,f]);
+      h+=T.wave*(rooting?0.2:1)*0.5*Math.sin(ph-k*0.9)+(k>=segs-2?dir*T.curl*(0.7+0.3*Math.sin(ph*0.7)):0);
+      x+=Math.cos(h)*L*(1-0.3*f); fy+=Math.sin(h)*L*(1-0.3*f)*0.45; }   /* the ground lies flat: depth is squashed */
+    for(const pass of [0,1]) for(let k=0;k<segs;k++) for(let j=0;j<3;j++){ const A=pts[k], Bp=pts[k+1], q=j/3, f=(k+q)/segs,
+        px=A[0]+(Bp[0]-A[0])*q, py=A[1]+(Bp[1]-A[1])*q, sz=Math.max(1,Math.round((3-2*f)*sc));
+      if(pass===0){ c.fillStyle=K; c.fillRect(Math.round(px-sz/2)-1,Math.round(py-sz/2)-1,sz+2,sz+2); }
+      else { c.fillStyle=f>0.72?P:B; c.fillRect(Math.round(px-sz/2),Math.round(py-sz/2),sz,sz); } } } }
+function seedTentacles(u,x,y,s,w,front){ drawTentacles(ctx,x+(u.face>0?6.5*s:w-6.5*s),y+7*s,u.y+3,s/2,performance.now()/1000,u.moving&&u.rootT==null,front,u.id,u.rootT!=null); }
 function drawUnit(u){
   const sp=SPR[u.sprite||u.def.sprite], s=u.def.scale||2, w=sp.w*s, h=sp.h*s;
   if(u.downed){ drawDowned(u,sp,w,h,performance.now()); return; }
@@ -130,16 +150,18 @@ function drawUnit(u){
   const bob = u.moving ? (Math.floor(u.anim*8)%2) : 0;
   const lunge = u.lunge>0 ? u.face*4 : 0;
   drawShadow(u.x,u.y+3,u.r*0.95,u.r*0.42);
-  const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=Math.round(u.y-h+4-bob*s/2);
+  const x=Math.round(u.x-w/2+lunge+(u.molt>0?rand(-2,2):0)), y=u.def.seed?Math.round(u.y+3-TENTACLES.lift*s/2-7*s-bob*s/2):Math.round(u.y-h+4-bob*s/2);   /* a Seedling floats on its tentacles */
   const now=performance.now(), risen=u.vet&&u.vet.risen;
   if(u.leader) drawAura(u,now); if(risen) drawRisenGlow(u,now); if(u.crew){ drawTaint(u,now); drawTaintRing(u,now); drawVeil(u,now); }
   const hov=isHovered(u);
   if(hov) drawHover(u,now,w,h,sp);
   if(u.rootT!=null) drawRooting(u,now);
   if(u.carry){ const a=ARTC[BUILDINGS[u.carry.type].art]; ctx.drawImage(a,Math.round(u.x-u.face*9-9),y+2,18,18); }
+  if(u.def.seed) seedTentacles(u,x,y,s,w,false);
   const vl=u.crew&&veiled(u); if(vl) ctx.globalAlpha=0.68;   /* Rogue: veiled among the brood (Among Them) */
   if(risen){ const z=risenSprite(sp); ctx.drawImage(u.face>0?z.img:z.flip,x,y,w,h); } else ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h);
   if(vl) ctx.globalAlpha=1;
+  if(u.def.seed) seedTentacles(u,x,y,s,w,true);
   if(u.crew) drawTaintVeins(u,x,y,w,h,sp);   /* Rogue: the strain shows through */
   if(hov){ ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.35+0.15*Math.sin(now/120); ctx.drawImage(u.face>0?sp.img:sp.flip,x,y,w,h); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
   if(u.flash>0){ ctx.globalAlpha=(u.def.scale||2)>=3?0.25:0.8; ctx.drawImage(u.face>0?sp.flash:sp.flashFlip,x,y,w,h); ctx.globalAlpha=1; }

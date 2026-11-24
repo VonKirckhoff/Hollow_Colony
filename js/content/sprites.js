@@ -49,8 +49,8 @@ const SPRITES = {
     ".kCpEeeeeEpCk...",
     ".kCCpeEEepCCk...",
     "..kkCCppCCkk....",
-    "...kCk.kCk.kCk..",
-    "..kk...kk...kk.."],
+    "................",
+    "................"],   /* no legs: drawTentacles (17-rendering.js) draws its octopus tentacles */
   grafter:[
     "..........kk",
     "...kkkk..kbk",

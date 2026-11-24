@@ -56,6 +56,10 @@ function iaBrute(c,t){ const cy=iaCyc(t,1.6), st=cy.s<0.12, x=24+(st?(iaHash(cy.
   if(cy.s<0.6){ iaRing(c,24,y,4+cy.s*30,'#d3c3a6',0.7-cy.s); for(let i=0;i<6;i++){ const a=iaHash(i,cy.k)*Math.PI; c.globalAlpha=0.6-cy.s; iaDot(c,24+Math.cos(a)*(6+cy.s*20)*(i%2?1:-1),y-cy.s*8*iaHash(i,3),'#8a7d68',2); } c.globalAlpha=1; } }
 function iaPulse(c,t,key,o={}){ const y=IA_GROUND, x=24, b=1+(o.amp||0.05)*Math.sin(t*(o.speed||3)); iaShadow(c,x,y,o.shadow||8);
   if(SPR[key]) iaSprite(c,key,x,y,iaUnitScale(key,o.max||26),1,{ sx:2-b, sy:b }); else iaArt(c,key,x,y,o.fit||36,{ sx:2-b, sy:b }); }
+/* the Seedling on its octopus tentacles: it drifts a few steps, stands and feels the ground (drawTentacles in 17-rendering.js) */
+function iaSeedling(c,t){ const sc=iaUnitScale('seedling',26), mv=(t%6)<3, x=24+(mv?Math.sin(t*1.2):0)*2, gy=IA_GROUND, pb=gy-TENTACLES.lift*sc/2-(mv?Math.abs(Math.sin(t*4.5)):0),
+    b=1+0.07*Math.sin(t*2), cx=x-8*sc+6.5*sc; iaShadow(c,cx,gy,11);
+  drawTentacles(c,cx,pb,gy,sc/2,t,mv,false); iaSprite(c,'seedling',x,pb+2*sc,sc,1,{ sx:2-b, sy:b }); drawTentacles(c,cx,pb,gy,sc/2,t,mv,true); }
 function iaBroodMother(c,t){ const cy=iaCyc(t,4), b=1+0.03*Math.sin(t*2); iaShadow(c,24,IA_GROUND,16); iaSprite(c,'broodmother',24,IA_GROUND,iaUnitScale('broodmother',40),1,{ sy:b, sx:2-b });
   if(cy.s<1.2) for(let i=0;i<3;i++){ const r=4+(cy.s-i*0.2)*30; if(r>4) iaRing(c,24,IA_GROUND-20,r,'#c38bff',0.8-(cy.s-i*0.2)); } }
 function iaHive(c,t){ const y=IA_GROUND, x=24, beat=Math.max(0,Math.sin(t*3.2))**6, b=1+0.06*beat;
@@ -141,7 +145,7 @@ const INTEL_SCENES = {
   trooper:(c,t)=>iaShooter(c,t,'trooper'), gunner:(c,t)=>iaShooter(c,t,'gunner',{ every:3.2, burst:1.2, step:0.07 }), pyro:(c,t)=>iaShooter(c,t,'pyro',{ flame:true, every:2.6, burst:0.9 }),
   medic:iaMedic, engineer:iaEngineer, scientist:(c,t)=>iaRunner(c,t,'scientist',{ per:6, range:9 }),
   crawler:(c,t)=>iaRunner(c,t,'crawler',{ per:1.6, range:14 }), drone:(c,t)=>iaRunner(c,t,'drone',{ per:2.6, lunge:true }), grafter:(c,t)=>iaRunner(c,t,'grafter',{ per:1.9, range:13 }),
-  spitter:iaSpitter, brute:iaBrute, seedling:(c,t)=>iaPulse(c,t,'seedling',{ amp:0.07, speed:2 }), bloater:(c,t)=>iaPulse(c,t,'bloater',{ amp:0.08, speed:1.6, max:28 }),
+  spitter:iaSpitter, brute:iaBrute, seedling:iaSeedling, bloater:(c,t)=>iaPulse(c,t,'bloater',{ amp:0.08, speed:1.6, max:28 }),
   husk:(c,t)=>{ const tw=iaHash(Math.floor(t*6),1)>0.8; iaShadow(c,24,IA_GROUND,8); iaSprite(c,'husk',24+(tw?(iaHash(Math.floor(t*6),2)-0.5)*3:0),IA_GROUND,iaUnitScale('husk'),Math.sin(t*0.7)>0?1:-1); },
   broodmother:iaBroodMother, heir:iaBroodMother, grazer:iaGrazer,
   hq:iaHq, relay:iaRelay, sentry:iaSentry, barricade:iaBarricade, lz:iaLz, uplink:iaUplink, generator:iaGenerator, chargesite:iaChargeSite, charge:iaCharge,
