@@ -6,14 +6,17 @@
               setup:g=>{…} (when the step starts), done:g=>bool (checked 4× per second), pause:seconds before the next step }
      The objective 'tut' shows "Step 3/12: …". Press N to skip a step (training missions only). The card does not pause the game.
    AVATAR: in a Swarm mission the player can steer one creature through its whole life (G.avatar):
-     a Grafter from an egg → latches onto a body → cocoon → Twitcher → Shambler → Husk → a new hive.
+     a Grafter from an egg → latches onto a body → cocoon → Twitcher → Shambler → Husk (a warrior, it never roots).
      Twitcher: grows by feeding (AVATAR.food kills; a soldier counts double). Shambler: grows by staying hidden
-     (no soldier within HUSK.hide tiles for AVATAR.hide seconds). Husk: F takes root at a quiet spot. */
-const AVATAR = { food:3, hide:10, rootClear:9, rootSpacing:12, root:12 };   /* root: seconds your own Husk needs to take root */
+     (no soldier within HUSK.hide tiles for AVATAR.hide seconds). Husk: the old nest lays a Seedling (u.graftSeed) for it to guard;
+     the Seedling takes root with F (SWARM_PLAY.seed rules) into the new nest. Moving the selected Seedling, your Husk follows it.
+   AVATAR.seedAgain: seconds before the nest lays a new Seedling when one dies · seedSpare: how many new ones (Normal; Easy +1, Hard −1)
+     · follow: tiles the Husk keeps from the Seedling it follows · guard: tiles round the Seedling where the following Husk takes on a foe */
+const AVATAR = { food:3, hide:10, seedAgain:30, seedSpare:2, follow:2.5, guard:5 };
 /* ---- the avatar: one creature you steer through its life ---- */
 function avatarAlive(){ const a=G.avatar; return !!a && !a.dead; }
 function avatarStage(){ const a=G.avatar; if(!a||a.dead) return 'dead'; if(a.type==='egg') return 'egg'; if(a.type==='grafter') return 'grafter'; if(a.type==='cocoon') return 'cocoon';
-  if(a.type==='hive') return 'hive'; if(a.rootT!=null) return 'rooting'; return ['twitcher','shambler','husk'][a.stage||0]; }
+  if(a.type==='hive') return 'hive'; return ['twitcher','shambler','husk'][a.stage||0]; }
 function setAvatar(e){ G.avatar=e; e.avatar=true; if(e.kind==='unit'){ selectEntities([e],false); G.following=true; } G.selDirty=true; }
 /* a Grafter you steer: walk where you click; on a body at home it latches on */
 function avatarGrafter(u,dt){ if(u.latched) return;
@@ -29,18 +32,13 @@ function avatarReady(u,dt){
   return false; }
 function avatarFed(src,e){ if(!src||!src.avatar) return; src.food=(src.food||0)+(e.faction==='corps'?2:1); src.hp=Math.min(src.maxHp,src.hp+src.maxHp*0.25);
   G.fx.push({k:'text',x:src.x,y:src.y-26,t:1,max:1,txt:'FED',col:'#a6ff4a'}); G.selDirty=true; }
-/* F: the finished Husk takes root where it stands, if nobody is near and no other hive is close */
-function avatarRoot(){ const u=G.avatar; if(!avatarAlive()||u.kind!=='unit'||u.stage!==HUSK_STAGES.length-1||u.rootT!=null) return;
-  const tx=Math.floor(u.x/TILE), ty=Math.floor(u.y/TILE);
-  for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if(!walkableT(tx+dx,ty+dy)){ toast('Not enough open ground here: a hive needs room.'); return; }
-  if(G.ents.some(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&dist(e,u)<AVATAR.rootClear*TILE)){ toast(`They are too close. Find a spot ${AVATAR.rootClear} tiles from them.`); return; }
-  if(hives().some(h=>dist(h,u)<AVATAR.rootSpacing*TILE)){ toast(`Too close to another hive: keep ${AVATAR.rootSpacing} tiles away.`); return; }
-  if(hives().length>=hiveMax()){ toast(`There are already ${hiveMax()} hives: the ground cannot feed more.`); return; }
-  u.site={x:tx,y:ty}; u.x=(tx+.5)*TILE; u.y=(ty+.5)*TILE; u.rootT=u.rootMax=AVATAR.root; u.order={type:'hold'}; u.path=null; u.target=null;
-  SFX.play('squelch',u.x,u.y); G.pings.push({x:u.x,y:u.y,t:0,col:'#c38bff'}); say('The Brood','We root. Hold on until the nest is grown.','swarm'); G.selDirty=true; }
-function avatarButtons(){ const u=G.avatar; if(!avatarAlive()||u.kind!=='unit') return [];
-  const st=avatarStage(), out=[];
-  if(st==='husk') out.push({row:'Avatar',key:'F',glyph:'⚘',tip:`Take root|Grow a new hive right here. Needs open ground, no soldier within ${AVATAR.rootClear} tiles and no hive within ${AVATAR.rootSpacing}. Rooting takes ${AVATAR.root} seconds and you cannot move.`,act:avatarRoot});
+/* The Graft: the Seedling the old nest lays for your Husk (alive, not yet rooting) and its F button */
+function graftSeedling(){ return G.ents.find(e=>!e.dead&&e.graftSeed)||null; }
+function graftSeedSpare(){ return Math.max(0,AVATAR.seedSpare+(G.diffKey==='easy'?1:G.diffKey==='hard'?-1:0)); }
+function avatarButtons(){ const u=G.avatar, out=[], sd=graftSeedling();
+  if(sd){ const sel=G.sel.includes(sd)&&sd.rootT==null, SD=SWARM_PLAY.seed;
+    out.push({row:'Avatar',key:'F',glyph:'✣',off:!sel,tip:`Take root|${sd.rootT!=null?'The Seedling is digging in. Guard it. ':sel?'':'Select the Seedling first. '}The Seedling digs in where it stands and grows into your nest in ${SD.root} s: open ground, at least ${SD.clear} tiles from the Lunar Corps and ${SD.gap} from any other nest. It cannot move while it roots.`,act:()=>{ if(G.sel.includes(sd)&&sd.rootT==null) seedRoot(sd); }}); }
+  if(!avatarAlive()||u.kind!=='unit') return out;
   out.push({row:'Avatar',key:'X',glyph:'◎',tip:'Find me|Centre the camera on your creature.',act:()=>{ centerOn(u.x,u.y); G.following=true; }});
   return out; }
 

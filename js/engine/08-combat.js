@@ -84,7 +84,6 @@ function damage(t,amt,src){
   amt=coverDamage(t,amt,src);
   if(t.auraT>0) amt*=1-AURA.armor;   /* the Captain's leadership */
   if(t.molt>0) amt*=MOLT.vuln;   /* a Husk shedding its skin is soft */
-  if(t.avatar&&t.rootT!=null) amt*=0.5;   /* your creature rooting: the roots hold it together */
   if(t.downed&&!(src&&src.def&&src.def.boss)){ const D=SQUAD.downed, d=t.downed; t.flash=0.07;   /* down: splash, acid and pools no longer finish him off on the spot; they shorten his time, never below minLeft */
     if(d.t>D.minLeft) d.t=Math.max(D.minLeft,d.t-amt/t.maxHp*D.hitTime); return; }
   if(t.kind==='unit'&&t.faction==='swarm'&&t.def.bio!==false&&!(t.splatT>G.time)){ t.splatT=G.time+0.12; hitSplat(t,src); }   /* green ichor */

@@ -32,7 +32,7 @@ const SWARM_DIFF = {
   hard:   { hp:1.25, dmg:1.15, reinforce:1.35 }
 };
 function swarmSide(){ return !!G && G.side==='swarm'; }
-function myBrood(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.role==='brood'); }
+function myBrood(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.role==='brood'&&!e.def.seed); }   /* a Seedling is no fighter: A, H and a new gathering point leave it where it is */
 function broodUsed(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.mine).length+broodPending(); }   /* eggs in a batch count already */
 function broodPending(){ let n=0; for(const h of G.ents) if(!h.dead&&h.batch) n+=h.batch.items.length; return n; }
 function broodCap(){ return (G.swarm.cfg.cap||SWARM_PLAY.cap)+(G.swarm.capExtra||0); }   /* capExtra: room a mission script adds (the training's burrow step) */
@@ -40,6 +40,7 @@ function broodUnlocked(type){ const at=(G.swarm.cfg.unlock||{})[type] ?? UNITS[t
 function nestHive(){ const s=G.sel.find(e=>!e.dead&&e.type==='hive'); if(s) return s; const r=G.swarm.rally; const hs=hives(); if(!hs.length) return null; return r?hs.reduce((a,b)=>dist(a,r)<=dist(b,r)?a:b):hs[0]; }
 /* waiting brood stays near the gathering point and fights whatever comes close */
 function broodThink(u){ if(u.rootT!=null) return;   /* a Seedling taking root stays put */ const r=u.post||G.swarm.rally||u.guardAt; if(!r) return; if(u.order&&u.order.type==='move') return;   /* walking to where you sent it */
+  if(u.def.seed){ if(!u.order&&Math.hypot(u.x-r.x,u.y-r.y)>TILE){ u.order={type:'move',x:r.x,y:r.y}; setPath(u,r.x,r.y); } return; }   /* a Seedling stands still where you left it, it does not wander about */
   if(!u.target&&(!u.order||Math.hypot(u.order.x-r.x,u.order.y-r.y)>TILE)){ u.order={type:'guard',x:r.x,y:r.y,wait:rand(0,2)}; setPath(u,r.x,r.y); } }
 /* Q W E R: an egg in the nest's batch (Shift: several). The batch hatches all at once (see SWARM_PLAY.batch). */
 function swarmBreed(type,n){ const d=UNITS[type], nest=nestHive(); n=n||1;
@@ -107,7 +108,7 @@ function swarmRight(x,y){ let us=selSwarm(); if(!us.length&&avatarAlive()&&G.ava
   moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; startFollow(); }   /* the camera follows the squad you steer */
 /* H: your selection goes out to fetch the bodies lying in the field; with nothing selected, the waiting brood,
    and if none is waiting, your brood out in the field (first the ones without a fight, then the ones still fighting) */
-function idleBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.boss&&!e.def.grafter&&(e.role==='brood'||(e.role==='wave'&&e.mine))&&!e.target&&!e.claim&&!e.haul); }
+function idleBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.boss&&!e.def.grafter&&!e.def.seed&&(e.role==='brood'||(e.role==='wave'&&e.mine))&&!e.target&&!e.claim&&!e.haul); }
 function fieldBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&e.mine&&!e.avatar&&e.role==='wave'&&!e.claim&&!e.haul); }
 function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood().filter(u=>!u.claim).length?myBrood():idleBrood().length?idleBrood():fieldBrood()).filter(u=>!u.haul);   /* last resort: your brood still fighting out there */ const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
   if(!bodies.length){ toast('No fallen to bring home right now.',true); return; } if(!us.length){ toast('Nobody is free to fetch them.'); return; }

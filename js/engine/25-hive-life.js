@@ -11,7 +11,7 @@ const CREEP = { start:2, max:8, grow:150, rise:0.5, fade:0.07, heal:4, at:0.3, e
 /* how the mycel looks (Nov 2026): a network of veins from every nest with green pulses running out through them, tracks where something
    walked over it, and thin threads that creep to the feet of a creature healing on it */
 const MYCEL = { veins:true, branches:7, pulseSpeed:0.45, tracks:true, trackLife:6, healThreads:true };
-const HUSK  = { root:18, hiveHp:0.55, guardMax:2, hide:11, reach:34, skipShambler:true };   /* hide: tiles a withdrawing Shambler keeps from your troops · skipShambler: a Husk of the Swarm molts from Twitcher straight into a Husk (the creature you steer in The Graft still goes through all three) */
+const HUSK  = { hiveHp:0.55, guardMax:2, hide:11, reach:34, skipShambler:true };   /* hide: tiles a withdrawing Shambler keeps from your troops · skipShambler: a Husk of the Swarm molts from Twitcher straight into a Husk (the creature you steer in The Graft still goes through all three) */
 
 /* ---- creep ---- */
 function creepNoise(x,y){ const n=Math.sin(x*127.1+y*311.7)*43758.5453; return n-Math.floor(n); }
@@ -167,13 +167,12 @@ function withdraw(u,dt){
 function rooting(){ return G.ents.filter(e=>!e.dead&&e.rootT!=null).length; }
 /* The Husk is a warrior. While it is still turning (Twitcher, Shambler) it stays on the creep of its hive and only fights what comes there;
    full grown, it leaves the creep and hunts (role 'hunt', see swarmThink). Only the creature you steer yourself in The Graft takes root (F).
-   When a Husk kills a soldier it screams: the soldiers close by flinch (suppressed). Returns true while it is busy (molting, rooting). */
+   When a Husk kills a soldier it screams: the soldiers close by flinch (suppressed). Returns true while it is busy (molting). */
 const HUSK_WARRIOR = { stay:true, screamR:3.5, mendAt:0.65, mendDone:0.95, escort:3, escortR:14, escortEvery:12 };   /* mendAt: a Husk that brings a soldier down while below this share of its health goes back to the creep to heal; mendDone: it hunts again from this share.
    escort: a full-grown Husk goes to war with this many Swarm creatures round it (gathered within escortR tiles, the rest hatched from the nest it stands at;
    topped up every escortEvery seconds). */
 function founderThink(u,dt){
   if(huskGrow(u,dt)) return true;
-  if(u.rootT!=null){ u.rootT-=dt; u.order={type:'hold'}; u.path=null; if(u.rootT<=0) rootHive(u); return true; }   /* only your own creature (The Graft) */
   if(u.avatar||G.side==='swarm') return false;   /* yours: you decide */
   if(u.stage!=null&&u.stage<HUSK_STAGES.length-1&&HUSK_WARRIOR.stay) return stayOnCreep(u);
   if(!u.mend&&u.type==='husk'&&u.stage===HUSK_STAGES.length-1&&!u.target&&u.hp<u.maxHp*HUSK_WARRIOR.mendAt&&nests().some(h=>(h.creepR||0)>=1)) u.mend=true;   /* hurt and nothing to fight: back to the creep first */
