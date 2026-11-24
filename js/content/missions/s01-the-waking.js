@@ -5,8 +5,14 @@
    Until the doors open, the only way out of the caverns is to burrow (B). The Lunar Corps flies in two more teams;
    once the second ship is down, their Engineer blows the doors with a breaching charge (as in Dust Landing, DUST_BREACH) and they come for the nests.
    Two Sentry Guns already stand at the station (start.buildings): one watches the mouth of the north tunnel, one the way in from the east shaft.
-   Kill or hit the Engineer while he arms it and he has to start over; two lost Engineers and Varga sends no more: the doors stay shut. */
+   Kill or hit the Engineer while he arms it and he has to start over; two lost Engineers and Varga sends no more: the doors stay shut.
+   Nov 2026: once the east nest (a) is ash too (only a young nest can keep the Brood alive then), the squad holds at the east cavern,
+   Varga drops a relief team (always with a Medic) that walks to them, they wait until every man is back to full health,
+   and then they all fall back to the station by their Landing Zone and dig in there for the rest of the mission. */
 const WAKING_BREACH={ replace:2, guard:{x:44,y:30}, clear:{x:44,y:33} };   /* replace: Engineers Varga sends after the first; guard: where the squad covers him; clear: where it waits for the blast */
+const WAKING_REGROUP={ at:'a', meet:6, home:{x:45,y:35}, homeR:6, medicSelf:0.5 };   /* at: where the squad waits for the relief team; meet: tiles; home: their base by the LZ; homeR: how far from it they may stray; medicSelf: share of his heal rate a Medic patches himself up with when no brood is near */
+function wakingGoal(g){ if(g.vars.home) return WAKING_REGROUP.home; if(g.vars.regroup) return WAKING_REGROUP.at; return g.vars.open?(g.hiveAt('c')?'c':'a'):'1'; }
+function wakingFar(g,at,r){ const p=ptWorld(at); return g.corps().filter(e=>!e.downed&&Math.hypot(e.x-p.x,e.y-p.y)>r*TILE); }
 function wakingEngineer(g){ return g.corps().find(e=>e.type==='engineer'&&!e.downed); }
 SWARM_MISSIONS.push(
   {
@@ -73,7 +79,38 @@ SWARM_MISSIONS.push(
       // second team when the first is nearly gone
       { when:g=>g.vars.drop1 && g.time>g.vars.drop1+25 && !g.vars.drop2 && g.corps().length<=2 && g.inbound()===0, do:g=>{ g.vars.drop2=g.time;
           g.say('Cmdr. Varga','Dust is not answering. Icarus, put the second team on the pad. Rifles and a Medic.'); g.airdrop([['trooper',g.n(3)],['gunner',1],['medic',1]],20); } },
-      { when:g=>g.vars.drop2 && g.time>g.vars.drop2+24 && g.inbound()===0 && !g.vars.go2, do:g=>{ g.vars.go2=true; g.orderCorps('all',g.vars.open?(g.hiveAt('c')?'c':'a'):'1','amove'); } },
+      { when:g=>g.vars.drop2 && g.time>g.vars.drop2+24 && g.inbound()===0 && !g.vars.go2, do:g=>{ g.vars.go2=true; g.orderCorps('all',wakingGoal(g),'amove'); } },
+      // Nov 2026: both old nests are ash (a young nest keeps the Brood alive): hold at the east cavern and wait for the relief team
+      { when:g=>g.vars.open && g.vars.push && !g.hiveAt('c') && !g.hiveAt('a') && g.hives()>0 && g.corps().length>0, do:g=>{ g.vars.regroup=g.time;
+          g.say('Sgt. Kessler','Both nests are burning. Dust is spent, Commander. Requesting relief at the east cavern.');
+          g.say('Cmdr. Varga','Copy, Kessler. Icarus is bringing a fresh team and a Medic. Hold where you are until they reach you.');
+          g.brood_say('Both old nests are ash. Our young nest still breathes, and they do not know where. They stop. They wait for more of them.');
+          g.orderCorps('all',WAKING_REGROUP.at,'amove'); g.airdrop([['trooper',g.n(2)],['medic',1]],20,WAKING_REGROUP.at); } },
+      // the squad stays together at the east cavern (and the relief team walks up to them)
+      { repeat:true, when:g=>g.vars.regroup && !g.vars.home && g.time>(g.vars.rgNext||0), do:g=>{ g.vars.rgNext=g.time+4;
+          const far=wakingFar(g,WAKING_REGROUP.at,WAKING_REGROUP.meet).filter(e=>!e.target&&!(e.order&&e.order.type!=='hold'));
+          if(far.length) g.orderCorps(far,WAKING_REGROUP.at,'amove'); } },
+      // met: everyone on the map is together and no ship is on its way
+      { when:g=>g.vars.regroup && g.time>g.vars.regroup+21 && g.inbound()===0 && g.corps().length>0 && !wakingFar(g,WAKING_REGROUP.at,WAKING_REGROUP.meet).length, do:g=>{ g.vars.met=g.time;
+          g.say('Sgt. Kessler','Relief is with us. Medic, patch everyone up before we move. Nobody walks back bleeding.');
+          g.brood_say('More of them, and one that mends. They will not move until every one of them is whole.'); } },
+      // healing: the Medic works on the others and patches himself up when no brood is near; no Medic left = Varga sends one
+      { repeat:true, when:g=>g.vars.met && !g.vars.home, do:g=>{ const last=g.vars.mdT||g.time; g.vars.mdT=g.time; const dt=Math.min(1,g.time-last);
+          const meds=g.corps().filter(e=>e.def.heal&&!e.downed);
+          for(const m of meds){ const quiet=!G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&dist(e,m)<m.def.sight*TILE);
+            if(quiet&&m.hp<m.maxHp) m.hp=Math.min(m.maxHp,m.hp+m.def.heal*WAKING_REGROUP.medicSelf*dt); }
+          if(!meds.length && g.inbound()===0 && !g.vars.medCalled && g.corps().length>0){ g.vars.medCalled=true; g.say('Cmdr. Varga','You lost your Medic. Icarus is bringing another one.'); g.airdrop([['medic',1]],20,WAKING_REGROUP.at); }
+          if(meds.length) g.vars.medCalled=false; } },
+      // everyone whole: back to the station by the LZ
+      { when:g=>g.vars.met && g.time>g.vars.met+3 && g.inbound()===0 && g.corps().length>0 && g.corps().every(e=>!e.downed&&e.hp>=e.maxHp-0.5), do:g=>{ g.vars.home=g.time;
+          g.say('Sgt. Kessler','Everyone is green. Fall back to the station and dig in by the pad.');
+          g.say('Cmdr. Varga','Good. Hold Kappa Station, Dust. Whatever is left down there will come to you.');
+          g.brood_say('They go back to the station, to the place where the sky ship lands. Find them there. Leave none of them alive.');
+          g.ping(WAKING_REGROUP.home); g.orderCorps('all',WAKING_REGROUP.home,'amove'); } },
+      // at the base: they stay there and defend it; anyone who strays too far (and is not fighting) walks back
+      { repeat:true, when:g=>g.vars.home && g.time>(g.vars.hmNext||0), do:g=>{ g.vars.hmNext=g.time+5;
+          const far=wakingFar(g,WAKING_REGROUP.home,WAKING_REGROUP.homeR).filter(e=>!e.target&&!(e.order&&e.order.type!=='hold'));
+          if(far.length) g.orderCorps(far,WAKING_REGROUP.home,'amove'); } },
       // the end
       { when:g=>g.vars.drop2 && g.time>g.vars.drop2+24 && g.inbound()===0 && g.corps().length===0, do:g=>{ g.complete('kill'); g.complete('nest');
           g.win('The radio hisses and goes quiet. Kappa Station belongs to the Brood again, and the Brood remembers the taste.'); } },
