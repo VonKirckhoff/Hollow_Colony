@@ -42,5 +42,19 @@ with sync_playwright() as p:
     check('swarm: Batch row there without eggs', J(pg,"()=>!!CMDS.find(c=>c.row==='Batch'&&c.key==='Space'&&c.off)"))
     for nm,st in (('eggs in the batch',s1),('batch growing',s2),('hatched',s3)):
         check('swarm: buttons keep their place, '+nm, all(k in s0 and k in st and s0[k][:2]==st[k][:2] for k in keys), {k:(s0.get(k),st.get(k)) for k in keys if s0.get(k,[0,0])[:2]!=st.get(k,[1,1])[:2]})
+    # The Graft: Take root (F) and Find me (X) sit in the Orders row for the whole mission, so no row comes or goes
+    # while your creature is an egg, a cocoon, a Husk, or dead, or while there is a Seedling or not (Nov 2026)
+    J(pg,"()=>{ startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-graft')); if(ui.mode==='pause') pause(false); G.vars.cardOpen=false; selectEntities([],false); renderCmdCard(); }"); pg.wait_for_timeout(300)
+    g0=J(pg,POS); gk=['F','X','T','A','G','H','B','^A','Q','W','E','R','Space']
+    states=[]
+    for t in range(8):
+        J(pg,"()=>{ for(let i=0;i<150;i++) update(0.1); G.vars.cardOpen=false; renderCmdCard(); }"); states.append(('t'+str(t),J(pg,POS)))
+    J(pg,"()=>{ const a=G.avatar; const u=makeUnit('husk','swarm',a.x,a.y); u.stage=HUSK_STAGES.length-1; u.role='avatar'; a.dead=true; setAvatar(u); G.vars.seedPhase=true; G.over=null; renderCmdCard(); }"); states.append(('husk',J(pg,POS)))
+    J(pg,"()=>{ const n=hives()[0]; const s=makeUnit('seedling','swarm',n.x+40,n.y); s.graftSeed=true; s.role='brood'; selectEntities([s],false); renderCmdCard(); }"); states.append(('seedling selected',J(pg,POS)))
+    check('graft: Take root lights up with the Seedling selected', J(pg,"()=>!CMDS.find(c=>c.key==='F').off"))
+    J(pg,"()=>{ G.avatar.dead=true; selectEntities([],false); renderCmdCard(); }"); states.append(('husk dead',J(pg,POS)))
+    check('graft: one row label each, no Avatar row', J(pg,"()=>[...document.querySelectorAll('#cmdcard .cmdlbl')].map(l=>l.textContent).join()")=='Brood,Batch,Orders')
+    for nm,st in states:
+        check('graft: buttons keep their place, '+nm, all(k in g0 and k in st and g0[k][:2]==st[k][:2] for k in gk), {k:(g0.get(k),st.get(k)) for k in gk if g0.get(k,[0,0])[:2]!=st.get(k,[1,1])[:2]})
     check('no errors', not errs, errs[:3])
     print('ALL OK' if ok else 'SOME FAILED')

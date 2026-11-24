@@ -262,6 +262,7 @@ Midden in de bovenbalk staan de **titel van de missie** en de **mode**: welke ca
 - Bovenaan het selectiepaneel staan **groepschips**: *1 5/7* betekent dat 5 van de 7 leden van groep 1 geselecteerd zijn; groen is precies die groep. Elke eenheid toont in haar vakje de nummers van de groepen waarin ze zit.
 - Geselecteerde troepen staan **gegroepeerd per type**, altijd in dezelfde volgorde (Trooper, Gunner, Pyro, Medic, Engineer …), met het aantal bij elke groep en de meest ervaren eerst. Klik op de groepsnaam om alleen dat type te selecteren.
 - De knoppen staan in **rijen met een label**: Orders (A, H, Q, S), Formation (Z, X, V, I, W, Y, F, E), Build (R, T, B), Sentry (U, D), en bij gebouwen Train of Dropship.
+- **Als de Brood** heeft elke knop een **vaste plaats** (nov 2026): de rijen Brood, Batch en Orders staan er altijd, een knop die niets doet wordt grijs in plaats van te verdwijnen. In **The Graft** staan **Take root (F)** en **Find me (X)** vooraan in de Orders-rij, de hele missie lang (er is geen aparte rij voor je wezen meer), zodat Gather, Select all en de rest nooit meer verspringen als je wezen een ei, cocon of Husk is, sneuvelt of als er een Seedling komt (`mission.avatar`, `avatarButtons` in 27-training.js; test `fixedbtns.py`).
 
 ### Kraters
 - Kappa Basin, Tycho Maw, Ridgeback Canyon en Hollow Colony hebben **inslagkraters** met een verhoogde rand. Je kan niet over de rand: je moet erom heen of via een **helling** (gestreepte strook) naar binnen. Grote kraters hebben twee hellingen, kleine één.

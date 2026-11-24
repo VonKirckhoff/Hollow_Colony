@@ -51,7 +51,7 @@ function graftFollow(g){ const sd=graftSeedling(), u=G.avatar; if(!sd||!avatarAl
   const k=AVATAR.follow*TILE/d, x=sd.x+(u.x-sd.x)*k, y=sd.y+(u.y-sd.y)*k; u.target=null; u.order={type:'move',x,y}; setPath(u,x,y); }
 SWARM_MISSIONS.push(
   {
-    id:'swarm-graft', side:'swarm', title:'The Graft', map:'canyons',
+    id:'swarm-graft', side:'swarm', title:'The Graft', map:'canyons', avatar:true,   /* avatar: Take root and Find me always on the command card */
     summary:'Be the seed. From egg to Husk, then guard the Seedling that roots a nest of your own.',
     briefing:[
       'The station is quiet, but not empty. More soft ones came down after Dust, and they guard the platform and walk the tunnel. None of them may leave the canyons alive.',

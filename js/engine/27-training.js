@@ -33,11 +33,13 @@ function avatarFed(src,e){ if(!src||!src.avatar) return; src.hp=Math.min(src.max
 /* The Graft: the Seedling the old nest lays for your Husk (alive, not yet rooting) and its F button */
 function graftSeedling(){ return G.ents.find(e=>!e.dead&&e.graftSeed)||null; }
 function graftSeedSpare(){ return Math.max(0,AVATAR.seedSpare+(G.diffKey==='easy'?1:G.diffKey==='hard'?-1:0)); }
-function avatarButtons(){ const u=G.avatar, out=[], sd=graftSeedling();
-  if(sd){ const sel=G.sel.includes(sd)&&sd.rootT==null, SD=SWARM_PLAY.seed;
-    out.push({row:'Avatar',key:'F',glyph:'✣',off:!sel,tip:`Take root|${sd.rootT!=null?'The Seedling is digging in. Guard it. ':sel?'':'Select the Seedling first. '}The Seedling digs in where it stands and grows into your nest in ${SD.root} s: open ground, at least ${SD.clear} tiles from the Lunar Corps and ${SD.gap} from any other nest. It cannot move while it roots.`,act:()=>{ if(G.sel.includes(sd)&&sd.rootT==null) seedRoot(sd); }}); }
-  if(!avatarAlive()||u.kind!=='unit') return out;
-  out.push({row:'Avatar',key:'X',glyph:'◎',tip:'Find me|Centre the camera on your creature.',act:()=>{ centerOn(u.x,u.y); G.following=true; }});
+/* your own creature's buttons (Take root, Find me). They sit in the Orders row and, in a mission with a creature of your own
+   (mission.avatar), stay there the whole mission, greyed out when they do nothing, so no button ever shifts (Nov 2026). */
+function avatarButtons(){ const u=G.avatar, out=[], sd=graftSeedling(), fixed=!!(G.mission&&G.mission.avatar);
+  if(sd||fixed){ const sel=!!sd&&G.sel.includes(sd)&&sd.rootT==null, SD=SWARM_PLAY.seed;
+    out.push({row:'Orders',key:'F',glyph:'✣',off:!sel,tip:`Take root|${!sd?'There is no Seedling yet. ':sd.rootT!=null?'The Seedling is digging in. Guard it. ':sel?'':'Select the Seedling first. '}The Seedling digs in where it stands and grows into your nest in ${SD.root} s: open ground, at least ${SD.clear} tiles from the Lunar Corps and ${SD.gap} from any other nest. It cannot move while it roots.`,act:()=>{ if(sd&&G.sel.includes(sd)&&sd.rootT==null) seedRoot(sd); }}); }
+  const on=avatarAlive()&&u.kind==='unit';
+  if(on||fixed) out.push({row:'Orders',key:'X',glyph:'◎',off:!on,tip:`Find me|${on?'':'Your creature is not out walking right now. '}Centre the camera on your creature.`,act:()=>{ if(avatarAlive()&&G.avatar.kind==='unit'){ centerOn(G.avatar.x,G.avatar.y); G.following=true; } }});
   return out; }
 
 /* ---- the training card: it stays on screen until you close it (Enter or the button), but the game keeps running,
