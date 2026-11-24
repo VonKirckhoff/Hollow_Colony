@@ -110,7 +110,7 @@ function swarmRight(x,y){ let us=selSwarm(); if(!us.length&&avatarAlive()&&G.ava
    and if none is waiting, your brood out in the field (first the ones without a fight, then the ones still fighting) */
 function idleBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.boss&&!e.def.grafter&&!e.def.seed&&(e.role==='brood'||(e.role==='wave'&&e.mine))&&!e.target&&!e.claim&&!e.haul); }
 function fieldBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&e.mine&&!e.avatar&&e.role==='wave'&&!e.claim&&!e.haul); }
-function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood().filter(u=>!u.claim).length?myBrood():idleBrood().length?idleBrood():fieldBrood()).filter(u=>!u.haul);   /* last resort: your brood still fighting out there */ const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
+function swarmHarvest(){ const us=(selSwarm().length?selSwarm():myBrood().filter(u=>!u.claim).length?myBrood():idleBrood().length?idleBrood():fieldBrood()).filter(u=>!u.haul&&!u.def.seed&&!u.avatar);   /* a Seedling or your own creature carries no bodies */   /* last resort: your brood still fighting out there */ const bodies=G.ents.filter(b=>!b.dead&&b.kind==='body'&&!b.home&&!b.carrier);
   if(!bodies.length){ toast('No fallen to bring home right now.',true); return; } if(!us.length){ toast('Nobody is free to fetch them.'); return; }
   let n=0; for(const b of bodies){ const pool=us.filter(u=>!u.claim); if(!pool.length) break;
     const c=pool.reduce((a,u)=>dist(u,b)<dist(a,b)?u:a); freeFromJobs(c); b.ordered=true; c.claim=b; c.claimMode='haul'; c.target=null; c.order=null; n++;

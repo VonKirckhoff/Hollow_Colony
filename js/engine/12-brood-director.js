@@ -122,7 +122,7 @@ function launchWave(budget,aim){
     while(left>=15 && guard++<80 && out.length<room){ const type=pickSwarmType(left,wt); if(!type) break; left-=UNITS[type].biomass;
       const u=spawnNearBuilding(type,'swarm',pick(hs)); if(u){ u.role='wave'; out.push(u); } }
   }
-  for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery&&!deadGen(u,e)) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed&&!veiled(e));
+  for(const u of out){ const t=aim || nearestOf(u,e=>e.faction==='corps'&&e.kind==='building'&&!e.def.ground&&!e.def.scenery&&!e.clickOnly&&!deadGen(u,e)) || nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&!e.downed&&!veiled(e));
     if(t){ u.order={type:'amove',x:t.x+rand(-30,30),y:t.y+rand(-30,30)}; setPath(u,u.order.x,u.order.y); } }
   if(hs.length||shafts().length) waveTactic(out);
   makePacks(out);
@@ -177,7 +177,7 @@ function packUpdate(P){ if(G.time<P.t) return; P.t=G.time+PACK.every;
   const live=P.members.filter(u=>!u.dead&&u.pack===P&&u.role==='wave'&&!u.claim&&!u.haul); P.live=live.length;
   if(live.length<2){ P.contact=true; return; }
   P.slow=Math.min(...live.map(u=>u.def.speed*(u.speedMul||1))); P.cx=live.reduce((s,u)=>s+u.x,0)/live.length; P.cy=live.reduce((s,u)=>s+u.y,0)/live.length;
-  const R=PACK.contact*TILE, foes=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery&&!veiled(e));   /* a veiled crew member is no contact */
+  const R=PACK.contact*TILE, foes=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery&&!e.clickOnly&&!veiled(e));   /* a veiled crew member is no contact; nor is a tower the brood leaves alone (clickOnly) */
   P.contact=live.some(u=>(u.target&&u.target.faction==='corps')||foes.some(e=>Math.abs(e.x-u.x)<R&&Math.abs(e.y-u.y)<R&&Math.hypot(e.x-u.x,e.y-u.y)<R));
   if(P.contact) for(const u of P.members) if(u.pack===P) u.pack=null; }   /* let loose for good: from here every one fights on its own */
 /* the pace a pack holds a unit to (0 = no limit) */

@@ -155,7 +155,7 @@ function raiseAlert(t){ if(G.time-G.alertT<10) return; G.alertT=G.time; G.alert=
   if(G.side==='swarm'){ SFX.play('heartbeat'); say('The Brood', t.type==='hive' ? 'A hive is burning. They have found one of our nests.' : 'The soft ones are hurting the brood.', 'swarm alert'); return; }
   SFX.play('alarm');
   say('Alert', t.kind==='building' ? `${t.def.name} under attack.` : 'Our forces are under attack.', 'alert'); }
-function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&dist(e,h)<12*TILE) e.target=src; } hiveScream(h,src); }
+function hiveAlarm(h,src){ for(const e of G.ents){ if(e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.target&&!e.def.seed&&dist(e,h)<12*TILE) e.target=src; } hiveScream(h,src); }
 /* Lieutenant Trooper: a grenade now and then, aimed at the thickest group near his target */
 /* a human soldier (any side): a grenade hurts him less (PERKS.trooper.vsSoldier) */
 const isSoldier=e=>e.kind==='unit'&&isSoldierType(e.type);

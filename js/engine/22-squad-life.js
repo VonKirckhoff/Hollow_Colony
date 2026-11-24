@@ -464,7 +464,8 @@ function burnBody(b){ if(b.dead) return; dropBody(b); b.dead=true; addDecal(b.x,
   for(let i=0;i<10;i++) G.fx.push({k:'ember',x:b.x+rand(-8,8),y:b.y+rand(-4,4),vx:rand(-30,30),vy:rand(-70,-20),t:rand(.5,1),max:1,col:pick(['#ff8a2a','#ffd23f','#8a8f9c'])});
   G.fx.push({k:'text',x:b.x,y:b.y-14,t:1,max:1,txt:'CREMATED',col:'#ffb347'}); }
 /* a Swarm unit that is free to answer a body's call */
-function bodyFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.def.boss&&!e.def.founder&&!e.def.grafter&&!e.claim&&!e.haul&&!e.tunnel&&(!e.target||dist(e,e.target)>4*TILE); }
+/* who may claim a body (carry it home or guard it): not a boss, a Husk, a Grafter, a Seedling or your own creature */
+function bodyFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.def.boss&&!e.def.founder&&!e.def.grafter&&!e.def.seed&&!e.avatar&&!e.claim&&!e.haul&&!e.tunnel&&(!e.target||dist(e,e.target)>4*TILE); }
 function dropBody(b){ const u=b.carrier; b.carrier=null; b.hidden=false; if(!u) return; u.haul=null; if(!u.dead){ u.claimMode='guard'; u.order=null; u.path=null; } }
 /* the body reaches the creep around a hive: it is put down there for a Grafter */
 function bodyHome(b,h,u){ const B=SQUAD.body; dropBody(b); b.home=h; b.t=B.time;
