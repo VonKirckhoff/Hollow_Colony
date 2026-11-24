@@ -1,7 +1,7 @@
 # The Graft (Nov 2026): your Husk never roots. Once it is whole, the old nest lays a Seedling for it; moving the selected Seedling
 # the Husk follows it; F roots the Seedling into the nest that wins the mission. A dead Seedling is laid again (spares by difficulty),
 # a fallen Husk after the Seedling is out does not end it, the last seed dead does.
-# No Twitcher (Nov 2026): the cocoon opens on a Shambler; a grazer your Shambler kills is eaten (no carcass), one your Husk kills leaves a carcass.
+# No Twitcher (Nov 2026): the cocoon opens on a Shambler; a grazer your Shambler or your Husk kills leaves a carcass.
 from playwright.sync_api import sync_playwright
 errs=[]
 JS_START='''()=>{ startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-graft')); }'''
@@ -49,7 +49,7 @@ STAGES='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m
   const u=G.avatar; ok(u&&u.type==='husk'&&u.stage===0&&avatarStage()==='shambler','the cocoon opens on a Shambler ('+avatarStage()+')');
   for(const e of G.ents) if(e.faction==='corps'&&e.kind==='unit') e.invuln=true;
   const g1=makeUnit('grazer','wild',u.x+20,u.y); const n0=G.ents.filter(e=>e.kind==='body').length; damage(g1,9999,u); step(0.2);
-  ok(G.ents.filter(e=>e.kind==='body').length===n0,'a grazer your Shambler kills is eaten: no carcass');
+  ok(G.ents.some(e=>e.kind==='body'&&!e.dead&&e.fauna&&Math.hypot(e.x-g1.x,e.y-g1.y)<TILE),'a grazer your Shambler kills leaves a carcass');
   u.stage=HUSK_STAGES.length-1; const g2=makeUnit('grazer','wild',u.x+20,u.y); damage(g2,9999,u); step(0.2);
   ok(G.ents.some(e=>e.kind==='body'&&!e.dead&&e.fauna&&Math.hypot(e.x-g2.x,e.y-g2.y)<TILE),'a grazer your Husk kills leaves a carcass');
   const h=makeUnit('husk','swarm',u.x+60,u.y+60); huskHatched(h); ok(h.stage===HUSK_STAGES.length-1&&!h.stageName,'a Husk of the Brood crawls out full grown');
