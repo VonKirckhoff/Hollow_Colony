@@ -24,7 +24,7 @@ MISSIONS.push(
     summary:'Hold the Kappa field hospital until dawn. Something walks past the Brood to get in, and it keeps coming back.',
     briefing:[
       'A week after Hollow Colony. The relay station you held at Kappa is a field hospital now, and Dr. Maas\'s shipment sits in its tents: three cases of her stabilizer and the files that go with it. The convoy to Tycho comes at dawn, ten minutes from now.',
-      'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Icarus can fly replacements to the pad just south of the tents; claim the relay pads to pay for them.',
+      'Until then Dust holds the hospital. Set up your Sentry Guns, keep the tents and the records terminal covered, and keep your eyes on the dark. Icarus can fly replacements to the pad on the east side of the camp; claim the relay pads to pay for them.',
       'Kappa medical has a dozen wounded in those tents. Nobody gets near them.'
     ],
     job:{ nsHold:600, nsArrive:40, nsSneak:25, nsFirst:120, nsEvery:60, nsDownload:60, nsGrab:2.5, nsWave:65, nsWaveGrow:15, nsUnder:5, nsBrute:3 },
@@ -33,7 +33,7 @@ MISSIONS.push(
       buildings:[], hives:['a','b','c'],
       shafts:[ {x:17,y:2,wall:'n',exit:true,label:'Old shaft'}, {x:2,y:35,wall:'w',exit:true,label:'Old shaft'} ] },
     limits:{ sentry:2 },
-    landingZone:{ tx:21, ty:26, max:10, delay:25 },   // a pad just south of the tents: replacements, never more than 10 on the ground
+    landingZone:{ tx:29, ty:19, max:10, delay:25, rally:{x:20,y:20} },   // the pad on the east side of the camp (as NT_PAD in Needle and Thread): replacements walk straight to the middle of the camp, never more than 10 on the ground
     dark:{ sight:0.5 },                 // night: sight × 0.5, the hospital itself is lit
     noTraining:true,
     swarm:{ biomass:150, rate:0.3, guardMax:4, guardEvery:16, aggro:8, waves:null, unlock:{ spitter:150, brute:9999 } },
@@ -112,7 +112,7 @@ MISSIONS.push(
       { when:g=>g.vars.came&&g.timerLeft()<=0&&!g.vars.out, do:g=>{ g.vars.out=g.time; g.clearTimer(); g.complete('dawn'); if(!g.vars.dlDone) g.complete('records'); if(!g.vars.lostCase) g.complete('stab'); g.unmark('term');
           g.ospreyWithdraw(); g.ospreySay('Unknown voice','Sun is coming up. Smoke, everyone, and out. Nobody stays behind.');
           const kept=g.vars.cases.filter(c=>!c.dead).length;
-          g.win(`Dawn over Kappa, and the convoy sets down south of the tents. ${kept===3?'All three cases are still in the tents':kept?`${kept} of the three cases are still in the tents`:'The tents are empty'}${g.vars.dlDone?' and the terminal has been wiped clean':' and the terminal holds'}. The raiders left blood on the plating, and Tycho runs it overnight. Human, the lab says. And not. The blood belongs to the crew of the Osprey, listed as lost with all hands at Hollow Colony. By morning Cmdr. Varga signs Containment Order 9: the Osprey crew carries the strain. Engage on sight.`); } }
+          g.win(`Dawn over Kappa, and the convoy sets down on the east pad. ${kept===3?'All three cases are still in the tents':kept?`${kept} of the three cases are still in the tents`:'The tents are empty'}${g.vars.dlDone?' and the terminal has been wiped clean':' and the terminal holds'}. The raiders left blood on the plating, and Tycho runs it overnight. Human, the lab says. And not. The blood belongs to the crew of the Osprey, listed as lost with all hands at Hollow Colony. By morning Cmdr. Varga signs Containment Order 9: the Osprey crew carries the strain. Engage on sight.`); } }
     ]
   }
 );

@@ -42,7 +42,7 @@ function newGame(mission, diffKey){
     if(typeof at==='object'){ if(at.wall) s.wall=at.wall; if(at.under) s.under=true; if(at.creep) s.cfg={ creep:at.creep, eggs:at.eggs!=null?at.eggs:1 }; }
     if(at&&at.exit){ s.exit=true; s.faction='none'; s.cfg=null; s.label=at.label||'Way out'; } }   /* Rogue: the crew's way out (31-rogue.js), the Swarm does not use it */
   for(const [at,label] of st.uplinks||[]){ const p=pt(at); const u=makeBuilding('uplink','corps',p.x-1,p.y-1,true); u.invuln=true; u.r=TILE; u.label=label; u.cap=0; u.owned=false; u.point=at; }
-  if(mission.landingZone){ const L=mission.landingZone; const lz=makeBuilding('lz','corps',L.tx,L.ty,true); lz.flight=null; lz.invuln=true; lz.r=TILE*1.5; }
+  if(mission.landingZone){ const L=mission.landingZone; const lz=makeBuilding('lz','corps',L.tx,L.ty,true); lz.flight=null; lz.invuln=true; lz.r=TILE*1.5; if(L.rally){ lz.rally=ptWorld(L.rally); lz.rallyN=0; } }   /* rally: where landed replacements walk to (the player can still set another) */
   /* hives: a map point ('a'), or { at:'a', hp, guardMax, guardEvery, guards:[types], aggro, aggroBrood, aggroCooldown, brood, rage } to tune one hive */
   for(const entry of st.hives||[]){ const hc=(entry&&typeof entry==='object'&&entry.at!==undefined)?entry:{at:entry}; const p=pt(hc.at); if(!p) continue;
     const h=makeBuilding('hive','swarm',p.x-1,p.y-1,true); h.spawnT=rand(2,6); h.cfg=hc; h.hp=h.maxHp=BUILDINGS.hive.hp*(hc.hp||st.hiveHp||1)*(G.diff.hiveHp||1); }

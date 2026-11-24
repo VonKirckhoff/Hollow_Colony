@@ -64,7 +64,12 @@ CASES=[
   ok(/The Matron lived/.test(MISSIONS.find(x=>x.id==='brood-mother').briefing.join(' ')),'Matron: she lived through it');'''),
 ('save and load, dev panel','''let G=start('night-shift'); step(1); calm(); step(G.mission.job.nsArrive+G.mission.job.nsSneak+1); G.vars.dl=0.3; ok(saveGame(),'saved'); goMenu('menu'); ok(loadGame(),'loaded'); G=__hc.G; step(0.5);
   ok(osp().length===7&&osp().every(u=>u.truce==='swarm'&&u.sprite==='crew_'+u.type),'the raiders come back as they were'); ok(G.vars.dl>=0.29&&G.vars.term,'and the download'); goMenu('menu');
-  for(const k of ['OSPREY|demoPlant','OSPREY|demoFuse','OSPREY|demoDmg','OSPREY|nadeEvery','OSPREY|nadeDmg','M|job.nsUnder','M|job.nsBrute','OSPREY|hiveHeal','OSPREY|healTo','OSPREY|spacing','OSPREY|contact','OSPREY|calm','M|job.nsHold','M|job.nsEvery','OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload']) ok(!!devHelp(k),'dev help: '+k);''')
+  for(const k of ['OSPREY|demoPlant','OSPREY|demoFuse','OSPREY|demoDmg','OSPREY|nadeEvery','OSPREY|nadeDmg','M|job.nsUnder','M|job.nsBrute','OSPREY|hiveHeal','OSPREY|healTo','OSPREY|spacing','OSPREY|contact','OSPREY|calm','M|job.nsHold','M|job.nsEvery','OSPREY|breakAt','OSPREY|hp.normal','OSPREY|creepHeal','OSPREY|vanish','M|job.nsDownload']) ok(!!devHelp(k),'dev help: '+k);'''),
+('night shift: the Landing Zone on the east pad, replacements walk to the middle of the camp','''const G=start('night-shift'); step(0.5); G.mission.triggers.length=0; for(const e of G.ents) if(e.kind==='unit'&&e.faction==='swarm') e.dead=true;
+  const lz=G.ents.find(e=>!e.dead&&e.type==='lz'); ok(Math.floor(lz.x/TILE)===NT_PAD.x&&Math.floor(lz.y/TILE)===NT_PAD.y,'the LZ lies where the relief pad of Needle and Thread lies');
+  dust()[0].dead=true; G.salvage=9999; const before=new Set(G.ents.map(e=>e.id)); orderDrop(lz,'trooper'); step(G.mission.landingZone.delay+0.3);
+  const u=G.ents.find(e=>!before.has(e.id)&&e.kind==='unit'&&e.faction==='corps'); ok(u&&u.order&&u.order.type==='move','off the ship he walks off at once'); step(8);
+  const d=Math.hypot(u.x-20.5*TILE,u.y-20.5*TILE)/TILE; ok(d<1.5,'and stands in the middle of the camp ('+d.toFixed(1)+' tiles)');''')
 ]
 res=[]
 with sync_playwright() as p:
