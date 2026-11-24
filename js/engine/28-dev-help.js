@@ -473,6 +473,9 @@ const DEV_HELP = {
   'GRAFT_CORPS|repairTeam.engineer':'The Graft: Engineers in the team Varga flies in when the Relay Tower is hurt (it walks to the tower, mends it and stays on guard).',
   'GRAFT_CORPS|repairTeam.trooper':'The Graft: Troopers escorting that Engineer.',
   'GRAFT_CORPS|campR':'The Graft: the repair team loses its shield as soon as it is this many tiles from the station: once it leaves the camp it can be hurt.',
+  'GRAFT_FORM|shape':'The Graft: the formation of the station garrison (wedge = the V). Next start.',
+  'GRAFT_FORM|dir':'The Graft: which way the point of the garrison\'s V faces (radians; −1.57 = north, towards the tunnel). Next start.',
+  'GRAFT_FORM|join':'The Graft: a replacement this many tiles from the station takes his place in the V (the V shares out its places again).',
   'GRAFT_CORPS|call':'The Graft: seconds a ship needs to fly in replacements for the garrison (one ship at a time, only while the Relay Tower stands).',
   'GRAFT_CORPS|relay.x':'The Graft: where the Relay Tower stands (its middle, tile x; next start).', 'GRAFT_CORPS|relay.y':'The Graft: ...tile y.',
   /* squad */

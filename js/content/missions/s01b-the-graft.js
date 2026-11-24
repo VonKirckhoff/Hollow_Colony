@@ -22,6 +22,14 @@ const GRAFT_BROOD = { cap:10, biomass:150, brute:120 };
    · relay: the tower's middle (on the R pad of the north cavern) */
 const GRAFT_CORPS = { garrison:{ trooper:8, gunner:4, medic:2 }, call:30, relay:{x:49,y:5}, bulk:4, safe:60, repairTeam:{ engineer:1, trooper:3 }, campR:10 };   /* bulk: a ship only goes once this many are missing · safe: seconds a man off the ship cannot be hurt
    · campR: the repair team loses that shield as soon as it is this many tiles from the station (point 1): out of the camp it can be hurt */
+/* the garrison stands in a V (wedge) round the station, its point to the north, where the tunnel comes in.
+   GRAFT_FORM: shape, dir (radians; −π/2 = north) · join: a replacement within this many tiles of the station takes his place in the V */
+const GRAFT_FORM = { shape:'wedge', dir:-Math.PI/2, join:7 };
+/* (re)form the V: the members still on their feet share out its places again, round the station */
+function graftFormUp(units){ units=units.filter(u=>!u.dead&&!u.downed); if(units.length<2) return;
+  const f=units.find(u=>u.formation&&u.formation.graft)?.formation||{ shape:GRAFT_FORM.shape, dir:GRAFT_FORM.dir, gap:1, seq:0, graft:true };
+  for(const u of units){ u.formation=f; u.graftJoin=false; } f.march=null; f.seq=(f.seq||0)+1;
+  const at=f.at||ptWorld('1'); settleFormation(f,units,at,GRAFT_FORM.dir,'move',false,true); }
 const graftRelay=()=>G.ents.find(e=>!e.dead&&e.type==='relay'&&e.faction==='corps'&&e.graft);
 function graftGarrison(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.graftPost==='station'); }
 /* the soldiers the garrison is short of, by kind (what died is what comes back) */
@@ -66,7 +74,12 @@ SWARM_MISSIONS.push(
     triggers:[
       // who is who: the garrison at the station, the two in the tunnel; the tower is only hit when you send the brood at it
       { when:g=>g.time>0.1, do:g=>{ const s1=ptWorld('1'); for(const u of g.corps()) u.graftPost=Math.hypot(u.x-s1.x,u.y-s1.y)<8*TILE?'station':'tunnel';
-          for(const b of G.ents) if(!b.dead&&b.type==='relay'&&b.faction==='corps'){ b.graft=true; b.clickOnly=true; } } },
+          for(const b of G.ents) if(!b.dead&&b.type==='relay'&&b.faction==='corps'){ b.graft=true; b.clickOnly=true; }
+          const gs=graftGarrison(); formUp(gs,GRAFT_FORM.shape,GRAFT_FORM.dir); gs[0].formation.graft=true; } },   /* the V, its point north */
+      // a replacement that reached the station takes his place in the V
+      { repeat:true, when:g=>g.time>(g.vars.joinAt||0), do:g=>{ g.vars.joinAt=g.time+1; const s1=ptWorld('1');
+          const fresh=graftGarrison().filter(u=>!u.downed&&!(u.formation&&u.formation.graft)&&!(u.order&&u.order.type==='move')&&Math.hypot(u.x-s1.x,u.y-s1.y)<GRAFT_FORM.join*TILE);
+          if(fresh.length) graftFormUp(graftGarrison()); } },
       // whoever comes off a ship: the repair team first (by kind), the rest joins the garrison; none of them can be hurt for a while
       { repeat:true, when:g=>g.time>0.5, do:g=>{ const V=g.vars, rp=V.repairNeed||{}, team=[];
           for(const u of g.corps()){ if(u.graftPost||(V.hunters||[]).includes(u)) continue;

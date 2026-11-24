@@ -70,6 +70,9 @@ RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   step(1); const r=graftRelay(); ok(!!r&&r.clickOnly&&r.ty<12,'a Relay Tower in the north cavern ('+(r&&r.tx)+','+(r&&r.ty)+')');
   ok(graftGarrison().length===14&&G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel').length===2,'fourteen in the garrison, two in the tunnel');
   ok(!!G.ents.find(e=>!e.dead&&e.type==='lz'),'a Landing Zone at the station');
+  { const gs=graftGarrison(), f=gs[0].formation, fighters=gs.filter(u=>!u.def.heal), top=fighters.reduce((a,u)=>u.y<a.y?u:a), cx=gs.reduce((a,u)=>a+u.x,0)/gs.length;
+    ok(f&&f.graft&&f.shape==='wedge'&&gs.every(u=>u.formation===f),'the garrison stands in a V (wedge)');
+    ok(Math.abs(top.x-cx)<1.5*TILE&&fighters.filter(u=>Math.abs(u.x-cx)>3*TILE).every(u=>u.y>top.y+2*TILE),'its point is to the north, the wings trail south'); }
   /* the brood leaves the tower alone until you send it */
   const ds=[]; for(let i=0;i<3;i++){ const d=makeUnit('drone','swarm',r.x+30+i*10,r.y+40); d.role='brood'; d.mine=true; d.post={x:d.x,y:d.y}; ds.push(d); }
   const hp0=r.hp; step(6); ok(r.hp===hp0&&!ds.some(d=>d.target===r),'brood next to the tower leaves it alone');
@@ -94,6 +97,7 @@ RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   ok(lz.flight&&lz.flight.cargo.length===4,'four lost: a ship with four is on its way');
   const before=new Set(G.ents); for(let i=0;i<30*(GRAFT_CORPS.call+25)&&graftGarrison().length<14;i++) __hc.update(1/30); step(1);
   const nw=graftGarrison().filter(u=>!before.has(u)); ok(graftGarrison().length===14&&nw.length===4,'they land and join the garrison ('+graftGarrison().length+')');
+  step(15); ok(graftGarrison().every(u=>u.formation&&u.formation.graft),'the replacements take their place in the V');
   { const u=nw[0], h=u.hp; damage(u,50,null); ok(u.invuln&&u.hp===h,'off the ship: they cannot be hurt'); step(GRAFT_CORPS.safe+1); damage(u,10,null); ok(!u.invuln&&u.hp<h,'after '+GRAFT_CORPS.safe+' s they can'); }
   /* the tunnel two are not replaced */
   for(const u of G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='tunnel')) kill(u,null); step(2); ok(G.ents.filter(e=>e.type==='lz'&&e.flight).length===0,'the tunnel patrol is not replaced');
