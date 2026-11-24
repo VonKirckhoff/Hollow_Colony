@@ -36,7 +36,7 @@ function myBrood(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction=
 function broodUsed(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.mine).length+broodPending(); }   /* eggs in a batch count already */
 function broodPending(){ let n=0; for(const h of G.ents) if(!h.dead&&h.batch) n+=h.batch.items.length; return n; }
 function broodCap(){ return (G.swarm.cfg.cap||SWARM_PLAY.cap)+(G.swarm.capExtra||0); }   /* capExtra: room a mission script adds (the training's burrow step) */
-function broodUnlocked(type){ const at=(G.swarm.cfg.unlock||{})[type] ?? UNITS[type].unlock ?? 0; return G.time>=at; }
+function broodUnlocked(type){ const at=(G.swarm.unlockAt||{})[type] ?? (G.swarm.cfg.unlock||{})[type] ?? UNITS[type].unlock ?? 0; return G.time>=at; }   /* unlockAt: a time a mission script sets during play (The Graft's Seedling phase) */
 function nestHive(){ const s=G.sel.find(e=>!e.dead&&e.type==='hive'); if(s) return s; const r=G.swarm.rally; const hs=hives(); if(!hs.length) return null; return r?hs.reduce((a,b)=>dist(a,r)<=dist(b,r)?a:b):hs[0]; }
 /* waiting brood stays near the gathering point and fights whatever comes close */
 function broodThink(u){ if(u.rootT!=null) return;   /* a Seedling taking root stays put */ const r=u.post||G.swarm.rally||u.guardAt; if(!r) return; if(u.order&&u.order.type==='move') return;   /* walking to where you sent it */
@@ -148,7 +148,7 @@ function swarmButtons(){ const out=avatarButtons(), S=G.swarm, used=broodUsed(),
   const P=SWARM_PLAY.batch, nest=nestHive();
   for(const t of SWARM_PLAY.brood.concat(S.cfg.seedling?['seedling']:[])){ const d=UNITS[t], un=broodUnlocked(t);
     out.push({row:'Brood',key:SWARM_PLAY.keys[t],img:iconUrl(t),cost:d.biomass,off:!un||S.biomass<d.biomass||used>=cap,
-      tip:`${d.name}|${d.desc} Costs ${d.biomass} biomass. Puts an egg in the batch of the nest${nest?'':' (no hive left)'}; Shift: ${P.shift} at once. After ${P.quiet} s without a new egg (or Space) they all hatch together.${un?'':` Not yet: the brood can grow it after ${fmtTime((S.cfg.unlock||{})[t]??d.unlock??0)}.`}`,act:e=>swarmBreed(t,e&&e.shiftKey?P.shift:1)}); }
+      tip:`${d.name}|${d.desc} Costs ${d.biomass} biomass. Puts an egg in the batch of the nest${nest?'':' (no hive left)'}; Shift: ${P.shift} at once. After ${P.quiet} s without a new egg (or Space) they all hatch together.${un?'':` Not yet: the brood can grow it after ${fmtTime((S.unlockAt||{})[t]??(S.cfg.unlock||{})[t]??d.unlock??0)}.`}`,act:e=>swarmBreed(t,e&&e.shiftKey?P.shift:1)}); }
   /* the nest's batch: Hatch now first, then one icon per kind (click: take one back). The row is always there, so the rows below
      never jump down when a batch starts (Nov 2026); with no eggs Hatch now is greyed out. */
   const NB=nest&&nest.batch, BT=NB&&NB.items.length?NB:null;

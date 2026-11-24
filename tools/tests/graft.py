@@ -9,7 +9,13 @@ JS_HUSK='''()=>{ const G=__hc.G; for(let i=0;i<30*40&&!G.vars.hatched;i++) __hc.
   const a=G.avatar; const u=makeUnit('husk','swarm',a.x,a.y); u.stage=HUSK_STAGES.length-1; u.role='avatar'; a.dead=true; setAvatar(u);
   for(const e of G.ents) if(e.faction==='corps'&&e.kind==='unit') e.invuln=true; return !!G.vars.hatched; }'''
 CASES='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
+  const b0=G.swarm.biomass; ok(broodCap()===10,'the whole Brood from the start: limit 10 ('+broodCap()+')');
   const u=G.avatar; step(1);
+  ok(broodCap()===10+GRAFT_BROOD.cap&&G.swarm.biomass>=b0+GRAFT_BROOD.biomass-1,'the Seedling is out: limit '+broodCap()+', biomass '+Math.round(G.swarm.biomass)+' (was '+Math.round(b0)+')');
+  ok(!broodUnlocked('brute')&&broodUnlocked('spitter'),'Spitters now, no Brutes yet');
+  { const t0=G.time; G.time+=GRAFT_BROOD.brute+1; ok(broodUnlocked('brute'),'Brutes after '+GRAFT_BROOD.brute+' s'); G.time=t0; }
+  { const st=ptWorld('1'); G.vars.patrolAt=0; for(let k=0;k<6;k++){ G.vars.patrolAt=0; step(1); } step(20);
+    const at=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&!(G.vars.hunters||[]).includes(e)&&Math.hypot(e.x-st.x,e.y-st.y)<7*TILE).length; ok(at>=GRAFT_BROOD.keep,'after six patrols '+at+' soldiers still hold the station'); }
   ok(!avatarButtons().some(b=>b.tip.startsWith('Take root|Grow a new hive')),'the Husk has no root button of its own');
   const sd=graftSeedling(); ok(!!sd&&sd.type==='seedling'&&V.seedPhase,'the nest laid a Seedling once the Husk was whole');
   ok(/Seedling/.test((G.objectives.find(o=>o.id==='life')||{}).text||''),'the objective speaks of the Seedling ('+(G.objectives.find(o=>o.id==='life')||{}).text+')');

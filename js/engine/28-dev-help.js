@@ -446,6 +446,10 @@ const DEV_HELP = {
   'AVATAR|seedSpare':'The Graft: how many new Seedlings the nest lays after the first dies (Normal; Easy one more, Hard one less).',
   'AVATAR|follow':'The Graft: tiles your Husk keeps from the Seedling it follows (when you move the selected Seedling).',
   'AVATAR|guard':'The Graft: a foe this many tiles from the Seedling is taken on by the Husk that follows it.',
+  'GRAFT_BROOD|cap':'The Graft: once the Seedling is out, the brood limit grows by this many (10 at the start).',
+  'GRAFT_BROOD|biomass':'The Graft: extra biomass when the Seedling comes out.',
+  'GRAFT_BROOD|brute':'The Graft: seconds after the Seedling comes out before Brutes can hatch.',
+  'GRAFT_BROOD|keep':'The Graft: soldiers the patrol always leaves at the station (the ones nearest to it).',
   /* squad */
   'SQUAD|medic.leash':'Tiles a Medic without orders goes from his place (in the formation, or where you left him) to heal a soldier. Further away, he lets him go and stays with the squad.',
   'SQUAD|medic.downedLeash':'The same, for a downed soldier: a Medic goes further for someone who is down.',
