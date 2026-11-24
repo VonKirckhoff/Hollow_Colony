@@ -1,7 +1,7 @@
 'use strict';
 /* Kappa Canyons — 84×60 tiles. Legend: see _maps.js
    Corridors are at least 7 tiles wide so a squad keeps its formation.
-   Mission 1 seals the north tunnel on row 24 (x 40–48) with blast doors; point 3 is the far end of that tunnel. */
+   Mission 1 seals the north tunnel on rows 24 and 15 (x 40–48) with blast doors; point 3 is the far end of that tunnel. */
 MAPS.canyons = {
   name:'Kappa Canyons',
   desc:'Wide canyons from the drop zone to Kappa Station, with a sealed tunnel to the caverns in the north.',

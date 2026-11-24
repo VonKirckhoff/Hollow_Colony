@@ -7,6 +7,8 @@
 const DUST_SHAFT_E={x:79,y:35}, DUST_SHAFT_W={x:8,y:8};
 /* the breaching charge on the blast doors (Nov 2026): arm 10 s standing still (a hit or a step off starts it over), then a 10 s fuse;
    the blast blows the doors away and hurts your own soldiers inside the red ring (own = damage at the charge, half at the rim) */
+/* the north tunnel's blast doors: the station end (24) and the cavern end (15), both x 40–48 */
+const DUST_DOOR_ROWS=[24,15];
 const DUST_BREACH={ at:{x:44,y:26}, arm:10, fuse:10, blast:4.5, own:40, wave:40 };
 /* a group out of a mine shaft: picks types for the budget (× difficulty), they come up at the shaft and hunt the squad */
 function dustShaftWave(g,shaft,budget){
@@ -46,7 +48,9 @@ MISSIONS.push(
     ],
     triggers:[
       // the station crew sealed the tunnel to the northern caverns behind them
-      { when:g=>g.time>0.1, do:g=>{ for(let x=40;x<=48;x++) g.wall({x,y:24},0,'north','door'); G.shaftWarned=true; } },   /* (our own lines about the shafts, below) */
+      /* two sets of blast doors (Nov 2026): one at the station end (row 24) and one at the cavern end (row 15), so the Brood can no longer stand
+         right behind the station doors and be shot from the station side; both carry the tag 'north', so the breaching charge blows both at once */
+      { when:g=>g.time>0.1, do:g=>{ for(const y of DUST_DOOR_ROWS) for(let x=40;x<=48;x++) g.wall({x,y},0,'north','door'); G.shaftWarned=true; } },   /* (our own lines about the shafts, below) */
       { when:g=>g.time>0.2, do:g=>{ g.marker('station','1','Kappa Station'); g.reveal('1',4,6); } },
       { when:g=>g.time>1,  do:g=>g.say('Cmdr. Varga','Dust, this is Varga. You are down. Follow the canyons north-east to Kappa Station, the metal platform under the marker, and report.') },
       { when:g=>g.time>9,  do:g=>g.say('Sgt. Kessler','Drop pods scattered salvage through the canyons. Walk over a crate to recover it.') },
@@ -88,7 +92,7 @@ MISSIONS.push(
           g.vars.engCalled=true; g.say('Cmdr. Varga','You lost your Engineer. Icarus is bringing another one to the pad. Keep him alive this time.'); g.airdrop([['engineer',1]],20); } },
       { repeat:true, when:g=>g.vars.engCalled && g.has('engineer')>0, do:g=>{ g.vars.engCalled=false; } },
       { when:g=>g.charge('breach')==='blown', do:g=>{
-          g.complete('breach'); g.unmark('breach'); g.ping({x:44,y:24}); g.setSwarm({ aggro:7 });
+          g.complete('breach'); g.unmark('breach'); for(const y of DUST_DOOR_ROWS) g.ping({x:44,y}); g.setSwarm({ aggro:7 });
           g.say('Cmdr. Varga','That woke them up. Biomass signature in the caverns beyond. Find the nest and destroy it.');
           g.addObjective('nest','Destroy the hive in the western cavern'); g.marker('tunnel','3','Tunnel'); g.vars.open=true; } },
       { when:g=>g.vars.open && g.near('corps','3',3)>0, do:g=>{ g.unmark('tunnel'); g.reveal('c',4,10); g.ping('c'); g.marker('nest','c','Hive'); } },

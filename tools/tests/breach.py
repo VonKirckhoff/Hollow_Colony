@@ -1,6 +1,6 @@
 # Dust Landing's blast doors (Nov 2026): the controls are slagged, the Icarus brings an Engineer who arms a breaching charge on the
 # Breach point (10 s standing still; a hit or a step off starts it over), a small group climbs out of the east shaft while he works,
-# then a 10 s fuse with a red ring: the blast blows the doors away and hurts your own soldiers in the ring. Lost Engineer: a new one.
+# then a 10 s fuse with a red ring: the blast blows both sets of doors away (row 24 at the station, row 15 at the caverns) and hurts your own soldiers in the ring. Lost Engineer: a new one.
 # The Waking (the Brood's side) uses the same charge: their Engineer blows the doors, hit him and he starts over, two replacements at most.
 # Must end with ALL OK.
 from playwright.sync_api import sync_playwright
@@ -20,7 +20,7 @@ CASES=[
   G.vars.ambushAt=null; G.vars.ambush=[]; G.vars.drop1=false; step(1); const lz=G.ents.find(e=>e.def&&e.def.reinforce);
   G.vars.ambush=[]; G.triggers=G.triggers||G.triggers; G.api.airdrop([['trooper',2],['pyro',1],['engineer',1]],1); G.vars.drop1=true; G.api.addObjective('drop','x');
   for(let i=0;i<40&&!eng();i++) step(1); ok(!!eng(),'an Engineer comes off the Icarus'); step(6);
-  const site=G.ents.find(e=>!e.dead&&e.type==='chargesite'&&e.tag==='breach'); ok(site&&site.tx===44&&site.ty===26,'the Breach point lies in front of the doors'); ok(doors()===9,'the doors are still shut ('+doors()+')');
+  const site=G.ents.find(e=>!e.dead&&e.type==='chargesite'&&e.tag==='breach'); ok(site&&site.tx===44&&site.ty===26,'the Breach point lies in front of the doors'); ok(doors()===18,'both sets of doors are still shut ('+doors()+')'); ok(!walkableT(44,15)&&!walkableT(44,24),'doors at the station end and the cavern end');
   ok(G.objectives.some(o=>o.id==='breach'),'objective: blow the blast doors'); ok(!G.vars.open,'not open by itself');'''),
 ('arming: a hit starts it over, the east shaft wakes','''const G=start(); G.api.spawn('engineer',{x:45,y:37},1); step(6); const e=eng(); const n0=G.ents.filter(x=>!x.dead&&x.faction==='swarm'&&x.kind==='unit').length;
   tp(e,44,26); step(5); const site=G.ents.find(x=>!x.dead&&x.type==='chargesite'); ok(site.arm>0.4&&site.arm<0.6,'half armed after 5 s ('+site.arm.toFixed(2)+')'); ok(G.api.charge('breach')==='arming','state arming');
@@ -32,7 +32,7 @@ CASES=[
   ok(G.api.charge('breach')==='armed','armed after about 10 s'); const fz=G.api.chargeFuse('breach'); ok(fz>=8&&fz<=10,'a 10 s fuse ('+fz+')');
   ok((G.rings||[]).some(z=>z.charge==='breach'&&z.col==='#ff5a4f'),'a red ring shows the blast');
   tp(e,44,34); tp(tr,44,27); tr.hp=tr.maxHp; const hp0=e.hp; for(let i=0;i<12&&G.api.charge('breach')!=='blown';i++){ calm(); tp(tr,44,27); step(1); }
-  ok(G.api.charge('breach')==='blown','it blows'); ok(doors()===0,'the doors are gone'); ok(walkableT(44,24)&&walkableT(40,24)&&walkableT(48,24),'the tunnel is open');
+  ok(G.api.charge('breach')==='blown','it blows'); ok(doors()===0,'the doors are gone'); ok(walkableT(44,24)&&walkableT(40,24)&&walkableT(48,24)&&walkableT(44,15)&&walkableT(40,15)&&walkableT(48,15),'both doors blown at once, the tunnel is open');
   ok(tr.hp<tr.maxHp&&!tr.dead&&!tr.downed,'the Trooper in the ring is hurt, not down ('+Math.round(tr.hp)+'/'+tr.maxHp+')'); ok(e.hp===hp0,'the Engineer out of the ring is not');
   ok(!(G.rings||[]).some(z=>z.charge==='breach'),'the ring is gone'); step(1); ok(G.vars.open&&G.swarm.cfg.aggro===7&&G.objectives.some(o=>o.id==='nest'),'the caverns wake up, next objective');
   ok(G.decals.length>5,'black scars where the doors stood');'''),
