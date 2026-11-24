@@ -79,6 +79,11 @@ RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   for(const d of ds) d.dead=true;
   /* the tower is hurt: a repair team with an Engineer */
   step(1); const lz=G.ents.find(e=>e.type==='lz'); ok(lz.flight&&lz.flight.cargo.includes('engineer')&&lz.flight.cargo.length===4,'the tower is hurt: an Engineer and three Troopers are on their way ('+(lz.flight&&lz.flight.cargo)+')');
+  { const s1=ptWorld('1'); let inCamp=null, outCamp=null;
+    for(let i=0;i<30*(GRAFT_CORPS.call+60);i++){ __hc.update(1/30); const tm=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='repair'); if(!tm.length) continue;
+      for(const u of tm){ const d=Math.hypot(u.x-s1.x,u.y-s1.y)/TILE; if(d<GRAFT_CORPS.campR-1&&inCamp==null) inCamp=!!u.invuln; if(d>GRAFT_CORPS.campR+1&&outCamp==null) outCamp=!!u.invuln; }
+      if(inCamp!=null&&outCamp!=null) break; }
+    ok(inCamp===true&&outCamp===false,'the repair team is shielded in the camp ('+inCamp+') and can be hurt once out of it ('+outCamp+')'); }
   for(let i=0;i<30*(GRAFT_CORPS.call+120)&&!(r.hp>=r.maxHp);i++) __hc.update(1/30);
   const rt=G.ents.filter(e=>!e.dead&&e.faction==='corps'&&e.graftPost==='repair'); ok(rt.length===4&&rt.some(e=>e.type==='engineer'),'the repair team is down ('+rt.map(e=>e.type)+')');
   ok(r.hp>=r.maxHp&&rt.every(e=>dist(e,r)<12*TILE),'they walked to the tower and mended it ('+Math.round(r.hp)+'/'+r.maxHp+')');

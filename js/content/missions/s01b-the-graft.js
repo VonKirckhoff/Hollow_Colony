@@ -13,14 +13,15 @@
    Nov 2026: a Relay Tower on the pad in the north cavern. While it stands, every soldier the garrison loses is flown in again
    (GRAFT_CORPS) to the Landing Zone at the station, always in bulk (at least GRAFT_CORPS.bulk at once, never one man alone);
    the patrol and the hunters are not replaced. Whoever comes off a ship cannot be hurt for GRAFT_CORPS.safe seconds.
-   Once the tower is hurt, Varga flies in a repair team (GRAFT_CORPS.repairTeam, graftPost 'repair'): it walks to the tower,
+   Once the tower is hurt, Varga flies in a repair team (GRAFT_CORPS.repairTeam, graftPost 'repair'; shielded only inside the camp): it walks to the tower,
    its Engineer mends it and the team stays there on guard. A new team only once that one is gone. Torn down: no more ships.
    The Brood never attacks the tower on its own (b.clickOnly): you have to send them at it (right-click it, or A + click on it). */
 /* GRAFT_BROOD: when the Seedling comes out, the brood limit grows by `cap`, you get `biomass` extra, Brutes can hatch `brute` s later */
 const GRAFT_BROOD = { cap:10, biomass:150, brute:120 };
 /* GRAFT_CORPS: the station garrison (kept at full strength while the Relay Tower stands) · call: seconds a ship needs to bring replacements
    · relay: the tower's middle (on the R pad of the north cavern) */
-const GRAFT_CORPS = { garrison:{ trooper:8, gunner:4, medic:2 }, call:30, relay:{x:49,y:5}, bulk:4, safe:60, repairTeam:{ engineer:1, trooper:3 } };   /* bulk: a ship only goes once this many are missing · safe: seconds a man off the ship cannot be hurt */
+const GRAFT_CORPS = { garrison:{ trooper:8, gunner:4, medic:2 }, call:30, relay:{x:49,y:5}, bulk:4, safe:60, repairTeam:{ engineer:1, trooper:3 }, campR:10 };   /* bulk: a ship only goes once this many are missing · safe: seconds a man off the ship cannot be hurt
+   · campR: the repair team loses that shield as soon as it is this many tiles from the station (point 1): out of the camp it can be hurt */
 const graftRelay=()=>G.ents.find(e=>!e.dead&&e.type==='relay'&&e.faction==='corps'&&e.graft);
 function graftGarrison(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.graftPost==='station'); }
 /* the soldiers the garrison is short of, by kind (what died is what comes back) */
@@ -72,7 +73,7 @@ SWARM_MISSIONS.push(
             if(rp[u.type]>0){ rp[u.type]--; u.graftPost='repair'; team.push(u); } else u.graftPost='station';
             u.invuln=true; u.graftSafe=g.time+GRAFT_CORPS.safe; G.fx.push({k:'text',x:u.x,y:u.y-24,t:1.2,max:1.2,txt:'SHIELDED',col:'#7fd3ff'}); }
           if(team.length){ const r=graftRelay(); if(r) g.orderCorps(team,{x:r.tx,y:r.ty+3},'amove'); }
-          for(const u of g.corps()) if(u.graftSafe&&g.time>=u.graftSafe){ u.graftSafe=null; u.invuln=false; } } },
+          const s1=ptWorld('1'); for(const u of g.corps()) if(u.graftSafe&&(g.time>=u.graftSafe||(u.graftPost==='repair'&&Math.hypot(u.x-s1.x,u.y-s1.y)>GRAFT_CORPS.campR*TILE))){ u.graftSafe=null; u.invuln=false; } } },   /* the repair team: no shield once it leaves the camp */
       // the garrison is short: while the tower stands, Varga flies in what it lost, in bulk (one ship at a time)
       { repeat:true, when:g=>g.time>1&&!g.vars.cut&&g.inbound()===0&&graftShort().reduce((s,[,n])=>s+n,0)>=Math.min(GRAFT_CORPS.bulk,Object.values(GRAFT_CORPS.garrison).reduce((a,b)=>a+b,0)), do:g=>{ const list=graftShort(); g.airdrop(list,GRAFT_CORPS.call,'1');
           if(!g.vars.callSaid||g.time>g.vars.callSaid+60){ g.vars.callSaid=g.time; g.say('Cmdr. Varga',`Kappa, replacements are on their way: ${list.reduce((s,[,n])=>s+n,0)} of them, ${GRAFT_CORPS.call} seconds out.`); } } },
