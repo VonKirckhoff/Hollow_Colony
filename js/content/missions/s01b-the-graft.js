@@ -5,6 +5,8 @@
    → as a Husk (a warrior, it never roots) guard the Seedling the old nest lays: lead it to a quiet spot, F roots it into your nest.
    Move the selected Seedling and your Husk follows it. A Seedling that dies is laid again after AVATAR.seedAgain s (graftSeedSpare times);
    your Husk may fall once the Seedling is out, then you lead the Seedling alone. Before that, if you die, it is over.
+   To win, the Seedling must root AND every soldier on the map must be dead (objective 'purge'); once the nest stands,
+   only losing every hive loses the mission.
    The whole Brood is yours from the start (hatch, A, H, teams); once the Seedling is out it grows (GRAFT_BROOD).
    The doors are open; the Lunar Corps holds the station (GRAFT_BROOD.keep soldiers always stay there), sends a patrol up the tunnel
    and, once you are a Shambler, a hunter team after you. */
@@ -30,18 +32,19 @@ SWARM_MISSIONS.push(
     id:'swarm-graft', side:'swarm', title:'The Graft', map:'canyons',
     summary:'Be the seed. From egg to Husk, then guard the Seedling that roots a nest of your own.',
     briefing:[
-      'The station is quiet, but not empty. More soft ones came down after Dust, and they guard the platform and walk the tunnel.',
+      'The station is quiet, but not empty. More soft ones came down after Dust, and they guard the platform and walk the tunnel. None of them may leave the canyons alive.',
       'One of Dust was dragged home to the western nest. An egg on the mycel is opening. <i>That is you.</i>',
       'You steer one creature through its whole life. <b>Right-click</b> to move it. As a Grafter, latch onto the body. As a <b>Shambler</b>, hide: stay far from every soldier until you change. As a <b>Husk</b>, guard the <b>Seedling</b> the nest gives you: select it, lead it to a quiet place and press <b>F</b> to take root. Move the Seedling and your Husk follows it.',
       'The whole Brood is yours too: hatch it (Q, W, E), send it (A), bring the fallen home (H). Once the Seedling is out the nest grows stronger: more brood, and Brutes after a while. But if your creature dies before the Seedling is out, the seed is lost.'
     ],
     start:{ camera:'c', rally:{x:20,y:10},
-      units:[ ['trooper','1',2], ['gunner','1',1], ['medic','1',1], ['trooper','3',2] ],
+      units:[ ['trooper','1',4], ['gunner','1',2], ['medic','1',1], ['trooper','3',2] ],   /* seven at the station, two in the tunnel */
       hives:[ { at:'c', guardMax:2, guardEvery:20, aggro:5, eggs:3 } ], hiveHp:1.5 },
     swarm:{ biomass:60, rate:0.35, guardMax:2, waves:null, cap:10, unlock:{ spitter:0, brute:9999 }, husks:0, spareFauna:true },
     objectives:[
       { id:'life', text:'Wait for the body' },
-      { id:'seed', text:'Keep your creature alive' }
+      { id:'seed', text:'Keep your creature alive' },
+      { id:'purge', text:'Kill every soldier' }
     ],
     triggers:[
       // a drone drags a body home; the egg nearest to it is yours
@@ -66,8 +69,13 @@ SWARM_MISSIONS.push(
           if(V.seedPhase) g.setText('life',sd?(sd.rootT!=null?`Seedling taking root (${Math.ceil(sd.rootT)} s): guard it`:`${avatarAlive()?'Husk: lead':'Lead'} the Seedling to a quiet spot, select it and press F`)
             :V.seedAt!=null?`The nest lays a new Seedling (${Math.max(0,Math.ceil(V.seedAt-g.time))} s)`:'A nest of your own');
           else if(txt) g.setText('life',txt);
-          if(V.seedPhase&&!V.won){ graftFollow(g);
-            if((G.swarm.founded||0)>0){ V.won=true; g.complete('life'); g.complete('seed'); g.win('A new nest breathes in the canyons. You were a seed in a dead man; now you are the Brood.'); return; }
+          { const n=g.corps().length; g.setText('purge',n?`Kill every soldier (${n} left)`:'Kill every soldier'); }
+          if(V.rooted&&!V.won){ g.setText('life','A nest of your own');
+            if(!g.corps().length){ V.won=true; g.complete('purge'); g.win('A new nest breathes in the canyons, and not one of them is left to see it. You were a seed in a dead man; now you are the Brood.'); return; }
+            if(!hives().length){ V.won=true; g.fail('purge'); g.lose('Every nest is ash. The soft ones hold the canyons.'); return; } }
+          if(V.seedPhase&&!V.won&&!V.rooted){ graftFollow(g);
+            if((G.swarm.founded||0)>0){ V.rooted=true; g.complete('life'); g.complete('seed'); const n=g.corps().length;
+              if(n) g.brood_say(`The seed has rooted. Now the soft ones: ${n} of them still breathe in the canyons. Hunt them all.`); return; }
             if(sd&&sd.rootT!=null&&!V.rootSaid){ V.rootSaid=true; g.say('Sgt. Kessler','That pod is digging in! Hunter team, on it!'); const hs=(V.hunters||[]).filter(h=>!h.dead); if(hs.length) g.orderCorps(hs,{x:Math.floor(sd.x/TILE),y:Math.floor(sd.y/TILE)},'amove');
               g.brood_say('They are coming. The nest sends its guards to the seed; the rest of the brood is yours to send.'); for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.seed&&!e.mine){   /* only the nest's own guards: the brood you hatched stays where you put it */ e.role='brood'; e.post={x:sd.x,y:sd.y}; e.order=null; } }
             if(sd&&sd.rootT==null) V.rootSaid=false;

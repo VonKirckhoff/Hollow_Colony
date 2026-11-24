@@ -9,6 +9,7 @@ JS_HUSK='''()=>{ const G=__hc.G; for(let i=0;i<30*40&&!G.vars.hatched;i++) __hc.
   const a=G.avatar; const u=makeUnit('husk','swarm',a.x,a.y); u.stage=HUSK_STAGES.length-1; u.role='avatar'; a.dead=true; setAvatar(u);
   for(const e of G.ents) if(e.faction==='corps'&&e.kind==='unit') e.invuln=true; return !!G.vars.hatched; }'''
 CASES='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
+  { const st=ptWorld('1'); }
   const b0=G.swarm.biomass; ok(broodCap()===10,'the whole Brood from the start: limit 10 ('+broodCap()+')');
   const u=G.avatar; step(1);
   ok(broodCap()===10+GRAFT_BROOD.cap&&G.swarm.biomass>=b0+GRAFT_BROOD.biomass-1,'the Seedling is out: limit '+broodCap()+', biomass '+Math.round(G.swarm.biomass)+' (was '+Math.round(b0)+')');
@@ -41,7 +42,10 @@ CASES='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
     if(G.ents.some(e=>!e.dead&&e.kind==='building'&&Math.hypot(e.x-px,e.y-py)<3*TILE)) continue; spot={x:px,y:py}; }
   sd2.x=spot.x; sd2.y=spot.y; sd2.path=null; sd2.order=null; sd2.post={x:spot.x,y:spot.y}; sd2.invuln=true;
   avatarButtons().find(b=>b.key==='F').act(); ok(sd2.rootT!=null,'a quiet spot: the Seedling digs in');
-  step(S.root+2); ok(G.over&&G.won!==false&&(G.swarm.founded||0)===1,'it becomes the nest and the mission is won ('+JSON.stringify(G.over)+')');
+  step(S.root+2); ok(!G.over&&(G.swarm.founded||0)===1&&G.vars.rooted,'it becomes the nest, but soldiers still live: not won yet');
+  ok(/left/.test((G.objectives.find(o=>o.id==='purge')||{}).text||''),'the objective counts the soldiers ('+(G.objectives.find(o=>o.id==='purge')||{}).text+')');
+  for(const e of G.ents) if(!e.dead&&e.kind==='unit'&&e.faction==='corps'){ e.invuln=false; kill(e,null); } step(1);
+  ok(G.over&&G.over.win,'every soldier dead and the nest stands: won ('+JSON.stringify(G.over)+')');
   }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
 LOSE='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
   step(1); const u=G.avatar; u.hp=0; u.dead=true; step(1); ok(!G.over,'Husk dead, Seedling alive: still going');
@@ -49,6 +53,7 @@ LOSE='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'F
   }catch(e){ out.push('FAIL error '+e.message); } return out.join('\\n'); }'''
 STAGES='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; try{
   ok(!HUSK_STAGES.some(s=>s.name==='Twitcher'),'no Twitcher stage left');
+  { const st=ptWorld('1'), n=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-st.x,e.y-st.y)<6*TILE).length; ok(n===7,'seven soldiers at the station ('+n+')'); }
   for(let i=0;i<30*60&&!(G.avatar&&G.avatar.type==='cocoon');i++){ const a=G.avatar, b=G.vars.body; if(a&&a.type==='grafter'&&b){ a.order={type:'move',x:b.x,y:b.y}; setPath(a,b.x,b.y); } __hc.update(1/30); }
   ok(G.avatar&&G.avatar.type==='cocoon','your Grafter turned the body into a cocoon');
   for(let i=0;i<30*40&&G.avatar&&G.avatar.type==='cocoon';i++) __hc.update(1/30);
