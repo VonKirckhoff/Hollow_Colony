@@ -319,9 +319,9 @@ function drawEgg(b,art,now){ const opening=b.openT!=null, p=opening?1-b.openT/EG
 const HIVE_DEATH = { scream:1.8, fall:0.6, time:3.4, rings:3, brood:7, smoke:12 };
 function hiveDeath(h){ const D=HIVE_DEATH;
   G.fx.push({k:'hivedeath',x:h.x,y:h.y,t:D.time,max:D.time,seed:h.id*7.3,ph:h.id*0.37,id:h.id});
-  SFX.play('huskroar',h.x,h.y); SFX.play('hatch',h.x,h.y); }
+  SFX.play('hivescream',h.x,h.y); }   /* its own sound (02-sound.js), heard farther than others */
 function hiveDeathTick(f){ const tt=f.max-f.t;   /* the sound of the cave-in, once */
-  if(!f.fell&&tt>=HIVE_DEATH.scream){ f.fell=true; SFX.play('squelch',f.x,f.y); SFX.play('boom',f.x,f.y);
+  if(!f.fell&&tt>=HIVE_DEATH.scream){ f.fell=true; SFX.play('squelch',f.x,f.y); SFX.play('boom',f.x,f.y); SFX.play('crumble',f.x,f.y);
     for(let i=0;i<14;i++) G.fx.push({k:'ember',x:f.x+rand(-30,30),y:f.y+rand(-10,14),vx:rand(-70,70),vy:rand(-110,-30),t:rand(.5,1),max:1,col:pick(['#5a4632','#d3c3a6','#24182c','#4fae22'])}); } }
 const hdRnd=s=>{ s=Math.sin(s*127.1)*43758.5453; return s-Math.floor(s); };
 let hdCan=null, hdCtx=null;

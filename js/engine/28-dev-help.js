@@ -121,6 +121,8 @@ const DEV_HELP = {
   'HIVE_EYE|pupil':'3D hive eye: size of the pupil (part of the eye picture).',
   'HIVE_EYE|look':'3D hive eye: how far the pupil moves towards the enemy it watches.',
   'HIVE_EYE|speed':'3D hive eye: swimming speed of the cells (eye widths per second).',
+  'HIVE_EYE|panic':'3D hive eye: cells per second that shoot out of the pupil in every direction during a hive\'s last scream.',
+  'HIVE_EYE|panicSpeed':'3D hive eye: how much faster the cells flee in the last scream (times speed).',
   'MEMB|breathe':'3D membrane: how far the sheets swell in and out while it cannot be harmed (0 = still).',
   'MEMB|breatheSpeed':'3D membrane: breathing speed while it cannot be harmed.',
   'MEMB|slackBreathe':'3D membrane: how far the sheets swell once weakened (slower, deeper).',

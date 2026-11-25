@@ -1035,7 +1035,7 @@ function v3PoseHive(e,g,T){ const U=g.userData, f=clamp(e.hp/e.maxHp,0,1), hurt=
    A canvas texture on the heart ball (planar uv: the front half shows the canvas as a disc). With nobody near, now and then a few
    loose cells with a wriggling tail swim across it. When an enemy unit comes within HIVE_EYE.watch tiles the cells swarm in and
    clump together into a dark pupil that follows him; when he is gone they scatter again. A hurt hive's cells move slower. */
-const HIVE_EYE={ fps:15, swimEvery:2.5, swimMax:3, swarm:7, watch:8, pupil:0.15, look:0.17, speed:0.3 };
+const HIVE_EYE={ fps:15, swimEvery:2.5, swimMax:3, swarm:7, watch:8, pupil:0.15, look:0.17, speed:0.3, panic:16, panicSpeed:3 };
 const EYE_S=128, EYE_TAU=Math.PI*2;
 function v3EyeGeo(){ if(GEO.eye) return GEO.eye; const g=new THREE.SphereGeometry(1,28,20), P=g.attributes.position, uv=g.attributes.uv;
   for(let i=0;i<P.count;i++) uv.setXY(i,0.5+P.getX(i)*0.5,0.5+P.getY(i)*0.5); uv.needsUpdate=true; return GEO.eye=g; }
@@ -1051,10 +1051,10 @@ function eyeCell(x,c){ const S=EYE_S, n=8, L=c.len, ca=Math.cos(c.a), sa=Math.si
   for(let i=0;i<=n;i++){ const q=i/n, w=Math.sin(c.ph-i*0.75)*q*0.03, bx=c.x-ca*q*L-sa*w, by=c.y-sa*q*L+ca*w; if(i) x.lineTo(bx*S,by*S); else x.moveTo(bx*S,by*S); }
   x.stroke(); x.save(); x.translate(c.x*S,c.y*S); x.rotate(c.a); x.beginPath(); x.ellipse(0,0,c.s*1.3*S,c.s*S,0,0,EYE_TAU); x.fill(); x.restore(); }
 function eyeDraw(E){ const x=E.x, S=EYE_S; x.fillStyle=E.bg; x.fillRect(0,0,S,S);
-  if(E.pupil>0.02){ x.beginPath(); x.arc(E.lx*S,E.ly*S,HIVE_EYE.pupil*S*E.pupil,0,EYE_TAU); x.fillStyle='rgba(12,26,5,'+(0.9*E.pupil).toFixed(2)+')'; x.fill(); }
-  x.strokeStyle=x.fillStyle='rgba(18,40,8,0.85)'; x.lineWidth=2.6; x.lineCap='round'; for(const c of E.swim) eyeCell(x,c); for(const c of E.swarm) eyeCell(x,c);
+  if(E.pupil>0.02){ x.beginPath(); x.arc(E.lx*S,E.ly*S,HIVE_EYE.pupil*S*E.pupil,0,EYE_TAU); x.fillStyle='rgba(12,26,5,'+Math.min(0.9,0.9*E.pupil).toFixed(2)+')'; x.fill(); }
+  x.strokeStyle=x.fillStyle='rgba(18,40,8,0.85)'; x.lineWidth=2.6; x.lineCap='round'; for(const c of E.swim) eyeCell(x,c); for(const c of E.swarm) eyeCell(x,c); if(E.flee) for(const c of E.flee) eyeCell(x,c);
   x.beginPath(); x.arc(S*0.4,S*0.36,4,0,EYE_TAU); x.fillStyle='rgba(255,255,255,0.35)'; x.fill(); E.tex.needsUpdate=true; }
-function v3PoseEye(h,U,T,rate){ const E=U.eye, D=HIVE_EYE; if(!E) return; let dt=E.T==null?0:T-E.T; E.T=T; if(!(dt>0&&dt<0.5)) dt=0;
+function v3PoseEye(h,U,T,rate){ const E=U.eye, D=HIVE_EYE; if(!E) return; (V3.eyeOf||(V3.eyeOf=new Map())).set(h.id,E);   /* for its last scream (eyeCarry) */ let dt=E.T==null?0:T-E.T; E.T=T; if(!(dt>0&&dt<0.5)) dt=0;
   E.acc+=dt; if(E.acc<1/Math.max(1,D.fps)) return; dt=Math.min(E.acc,0.2)*rate; E.acc=0; const R=(a,b)=>a+Math.random()*(b-a);
   E.scan-=dt; if(E.scan<=0){ E.scan=0.4; E.tgt=G?eyeTarget(h):null; }
   const t=E.tgt&&!E.tgt.dead?E.tgt:null; E.watching=!!t;
@@ -1074,6 +1074,19 @@ function v3PoseEye(h,U,T,rate){ const E=U.eye, D=HIVE_EYE; if(!E) return; let dt
   for(const c of E.swim){ c.a+=c.bend*dt; c.x+=Math.cos(c.a)*c.v*dt; c.y+=Math.sin(c.a)*c.v*dt; c.ph+=dt*9; }
   E.swim=E.swim.filter(c=>Math.hypot(c.x-0.5,c.y-0.5)<0.62);
   eyeDraw(E); }
+/* the last scream: every cell flees outward, the pupil flares wide and sheds cells in all directions (HIVE_EYE.panic per second) until the cave-in */
+function v3EyePanic(E,tt,scream){ const D=HIVE_EYE; let dt=E.T==null?0:tt-E.T; E.T=tt; if(!(dt>0&&dt<0.5)) dt=0;
+  E.acc+=dt; if(E.acc<1/Math.max(1,D.fps)) return; dt=Math.min(E.acc,0.2); E.acc=0; const R=(a,b)=>a+Math.random()*(b-a);
+  if(!E.flee){ E.flee=[...E.swim,...E.swarm]; E.swim=[]; E.swarm=[]; E.burst=0;
+    for(const c of E.flee){ c.a=Math.atan2(c.y-0.5,c.x-0.5)+R(-0.4,0.4); c.v=D.speed*D.panicSpeed*R(0.8,1.2); } }
+  E.lx+=(0.5-E.lx)*Math.min(1,dt*6); E.ly+=(0.45-E.ly)*Math.min(1,dt*6);
+  E.pupil=scream?Math.min(2,E.pupil+dt*4)*(1-0.5*Math.min(1,tt/HIVE_DEATH.scream)):Math.max(0,E.pupil-dt*3);
+  if(scream){ E.burst+=dt*D.panic; for(;E.burst>=1;E.burst--){ const a=R(0,EYE_TAU), r=R(0,0.05);
+    E.flee.push({ x:E.lx+Math.cos(a)*r, y:E.ly+Math.sin(a)*r, a, v:D.speed*D.panicSpeed*R(0.7,1.3), ph:R(0,9), s:R(0.026,0.036), len:R(0.12,0.18), wig:R(-0.6,0.6) }); } }
+  for(const c of E.flee){ c.a+=(c.wig||0)*dt; c.x+=Math.cos(c.a)*c.v*dt; c.y+=Math.sin(c.a)*c.v*dt; c.ph+=dt*22; }
+  E.flee=E.flee.filter(c=>Math.hypot(c.x-0.5,c.y-0.5)<0.62); eyeDraw(E); }
+/* a dying hive's eye goes on from the live one: the same cells, pupil and look */
+function eyeCarry(E,id){ const M=V3.eyeOf, O=M&&M.get(id); if(!O||O===E) return false; M.delete(id); for(const k of ['swim','swarm','pupil','lx','ly']) E[k]=O[k]; eyeDraw(E); return true; }
 /* ---------- the membrane: a living web that grows across a tunnel ----------
    Each tile sends a half sheet towards every neighbour that is membrane or rock, so the sheets of a whole wall meet edge to edge and
    hang between fleshy knots like tissue between fingers. The top edge follows the world position (neighbours agree where they meet), dips
@@ -1515,7 +1528,7 @@ function v3Shown(e){ const m=G.map;
 /* ---------- frame ---------- */
 function v3Size(){ const w=ui.vw, h=Math.max(100,ui.vh-ui.hudH); if(V3.w!==w||V3.h!==h||V3.dpr!==ui.dpr){ V3.w=w; V3.h=h; V3.dpr=ui.dpr; V3.r.setPixelRatio(Math.min(ui.dpr,1.5)); V3.r.setSize(w,h); V3.cam.aspect=w/h; V3.cam.updateProjectionMatrix(); } }
 function v3Reset(){ if(V3.g) V3.scene.remove(V3.g); V3.g=new THREE.Group(); V3.scene.add(V3.g); V3.objs.clear(); V3.forG=G; V3.mapId=G.map.id;
-  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.sparks=[]; V3.bits=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); V3.myc=null; for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map();
+  V3.fxPool.length=V3.shotPool.length=V3.ringPool.length=V3.pingPool.length=0; V3.smoke=[]; V3.sparks=[]; V3.bits=[]; V3.meteors=new Map(); V3.devils=new Map(); V3.ambT=null; V3.ships=new Map(); V3.myc=null; for(const g of (V3.dying||new Map()).values()) for(const m of g.userData.own) m.dispose(); V3.dying=new Map(); V3.eyeOf=new Map();
   V3.fxg=new THREE.Group(); V3.g.add(V3.fxg); V3.fxg.add(V3.tracers); V3.fxg.add(V3.ghost); v3BuildTerrain(); }
 function v3Camera(dt){ const V=VIEW3D, tx=(G.cam.x+ui.vw/2)/TILE, tz=(G.cam.y+(ui.vh-ui.hudH)/2)/TILE, ty=Math.max(0,v3H(tx,tz)), sh=(G.shake||0)*0.3;
   let d=V3.yaw*Math.PI/180-(V3.yawR||0); d=Math.atan2(Math.sin(d),Math.cos(d)); V3.yawR=(V3.yawR||0)+d*Math.min(1,dt*8);
@@ -1791,7 +1804,7 @@ function v3HiveDeathModel(f){
   const mine=m=>{ const c=m.clone(); if(m.onBeforeCompile) c.onBeforeCompile=m.onBeforeCompile; own.push(c); return c; };
   const hv=v3Building({ type:'hive', id:f.id||0, size:2 }); U.cols=[]; v3HiveHurt(hv,2); own.push(...hv.userData.own);   /* it dies in its worst look */
   hv.traverse(o=>{ if(o.isMesh){ o.material=mine(o.material); if(o.material.color) U.cols.push({ m:o.material, c:o.material.color.clone(), s:o.material.specular&&o.material.specular.clone() }); } });
-  U.hive=hv; U.heart=hv.userData.heart; g.add(hv);
+  U.hive=hv; U.heart=hv.userData.heart; g.add(hv); if(hv.userData.eye) eyeCarry(hv.userData.eye,f.id);
   const scarM=new THREE.MeshBasicMaterial({ color:0x0a0b10, transparent:true, opacity:0.7, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2 }); own.push(scarM);
   U.scar=new THREE.Mesh(GEO.disc,scarM); U.scar.position.y=0.2;   /* above the bulge of the mycel */ U.scar.renderOrder=1; g.add(U.scar);
   U.rings=[]; for(let i=0;i<Math.max(1,D.rings);i++){ const m=new THREE.MeshBasicMaterial({ color:0xa6ff4a, transparent:true, depthWrite:false, side:THREE.DoubleSide }); own.push(m);
@@ -1811,6 +1824,7 @@ function v3HiveDeathPose(f,g,T){ const D=HIVE_DEATH, tt=f.max-f.t, U=g.userData,
     hv.position.set((hdRnd(f.seed+k)-0.5)*sh*0.035,0,(hdRnd(f.seed+k+50)-0.5)*sh*0.035);
     const wob=scream?Math.sin(tt*30):0, wide=(1+0.2*fall)*(1+0.04*wob); hv.scale.set(wide,(1-0.8*fall)*(1+0.06*wob),wide);
     const dark=Math.min(0.75,tt/D.scream*0.25+fall*0.55); for(const c of U.cols){ c.m.color.copy(c.c).lerp(V3_DARK,dark); if(c.s) c.m.specular.copy(c.s).multiplyScalar(Math.max(0,1-dark*1.8)); }   /* no wet shine left on a dead hive */
+    if(hv.userData.eye) v3EyePanic(hv.userData.eye,tt,scream);   /* the cells flee the eye */
     if(U.heart) U.heart.scale.setScalar(0.3*(scream?1+0.5*Math.pow(Math.max(0,Math.sin(tt*24)),2)+tt*0.15:1-0.6*fall)); }   /* the heart races, then gives out */
   U.scar.visible=tt>=D.scream; if(U.scar.visible){ const r=0.7+0.6*fall; U.scar.scale.set(r*1.3,1,r); U.scar.material.opacity=0.7*Math.min(1,f.t/0.4); }
   U.rings.forEach((r,w)=>{ const t=tt-w*0.5; r.visible=scream&&t>=0&&t<=0.8; if(!r.visible) return; const R=(16+t*130)/TILE; r.scale.set(R,1,R); r.position.y=0.3+t*0.4; r.material.opacity=1-t/0.8; });

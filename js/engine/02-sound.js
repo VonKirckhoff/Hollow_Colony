@@ -5,12 +5,15 @@ const SFX=(()=>{
   function init(){ if(ac){ if(ac.state==='suspended') ac.resume(); return; }
     try{ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=muted?0:0.45; master.connect(ac.destination);
       noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; }catch(e){ ac=null; } }
-  function env(g,t,vol,dur){ g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(vol,0.0002),t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); }
-  function tone(f,f2,dur,type,vol,delay=0){ const t=ac.currentTime+delay, o=ac.createOscillator(), g=ac.createGain();
-    o.type=type; o.frequency.setValueAtTime(f,t); if(f2!==f) o.frequency.exponentialRampToValueAtTime(f2,t+dur); env(g,t,vol,dur); o.connect(g).connect(master); o.start(t); o.stop(t+dur+0.02); }
-  function noise(dur,freq,ftype,q,vol,delay=0,freq2){ const t=ac.currentTime+delay, s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
-    s.buffer=noiseBuf; f.type=ftype; f.frequency.setValueAtTime(freq,t); if(freq2) f.frequency.exponentialRampToValueAtTime(freq2,t+dur); f.Q.value=q;
-    env(g,t,vol,dur); s.connect(f).connect(g).connect(master); s.start(t,Math.random()*0.5); s.stop(t+dur+0.02); }
+  function env(g,t,vol,dur,att=0.004){ g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(vol,0.0002),t+att); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); }
+  /* o2 (optional): att = attack in s, vib = [rate Hz, depth Hz, rate at the end] a trembling pitch */
+  function tone(f,f2,dur,type,vol,delay=0,o2){ const t=ac.currentTime+delay, o=ac.createOscillator(), g=ac.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t); if(f2!==f) o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+    if(o2&&o2.vib){ const l=ac.createOscillator(), lg=ac.createGain(); l.frequency.setValueAtTime(o2.vib[0],t); if(o2.vib[2]) l.frequency.exponentialRampToValueAtTime(o2.vib[2],t+dur); lg.gain.value=o2.vib[1]; l.connect(lg).connect(o.frequency); l.start(t); l.stop(t+dur+0.05); }
+    env(g,t,vol,dur,o2&&o2.att||0.004); o.connect(g).connect(master); o.start(t); o.stop(t+dur+0.02); }
+  function noise(dur,freq,ftype,q,vol,delay=0,freq2,att){ const t=ac.currentTime+delay, s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+    s.buffer=noiseBuf; s.loop=dur>0.5; f.type=ftype; f.frequency.setValueAtTime(freq,t); if(freq2) f.frequency.exponentialRampToValueAtTime(freq2,t+dur); f.Q.value=q;
+    env(g,t,vol,dur,att); s.connect(f).connect(g).connect(master); s.start(t,Math.random()*0.5); s.stop(t+dur+0.02); }
   // name: [minimum gap in seconds, sound]
   const DEF={
     rifle:   [0.06,v=>{ noise(0.07,2400,'bandpass',0.8,0.5*v); tone(160,60,0.06,'triangle',0.25*v); }],
@@ -49,6 +52,11 @@ const SFX=(()=>{
     molt:    [0.6, v=>{ for(let i=0;i<9;i++) noise(0.02,1800+Math.random()*3500,'highpass',2,0.25*v,Math.random()*0.9);
                          tone(150,62,1.0,'sawtooth',0.07*v); tone(158,66,1.0,'sawtooth',0.05*v,0.03); noise(0.9,350,'lowpass',3,0.2*v,0,90); }],
     huskroar:[1,   v=>{ tone(240,105,1.2,'sawtooth',0.11*v); tone(361,150,1.2,'sawtooth',0.07*v,0.04); tone(118,52,1.3,'square',0.06*v); noise(1.1,800,'bandpass',1.5,0.25*v,0,200); }],
+    /* a hive's last scream (HIVE_DEATH.scream long): its heart races faster and faster under a rising, trembling wail of several throats and a wet gurgle */
+    hivescream:[0.3,v=>{ let t=0; for(let i=0;i<14&&t<1.8;i++){ const k=i/14; tone(70,40,0.12,'sine',0.99*v*(0.6+0.4*k),t); noise(0.08,300,'lowpass',1,0.4*v,t); tone(60,38,0.1,'sine',0.59*v*(0.6+0.4*k),t+0.14*(1-k*0.6)); t+=0.42*Math.pow(1-k,1.7)+0.08; }
+      tone(170,560,1.7,'sawtooth',0.22*v,0,{ vib:[6,8,22], att:0.25 }); tone(255,830,1.7,'sawtooth',0.13*v,0.03,{ vib:[7,14,26], att:0.3 });
+      noise(1.7,700,'bandpass',3,0.4*v,0,2600,0.3); noise(1.6,250,'lowpass',4,0.33*v,0.1,600,0.2); }, 1.6],
+    crumble: [0.3, v=>{ noise(1.4,1800,'bandpass',0.7,0.12*v,0.15,300,0.05); for(let i=0;i<10;i++) noise(0.05,900+Math.random()*1500,'bandpass',2,(0.1+Math.random()*0.1)*v,0.2+Math.random()*1.1); }],   /* earth and bits of shell coming down */
     ack:     [0.1, ()=>tone(520,720,0.05,'square',0.06)],
     attack:  [0.1, ()=>{ tone(420,260,0.07,'square',0.08); tone(420,260,0.07,'square',0.06,0.08); }],
     select:  [0.08,()=>tone(900,900,0.03,'sine',0.07)],
@@ -87,10 +95,10 @@ const SFX=(()=>{
   const WORK_MIX={ build:['weld','hammer','rivet'], buildTower:['arc','scaffold'], repair:['wrench','ratchet'], repairTower:['press'] }, lastWork={};
   function workMix(k,v){ const l=WORK_MIX[k]; let n=l[Math.floor(Math.random()*l.length)]; if(l.length>1&&n===lastWork[k]) n=l[(l.indexOf(n)+1)%l.length]; lastWork[k]=n; WORK[n](v); }
   function play(name,x,y){
-    if(!ac||muted||!DEF[name]) return; const now=ac.currentTime, [gap,fn]=DEF[name];
+    if(!ac||muted||!DEF[name]) return; const now=ac.currentTime, [gap,fn,far=1]=DEF[name];   /* far: carries that many times farther (a hive's last scream) */
     if(last[name]!==undefined && now-last[name]<gap) return;
     let v=1;
-    if(x!==undefined && G){ const {x:cx,y:cy}=viewCenter(), R=Math.max(viewW(),viewH())*0.9, d=Math.hypot(x-cx,y-cy); if(d>R) return; v=clamp(1-d/R,0.12,1); }
+    if(x!==undefined && G){ const {x:cx,y:cy}=viewCenter(), R=Math.max(viewW(),viewH())*0.9*far, d=Math.hypot(x-cx,y-cy); if(d>R) return; v=clamp(1-d/R,far>1?0.35:0.12,1); }
     last[name]=now; try{ fn(v); }catch(e){}
   }
   /* the intercom line under the briefing voice: mains hum, line hiss and a crackle now and then (o = INTERCOM) */

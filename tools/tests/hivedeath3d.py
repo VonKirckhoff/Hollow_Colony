@@ -46,6 +46,16 @@ with sync_playwright() as p:
     # unseen ground: nothing shows
     r=J(pg,"""()=>{ const G=__hc.G, k=Math.floor(_f.y/TILE)*G.map.w+Math.floor(_f.x/TILE), was=G.seen[k]; G.seen[k]=0; _f.t=_f.max-1; render(performance.now()); const v=V3.dying.get(_f).visible; G.seen[k]=was; return v; }""")
     check('hidden where the map was never seen', r==False, r)
+    # the eye in the last scream (HIVE_EYE.panic): cells shoot out of the flaring pupil every way, then it stops at the cave-in; its own sound
+    r=J(pg,"""()=>{ const E=V3.dying.get(_f).userData.hive.userData.eye; E.T=null; E.flee=null; const seen=[], angs=new Set(); let maxN=0, maxP=0;
+      for(let i=0;i<=27;i++){ const tt=i/15; _f.t=_f.max-tt; render(performance.now()); maxN=Math.max(maxN,(E.flee||[]).length); maxP=Math.max(maxP,E.pupil); for(const c of E.flee||[]) angs.add(Math.floor(((Math.atan2(c.y-0.5,c.x-0.5)+Math.PI)/(Math.PI*2))*8)); }
+      const atEnd=(E.flee||[]).length; for(let i=28;i<=50;i++){ _f.t=_f.max-i/15; render(performance.now()); }
+      return { maxN, maxP:+maxP.toFixed(2), sectors:angs.size, atEnd, after:E.flee.length, pupil:+E.pupil.toFixed(2), snd:SFX_HAS }; }""".replace('SFX_HAS',"typeof SFX.play==='function'"))
+    print(r); check('eye: in the scream cells shoot out every way from a flaring pupil', r['maxN']>=8 and r['sectors']>=7 and r['maxP']>1, r)
+    check('eye: after the cave-in no new cells, the eye empties and the pupil is gone', r['after']==0 and r['pupil']==0, r)
+    r=J(pg,"()=>{ const s=document.querySelector('script[src*=\"25-hive-life\"]'); return hiveDeath.toString().includes(\"'hivescream'\") && hiveDeathTick.toString().includes(\"'crumble'\"); }")
+    check('its own scream sound and the crumble at the cave-in', r, r)
+
     # the fx ends: the model is removed
     r=J(pg,"""()=>{ const G=__hc.G; G.fx=G.fx.filter(f=>f!==_f); render(performance.now()); return [V3.dying.size, V3.g.children.includes(V3.dying.get(_f))]; }""")
     check('cleaned up when it ends', r[0]==0, r)
