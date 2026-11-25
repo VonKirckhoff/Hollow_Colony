@@ -1,4 +1,4 @@
-# The crashed Osprey in 3D (Nov 2026): the dropship nose-first in the ground, broken in two, a wing torn off, OSPREY / LC-71 on the hull;
+# The crashed Osprey in 3D (Nov 2026): the dropship nose-first in the ground, broken in two, a wing torn off, OSPREY / LC-13 on the hull;
 # smoke plumes from several spots, sparks, small flames from the bent pod, a glow and a light in the crack; the 2D wreck smoke is not drawn flat in 3D.
 import sys
 from playwright.sync_api import sync_playwright
@@ -23,7 +23,7 @@ with sync_playwright() as p:
       const nose=U.nose.getWorldPosition(new THREE.Vector3()), rear=U.rearSmoke.getWorldPosition(new THREE.Vector3());
       return [!!U.wreck, meshes, tex, +(nose.y-v3H(nose.x,nose.z)).toFixed(2), +(rear.y-v3H(rear.x,rear.z)).toFixed(2)]; }""")
     print('model',r)
-    check('the wreck model is built (many parts, the rounded hull halves of the dropship, burnt camouflage with OSPREY and LC-71)', r and r[0] and r[1]>=60 and r[2], r)
+    check('the wreck model is built (many parts, the rounded hull halves of the dropship, burnt camouflage with OSPREY and LC-13)', r and r[0] and r[1]>=60 and r[2], r)
     check('nose low in the mound, tail up in the air', r and r[3]<0.6 and r[4]>r[3]+0.3, r)
     r=J(pg,"""()=>{ const g=V3.objs.get(_w), U=g.userData; U.crack.getWorldPosition(V3._ww); const p=V3._ww.clone().project(V3.cam), sx=(p.x+1)/2*V3.w, sy=(1-p.y)/2*V3.h, w=v3Pick(sx,sy,true);
       return [+g.scale.x.toFixed(2), U.fires.length, U.emit.length, Math.round(Math.hypot(w.x-_w.x,w.y-_w.y))]; }""")

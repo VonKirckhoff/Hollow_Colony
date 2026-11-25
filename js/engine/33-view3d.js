@@ -849,7 +849,7 @@ function v3Wreck(e){ const g=new THREE.Group(), U=g.userData, H=(i,s)=>hash2(e.i
   for(let i=0;i<16;i++){ const a=(i/15-0.5)*2.6, r=1.95+H(i,2)*0.4; W.add(part(GEO.lowball,i%3?dirt:dirt2,0.1+H(i,3)*0.16,0.06+H(i,4)*0.12,0.1+H(i,5)*0.14,Math.cos(a)*r*0.95,0.04,Math.sin(a)*r*0.6)); }   /* the mound in front of the nose */
   /* the ship: pitched nose-down into the mound, rolled a little */
   const S=grp(0.05,0.44,0); S.rotation.order='YZX'; S.rotation.set(0.15,0,-0.22); W.add(S); U.ship=S;
-  /* the same ship as the landing dropship (v3Dropship), broken in two: the rounded hull halves in burnt camouflage with OSPREY and LC-71 */
+  /* the same ship as the landing dropship (v3Dropship), broken in two: the rounded hull halves in burnt camouflage with OSPREY and LC-13 */
   v3ShipGeo(); const hullB=v3HullTex('wreck'), camoB=v3CamoTile(true), inner=mat('#121214',{ side:THREE.BackSide }), X=px=>(px-28)*shipPx;
   if(!GEO.wreckFront){ GEO.wreckFront=v3HullGeo(0.02,9); GEO.wreckRear=v3HullGeo(-9,-0.02); }
   /* front half: hull, crumpled nose, broken canopy */
@@ -1418,15 +1418,15 @@ function v3CamoTile(burnt){ const k='camoTile'+(burnt?'B':''); if(MAT[k]) return
 function v3Stencil(x,W,H,txt,len,u,px,face,col='#dfe4ea',a=0.85){ for(const yy of (u<0.02||u>0.98?[(1-u)*H,-u*H]:[(1-u)*H])){
   x.save(); x.globalAlpha=a; x.translate(len*W,yy); x.scale(face==='left'?-1:1,(face==='left'?1:-1)*0.575); x.fillStyle=col; x.textAlign='center'; x.textBaseline='middle';
   x.font=`bold ${px}px Impact, "Arial Black", sans-serif`; x.fillText(txt,0,0); x.restore(); } }
-/* the hull texture of a ship: camouflage, serial number on both flanks and the roof; the wreck: burnt paint, soot, OSPREY and LC-71 */
+/* the hull texture of a ship: camouflage, serial number on both flanks and the roof; the wreck: burnt paint, soot, OSPREY and LC-13 */
 function v3HullTex(kind){ const k='hullTex'+kind; if(MAT[k]) return MAT[k]; const W=1024, H=512, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d',CPU2D), wreck=kind==='wreck';
   v3Camo(x,W,H,12,7,wreck?CAMO_BURNT:CAMO_CORPS,wreck?71:67);
-  if(!wreck){ for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'LC-72',0.665,f==='right'?0.935:0.565,62,f);   /* the serial in front of the pods, above the hazard stripes */
+  if(!wreck){ for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'LC-71',0.665,f==='right'?0.935:0.565,62,f);   /* the serial in front of the pods, above the hazard stripes */
       v3Stencil(x,W,H,'ICARUS',0.19,u,44,f); v3Stencil(x,W,H,'LUNAR CORPS',0.19,f==='right'?u+0.07:u-0.07,22,f); }   /* her name near the tail, LUNAR CORPS under it */
-    v3Stencil(x,W,H,'LC-72',0.64,0.75,80,'roof'); }   /* between the roof hatch and the canopy */
+    v3Stencil(x,W,H,'LC-71',0.64,0.75,80,'roof'); }   /* between the roof hatch and the canopy */
   else { const R=(a,b,s)=>hash2(a,b,s+31);
-    for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'OSPREY',0.24,u,48,f,'#aeb5bd',0.4); v3Stencil(x,W,H,'LC-71',0.7,u,56,f,'#c4cad1',0.45); v3Stencil(x,W,H,'LUNAR CORPS',0.7,f==='right'?u+0.07:u-0.07,22,f,'#c4cad1',0.4); }
-    v3Stencil(x,W,H,'LC-71',0.7,0.75,70,'roof','#c4cad1',0.42);   /* faded stencils, the soot goes over them; the name only on the flanks (Nov 2026) */
+    for(const [u,f] of [[0,'right'],[0.5,'left']]){ v3Stencil(x,W,H,'OSPREY',0.24,u,48,f,'#aeb5bd',0.4); v3Stencil(x,W,H,'LC-13',0.7,u,56,f,'#c4cad1',0.45); v3Stencil(x,W,H,'LUNAR CORPS',0.7,f==='right'?u+0.07:u-0.07,22,f,'#c4cad1',0.4); }
+    v3Stencil(x,W,H,'LC-13',0.7,0.75,70,'roof','#c4cad1',0.42);   /* faded stencils, the soot goes over them; the name only on the flanks (Nov 2026) */
     /* soot: clouds everywhere, worst at the crack in the middle and on the nose; streaks blown back; bare metal scratches */
     for(let i=0;i<46;i++){ const near=i<16, px=near?W*(0.5+(R(i,4,2)-0.5)*0.22):i<22?W*(0.85+R(i,4,2)*0.15):R(i,4,3)*W, py=R(i,5,2)*H, r=30+R(i,6,2)*90;
       const g=x.createRadialGradient(px,py,0,px,py,r); g.addColorStop(0,`rgba(12,10,9,${near?0.95:0.75})`); g.addColorStop(1,'rgba(12,10,9,0)'); x.fillStyle=g; x.fillRect(px-r,py-r,r*2,r*2); }
