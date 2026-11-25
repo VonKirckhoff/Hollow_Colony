@@ -38,6 +38,10 @@ function broodPending(){ let n=0; for(const h of G.ents) if(!h.dead&&h.batch) n+
 function broodCap(){ return (G.swarm.cfg.cap||SWARM_PLAY.cap)+(G.swarm.capExtra||0); }   /* capExtra: room a mission script adds (the training's burrow step) */
 function broodUnlocked(type){ const at=(G.swarm.unlockAt||{})[type] ?? (G.swarm.cfg.unlock||{})[type] ?? UNITS[type].unlock ?? 0; return G.time>=at; }   /* unlockAt: a time a mission script sets during play (The Graft's Seedling phase) */
 function nestHive(){ const s=G.sel.find(e=>!e.dead&&e.type==='hive'); if(s) return s; const r=G.swarm.rally; const hs=hives(); if(!hs.length) return null; return r?hs.reduce((a,b)=>dist(a,r)<=dist(b,r)?a:b):hs[0]; }
+/* your own brood that has done its job (a body brought home, a guard duty over, a fight won) waits where it is, as brood:
+   it never goes hunting across the map by itself. A new gathering point (G, right-click, a team's point) calls it away again. */
+function broodStay(u,at){ if(!u||u.dead||G.side!=='swarm'||!u.mine||u.avatar||u.def.boss||u.def.seed||u.def.grafter) return false;
+  const p=at||{x:u.x,y:u.y}; u.role='brood'; u.post={x:p.x,y:p.y}; u.order=null; u.target=null; u.path=null; u.waveDelay=0; u.waveGoal=null; u.viaGoal=null; G.selDirty=true; return true; }
 /* waiting brood stays near the gathering point and fights whatever comes close */
 function broodThink(u){ if(u.rootT!=null) return;   /* a Seedling taking root stays put */ const r=u.post||G.swarm.rally||u.guardAt; if(!r) return; if(u.order&&u.order.type==='move') return;   /* walking to where you sent it */
   if(u.def.seed){ if(!u.order&&Math.hypot(u.x-r.x,u.y-r.y)>TILE){ u.order={type:'move',x:r.x,y:r.y}; setPath(u,r.x,r.y); } return; }   /* a Seedling stands still where you left it, it does not wander about */

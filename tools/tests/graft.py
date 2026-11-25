@@ -77,7 +77,7 @@ RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   const ds=[]; for(let i=0;i<3;i++){ const d=makeUnit('drone','swarm',r.x+30+i*10,r.y+40); d.role='brood'; d.mine=true; d.post={x:d.x,y:d.y}; ds.push(d); }
   const hp0=r.hp; step(6); ok(r.hp===hp0&&!ds.some(d=>d.target===r),'brood next to the tower leaves it alone');
   { const far=[]; for(let i=0;i<4;i++){ const d=makeUnit('crawler','swarm',r.x-3*TILE+i*12,r.y+3*TILE); d.role='wave'; d.mine=true; far.push(d); }
-    const d0=far.map(d=>dist(d,r)); step(8); ok(far.every(d=>d.target!==r&&!(d.order&&Math.hypot(d.order.x-r.x,d.order.y-r.y)<4*TILE)),'brood out hunting does not go and gather at the tower '+JSON.stringify(far.map((d,i)=>[Math.round(d0[i]/TILE),Math.round(dist(d,r)/TILE),d.order&&d.order.type,d.order&&Math.round(d.order.x/TILE),d.order&&Math.round(d.order.y/TILE),d.target&&d.target.type]))); for(const d of far) d.dead=true; }
+    const d0=far.map(d=>dist(d,r)); step(8); ok(far.every((d,i)=>d.target!==r&&!(d.order&&Math.hypot(d.order.x-r.x,d.order.y-r.y)<Math.min(4*TILE,d0[i]-TILE))),'brood out hunting does not go and gather at the tower (your own attackers with nothing left in sight wait where they are, Nov 2026) '+JSON.stringify(far.map((d,i)=>[Math.round(d0[i]/TILE),Math.round(dist(d,r)/TILE),d.order&&d.order.type,d.order&&Math.round(d.order.x/TILE),d.order&&Math.round(d.order.y/TILE),d.target&&d.target.type]))); for(const d of far) d.dead=true; }
   selectEntities(ds,false); swarmRight(r.x,r.y); step(3); ok(r.hp<hp0,'right-clicked: they tear at it ('+Math.round(r.hp)+'/'+Math.round(hp0)+')');
   for(const d of ds) d.dead=true;
   /* the tower is hurt: a repair team with an Engineer */

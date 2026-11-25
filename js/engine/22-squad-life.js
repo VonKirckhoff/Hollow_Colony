@@ -469,7 +469,7 @@ function bodyFree(e){ return e.kind==='unit'&&!e.dead&&e.faction==='swarm'&&!e.d
 function dropBody(b){ const u=b.carrier; b.carrier=null; b.hidden=false; if(!u) return; u.haul=null; if(!u.dead){ u.claimMode='guard'; u.order=null; u.path=null; } }
 /* the body reaches the creep around a hive: it is put down there for a Grafter */
 function bodyHome(b,h,u){ const B=SQUAD.body; dropBody(b); b.home=h; b.t=B.time;
-  if(u){ u.claim=null; u.claimMode=null; u.order=null; u.path=null; }
+  if(u){ u.claim=null; u.claimMode=null; u.order=null; u.path=null; broodStay(u); }   /* playing the Swarm: the carrier stays at this hive, waiting for the next body */
   G.swarm.biomass+=B.biomass; G.stats.fed=(G.stats.fed||0)+1; h.hp=Math.min(h.maxHp,h.hp+h.maxHp*B.heal);
   G.fx.push({k:'boom',x:b.x,y:b.y,t:0.4,max:0.4,r:20,col:'#c38bff'});
   if(isVisible(b)){ SFX.play('squelch',b.x,b.y); G.fx.push({k:'text',x:b.x,y:b.y-24,t:1.4,max:1.4,txt:'HOME',col:'#c38bff'}); }
@@ -515,12 +515,12 @@ function updateBodies(dt){ const B=SQUAD.body;
     if(mine.filter(e=>e.claimMode==='guard').length<B.escorts){ const u=nearestOf(b,e=>bodyFree(e)&&e.role!=='guard'); if(u&&dist(u,b)<R){ u.claim=b; u.claimMode='guard'; } } } }
 /* a Swarm unit with a job at a body. Returns true while it is busy (swarmThink then leaves it alone). */
 function claimThink(u,dt){ const b=u.claim; if(!b) return false;
-  if(b.dead||(b.home&&u.claimMode!=='guard')){ u.claim=null; u.claimMode=null; u.haul=null; u.order=null; return false; }
+  if(b.dead||(b.home&&u.claimMode!=='guard')){ u.claim=null; u.claimMode=null; u.haul=null; u.order=null; broodStay(u); return false; }   /* your own brood waits there, it does not go hunting */
   if(u.tunnel) return true;   /* digging through the rock with it */
   const d=Math.hypot(u.x-b.x,u.y-b.y), goBody=()=>{ if(!u.order||u.order.type!=='move'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>TILE){ u.order={type:'move',x:b.x,y:b.y}; setPath(u,b.x,b.y); } };
   const fightFor=()=>{ if(!u.order||u.order.type!=='amove'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>TILE){ u.order={type:'amove',x:b.x,y:b.y}; setPath(u,b.x,b.y); } };
   if(u.claimMode==='guard'){   /* stay close and fight whatever comes for it */
-    if(b.home&&b.claim<=0&&!b.guarded&&Math.random()<dt*0.05){ u.claim=null; u.claimMode=null; return false; }   /* safe at home: drift back to other work */
+    if(b.home&&b.claim<=0&&!b.guarded&&Math.random()<dt*0.05){ u.claim=null; u.claimMode=null; broodStay(u); return false; }   /* safe at home: drift back to other work */
     if(!u.order||u.order.type!=='guard'||Math.hypot(u.order.x-b.x,u.order.y-b.y)>1.5*TILE){ u.order={type:'guard',x:b.x,y:b.y,wait:rand(1,3)}; if(d>2*TILE) setPath(u,b.x,b.y); }
     return true; }
   /* haul: carry it home, right up to the hive, and lay it at its foot */

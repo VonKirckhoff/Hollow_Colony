@@ -79,6 +79,8 @@ function swarmThink(u,dt){
   if(u.role==='brood'){ broodThink(u); return; }   /* playing the Swarm: waiting at the gathering point for your call */
   u.think=(u.think||0)-dt; if(u.think>0) return; u.think=0.8+Math.random()*0.4;
   if(u.role==='guard'||u.role==='boss'){ if(!u.order && !u.target && u.guardAt) u.order={type:'guard',x:u.guardAt.x,y:u.guardAt.y,wait:0}; return; }
+  /* your own attackers (A, or a right-click on an enemy): their fight done, they finish it with what is in sight, then wait right there as brood */
+  if(u.role==='wave' && u.mine && G.side==='swarm'){ if(!u.target && (!u.order||(u.order.type!=='amove'&&u.order.type!=='attack'))){ let t=findTarget(u,u.def.sight,true)||findTarget(u,u.def.sight); if(t&&t.faction==='wild') t=null;   /* the fight, not a grazer */ if(t) u.target=t; else broodStay(u); } return; }
   if((u.role==='hunt'||u.role==='wave') && !u.target && (!u.order||u.order.type!=='amove')){
     const vip=G.side==='corps'&&nearestOf(u,e=>e.faction==='corps'&&e.kind==='unit'&&e.def.escort&&!e.downed&&dist(u,e)<SWARM_VIP.hunt*TILE);   /* Dr. Maas first */
     const t=vip||nearestOf(u,e=>e.faction==='corps'&&(e.kind==='unit'||e.kind==='building')&&!e.def.ground&&!e.def.scenery&&!e.clickOnly&&!e.downed&&!deadGen(u,e)&&!veiled(e));   /* Rogue: a veiled crew member is not prey (Among Them) */   // blast doors and rubble are scenery, not prey
