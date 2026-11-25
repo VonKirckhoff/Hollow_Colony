@@ -209,13 +209,8 @@ function updateCorpsAI(dt){ if(!swarmSide()) return; G.corpsT=(G.corpsT||0)-dt; 
     const h=hit.find(e=>e!==u&&dist(e,u)<14*TILE); if(!h) continue;
     const foe=h.hitBy&&!h.hitBy.dead&&h.hitBy.kind?h.hitBy:nearestOf(h,e=>e.faction==='swarm'&&e.kind==='unit'&&dist(e,h)<8*TILE);
     if(foe){ u.target=foe; if(!u.home) u.home={x:u.x,y:u.y}; } } }
-/* mission helpers: the starting swarm units become your brood; a Lunar Corps fire team goes to burn the nearest hive */
+/* mission helper: the starting swarm units become your brood (Kappa Siege's raids moved to ksRaid in its mission file, Nov 2026) */
 function swarmBrood(){ for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='swarm'&&u.homeHive==null&&!u.def.boss){ u.role='brood'; u.mine=true; u.order=null; } }
-function corpsRaid(g,n,who,text){ const q=ptWorld('Q')||{x:0,y:0}, h=hives().sort((a,b)=>dist(a,q)-dist(b,q))[0]; if(!h) return;
-  const team=g.corps().filter(u=>!u.def.builder&&!u.def.heal).sort((a,b)=>dist(a,h)-dist(b,h)).slice(0,g.n(n)); const med=g.corps().find(u=>u.def.heal); if(med&&team.length>=3) team.push(med);
-  if(!team.length) return; g.say(who,text); g.orderCorps(team,{x:Math.floor(h.x/TILE),y:Math.floor(h.y/TILE)},'amove');
-  g.brood_say('They are coming for a nest. Call the brood home.'); G.pings.push({x:h.x,y:h.y,t:0,col:'#ff5a4f'}); }
-
 /* ---------- Hive Sense: the Swarm's own tracker (K, or the Sense button) ----------
    The brood feels the warm bodies of the Lunar Corps around your selection (or around the gathering point, with nothing selected).
    red = a soldier · orange = easy prey: a soldier alone or in a small knot (at most aloneMax soldiers and guns within alone tiles),
