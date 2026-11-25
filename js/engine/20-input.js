@@ -145,7 +145,9 @@ function updateCamera(dt){
   if(vx||vy){ stopFollow(); G.cam.x+=vx; G.cam.y+=vy; clampCam(); }
   else if(G.show||(G.showQ&&G.showQ.length&&G.time>=SHOWCASE.delay)){ if(!G.paused) showcaseStep(dt); }
   else if(G.following && !G.paused){
-    const us=G.side==='swarm'?(G.avatar&&!G.avatar.dead&&G.avatar.kind==='unit'?[G.avatar]:selSwarm()):myUnits(); if(!us.length){ stopFollow(); return; }
+    let us=myUnits();
+    if(G.side==='swarm'){ us=selSwarm(); if(!us.length&&avatarAlive()&&G.avatar.kind==='unit') us=[G.avatar]; }   /* the Brood: the camera follows what you selected; your own creature only when nothing is selected (Nov 2026: it used to follow the Husk, beside the Seedling, even while you steered other brood) */
+    if(!us.length){ stopFollow(); return; }
     const cx=us.reduce((s,u)=>s+u.x,0)/us.length, cy=us.reduce((s,u)=>s+u.y,0)/us.length;
     const tx=cx-viewW()/2, ty=cy-viewPlayH()/2, k=Math.min(1,dt*3.5);
     G.cam.x+=(tx-G.cam.x)*k; G.cam.y+=(ty-G.cam.y)*k; clampCam();

@@ -105,6 +105,17 @@ RELAY='''()=>{ const G=__hc.G, V=G.vars, out=[], ok=(c,m)=>out.push((c?'OK   ':'
   kill(r,null); step(1); ok(V.cut&&G.objectives.find(o=>o.id==='relay').state==='done','the tower is down: objective done');
   kill(graftGarrison()[0],null); step(3); ok(!G.ents.some(e=>e.type==='lz'&&e.flight),'no tower: no ship for the next loss');
   }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
+CAMERA='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m), step=s=>{ for(let i=0;i<s*30&&!G.over;i++){ __hc.update(1/30); updateCamera(1/30); } }; try{
+  /* Nov 2026: steering other brood in the Seedling phase, the camera follows that brood, not your Husk beside the Seedling */
+  ui.follow=true; step(1); const u=G.avatar, sd=graftSeedling(); ok(!!sd&&u.kind==='unit','Seedling out, the Husk alive');
+  const s=G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'&&e.graftPost==='tunnel')||G.ents.find(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps');
+  s.invuln=false; const brood=[0,1,2].map(i=>makeUnit('drone','swarm',s.x+(3+i)*TILE,s.y+TILE)); for(const b of brood){ b.role='brood'; b.mine=true; }
+  selectEntities(brood,false); swarmRight(s.x,s.y); step(0.2); kill(s,null); step(4);
+  const c=viewCenter(), live=brood.filter(b=>!b.dead), bx=live.reduce((a,b)=>a+b.x,0)/live.length, by=live.reduce((a,b)=>a+b.y,0)/live.length;
+  ok(G.sel.every(e=>brood.includes(e))&&!G.sel.includes(sd),'after the kill the selection is still your brood');
+  ok(Math.hypot(c.x-bx,c.y-by)<4*TILE,'the camera stays on that brood ('+(Math.hypot(c.x-bx,c.y-by)/TILE).toFixed(1)+' tiles off; Husk '+(Math.hypot(c.x-u.x,c.y-u.y)/TILE).toFixed(1)+')');
+  selectEntities([],false); G.following=true; step(3); const c2=viewCenter(); ok(Math.hypot(c2.x-u.x,c2.y-u.y)<4*TILE,'nothing selected: the camera follows your Husk again');
+  }catch(e){ out.push('FAIL error '+e.message+' '+e.stack.split('\\n')[1]); } return out.join('\\n'); }'''
 res=[]
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))
@@ -113,7 +124,7 @@ with sync_playwright() as p:
     pg.evaluate(JS_START); pg.wait_for_timeout(400); res.append(pg.evaluate(STAGES))
     pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
     pg.evaluate(JS_START); pg.wait_for_timeout(400); res.append(pg.evaluate(RELAY))
-    for js in (CASES,LOSE):
+    for js in (CASES,LOSE,CAMERA):
         pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
         pg.evaluate(JS_START); pg.wait_for_timeout(400); pg.evaluate(JS_HUSK)
         res.append(pg.evaluate(js))
