@@ -32,11 +32,27 @@ with sync_playwright() as p:
     r=J(pg,"""()=>{ const U=_g.userData, s=U.roots[1].sap[0]; v3PoseHive(_h,_g,1.0); const p0=s.position.clone(); v3PoseHive(_h,_g,1.6); const sp0=U.spores[0].position.clone(); v3PoseHive(_h,_g,2.4);
       return [+s.position.distanceTo(p0).toFixed(3), +U.spores[0].position.distanceTo(sp0).toFixed(3)]; }""")
     check('sap runs and spores drift', r[0]>0.01 and r[1]>0.01, r)
+    # the eye (HIVE_EYE): loose swimmers while nobody is near, a swarm that clumps into a pupil and looks at a near enemy, scattering when he goes
+    r=J(pg,"""()=>{ const G=__hc.G, U=_g.userData, E=U.eye; window._E=E; const far=[]; for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&hostile(_h.faction||'swarm',u.faction)) far.push(u);
+      window._far=far.map(u=>[u,u.x,u.y]); for(const u of far){ u.x=_h.x+40*TILE; u.y=_h.y+40*TILE; }
+      let T=10, swimSeen=0; for(let i=0;i<300;i++){ T+=1/15; v3PoseHive(_h,_g,T); swimSeen=Math.max(swimSeen,E.swim.length); }
+      return { faction:_h.faction, map:!!U.heart.material.map, swimSeen, swarm:E.swarm.length, pupil:+E.pupil.toFixed(2), far:far.length }; }""")
+    print(r); check('eye: a canvas texture, loose swimmers while nobody is near, no pupil', r['map'] and r['swimSeen']>0 and r['swarm']==0 and r['pupil']<0.05, r)
+    r=J(pg,"""()=>{ const u=_far[0][0], U=_g.userData, E=_E; u.x=_h.x+4*TILE; u.y=_h.y+2*TILE;
+      let T=40; for(let i=0;i<120;i++){ T+=1/15; v3PoseHive(_h,_g,T); } const right=E.lx;
+      u.x=_h.x-4*TILE; for(let i=0;i<60;i++){ T+=1/15; v3PoseHive(_h,_g,T); } const left=E.lx; window._T=T;
+      return { swarm:E.swarm.length, pupil:+E.pupil.toFixed(2), right:+right.toFixed(2), left:+left.toFixed(2), watching:E.watching, swim:E.swim.length }; }""")
+    print(r); check('eye: an enemy near, the cells clump into a pupil that follows him', r['watching'] and r['swarm']==J(pg,"()=>HIVE_EYE.swarm") and r['pupil']>0.7 and r['right']>0.55 and r['left']<0.45, r)
+    r=J(pg,"""()=>{ for(const [u,x,y] of _far){ u.x=x; u.y=y; } const E=_E; for(const [u] of _far){ u.x=_h.x+40*TILE; } let T=_T; for(let i=0;i<60;i++){ T+=1/15; v3PoseHive(_h,_g,T); }
+      const out={ swarm:E.swarm.length, pupil:+E.pupil.toFixed(2), watching:E.watching }; for(const [u,x,y] of _far){ u.x=x; u.y=y; } return out; }""")
+    print(r); check('eye: he is gone, the swarm scatters and the pupil fades', not r['watching'] and r['swarm']==0 and r['pupil']<0.1, r)
     r=J(pg,"""()=>{ const G=__hc.G; kill(_h,null); const f=G.fx.find(f=>f.k==='hivedeath'); render(performance.now()); const g=V3.dying.get(f), hv=g&&g.userData.hive;
       return hv?[hv.userData.hurt, hv.userData.cracks.filter(c=>c.visible).length]:null; }""")
     check('a dying hive takes the worst look', r and r[0]==2 and r[1]==8, r)
     if '--shots' in sys.argv:
         J(pg,"()=>{ const G=__hc.G, h=G.ents.find(e=>!e.dead&&e.type==='hive'); centerOn(h.x,h.y); VIEW3D.dist=6; render(performance.now()); }"); pg.screenshot(path='/home/claude/hive3d.png')
+        J(pg,"""()=>{ const u=_far[0][0]; u.x=_h.x+3*TILE; u.y=_h.y+2*TILE; G.paused=false; }"""); pg.wait_for_timeout(2500); J(pg,"()=>{ G.paused=true; render(performance.now()); }"); pg.screenshot(path='/home/claude/hive3d-eye.png')
+        J(pg,"()=>{ const a=document.createElement('a'); }"); open('/home/claude/eye.png','wb').write(__import__('base64').b64decode(J(pg,"()=>_E.c.toDataURL().split(',')[1]")))
     check('no errors', not errs, errs[:3])
     b.close()
 print('ALL OK' if ok else 'SOME FAILED')

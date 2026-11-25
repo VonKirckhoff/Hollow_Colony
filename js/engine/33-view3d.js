@@ -986,7 +986,7 @@ function v3Hive(e){
   U.folds=[]; for(let k=0;k<7;k++){ const pts=[]; for(let s=0;s<=6;s++){ const t=0.12+s*0.125, a=k*Math.PI*2/7-tw*t; pts.push(surf(t,a,-0.01)); }
     const f=mesh(v3Tube(pts,0.05,0.025,14,5),shiny(C.fold)); body.add(f); U.folds.push(f); }
   /* the heart (as before) and the mouth at the foot: a dark slit between two fleshy lips */
-  const heart=ball(glow('#a6ff4a'),0.3,0.3,0.3,0,1.2,0.65); body.add(heart); U.heart=heart;
+  const heart=part(v3EyeGeo(),v3HiveEye(U,own),0.3,0.3,0.3,0,1.2,0.65); body.add(heart); U.heart=heart;   /* the green eye: cells swim in it (HIVE_EYE) */
   const mz=bulbR(0.2,0)-0.02; body.add(ball(glow('#2a0d33'),0.26,0.16,0.08,0,0.38,mz)); for(const k of [-1,1]) body.add(ball(shiny(C.fold),0.28,0.06,0.09,0,0.38+k*0.13,mz-0.01));
   /* cracks: dark seams with a green glow deep inside; a few open below 66%, all below 33% */
   U.cracks=[]; for(let k=0;k<8;k++){ const t0=0.3+h(k,30)*0.45, a0=h(k,31)*Math.PI*2, pts=[]; let t=t0, a=a0;
@@ -1029,7 +1029,51 @@ function v3PoseHive(e,g,T){ const U=g.userData, f=clamp(e.hp/e.maxHp,0,1), hurt=
   U.budGlow.scale.setScalar(0.045*(1+0.25*Math.sin(T*3*rate+e.id)));
   U.roots.forEach((r,i)=>{ if(r.dead) return; r.sap.forEach((s,k)=>{ const q=((T*D.sapSpeed*rate+i*0.23+k/r.sap.length)%1+1)%1; r.curve.getPointAt(1-q,p);   /* from the tip up to the bulb */
     const rad=0.19+(0.035-0.19)*(1-q); s.position.set(p.x,p.y+rad*0.75,p.z); s.scale.setScalar(0.03+0.03*Math.sin(q*Math.PI)); }); });
-  U.spores.forEach(s=>{ const q=((T*0.22+s.userData.ph)%1), o=s.userData.from; s.position.set(o.x+Math.sin(T*1.7+s.userData.ph*9)*0.12*q,o.y+q*D.sporeRise,o.z+Math.cos(T*1.3+s.userData.ph*7)*0.12*q); s.scale.setScalar(0.03*Math.sin(q*Math.PI)); }); }
+  U.spores.forEach(s=>{ const q=((T*0.22+s.userData.ph)%1), o=s.userData.from; s.position.set(o.x+Math.sin(T*1.7+s.userData.ph*9)*0.12*q,o.y+q*D.sporeRise,o.z+Math.cos(T*1.3+s.userData.ph*7)*0.12*q); s.scale.setScalar(0.03*Math.sin(q*Math.PI)); });
+  v3PoseEye(e,U,T,rate); }
+/* ---------- the hive's eye (Nov 2026): the green heart on the front is an eye full of swimming cells ----------
+   A canvas texture on the heart ball (planar uv: the front half shows the canvas as a disc). With nobody near, now and then a few
+   loose cells with a wriggling tail swim across it. When an enemy unit comes within HIVE_EYE.watch tiles the cells swarm in and
+   clump together into a dark pupil that follows him; when he is gone they scatter again. A hurt hive's cells move slower. */
+const HIVE_EYE={ fps:15, swimEvery:2.5, swimMax:3, swarm:7, watch:8, pupil:0.15, look:0.17, speed:0.3 };
+const EYE_S=128, EYE_TAU=Math.PI*2;
+function v3EyeGeo(){ if(GEO.eye) return GEO.eye; const g=new THREE.SphereGeometry(1,28,20), P=g.attributes.position, uv=g.attributes.uv;
+  for(let i=0;i<P.count;i++) uv.setXY(i,0.5+P.getX(i)*0.5,0.5+P.getY(i)*0.5); uv.needsUpdate=true; return GEO.eye=g; }
+function v3HiveEye(U,own){ const c=document.createElement('canvas'); c.width=c.height=EYE_S; const x=c.getContext('2d',CPU2D), tex=new THREE.CanvasTexture(c);
+  tex.minFilter=THREE.LinearFilter; tex.generateMipmaps=false; const m=new THREE.MeshBasicMaterial({ map:tex }); own.push(tex,m);
+  const bg=x.createRadialGradient(EYE_S*0.42,EYE_S*0.4,2,EYE_S/2,EYE_S/2,EYE_S/2); bg.addColorStop(0,'#dfffa8'); bg.addColorStop(0.5,'#a6ff4a'); bg.addColorStop(1,'#6fc02a');
+  U.eye={ c, x, tex, bg, swim:[], swarm:[], next:0.8, spawn:0, pupil:0, lx:0.5, ly:0.55, acc:0, T:null, tgt:null, scan:0 }; eyeDraw(U.eye); return m; }
+function eyeTarget(h){ const f=h.faction||'swarm', W=HIVE_EYE.watch*TILE; let best=null, bd=W*W;
+  for(const u of G.ents){ if(u.dead||u.kind!=='unit'||!hostile(f,u.faction)) continue; const d=(u.x-h.x)**2+(u.y-h.y)**2; if(d<bd){ bd=d; best=u; } } return best; }
+function eyeSteer(c,tx,ty,turn,dt){ let d=Math.atan2(ty-c.y,tx-c.x)-c.a; while(d>Math.PI) d-=EYE_TAU; while(d<-Math.PI) d+=EYE_TAU;
+  c.a+=Math.max(-turn*dt,Math.min(turn*dt,d)); c.x+=Math.cos(c.a)*c.v*dt; c.y+=Math.sin(c.a)*c.v*dt; c.ph+=dt*(6+c.v*25); }
+function eyeCell(x,c){ const S=EYE_S, n=8, L=c.len, ca=Math.cos(c.a), sa=Math.sin(c.a); x.beginPath();
+  for(let i=0;i<=n;i++){ const q=i/n, w=Math.sin(c.ph-i*0.75)*q*0.03, bx=c.x-ca*q*L-sa*w, by=c.y-sa*q*L+ca*w; if(i) x.lineTo(bx*S,by*S); else x.moveTo(bx*S,by*S); }
+  x.stroke(); x.save(); x.translate(c.x*S,c.y*S); x.rotate(c.a); x.beginPath(); x.ellipse(0,0,c.s*1.3*S,c.s*S,0,0,EYE_TAU); x.fill(); x.restore(); }
+function eyeDraw(E){ const x=E.x, S=EYE_S; x.fillStyle=E.bg; x.fillRect(0,0,S,S);
+  if(E.pupil>0.02){ x.beginPath(); x.arc(E.lx*S,E.ly*S,HIVE_EYE.pupil*S*E.pupil,0,EYE_TAU); x.fillStyle='rgba(12,26,5,'+(0.9*E.pupil).toFixed(2)+')'; x.fill(); }
+  x.strokeStyle=x.fillStyle='rgba(18,40,8,0.85)'; x.lineWidth=2.6; x.lineCap='round'; for(const c of E.swim) eyeCell(x,c); for(const c of E.swarm) eyeCell(x,c);
+  x.beginPath(); x.arc(S*0.4,S*0.36,4,0,EYE_TAU); x.fillStyle='rgba(255,255,255,0.35)'; x.fill(); E.tex.needsUpdate=true; }
+function v3PoseEye(h,U,T,rate){ const E=U.eye, D=HIVE_EYE; if(!E) return; let dt=E.T==null?0:T-E.T; E.T=T; if(!(dt>0&&dt<0.5)) dt=0;
+  E.acc+=dt; if(E.acc<1/Math.max(1,D.fps)) return; dt=Math.min(E.acc,0.2)*rate; E.acc=0; const R=(a,b)=>a+Math.random()*(b-a);
+  E.scan-=dt; if(E.scan<=0){ E.scan=0.4; E.tgt=G?eyeTarget(h):null; }
+  const t=E.tgt&&!E.tgt.dead?E.tgt:null; E.watching=!!t;
+  if(t){ const dx=t.x-h.x, dz=t.y-h.y, d=Math.hypot(dx,dz)||1, near=1-Math.min(1,d/(D.watch*TILE)), k=Math.min(1,dt*4);   /* looks his way, a bit lower as he comes closer */
+    E.lx+=(0.5+dx/d*D.look-E.lx)*k; E.ly+=(0.42-(dz<0?0.06:0)+0.04*near-E.ly)*k; }   /* the camera looks down on it: keep the pupil on the upper front */
+  const near=E.swarm.filter(c=>Math.hypot(c.x-E.lx,c.y-E.ly)<0.12).length/Math.max(1,D.swarm);   /* the pupil fills as the cells clump */
+  E.pupil+=((t?Math.min(1,near*1.2):0)-E.pupil)*Math.min(1,dt*2);
+  /* the swarm: comes in while he is near, scatters when he is gone */
+  E.spawn-=dt; if(t&&E.swarm.length<D.swarm&&E.spawn<=0){ E.spawn=0.12; const a=R(0,EYE_TAU); E.swarm.push({ x:0.5+Math.cos(a)*0.5, y:0.5+Math.sin(a)*0.5, a:a+Math.PI, v:D.speed, ph:R(0,9), s:0.032, len:0.16, k:E.swarm.length }); }
+  E.swarm.forEach((c,i)=>{ if(t){ const oa=T*1.6+i*EYE_TAU/Math.max(1,E.swarm.length), or=0.07+(1-E.pupil)*0.05, tx=E.lx+Math.cos(oa)*or, ty=E.ly+Math.sin(oa)*or;
+      c.v=Math.hypot(tx-c.x,ty-c.y)>0.1?D.speed*1.3:D.speed*0.6; eyeSteer(c,tx,ty,7,dt); }
+    else { const a=Math.atan2(c.y-0.5,c.x-0.5); c.v=D.speed*1.5; eyeSteer(c,0.5+Math.cos(a),0.5+Math.sin(a),6,dt); } });
+  E.swarm=E.swarm.filter(c=>t||Math.hypot(c.x-0.5,c.y-0.5)<0.56);
+  /* the loose swimmers: only while nobody is near */
+  E.next-=dt; if(!t&&!E.swarm.length&&E.next<=0&&E.swim.length<D.swimMax){ E.next=D.swimEvery*R(0.4,1.4); const a0=R(0,EYE_TAU);
+    E.swim.push({ x:0.5+Math.cos(a0)*0.56, y:0.5+Math.sin(a0)*0.56, a:a0+Math.PI+R(-0.6,0.6), v:D.speed*R(0.7,1.2), ph:0, bend:R(-0.4,0.4), s:R(0.03,0.04), len:R(0.13,0.2) }); }
+  for(const c of E.swim){ c.a+=c.bend*dt; c.x+=Math.cos(c.a)*c.v*dt; c.y+=Math.sin(c.a)*c.v*dt; c.ph+=dt*9; }
+  E.swim=E.swim.filter(c=>Math.hypot(c.x-0.5,c.y-0.5)<0.62);
+  eyeDraw(E); }
 /* ---------- the membrane: a living web that grows across a tunnel ----------
    Each tile sends a half sheet towards every neighbour that is membrane or rock, so the sheets of a whole wall meet edge to edge and
    hang between fleshy knots like tissue between fingers. The top edge follows the world position (neighbours agree where they meet), dips
