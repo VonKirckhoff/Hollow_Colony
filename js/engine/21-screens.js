@@ -151,9 +151,10 @@ function buildTrophies(){
     :`<span>No soldier of your own yet. Name one on the campaign screen to start a trophy run.</span> <span class="tcount">${earned} / ${total} trophies</span>`;
   $('#troph-tabs').innerHTML=TROPH_TABS.map(t=>`<button type="button" role="tab" class="${t.id}" data-ttab="${t.id}" aria-selected="${t.id===trophTab}">${t.name} <small>${tabs[t.id].have}/${tabs[t.id].need}</small></button>`).join('');
   $('#trophy-wall').className='trophies tab-'+trophTab; $('#trophy-wall').innerHTML=tabs[trophTab].html;
-  $('#troph-intel').hidden=trophTab!=='relics';   /* on the Relics tab: straight to Intel, tab Relics (Back there returns here) */
 }
-$('#troph-intel').addEventListener('click',()=>{ intelTab='relics'; goMenu('intel'); });
+/* Intel from the Trophy wall: every trophy tab opens its own Intel tab (Back there returns here) */
+const TROPH_INTEL={ corps:'corps', swarm:'swarm', rogue:'rogue', relics:'relics' };
+$('#troph-intel').addEventListener('click',()=>{ intelTab=TROPH_INTEL[trophTab]||'corps'; goMenu('intel'); });
 $('#troph-tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-ttab]'); if(!b) return; trophTab=b.dataset.ttab; buildTrophies(); $(`[data-ttab="${trophTab}"]`).focus(); });
 $('#troph-tabs').addEventListener('keydown',e=>{ if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return; const i=TROPH_TABS.findIndex(t=>t.id===trophTab), n=TROPH_TABS.length;
   trophTab=TROPH_TABS[(i+(e.key==='ArrowRight'?1:n-1))%n].id; buildTrophies(); $(`[data-ttab="${trophTab}"]`).focus(); e.preventDefault(); });
