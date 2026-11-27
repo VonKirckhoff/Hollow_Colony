@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
-  <!-- Hollow Colony · © 2026 VonKirckhoff. All rights reserved. The eclipse mark, simplified for small sizes. -->
+  <!-- Hollow Colony · © 2026 VonKirckhoff. All rights reserved. The eclipse mark, simplified for small sizes, with the wider crescent (E2) so it reads in a browser tab. -->
   <defs>
     <filter id="g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
   <circle cx="120" cy="120" r="96" fill="#e8a33d" filter="url(#g)"/>
-  <circle cx="111" cy="127" r="95" fill="#161a21"/>
+  <circle cx="104" cy="132" r="95" fill="#161a21"/>
   <circle cx="120" cy="120" r="24" fill="#e8a33d" filter="url(#g)"/>
 </svg>
