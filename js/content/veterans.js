@@ -12,6 +12,17 @@ const RANKS = [
   { name:'Lieutenant', abbr:'Lt.', xp:40, mark:'★★', hp:1.75, dmg:1.45, rate:1.20, perk:true },              /* every type gets its own ability (PERKS) */
   { name:'Captain',  abbr:'Capt.', xp:60, mark:'✪', hp:1.85, dmg:1.55, rate:1.25, perk:true, aura:true, heroOnly:true }   /* only your own soldier: leads the squad (AURA) */
 ];
+/* AI_RANKS (Nov 2026): the ranks of the enemy soldiers the computer leads: the Lunar Corps when you play the Brood, and the loyal
+   Corps in Rogue Strain. Every group that comes in together (the starting squad, a drop) gets them at once, per difficulty:
+   captain = 1: the first Trooper becomes Captain (leads the squad: AURA, the squad wavers when he falls), only while no other
+   Captain of that side stands · medic = the rank of every Medic · ltShare = share of the other men who are Lieutenants (with their
+   ability: a Trooper's grenade …) · lo / hi = the rest get a random rank from lo to hi (0 Private … 3 Veteran).
+   A rank a mission script gives a loyal soldier itself (g.loyal(…,{rank})) stays as it is. */
+const AI_RANKS = {
+  easy:   { captain:0, medic:2, ltShare:0,    lo:0, hi:1 },
+  normal: { captain:1, medic:4, ltShare:0.15, lo:1, hi:3 },
+  hard:   { captain:1, medic:4, ltShare:0.34, lo:2, hi:3 }
+};
 /* Lieutenant abilities, one per type */
 const PERKS = {
   trooper:  { name:'Grenade',      text:'Throws a grenade at groups of enemies', every:9, damage:55, radius:1.5, throw:6, vsSoldier:0.5 },   /* throw = how far the grenade goes (not his rifle); vsSoldier = share of the damage a soldier takes (loyal Corps, Osprey crew): he is badly hurt, not torn apart */

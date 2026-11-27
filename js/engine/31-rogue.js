@@ -255,7 +255,8 @@ function rogueKill(e,src){ if(!isRogue()||!G.rogue) return;
 function acidRound(u,t){ if(t.kind!=='unit'||t.faction==='corps'||t.def.boss) return; t.rogueAcid=2; t.acidBy=u; }
 
 /* ---- the loyal Lunar Corps: they hold, patrol or hunt, and come to help each other ---- */
-function loyalScale(u){ const L=ROGUE.loyal, k=G.diffKey||'normal'; u.hp=u.maxHp=u.maxHp*(L.hp[k]||1); u.dmgMul=(u.dmgMul||1)*(L.dmg[k]||1); }
+function loyalScale(u){ const L=ROGUE.loyal, k=G.diffKey||'normal'; u.hpMul=(u.hpMul||1)*(L.hp[k]||1); u.diffDmg=(u.diffDmg||1)*(L.dmg[k]||1);   /* kept through applyRank (AI_RANKS) */
+  if(u.vet) applyRank(u); else { u.maxHp=u.def.hp*u.hpMul; u.dmgMul=u.diffDmg; } u.hp=u.maxHp; }
 function loyalAI(dt){ G.loyalT=(G.loyalT||0)-dt; if(G.loyalT>0) return; G.loyalT=0.5;
   const L=ROGUE.loyal, hit=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.hitAt!=null&&G.time-e.hitAt<3);
   for(const u of G.ents){ if(u.dead||u.kind!=='unit'||u.faction!=='loyal'||u.downed) continue;
@@ -271,9 +272,10 @@ function rogueApi(){ return {
      rank (0…4, RANKS in veterans.js): a seasoned soldier with the rank's hp, damage and fire rate (and from Lieutenant on his ability, e.g. a
      Trooper's grenade); his mark shows over his head. He never gains experience (gainXP) and never goes on any roster (u.npc). */
   loyal(type,at,n=1,opt={}){ const us=spawnAt(type,'loyal',at,n);
-    for(const u of us){ if(opt.rank>0&&isSoldierType(u.type)){ u.vet={ id:'loyal'+u.id, name:freshName(), type:u.type, rank:Math.min(4,Math.round(opt.rank)), xp:0, kills:0, missions:0, healed:0, repaired:0 }; u.npc=true; applyRank(u); u.hp=u.maxHp; }
+    for(const u of us){ if(opt.rank!=null) u.rankFixed=true;   /* a rank the script chose: AI_RANKS leaves him alone */
+      if(opt.rank>0&&isSoldierType(u.type)){ u.vet={ id:'loyal'+u.id, name:freshName(), type:u.type, rank:Math.min(4,Math.round(opt.rank)), xp:0, kills:0, missions:0, healed:0, repaired:0 }; u.npc=true; applyRank(u); u.hp=u.maxHp; }
       loyalScale(u); u.home={x:u.x,y:u.y}; if(opt.hunter) u.hunter=true; if(opt.patrol) u.patrol={ pts:opt.patrol, i:Math.floor(Math.random()*opt.patrol.length) };
-      if(opt.hold) u.order={type:'hold'}; if(opt.tough){ u.hp=u.maxHp=u.maxHp*opt.tough; } if(opt.name) u.loyalName=opt.name; }
+      if(opt.hold) u.order={type:'hold'}; if(opt.tough){ u.hpMul=(u.hpMul||1)*opt.tough; u.hp=u.maxHp=u.maxHp*opt.tough; } if(opt.name) u.loyalName=opt.name; }
     return us; },
   /* loyalB(type, at): a Lunar Corps structure (relay, sentry, barricade) that belongs to them */
   loyalB(type,at){ const p=pt(at); if(!p) return null; const s=BUILDINGS[type].size; for(const o of SPIRAL){ const x=p.x+o.x, y=p.y+o.y; let ok=true;

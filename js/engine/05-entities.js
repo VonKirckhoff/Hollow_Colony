@@ -5,8 +5,9 @@ function makeUnit(type,faction,x,y){
   const u=({ id:NEXT_ID++, kind:'unit', type, def:d, faction, x, y, hp:d.hp*hpMul, maxHp:d.hp*hpMul, r:d.radius||9,
     order:null, path:null, pi:0, target:null, cd:Math.random()*0.4, acq:Math.random()*0.3, face:Math.random()<.5?1:-1, anim:Math.random()*10, flash:0, moving:false, role:null, home:null });
   if(faction==='swarm') u.dmgMul=(G&&G.diff&&G.diff.dmg)||1;   /* difficulty: Swarm damage */
-  if(faction==='corps' && G && G.corpsDiff){ u.hp=u.maxHp=d.hp*G.corpsDiff.hp; u.dmgMul=G.corpsDiff.dmg; }   /* playing the Swarm: difficulty makes the Lunar Corps tougher */
+  if(faction==='corps' && G && G.corpsDiff){ u.hp=u.maxHp=d.hp*G.corpsDiff.hp; u.dmgMul=G.corpsDiff.dmg; u.hpMul=G.corpsDiff.hp; u.diffDmg=G.corpsDiff.dmg; }   /* playing the Swarm: difficulty makes the Lunar Corps tougher (kept through applyRank) */
   if(faction==='corps' && isSoldierType(type)) u.vet={ id:'v'+Date.now().toString(36)+NEXT_ID, name:freshName(), type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
+  if(G && isSoldierType(type) && !G.mission.training && ((faction==='corps'&&G.corpsDiff)||faction==='loyal')) (G.rankQ=G.rankQ||[]).push(u);   /* the computer's soldiers get their ranks as a group (aiRankTick) */
   const tg=toughOf(type); if(tg){ u.hp*=tg.hp||1; u.maxHp*=tg.hp||1; if(tg.armor!=null) u.armor=tg.armor; }
   G.ents.push(u); return u;
 }
@@ -47,18 +48,29 @@ const emptyRoster=()=>({active:[],fallen:[]});
 function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) if(e.vet) t.add(e.vet.name);
   for(const v of ui.roster.active) t.add(v.name); for(const v of ui.roster.fallen) t.add(v.name); return t; }
 function freshName(){ const t=takenNames(), n=STARTER_NAMES.find(x=>!t.has(x))||uniqueName(t); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
+/* AI_RANKS: every soldier of the computer that came in this frame gets a rank, group by group (one Captain, Lieutenants, the rest lower) */
+function aiRankTick(){ const q=G.rankQ; if(!q||!q.length) return; G.rankQ=[];
+  const P=AI_RANKS[G.diffKey]||AI_RANKS.normal;
+  for(const fac of ['corps','loyal']){ const us=q.filter(u=>!u.dead&&u.faction===fac&&!u.rankFixed); if(!us.length) continue;
+    const set=(u,r)=>{ if(!u.vet) u.vet={ id:'ai'+u.id, name:freshName(), type:u.type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
+      u.vet.rank=r; u.vet.xp=RANKS[r].xp; u.npc=true; const f=u.maxHp?u.hp/u.maxHp:1; applyRank(u); u.hp=u.maxHp*f; };
+    const capt=P.captain&&!G.ents.some(e=>!e.dead&&e.kind==='unit'&&e.faction===fac&&e.leader)&&us.find(u=>u.type==='trooper');
+    if(capt) set(capt,5);
+    const rest=us.filter(u=>u!==capt&&!u.def.heal), lts=Math.round(rest.length*P.ltShare);
+    us.filter(u=>u.def.heal).forEach(u=>set(u,P.medic));
+    [...rest].sort(()=>Math.random()-0.5).forEach((u,i)=>set(u,i<lts?4:P.lo+Math.floor(Math.random()*(P.hi-P.lo+1)))); } }
 function rankFor(xp,hero){ let r=0; RANKS.forEach((k,i)=>{ if(xp>=k.xp&&(!k.heroOnly||hero)) r=i; }); return r; }
 /* the next rank this soldier can reach (Captain is for your own soldier only) */
 function nextRank(v){ const k=RANKS[v.rank+1]; return k&&(!k.heroOnly||v.hero)?k:null; }
 function hasPerk(u){ return !!(u&&u.vet&&RANKS[u.vet.rank].perk); }
 function applyRank(u){ const k=RANKS[u.vet.rank], f=u.hp/u.maxHp, z=u.vet.risen;
-  u.maxHp=u.def.hp*k.hp*(z?RISEN.hp:1)*(u.hpMul||1); u.hp=u.maxHp*f;   /* u.hpMul: a tougher named soldier a mission lends you */ u.dmgMul=k.dmg; u.rateMul=k.rate; u.speedMul=z?RISEN.speed:1;
+  u.maxHp=u.def.hp*k.hp*(z?RISEN.hp:1)*(u.hpMul||1); u.hp=u.maxHp*f;   /* u.hpMul: a tougher named soldier a mission lends you */ u.dmgMul=k.dmg*(u.diffDmg||1); u.rateMul=k.rate;   /* u.diffDmg: difficulty on the computer's soldiers */ u.speedMul=z?RISEN.speed:1;
   u.rangeBonus=(hasPerk(u)&&PERKS[u.type]&&PERKS[u.type].range)||0; u.leader=!!k.aura; if(u.crew) rogueStrainApply(u); }   /* a Rogue crew member: his strains on top (31-rogue.js) */
 function gainXP(u,amount){
   if(!u||u.dead||!u.vet||amount<=0||u.faction==='loyal') return;   /* a seasoned loyal soldier (Rogue) keeps the rank the mission gave him */ u.vet.xp+=amount;
   const r=rankFor(u.vet.xp,u.vet.hero); if(r>u.vet.rank){ u.vet.rank=r; applyRank(u); u.hp=Math.min(u.maxHp,u.hp+u.maxHp*0.25);
     SFX.play('complete'); G.fx.push({k:'text',x:u.x,y:u.y-30,t:1.6,max:1.6,txt:'PROMOTED',col:'#ffb347'}); u.glintT=ANIM.glint;
-    say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?` The squad rallies around ${pron(u.vet,'him')}.`:''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
+    if(!u.npc) say('Field promotion',`${RANKS[r-1].abbr} ${u.vet.name} is now ${RANKS[r].name}.${RANKS[r].perk&&!RANKS[r-1].perk&&PERKS[u.type]?` New ability: ${PERKS[u.type].name}.`:''}${RANKS[r].aura?` The squad rallies around ${pron(u.vet,'him')}.`:''}`,'sys'); (G.promoted=G.promoted||{})[u.vet.id]={ name:u.vet.name, rank:r }; /* highest rank per soldier */ G.selDirty=true; } }
 function isCampaign(){ return G.mission.id!=='skirmish' && G.mission.side!=='swarm' && !G.mission.training && !G.mission.rogue; }   /* the Rogue crew keeps its own roster (31-rogue.js) */   /* the Swarm campaign keeps no roster */
 /* At mission start: veterans from the roster replace starting soldiers of the same type (most experienced first).
    The rest wait in reserve and arrive first whenever you train or order that type. */

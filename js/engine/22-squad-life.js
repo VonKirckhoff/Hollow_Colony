@@ -261,7 +261,7 @@ function obituary(u){
   if(u.vet.hero||u.vet.rank>=1||(u.vet.missions||0)>=1){
     const m=u.vet.missions||0;
     if(u.leader) captainDown(u);
-    if(!u.crew) say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
+    if(!u.crew&&!u.npc) say('In memory',`${RANKS[u.vet.rank].abbr} ${u.vet.name} has fallen. ${m?`${m} mission${m>1?'s':''}, `:''}${u.vet.kills} kill${u.vet.kills===1?'':'s'}.`,'alert'); }
 }
 
 /* ---------- dropship: flies in from off the map, settles on the pad in a cloud of dust, unloads and lifts off again ---------- */
@@ -393,7 +393,7 @@ function updateAura(dt){
     for(const e of G.ents){ if(e.dead||e.kind!=='unit'||e.faction!==c.faction||Math.hypot(e.x-c.x,e.y-c.y)>AURA.radius*TILE) continue; e.auraT=0.5; } }
 }
 function captainDown(c){
-  const near=G.ents.filter(e=>!e.dead&&e!==c&&e.kind==='unit'&&e.faction==='corps'&&Math.hypot(e.x-c.x,e.y-c.y)<AURA.waver.radius*TILE);
+  const near=G.ents.filter(e=>!e.dead&&e!==c&&e.kind==='unit'&&e.faction===c.faction&&Math.hypot(e.x-c.x,e.y-c.y)<AURA.waver.radius*TILE);
   for(const e of near) e.waverT=AURA.waver.time;
   if(near.length){ G.barkNext=0; bark(pick(near),'waver'); }
 }

@@ -12,6 +12,11 @@ const DEV_HELP = {
   'DIFFICULTY|aggro':'How far a hive notices your soldiers, × its aggro radius.',
   'SWARM_DIFF|hp':'Playing the Brood: health of the Lunar Corps soldiers and buildings, ×.',
   'SWARM_DIFF|dmg':'Playing the Brood: damage the Lunar Corps does, ×.',
+  'AI_RANKS|captain':'The computer\'s soldiers (Corps when you play the Brood, loyal Corps in Rogue): 1 = the first Trooper of a group that comes in becomes Captain (leads the squad), while no other Captain of that side stands. Next group.',
+  'AI_RANKS|medic':'The computer\'s soldiers: rank of every Medic (0 Private, 1 Corporal, 2 Sergeant, 3 Veteran, 4 Lieutenant: heals everyone around him). Next group.',
+  'AI_RANKS|ltShare':'The computer\'s soldiers: share of the other men in a group who are Lieutenants (with their ability, e.g. a Trooper\'s grenade). Next group.',
+  'AI_RANKS|lo':'The computer\'s soldiers: the rest of a group get a random rank from lo to hi (0 Private … 3 Veteran). Next group.',
+  'AI_RANKS|hi':'The computer\'s soldiers: the highest random rank for the rest of a group (0 Private … 3 Veteran). Next group.',
   'SWARM_DIFF|reinforce':'Playing the Brood: how many reinforcements the mission scripts send, ×.',
   /* waves */
   'WAVES|growWaves':'Only the first this many waves grow (budget + growth per wave); after that every wave is the same size.',
@@ -711,6 +716,6 @@ const DEV_HELP = {
 /* the help text for a key, or '' */
 function devHelp(key){ const [root,path]=key.split('|');
   if(root.startsWith('M:')) return DEV_HELP['M|'+path]||'';
-  if(root==='DIFFICULTY'||root==='SWARM_DIFF') return DEV_HELP[root+'|'+path.split('.').slice(1).join('.')]||'';
+  if(root==='DIFFICULTY'||root==='SWARM_DIFF'||root==='AI_RANKS') return DEV_HELP[root+'|'+path.split('.').slice(1).join('.')]||'';
   if(root==='UNITS'||root==='BUILDINGS') return DEV_HELP[root+'|'+path.split('.').slice(1).join('.')]||'';
   return DEV_HELP[key]||''; }
