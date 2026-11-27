@@ -13,7 +13,7 @@ CASES={
    damage(hq,1e7,null); step(1); ok(G.over&&G.over.win,'win when the Command Post falls');''',
  'swarm-choir':'''step(2); ok(G.timer&&G.timer.label==='Dropship','the dropship clock runs'); ok(G.ents.some(e=>e.colonist),'colonists lie on the map');
    step(16*0+1); const sq=G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='corps'); ok(sq.length>0,'a squad is on the map');
-   let t=0; while(!G.vars.maas&&t<120){ step(1); t++; } for(const e of G.ents) if(e.faction==='corps') e.invuln=false;
+   let t=0; while(!G.vars.maas&&t<300){ step(1); t++; } for(const e of G.ents) if(e.faction==='corps') e.invuln=false;
    const m=G.ents.find(e=>!e.dead&&e.type==='scientist'); ok(!!m,'Dr. Maas comes out of the lab ('+t+' s)'); if(m){ for(const e of G.ents) if(e.kind==='unit'&&e.faction==='corps'&&e.def.heal) e.dead=true; damage(m,1e7,null); step(SQUAD.downed.time+2); ok(G.over&&G.over.win,'win when Maas falls (and bleeds out)'); }''',
  'swarm-signal':'''step(1); const bs=G.ents.filter(e=>!e.dead&&e.def&&e.def.capture); ok(bs.length===3&&bs.every(b=>b.owned),'they hold three beacons'); ok(G.timer&&G.timer.label==='Fleet','the fleet clock runs');
    for(const e of G.ents) if(e.kind==='unit'&&e.faction==='corps') e.dead=true; for(const e of G.ents) if(e.type==='sentry') e.dead=true;

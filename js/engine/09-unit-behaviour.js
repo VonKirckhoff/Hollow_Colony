@@ -67,8 +67,13 @@ function engage(u,dt,hold){
     if(hold||!(u.order&&u.order.type==='attack')){ u.target=null; return; } goTo(u,t.x,t.y,dt,0.5); return; }
   if(dd<=reach){ u.path=null; u.goal=null; if(u.cd<=0) fire(u,t); }
   else if(hold){ u.target=null; }
+  else if(u.slotLeash!=null&&!(u.order&&u.order.type==='attack')&&slotLeashed(u,t)){ u.target=null; }   /* a squad that keeps its shape (The Hollow Choir): no chasing far from his place */
   else goTo(u,t.x,t.y,dt,0.5);
 }
+/* u.slotLeash: a soldier in formation only goes after a target he can shoot from at most that many tiles from his place */
+function slotLeashed(u,t){ const s=formationSpot(u), f=u.formation, p=s||(f&&f.at); if(!p) return false; const rg=(u.def.range+(u.rangeBonus||0))*TILE+u.r*0.5, L=(u.slotLeash+(s?0:3))*TILE;   /* no place of his own (it lies under a structure): the middle of the squad, a bit wider */
+  if(Math.hypot(u.x-p.x,u.y-p.y)>L) return true;   /* already that far from his place: back first (a way round a wall would take him away) */
+  return Math.max(0,Math.hypot(t.x-p.x,t.y-p.y)-(t.kind==='building'&&t.size?t.size*TILE/2:t.r||0))>rg+L; }
 function swarmThink(u,dt){
   if(u.def.founder && founderThink(u,dt)) return;   /* a Husk looking for a place to root */
   if(u.role==='eggrun'){ eggRunThink(u); return; }   /* sent for an ancient egg (29-relics.js) */
@@ -182,7 +187,8 @@ function escortThink(u,dt){
   const o=u.order;
   if(o && (o.type==='move'||o.type==='amove')){ if(walkOrder(u,dt)&&u.order===o){ u.order=null; } return; }
   if(o && o.type==='hold') return;
-  u.order=null; u.follT=(u.follT||0)-dt;
+  u.order=null; if(u.formation&&formationSpot(u)){ u.rjT=(u.rjT||0)-dt; if(u.rjT<=0){ u.rjT=0.4; rejoinFormation(u); } return; }   /* in a formation (Dr. Maas in the middle of the circle): back to her place, not after the nearest soldier */
+  u.follT=(u.follT||0)-dt;
   if(u.follT<=0){ u.follT=0.5; u.lead=nearestOf(u,e=>e.kind==='unit'&&e.faction===u.faction&&!e.def.escort&&e.def.damage&&dist(e,u)<12*TILE); }
   if(u.lead && !u.lead.dead && dist(u,u.lead)>1.8*TILE) goTo(u,u.lead.x,u.lead.y,dt,0.6);
 }

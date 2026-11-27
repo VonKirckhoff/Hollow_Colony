@@ -3,7 +3,16 @@
    A search team lands in the south-west, walks to the research lab in the north-east and takes Dr. Maas out of her locked room;
    then it heads for the extraction pad in the south-east. Their dropship lands when the clock runs out.
    Win: Dr. Maas dies. Lose: she reaches the pad once the dropship is down, or every nest burns.
-   The ruins are full of fallen colonists (colonistBodies): bring them home for Husks, the colony's choir. */
+   The ruins are full of fallen colonists (colonistBodies): bring them home for Husks, the colony's choir.
+   Nov 2026: the search team marches as one body in a circle (choirTick, CHOIR_SQUAD): a fight on the way stops the whole circle,
+   so the Medic never walks on alone. Once Dr. Maas is out she stands in the middle of the circle. They leave the lab by its east
+   side and dig in in the crater south of it: the Engineer sets up a Sentry Gun, they hold (and the nearby hive lies within reach).
+   CHOIR_SQUAD.leaveAt seconds before the dropship lands the Engineer packs the gun up, they march to the pad and he sets it up again there. */
+/* CHOIR_SQUAD: east = the spot just outside the lab's east side they march to first · crater = the middle of their circle in the crater
+   · sentry / padSentry = tile of the Sentry Gun in the crater and by the Landing Zone · pad = the middle of their circle at the pad
+   · leaveAt = seconds on the dropship clock when they leave the crater · resume = seconds a march may stand still (after a fight) before it goes on
+   · packWait = seconds they wait at most for the Engineer to fold the gun up · leash = tiles a soldier may step out of his place to get a target within reach (no chasing) */
+const CHOIR_SQUAD = { east:{x:61.5,y:8.5}, crater:{x:55.5,y:18.5}, sentry:{tx:54,ty:20}, pad:{x:55.5,y:35}, padSentry:{tx:51,ty:34}, leaveAt:120, resume:3, packWait:12, leash:1.5 };
 SWARM_MISSIONS.push(
   {
     id:'swarm-choir', side:'swarm', title:'The Hollow Choir', map:'hollow',
@@ -29,7 +38,8 @@ SWARM_MISSIONS.push(
       { when:g=>g.time>0.1, do:g=>{ swarmBrood(); colonistBodies([{x:20,y:16},{x:39,y:17},{x:40,y:35},{x:61,y:32},{x:38,y:3},{x:12,y:18},{x:44,y:28}],'engineer');
           makeBuilding('wreck','none',41,9,true); const d=makeBuilding('door','corps',53,4,true); d.tag='maasdoor'; g.vars.door=d;
           g.setTimer(720,'Dropship'); g.marker('lab',{x:53,y:5},'Her room'); g.marker('pad','2','Their pad');
-          g.orderCorps(g.corps(),'1','amove'); } },
+          choirGo(g,'lab'); } },
+      { repeat:true, when:g=>g.time>0.2, do:choirTick },
       { when:g=>g.time>1, do:g=>g.brood_say('They walk from the south-west towards the hall of glass. The fallen colonists lie all over the halls: bring them home and they sing.') },
       { when:g=>g.time>3, do:g=>g.say('Sgt. Kessler','Dust on the ground. Lab is north-east, pad is south-east. Twelve minutes till Icarus. Move.') },
       /* at the lab: they open her door and she comes out */
@@ -37,7 +47,7 @@ SWARM_MISSIONS.push(
       { when:g=>g.vars.atLab && g.time>g.vars.atLab+12, do:g=>{ if(g.vars.door&&!g.vars.door.dead) g.vars.door.dead=true; g.unmark('lab');
           g.vars.maas=g.spawn('scientist',{x:53,y:6},1)[0]; maasLead(g); g.say('Dr. Maas','You came. Please, get me out of here, they are in the walls.');
           g.brood_say('The one who studied us. She is out of her shell. She must not leave.'); g.marker('maas',{x:53,y:6},'Dr. Maas');
-          g.orderCorps(g.corps().filter(u=>u!==g.vars.maas),'2','amove'); } },
+          choirGo(g,'east'); } },
       { repeat:true, when:g=>!!g.vars.maas&&!g.vars.maas.dead, do:g=>{ maasLead(g); const m=g.vars.maas; G.markers=G.markers.filter(k=>k.id!=='maas'); G.markers.push({id:'maas',x:m.x,y:m.y,label:'Dr. Maas',col:'#ff5a4f'}); } },
       /* a second team holds the pad */
       { when:g=>g.time>360, do:g=>{ g.say('Dropship Icarus','Icarus dropping a fire team on the pad to hold it open.'); g.airdrop([['trooper',g.n(3)],['gunner',1]],15); } },
@@ -50,6 +60,55 @@ SWARM_MISSIONS.push(
     ]
   }
 );
+/* the search team: everyone of the first squad (not the fire team on the pad) who is still standing */
+function choirTeam(g){ return G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.choir); }
+/* march the team in a circle to a stage: lab · east (out by the lab's east side) · crater · pad */
+function choirGo(g,stage){ const C=CHOIR_SQUAD, V=g.vars; V.choir=stage; V.choirIdle=null;
+  if(!V.choirInit){ V.choirInit=true; for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='corps') u.choir=true; }
+  if(V.maas&&!V.maas.dead) V.maas.choir=true;
+  for(const u of G.ents) if(u.choir&&!u.dead) u.slotLeash=C.leash;
+  const us=choirTeam(g); if(!us.length) return;
+  const p=stage==='lab'?ptWorld('1'):stage==='east'?{x:C.east.x*TILE,y:C.east.y*TILE}:stage==='crater'?{x:C.crater.x*TILE,y:C.crater.y*TILE}:{x:C.pad.x*TILE,y:C.pad.y*TILE};
+  V.choirTo=p;
+  for(const u of us){ u.stance=null; u.home=null; if(u.order&&(u.order.type==='hold'||u.order.type==='support')) u.order=null; }
+  let f=us[0].formation; if(!f||f.shape!=='circle'||!us.every(u=>u.formation===f)){ f={shape:'circle',dir:-Math.PI/2,gap:1,seq:0}; for(const u of us){ u.formation=f; u.slot=null; } }
+  f.engaged=null;
+  if(us.length>1) marchTo(us,p.x,p.y,stage==='pad'?'move':'amove'); else corpsMove(us,p.x,p.y,'amove'); }
+/* every frame: keep the circle going, dig in at the crater, leave for the pad in time */
+function choirTick(g){ const C=CHOIR_SQUAD, V=g.vars, st=V.choir; if(!st||G.over) return;
+  const us=choirTeam(g); if(!us.length) return; const f=us[0].formation, p=V.choirTo;
+  /* a soldier back on his feet, or Maas just out: into the circle */
+  const loose=us.filter(u=>u.formation!==f&&!(u.order&&(u.order.type==='build'||u.order.type==='pack'||u.order.type==='repair')));
+  if(f&&loose.length){ for(const u of loose){ u.formation=f; u.slot=null; u.formSeq=null; } if(marching(f)) reformSquad(choirTeam(g).filter(u=>u.formation===f),f,f.march,false); else if(st==='crater-hold'||st==='pad-hold') choirHold(g); else V.choirIdle=-99; }
+  const mid=f&&(marching(f)?{x:f.march.x,y:f.march.y}:f.at)||us[0], far=p&&Math.hypot(mid.x-p.x,mid.y-p.y)>TILE*1.5;
+  /* the leg is walked: on to the next one */
+  if(f&&!marching(f)&&!far){
+    if(st==='east'){ choirGo(g,'crater'); return; }
+    if(st==='crater'){ choirDigIn(g); return; }
+    if(st==='pad'){ choirPadDown(g); return; } }
+  /* stopped (a fight on the way, everyone's orders gone): after a while the circle walks on */
+  if((st==='lab'||st==='east'||st==='crater'||st==='pad')&&far){
+    const idle=!marching(f)&&us.every(u=>!u.target&&(!u.order||u.order.type==='hold'||u.order.rejoin||(u.order.form&&u.order.form!==f)));
+    if(idle){ V.choirIdle=V.choirIdle??g.time; if(g.time-V.choirIdle>=C.resume) choirGo(g,st); } else V.choirIdle=null; }
+  /* in the crater: until the dropship is near */
+  if(st==='crater-hold'&&g.timerLeft()<=C.leaveAt){ const s=V.choirGun, eng=us.find(u=>u.def.builder);
+    g.say('Sgt. Kessler','Two minutes! Pack up the gun, we move to the pad. Keep the doctor in the middle.');
+    if(alive(s)&&s.built&&eng){ eng.formation=null; eng.slot=null; eng.order={type:'pack',target:s}; eng.target=null; eng.path=null; eng.goal=null; V.choir='packing'; V.packAt=g.time; }
+    else choirGo(g,'pad'); return; }
+  if(st==='packing'){ const eng=G.ents.find(e=>!e.dead&&e.choir&&e.def.builder);
+    if(!eng||eng.downed||eng.carry||!alive(V.choirGun)||g.time-V.packAt>C.packWait) choirGo(g,'pad'); return; }
+  if(st==='crater-hold'){ if(!alive(V.choirGun)){ const gun=nearestOf({x:(C.sentry.tx+.5)*TILE,y:(C.sentry.ty+.5)*TILE},e=>e.kind==='building'&&e.type==='sentry'&&e.faction==='corps'&&!e.dead&&dist(e,{x:(C.sentry.tx+.5)*TILE,y:(C.sentry.ty+.5)*TILE})<3*TILE); if(gun){ V.choirGun=gun; V.gunUp=true; const f0=us[0].formation, mem=us.filter(u=>u.formation===f0); if(f0&&mem.length>1){ reformSquad(mem,f0,null,false); choirHold(g); } } }   /* the gun stands where one of them stood: the circle shares out its places again round it */
+    const eng=us.find(u=>u.def.builder&&(!u.order||u.order.type==='hold')); if(eng&&!V.gunUp&&!(eng.order&&eng.order.type==='build')) choirBuild(g,eng,C.sentry,false); } }
+/* at the crater: hold where they stand (they shoot what comes within reach, also the nest close by) and set up the gun */
+function choirHold(g){ const us=choirTeam(g); for(const u of us){ if(u.order&&(u.order.type==='build'||u.order.type==='repair'||u.order.type==='pack')) continue; u.stance='hold'; } }
+function choirDigIn(g){ const V=g.vars; V.choir='crater-hold'; choirHold(g);
+  g.say('Sgt. Kessler','Into the crater. Dig in, set up the Sentry. We hold here till Icarus is close.');
+  const eng=choirTeam(g).find(u=>u.def.builder); if(eng) choirBuild(g,eng,CHOIR_SQUAD.sentry,false); }
+/* the Engineer sets the gun up: a new one in the crater, the one he carries by the pad */
+function choirBuild(g,eng,t,deploy){ const V=g.vars; if(!canPlace('sentry',t.tx,t.ty,true)){ const n=nearestWalkable(t.tx,t.ty); if(!n||!canPlace('sentry',n.x,n.y,true)) return; t={tx:n.x,ty:n.y}; }
+  eng.order={type:'build',btype:'sentry',tx:t.tx,ty:t.ty,deploy}; eng.target=null; eng.path=null; eng.goal=null; }
+function choirPadDown(g){ const V=g.vars; V.choir='pad-hold'; choirHold(g);
+  const eng=choirTeam(g).find(u=>u.def.builder&&u.carry&&u.carry.type==='sentry'); if(eng) choirBuild(g,eng,CHOIR_SQUAD.padSentry,true); }
 /* Dr. Maas follows the nearest soldier of the search team */
 function maasLead(g){ const m=g.vars.maas; if(!m||m.dead) return; if(m.lead&&!m.lead.dead&&!m.lead.downed) return;
   m.lead=g.corps().filter(u=>u!==m&&!u.downed&&!u.def.escort).sort((a,b)=>dist(a,m)-dist(b,m))[0]||null; }

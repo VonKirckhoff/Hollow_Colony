@@ -45,7 +45,7 @@ const formSpacing=f=>FORMATION.spacing*1.15*((f&&f.gap)||1);
 const marching=f=>!!(f&&f.march&&!f.march.done);
 /* the living members of a formation (the downed are not counted until they are back up) */
 function formMembers(f){ return G.ents.filter(e=>e.kind==='unit'&&!e.dead&&!e.downed&&e.formation===f); }
-function formationSlots(shape,nf,ns,sp){
+function formationSlots(shape,nf,ns,sp,mid){   /* mid: the first support place is the very middle (an escort: Dr. Maas), the others stand round it */
   const f=[], s=[];
   if(shape==='circle'){ const r=Math.max(sp*2,nf*sp*1.35/(2*Math.PI)+sp*0.6); for(let i=0;i<nf;i++){ const a=i/nf*Math.PI*2; f.push({x:Math.cos(a)*r,y:Math.sin(a)*r}); } }
   else if(shape==='wedge'){ const ranks=Math.ceil((nf-1)/2), a=ranks*sp*0.85/2; f.push({x:a+sp*0.4,y:0});
@@ -59,7 +59,9 @@ function formationSlots(shape,nf,ns,sp){
   // support in the middle (slightly behind the tip for a wedge)
   const cx = shape==='wedge' ? -sp*0.5 : 0;
   if(FACING.has(shape)){ const bx=shape==='line'?-sp*1.2:-sp*1.4; for(let i=0;i<ns;i++) s.push({x:bx,y:(i-(ns-1)/2)*sp*1.3}); }
-  else if(ns===1) s.push({x:cx,y:0}); else for(let i=0;i<ns;i++){ const a=i/ns*Math.PI*2; s.push({x:cx+Math.cos(a)*sp*0.7,y:Math.sin(a)*sp*0.7}); }
+  else if(ns===1) s.push({x:cx,y:0});
+  else if(mid){ s.push({x:cx,y:0}); for(let i=0;i<ns-1;i++){ const a=i/(ns-1)*Math.PI*2+Math.PI/2; s.push({x:cx+Math.cos(a)*sp*0.85,y:Math.sin(a)*sp*0.85}); } }
+  else for(let i=0;i<ns;i++){ const a=i/ns*Math.PI*2; s.push({x:cx+Math.cos(a)*sp*0.7,y:Math.sin(a)*sp*0.7}); }
   return {f,s};
 }
 /* which kind of unit goes to which place: a plan of slots (local, facing +x) for a shape (also drawn by the right-drag preview) */
@@ -72,7 +74,9 @@ function slotPlan(units,shape,sp){
   if(shape!=='wedge' && !FACING.has(shape) && fig.length<4 && sup.length){ const all=[]; while(fig.length||sup.length){ if(fig.length) all.push(fig.shift()); if(sup.length) all.push(sup.shift()); } fig=all; }
   /* behind a line or zigzag the support stands in a row: Medics in the middle, Engineers and escorts on both sides */
   if(FACING.has(shape)&&sup.length>2){ const med=sup.filter(u=>u.def.heal), oth=sup.filter(u=>!u.def.heal), h=Math.ceil(oth.length/2); sup=[...oth.slice(0,h),...med,...oth.slice(h)]; }
-  return { shape, fig, sup, slots:formationSlots(shape,fig.length,sup.length,sp) }; }
+  /* an escort (Dr. Maas) in a circle, square or wedge stands in the very middle, the Medics and Engineers round her */
+  const mid=!FACING.has(shape)&&sup.length>1&&sup.some(u=>u.def.escort); if(mid) sup=[...sup.filter(u=>u.def.escort).slice(0,1),...sup.filter((u,i,a)=>u!==a.find(x=>x.def.escort))];
+  return { shape, fig, sup, mid, slots:formationSlots(shape,fig.length,sup.length,sp,mid) }; }
 /* your own formation: every place remembers the type that stood there; a Medic goes to a Medic's place, else to a support place, else anywhere.
    More soldiers than places: the rest line up behind. */
 function customPlan(units,c,k){ const slots=c.slots.map(o=>({x:o.x*k,y:o.y*k,type:o.type,sup:o.sup})).sort((a,b)=>b.x-a.x), pool=[...units], pairs=[];
@@ -84,7 +88,7 @@ function customPlan(units,c,k){ const slots=c.slots.map(o=>({x:o.x*k,y:o.y*k,typ
 function formPlaces(units,shape,sp){
   const plan=slotPlan(units,shape,sp), places=[];
   if(plan.pairs){ for(const [u,o] of plan.pairs) places.push({x:o.x,y:o.y,cls:u.type,row:0}); return { shape:plan.shape, places, clsOf:u=>u.type, rankOf:()=>0 }; }
-  const clsOf=u=>isSupport(u)?'s':'f', wedge=plan.shape==='wedge';
+  const vip=plan.mid?plan.sup[0]:null, clsOf=u=>u===vip?'e':isSupport(u)?'s':'f', wedge=plan.shape==='wedge';   /* the escort in the middle has a place of her own */
   const pool=[...plan.fig]; if(wedge) pool.sort((a,b)=>(FRONT_RANK[a.type]??3)-(FRONT_RANK[b.type]??3));
   plan.slots.f.forEach((o,i)=>places.push({x:o.x,y:o.y,cls:clsOf(pool[i]),row:wedge?Math.ceil(i/2):0}));
   plan.sup.forEach((u,i)=>places.push({x:plan.slots.s[i].x,y:plan.slots.s[i].y,cls:clsOf(u),row:0}));
@@ -213,7 +217,7 @@ function marchStep(f,dt){ const m=f.march, us=marchMembers(f);
   if(m.attack&&alive(m.attack)&&us.some(u=>u.target===m.attack)){ m.done=true; engageTarget(formMembers(f),m.attack); return; }   /* the target is within reach of the front: the attack starts */
   const spots=marchSpots(f,us);
   let lag=0, fighting=false;
-  for(const u of us){ if(u.target&&u.order.type==='amove'){ fighting=true; continue; }   /* on an attack-move the squad stops to fight */
+  for(const u of us){ if(u.target&&u.order.type==='amove'&&!u.def.heal&&validTarget(u,u.target)){ fighting=true; continue; }   /* on an attack-move the squad stops to fight (a Medic's own shots do not hold it up: he never drops a target while he heals) */
     if(u.def.heal&&u.healTarget&&!u.healTarget.dead&&dist(u,u.healTarget)<=u.def.healRange*TILE) continue;   /* a Medic at work catches up after */
     if(m.file.has(u.id)) continue;   /* a file through a door is long by nature: it does not hold up the guide */
     const p=spots.get(u.id); if(!p) continue; const d=Math.hypot(u.x-p.x,u.y-p.y);
