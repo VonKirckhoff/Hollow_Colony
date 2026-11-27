@@ -513,6 +513,8 @@ Met **F3** of de knop **2D / 3D** bovenaan schakel je tijdens een missie tussen 
 ### Logo (nov 2026)
 Het logo is de **eclips**: een verduisterde maan met een gloeiende amberrand, in het midden een zeshoekig gat met een gloeiende raatcel, en een paar sterretjes. Ernaast **HOLLOW** in het lettertype Michroma, daaronder **COLONY** in amber tussen twee lijntjes. Het staat op het openingsscherm (*Click or press any key*) en in het hoofdmenu. Het teken is één keer getekend als SVG-symbool `#hc-mark` bovenaan `index.html` en wordt op beide plaatsen hergebruikt; de stijl staat in `css/game.css` (`.logo`). Het **favicon** (`favicon.svg`) is een vereenvoudigde versie: de donkere maan met de gloeiende rand en een gloeiende kern, zonder grijs, zodat het klein leesbaar blijft. Kleuren: amber `#e8a33d`, maan `#161a21`.
 
+Sinds nov 2026 gebruikt **elk scherm** dit lettertype (Michroma) voor titels, knoppen, labels en de bovenbalk in plaats van het oude pixellettertype Silkscreen: `--f-display` in `css/game.css`. Michroma is breder, dus de bovenbalk wordt kleiner op schermen tot 1480, 1200 en 1060 pixels breed, zodat hij in elke campagne (ook met DNA, Stabilizer en een timer) op één lijn past tot 1024 breed. De kleine labels die in het spel zelf op de kaart getekend worden (LIFT-OFF, SCORCH, ROOTING, rangtekens …) zijn nog Silkscreen.
+
 ### Instellingen: licht en geluid (Menu → Settings)
 Zowel in het hoofdmenu als in het pauzemenu staat **Settings**. Alles wordt in de browser onthouden (`hc-light`, en de bestaande sleutels voor geluid). Opent je het vanuit een missie, dan zie je het effect meteen achter het menu.
 - **Licht** (schuifbalkjes, de waarde staat in % van de standaard; *Reset light* zet alles terug):

@@ -3,13 +3,13 @@
 :root{
   --space:#07080c; --panel:#11131a; --panel-2:#191c26; --line:#2c3140; --ink:#dde1ea; --dim:#8b92a5;
   --corps:#ffb347; --corps-deep:#b9521c; --swarm:#a6ff4a; --danger:#ff5a4f; --ok:#5fe3b0;
-  --f-display:'Silkscreen','Courier New',monospace;
+  --f-display:'Michroma','Chakra Petch',sans-serif;   /* the logo's font on every screen (Nov 2026; was the pixel font Silkscreen) */
   --f-body:'Chakra Petch',system-ui,-apple-system,'Segoe UI',sans-serif;
   color-scheme:dark;
 }
 [hidden]{display:none!important;}
 html,body{height:100%;}
-body{margin:0;background:var(--space);color:var(--ink);font-family:var(--f-body);font-size:14px;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:none;}
+body{margin:0;background:var(--space);color:var(--ink);font-family:var(--f-body);font-size:14px;font-synthesis:none;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:none;}
 #game{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;cursor:default;}
 #game.amove{cursor:crosshair;}
 button{font:inherit;color:inherit;}
@@ -28,6 +28,10 @@ button{font:inherit;color:inherit;}
 #topbar .tb-cam .tb-btn{padding:5px 8px;}
 @media (max-width:1180px){ #topbar{gap:14px;} }
 @media (max-width:1100px){ #topbar{gap:10px;} #topbar .res{gap:6px;} }
+.tb-btn{white-space:nowrap;}   /* Michroma is wider than the old pixel font (Nov 2026): keep the top bar on one line */
+@media (max-width:1480px){ #topbar b{font-size:14px;} #topbar #r-mtitle{font-size:13px;} #topbar .lbl{font-size:9px;letter-spacing:.04em;} #topbar .tb-btn{font-size:10px;letter-spacing:0;padding:5px 7px;} #clock{font-size:12px;} }
+@media (max-width:1200px){ #topbar{gap:8px;} #topbar b{font-size:13px;} #topbar #r-mtitle{font-size:12px;} #topbar .mission-tag .lbl{display:none;} #topbar .tb-btn{padding:5px 6px;} }
+@media (max-width:1060px){ #topbar{gap:6px;} #topbar .res{gap:4px;} #topbar .lbl{letter-spacing:0;} }
 #clock{font-family:var(--f-display);color:var(--dim);font-variant-numeric:tabular-nums;}
 .tb-btn{background:var(--panel-2);border:1px solid var(--line);padding:5px 10px;font-family:var(--f-display);font-size:11px;letter-spacing:.08em;cursor:pointer;}
 .tb-btn:hover,.tb-btn:focus-visible{border-color:var(--corps);outline:none;}
@@ -132,8 +136,8 @@ h1.title{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(4
 h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,4.5vw,36px);letter-spacing:.03em;text-wrap:balance;}
 .lede{color:var(--dim);line-height:1.6;max-width:56ch;margin:0;}
 .menu-list{display:grid;gap:4px;max-width:360px;}
-.menu-btn{display:flex;align-items:baseline;gap:14px;text-align:left;background:transparent;border:0;border-left:2px solid var(--line);padding:10px 16px;cursor:pointer;font-family:var(--f-display);font-size:18px;letter-spacing:.06em;}
-.menu-btn small{font-family:var(--f-body);font-size:12px;color:var(--dim);letter-spacing:0;}
+.menu-btn{display:flex;align-items:baseline;gap:14px;text-align:left;background:transparent;border:0;border-left:2px solid var(--line);padding:10px 16px;cursor:pointer;font-family:var(--f-display);font-size:18px;letter-spacing:.02em;white-space:nowrap;}
+.menu-btn small{font-family:var(--f-body);font-size:12px;color:var(--dim);letter-spacing:0;white-space:normal;}
 .menu-btn:hover,.menu-btn:focus-visible{border-left-color:var(--corps);background:linear-gradient(90deg,rgba(255,179,71,.12),transparent);outline:none;}
 .menu-btn[disabled]{opacity:.35;cursor:not-allowed;}
 .menu-btn.armed{border-left-color:var(--danger);background:linear-gradient(90deg,rgba(255,90,70,.16),transparent);color:var(--danger);}
