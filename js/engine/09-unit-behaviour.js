@@ -2,6 +2,34 @@
 /* ---------- 2h. unit behaviour ---------- */
 /* lunar fauna: a grazer that is hit bolts away from what hit it, and the grazers near it run with it */
 const FAUNA = { flee:3.5, fleeTime:2.5, fleeSpeed:2.2, herd:3 };   /* tiles it runs, seconds, × speed, tiles the herd panics with it (flee 0 = they stand still) */
+/* NADE_AI (Nov 2026): the Brood minds grenades. dodge: a creature inside the circle where a grenade will land springs out of it
+   (fast ones make it, slow ones often not) · margin = tiles past the blast's edge it aims for · spread: near a soldier who can throw
+   grenades the brood keeps apart, so a throw is seldom worth it · reach = tiles beyond his throw where they start to mind him ·
+   gap = tiles they keep between each other there (a grenade needs two within its radius) · push = px per second they drift apart ·
+   everywhere = 1: also the Brood the computer leads in Corps missions (0: only your own brood when you play the Brood) */
+const NADE_AI = { dodge:1, margin:0.5, spread:1, reach:1, gap:1.7, push:60, everywhere:0 };
+const nadeMinds=u=>!u.dead&&!u.downed&&u.kind==='unit'&&u.faction==='swarm'&&!u.def.boss&&!u.def.seed&&!u.def.passive&&!(u.emergeT>0)&&!u.burrowed&&(NADE_AI.everywhere||G.side==='swarm');
+const grenadier=e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.type==='trooper'&&!e.quiet&&hasPerk(e)&&hostile(e.faction,'swarm');
+function nadeAITick(dt){
+  if(NADE_AI.dodge) for(const s of G.shots){ if(s.k!=='grenade'||s.done||s.t>=s.dur||!hostile(s.faction,'swarm')) continue; s.dodged=s.dodged||new Set();
+    const R=s.splash+NADE_AI.margin*TILE;
+    for(const u of G.ents){ if(s.dodged.has(u.id)||!nadeMinds(u)||Math.hypot(u.x-s.tx,u.y-s.ty)>s.splash+u.r) continue; s.dodged.add(u.id);
+      const a0=Math.atan2(u.y-s.ty,u.x-s.tx)||Math.random()*6.28;
+      for(const da of [0,0.6,-0.6,1.2,-1.2,2,-2,3.1]){ const x=s.tx+Math.cos(a0+da)*(R+u.r), y=s.ty+Math.sin(a0+da)*(R+u.r);
+        if(walkableP(x,y)&&lineClear(u.x,u.y,x,y)){ u.dodgeP={x,y}; u.dodgeT=s.dur-s.t+0.15; break; } } } }
+  if(!NADE_AI.spread) return;
+  const gs=G.ents.filter(grenadier); if(!gs.length) return;
+  const near=G.ents.filter(u=>nadeMinds(u)&&!(u.dodgeT>0)&&gs.some(g=>dist(g,u)<(PERKS.trooper.throw+NADE_AI.reach)*TILE)), gap=NADE_AI.gap*TILE;
+  for(const u of near){ let px=0, py=0;
+    for(const o of near){ if(o===u) continue; const dx=u.x-o.x, dy=u.y-o.y, d=Math.hypot(dx,dy); if(d>=gap) continue; const k=(gap-d)/gap; if(d<0.5){ const a=Math.random()*6.28; px+=Math.cos(a)*k; py+=Math.sin(a)*k; } else { px+=dx/d*k; py+=dy/d*k; } }
+    const m=Math.hypot(px,py); if(m<0.01) continue; const step=NADE_AI.push*dt*Math.min(1,m), x=u.x+px/m*step, y=u.y+py/m*step;
+    if(walkableP(x,y)){ u.x=x; u.y=y; u.spreadT=0.3; } } }
+/* a creature springing out of a grenade's landing circle: nothing else until it is out (or the grenade has gone off) */
+function dodgeThink(u,dt){ u.dodgeT-=dt; const p=u.dodgeP; if(!p||u.dodgeT<=0){ u.dodgeT=0; u.dodgeP=null; u.path=null; u.goal=null; return false; }
+  if(Math.hypot(u.x-p.x,u.y-p.y)<4){ u.dodgeT=0; u.dodgeP=null; u.path=null; u.goal=null; return false; }
+  u.moving=true; u.anim+=dt; if(Math.abs(p.x-u.x)>2) u.face=p.x>u.x?1:-1;
+  const d=Math.hypot(p.x-u.x,p.y-u.y), sp=speedOf(u)*1.15*dt; if(sp>=d){ u.x=p.x; u.y=p.y; } else { u.x+=(p.x-u.x)/d*sp; u.y+=(p.y-u.y)/d*sp; }
+  return true; }
 function updateUnit(u,dt){
   const d=u.def;
   if(u.aboard) return;   /* gone up the ramp of a waiting dropship (pickupTick in 22-squad-life.js) */
@@ -9,6 +37,7 @@ function updateUnit(u,dt){
   if(u.emergeT>0) return;   /* still under the bulging ground (a burrowing wave) */
   if(u.stunT>0){ u.stunT-=dt; return; }   /* knocked down: he lies dazed a moment */
   if(u.dazeT>0) u.dazeT-=dt;
+  if(u.dodgeT>0&&dodgeThink(u,dt)){ u.cd-=dt; return; }   /* springing out of a grenade's way (NADE_AI) */
   if(d.grafter){ grafterThink(u,dt); return; }
   if(u.feral>0){ u.cd-=dt; u.moving=false; u.anim+=dt; u.flash=Math.max(0,u.flash-dt); u.lunge=Math.max(0,(u.lunge||0)-dt); u.beam=null; feralThink(u,dt); return; }   /* Rogue: feral, out of your control */   /* a Grafter only goes for its body */   /* down: immobile, bleeding out, waiting for a Medic */
   u.cd-=dt; if(u.suppressT>0) u.suppressT-=dt; if(u.auraT>0) u.auraT-=dt; if(u.waverT>0) u.waverT-=dt;
