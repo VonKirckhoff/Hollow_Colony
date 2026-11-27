@@ -12,8 +12,7 @@ const NT_CASES=[ {x:17,y:18}, {x:24,y:18}, {x:18,y:24} ];   /* the stabilizer ca
 const NT_RELAY={x:22,y:23};   /* the hospital's Relay Tower stands on the camp's relay pad (top-left tile) */
 const NT_PAD={x:30,y:20};     /* the relief pad (its middle tile): on the east side of the camp, so the relief squad walks straight in */
 const NT_BARRICADES=[ {x:17,y:21}, {x:22,y:16}, {x:25,y:18} ];   /* the garrison's sandbags (tiles, Nov 2026 as Von placed them): east by the gun line, west, north by the right tent, north-east above the east gun, south between the south guns */
-/* a rank from the job's number: Easy one lower, Hard one higher, never past Lieutenant */
-const ntRank=r=>Math.max(0,Math.min(4,r+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)));
+/* ranks (Nov 2026): the garrison and every drop get theirs from AI_RANKS (veterans.js), like every soldier the computer leads */
 const NT_MORTAR={x:20,y:20};  /* the garrison's mortar: in the middle of the ring, its Engineer beside it */
 /* the garrison's tactics (ntTac, every half second):
    ring  — nobody about: the defence ring.
@@ -59,7 +58,7 @@ ROGUE_MISSIONS.push(
       'Three cases of stabilizer, one in each tent. And the records terminal: if Devreese can stand at it long enough, she pulls Maas\'s formula off it, and we never have to steal a dose again. The moment she starts, the hospital calls for help. Then out through the old shaft in the north wall.'
     ],
     limits:{ sentry:2 },   /* the crew's own Sentry Guns: at most 2 in the field at once (a destroyed or packed-up one frees a place) */
-    job:{ download:50, lostFor:3, fullFor:900, giveUpAt:3, call:15, waves:5, squad:9, rank:2, leadRank:4, supRank:1, reliefRank:1 },   /* fullFor (Nov 2026): for this many seconds after the alarm every drop fills the ring up to its full strength, for whatever losses, as often as
+    job:{ download:50, lostFor:3, fullFor:900, giveUpAt:3, call:15, waves:5, squad:9, },   /* fullFor (Nov 2026): for this many seconds after the alarm every drop fills the ring up to its full strength, for whatever losses, as often as
    job.lostFor are missing (not one of the job.waves); after that the rules below. giveUpAt: once the garrison is down to this many men on their feet, Tycho sends nobody any more (no relief, no reinforcements, no support; Nov 2026: else the crew never gets the last of them, the Brood eats every new drop). waves: relief squads for the crew's kills (Nov 2026: 5); squad: most men in one relief squad (9 = the whole ring: a relief squad fills it up). ranks (RANKS): ring fighters, the ring's Lieutenant, Medics and Engineer, the first relief squad (+1 per squad after it); Easy one lower, Hard one higher (ntRank) */
     start:{ salvage:0, camera:'P', crewAt:'P',
       units:[], buildings:[], hives:['a','b','c'],
@@ -78,8 +77,8 @@ ROGUE_MISSIONS.push(
           g.vars.cases=NT_CASES.map(c=>{ g.cache(c,{ stab:1 }); return G.ents[G.ents.length-1]; });
           const guns=[...NT_SENTRY_BASE,...NT_SENTRIES.slice(0,NT_SENTRIES_BY[G.diffKey]??NT_SENTRIES_BY.normal)].map(p=>g.loyalB('sentry',p)).filter(Boolean); g.vars.relay=g.loyalB('relay',NT_RELAY);   /* Sentry Guns: NT_SENTRY_BASE, plus NT_SENTRIES_BY extra by difficulty */
           /* the garrison stands in a defence ring round the middle of the camp: fighters on the ring, Medics and the Engineer inside */
-          const R={rank:ntRank(J.rank)}, S={rank:ntRank(J.supRank)};
-          const lead=g.loyal('trooper',{x:21,y:21},1,{rank:ntRank(J.leadRank)});   /* the ring's Lieutenant: he throws grenades at a bunched-up crew */ g.vars.lead=lead[0];
+          const R={}, S={};   /* ranks: AI_RANKS, the whole garrison as one group (the first Trooper is the Captain on Normal and Hard) */
+          const lead=g.loyal('trooper',{x:21,y:21},1,{});   /* the ring's leader: the first Trooper, so the Captain where there is one (he throws grenades at a bunched-up crew) */ g.vars.lead=lead[0];
           const gar=[...lead,...g.loyal('trooper',{x:21,y:21},1,R),...g.loyal('gunner',{x:24,y:22},1,R),...g.loyal('trooper',{x:19,y:16},1,R),
             ...g.loyal('medic',{x:19,y:22},2,S),...g.loyal('engineer',{x:22,y:20},1,S)];
           gar.push(...g.loyal('trooper',{x:18,y:24},2,R),...g.loyal('trooper',{x:18,y:18},1,R));   /* Nov 2026: one more, ten in all */
@@ -147,10 +146,10 @@ ROGUE_MISSIONS.push(
       { repeat:true, when:g=>!!g.vars.landAt&&g.time>g.vars.landAt, do:g=>{ g.vars.landAt=null; g.vars.dueAt=null; g.clearTimer();
           const J=G.mission.job, full=!!g.vars.dueFull, relief=!!g.vars.dueRelief, brood=!!g.vars.dueBrood, sup=ntNeedSupport(g,true,relief||brood||full); g.vars.dueRelief=false; g.vars.dueBrood=false; g.vars.dueSup=false; g.vars.dueFull=false;
           const most=Math.max(2,J.squad+(G.diffKey==='hard'?1:G.diffKey==='easy'?-1:0)), k=relief?g.vars.sent++:full?Math.min(2,(g.vars.fullN=(g.vars.fullN||0)+1)-1):-1, sq=[];   /* a full refill (job.fullFor) is not one of the job.waves */
-          if(sup){ const SR={rank:ntRank(J.supRank)}; if(sup.eng) sq.push(...g.loyal('engineer',NT_PAD,sup.eng,SR)); if(sup.med) sq.push(...g.loyal('medic',NT_PAD,Math.max(0,Math.min(sup.med,NT_SUPPORT.maxMedics-ntMedics(g))),SR)); }   /* the support: Engineers for the mortar and the guns, a Medic */
-          if(relief||full){ const n=Math.max(1,Math.min(most,ntMissing(g)-sq.length)), RR={rank:ntRank(J.reliefRank+k)};   /* the relief fills the ring up, the support drop's men included */
-            sq.push(...g.loyal(k===2&&n>1&&ntMedics(g)+sq.filter(u=>u.def.heal).length<NT_SUPPORT.maxMedics?'medic':'trooper',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal(k===1||k===3?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR)); g.vars.broodGap=0; }   /* Tycho sends better people each time */
-          else { const n=Math.max(0,Math.min(g.vars.broodGap||0,ntMissing(g)-sq.length)), RR={rank:ntRank(J.reliefRank)};   /* the Brood's drop (or a support drop): only the places the Brood took */
+          if(sup){ const SR={}; if(sup.eng) sq.push(...g.loyal('engineer',NT_PAD,sup.eng,SR)); if(sup.med) sq.push(...g.loyal('medic',NT_PAD,Math.max(0,Math.min(sup.med,NT_SUPPORT.maxMedics-ntMedics(g))),SR)); }   /* the support: Engineers for the mortar and the guns, a Medic */
+          if(relief||full){ const n=Math.max(1,Math.min(most,ntMissing(g)-sq.length)), RR={};   /* the relief fills the ring up, the support drop's men included (ranks: AI_RANKS) */
+            sq.push(...g.loyal(k===2&&n>1&&ntMedics(g)+sq.filter(u=>u.def.heal).length<NT_SUPPORT.maxMedics?'medic':'trooper',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal(k===1||k===3?'pyro':'gunner',NT_PAD,1,RR)); if(n>2) sq.push(...g.loyal('trooper',NT_PAD,n-2,RR)); g.vars.broodGap=0; }
+          else { const n=Math.max(0,Math.min(g.vars.broodGap||0,ntMissing(g)-sq.length)), RR={};   /* the Brood's drop (or a support drop): only the places the Brood took */
             if(n) sq.push(...g.loyal('gunner',NT_PAD,1,RR)); if(n>1) sq.push(...g.loyal('trooper',NT_PAD,n-1,RR)); g.vars.broodGap=Math.max(0,(g.vars.broodGap||0)-n); }
           
           ntRing(g,sq); ntUnload(g,sq);
