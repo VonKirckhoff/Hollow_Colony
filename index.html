@@ -5,12 +5,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hollow Colony</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=Michroma&display=swap">
 <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
 <canvas id="game"></canvas>
+
+<!-- the logo's eclipse mark (Nov 2026), drawn once and reused by the boot gate and the main menu -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <mask id="hc-hole"><rect width="240" height="240" fill="#fff"/><polygon points="120,74 159.8,97 159.8,143 120,166 80.2,143 80.2,97" fill="#000"/></mask>
+    <filter id="hc-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <symbol id="hc-mark" viewBox="0 0 240 240">
+      <g fill="#c9cdd2"><circle cx="30" cy="40" r="1.6"/><circle cx="206" cy="30" r="1.2"/><circle cx="218" cy="200" r="1.6"/><circle cx="20" cy="190" r="1.2"/><circle cx="60" cy="226" r="1"/></g>
+      <g mask="url(#hc-hole)"><circle cx="120" cy="120" r="92" fill="#e8a33d" filter="url(#hc-glow)"/><circle cx="112" cy="126" r="91" fill="#161a21"/></g>
+      <polygon points="120,74 159.8,97 159.8,143 120,166 80.2,143 80.2,97" fill="none" stroke="#2c323b" stroke-width="2"/>
+      <polygon points="120,98 140.8,110 140.8,130 120,142 99.2,130 99.2,110" fill="none" stroke="#e8a33d" stroke-width="4" filter="url(#hc-glow)"/>
+      <circle cx="120" cy="120" r="7" fill="#e8a33d" filter="url(#hc-glow)"/>
+    </symbol>
+  </defs>
+</svg>
 
 <div id="hud" hidden>
   <div id="topbar">
@@ -53,7 +69,7 @@
 <div class="boot" id="boot" hidden role="button" tabindex="0" aria-label="Start Hollow Colony">
   <div class="boot-in">
     <div class="eyebrow">LUNAR CORPS · TYCHO UPLINK</div>
-    <div class="boot-title">Hollow <span>Colony</span></div>
+    <span class="logo boot-title"><svg class="logo-mark" aria-hidden="true" focusable="false"><use href="#hc-mark"/></svg><span class="logo-word"><span class="lw-1">Hollow</span><span class="lw-2"><i></i><b>Colony</b><i></i></span></span></span>
     <div class="boot-log" aria-hidden="true"><span>&gt; signal from Kappa Station: lost</span><span>&gt; colony beacons: 0 of 7 responding</span><span>&gt; seismic activity beneath the regolith: rising</span></div>
     <div class="boot-go">▶ Click or press any key</div>
     <div class="boot-note">Sound on · headphones recommended</div>
@@ -63,7 +79,7 @@
 <section class="screen" id="s-menu">
   <div class="sheet">
     <div class="eyebrow">LUNAR CORPS · FIELD OPERATIONS</div>
-    <h1 class="title">Hollow<br><span>Colony</span></h1>
+    <h1 class="title"><span class="logo"><svg class="logo-mark" aria-hidden="true" focusable="false"><use href="#hc-mark"/></svg><span class="logo-word"><span class="lw-1">Hollow</span><span class="lw-2"><i></i><b>Colony</b><i></i></span></span></span></h1>
     <p class="lede">The terraforming colonies on the moon have gone quiet. Something woke beneath the regolith, and it is spreading. Command the Lunar Corps and burn the Brood back into the dark.</p>
     <div class="menu-list">
       <button class="menu-btn" type="button" id="m-continue" hidden>Continue</button>
