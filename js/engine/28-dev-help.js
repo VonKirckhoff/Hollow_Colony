@@ -666,6 +666,9 @@ const DEV_HELP = {
   'BUILDINGS|generator':'A generator that runs once repaired to full.', 'BUILDINGS|noDestroy':'Cannot be destroyed.', 'BUILDINGS|hull':'The hull of a dropship waiting for a pickup: an invisible target; spent, the ship lifts off.', 'BUILDINGS|scenery':'Scenery (doors, rubble): not a target for the Brood.',
   /* mission */
   'M|start.salvage':'Salvage at the start of this mission.',
+  'M|job.loyalHp.easy':'Needle and Thread: health of the garrison on Easy (× normal; this job keeps its own, not ROGUE.loyal.hp).', 'M|job.loyalHp.normal':'Needle and Thread: health of the garrison on Normal.', 'M|job.loyalHp.hard':'Needle and Thread: health of the garrison on Hard.',
+  'M|job.rank':'Needle and Thread: rank of the fighters in the ring (0 Private, 1 Corporal, 2 Sergeant, 3 Veteran, 4 Lieutenant); Easy one lower, Hard one higher.', 'M|job.leadRank':'Needle and Thread: rank of the ring\'s leader, a Trooper (4 = Lieutenant: he throws grenades).',
+  'M|job.supRank':'Needle and Thread: rank of the garrison\'s Medics and Engineer.', 'M|job.reliefRank':'Needle and Thread: rank of the first relief squad; every next squad is one rank higher.',
   'M|job.nsArrive':'Night Shift: seconds before the raiders (the Osprey crew) come.', 'M|job.nsDownload':'Night Shift: seconds their Medic needs at the records terminal.',
   'M|job.nsGrab':'Night Shift: seconds one of them stands at a stabilizer case to take it.', 'M|job.nsSneak':'Night Shift: seconds after the first raiders before three more climb out of the north shaft.',
   'M|job.nsHold':'Night Shift: seconds Dust holds the hospital until dawn.', 'M|job.nsFirst':'Night Shift: seconds after the raiders come before their first push with a Brood wave.', 'M|job.nsEvery':'Night Shift: seconds between two pushes (the healed raiders come back with a Brood wave).',

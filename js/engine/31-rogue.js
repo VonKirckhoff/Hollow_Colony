@@ -255,7 +255,7 @@ function rogueKill(e,src){ if(!isRogue()||!G.rogue) return;
 function acidRound(u,t){ if(t.kind!=='unit'||t.faction==='corps'||t.def.boss) return; t.rogueAcid=2; t.acidBy=u; }
 
 /* ---- the loyal Lunar Corps: they hold, patrol or hunt, and come to help each other ---- */
-function loyalScale(u){ const L=ROGUE.loyal, k=G.diffKey||'normal'; u.hpMul=(u.hpMul||1)*(L.hp[k]||1); u.diffDmg=(u.diffDmg||1)*(L.dmg[k]||1);   /* kept through applyRank (AI_RANKS) */
+function loyalScale(u){ const L=ROGUE.loyal, k=G.diffKey||'normal', J=G.mission.job, H=(J&&J.loyalHp)||L.hp; u.hpMul=(u.hpMul||1)*(H[k]||1);   /* job.loyalHp: a mission that keeps its own toughness (Needle and Thread) */ u.diffDmg=(u.diffDmg||1)*(L.dmg[k]||1);   /* kept through applyRank (AI_RANKS) */
   if(u.vet) applyRank(u); else { u.maxHp=u.def.hp*u.hpMul; u.dmgMul=u.diffDmg; } u.hp=u.maxHp; }
 function loyalAI(dt){ G.loyalT=(G.loyalT||0)-dt; if(G.loyalT>0) return; G.loyalT=0.5;
   const L=ROGUE.loyal, hit=G.ents.filter(e=>!e.dead&&e.faction==='loyal'&&e.hitAt!=null&&G.time-e.hitAt<3);
