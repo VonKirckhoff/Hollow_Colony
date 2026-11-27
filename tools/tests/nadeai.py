@@ -1,5 +1,5 @@
 # NADE_AI (Nov 2026): the Brood minds grenades when you play it: creatures in a grenade's landing circle spring out of it,
-# and near a soldier who can throw grenades the brood keeps apart. Not in Corps missions (NADE_AI.everywhere 0). Must end with ALL OK.
+# and near a soldier who can throw grenades the brood keeps apart. In every campaign (NADE_AI.everywhere 1). Must end with ALL OK.
 from playwright.sync_api import sync_playwright
 errs=[]
 CODE='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m); try{
@@ -23,9 +23,12 @@ CODE='''()=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m); try{
   const t=makeUnit('trooper','corps',X-5*TILE,Y); t.rankFixed=true; t.vet.rank=4; applyRank(t); t.invuln=true; t.quiet=false; t.order={type:'hold'}; t.stance='hold';
   step(4); const g1=gapMin(); ok(g1>NADE_AI.gap*0.8,'a grenadier near: they keep apart ('+g1.toFixed(2)+' tiles)');
   let bunched=0; for(const a of us){ let n=0; for(const b of us) if(Math.hypot(a.x-b.x,a.y-b.y)<PERKS.trooper.radius*TILE) n++; bunched=Math.max(bunched,n); } ok(bunched<2,'no two within one grenade');
-  /* 5: Corps missions: the Brood the computer leads does not dodge (everywhere 0) */
-  goMenu('menu'); startMission(MISSIONS[0]); G=__hc.G; step(0.5); for(const e of G.ents) if(e.kind==='unit'&&!e.dead&&e.faction==='swarm') e.dead=true;
-  us=[0,1,2].map(i=>{ const u=makeUnit('crawler','swarm',X+i*8,Y); u.invuln=true; u.order={type:'hold'}; return u; }); const n5=throwAt(us,0.75); ok(n5===3,'Corps missions: the enemy Brood does not dodge ('+n5+' inside)');
+  /* 5: Corps and Rogue missions: the Brood the computer leads dodges too (everywhere 1) */
+  for(const [name,m] of [['Corps',MISSIONS[0]],['Rogue',ROGUE_MISSIONS.find(x=>x.id==='rogue-dead-air')]]){ goMenu('menu'); startMission(m); G=__hc.G; step(0.5); for(const e of G.ents) if(e.kind==='unit'&&!e.dead&&e.faction==='swarm') e.dead=true;
+    us=[0,1,2].map(i=>{ const u=makeUnit('crawler','swarm',X+i*8,Y); u.invuln=true; u.order={type:'hold'}; return u; }); const n5=throwAt(us,0.75); ok(n5===0,name+' missions: the enemy Brood springs out too ('+n5+' inside)');
+    for(const u of us) u.dead=true; const ds=[0,1,2,3].map(i=>{ const u=makeUnit('drone','swarm',X+(i%2)*10,Y+Math.floor(i/2)*10); u.invuln=true; u.order={type:'hold'}; return u; });
+    const t2=makeUnit('trooper','corps',X-5*TILE,Y); t2.rankFixed=true; if(!t2.vet) t2.vet={id:'t'+t2.id,name:'Test',type:'trooper',rank:0,xp:0,kills:0,missions:0,healed:0,repaired:0}; t2.vet.rank=4; applyRank(t2); t2.invuln=true; t2.order={type:'hold'}; t2.stance='hold'; t2.quiet=false;
+    step(4); let m2=1e9; for(const a of ds) for(const b of ds) if(a!==b) m2=Math.min(m2,Math.hypot(a.x-b.x,a.y-b.y)); ok(m2/TILE>NADE_AI.gap*0.8,name+' missions: and keeps apart near a grenadier ('+(m2/TILE).toFixed(2)+' tiles)'); }
 }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1366,'height':800}); pg.on('pageerror',lambda e: errs.append(str(e)))

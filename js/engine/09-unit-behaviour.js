@@ -6,8 +6,8 @@ const FAUNA = { flee:3.5, fleeTime:2.5, fleeSpeed:2.2, herd:3 };   /* tiles it r
    (fast ones make it, slow ones often not) · margin = tiles past the blast's edge it aims for · spread: near a soldier who can throw
    grenades the brood keeps apart, so a throw is seldom worth it · reach = tiles beyond his throw where they start to mind him ·
    gap = tiles they keep between each other there (a grenade needs two within its radius) · push = px per second they drift apart ·
-   everywhere = 1: also the Brood the computer leads in Corps missions (0: only your own brood when you play the Brood) */
-const NADE_AI = { dodge:1, margin:0.5, spread:1, reach:1, gap:1.7, push:60, everywhere:0 };
+   everywhere = 1: in every campaign, also the Brood the computer leads in Corps and Rogue missions (0: only your own brood when you play the Brood; Nov 2026: 1) */
+const NADE_AI = { dodge:1, margin:0.5, spread:1, reach:1, gap:1.7, push:60, everywhere:1 };
 const nadeMinds=u=>!u.dead&&!u.downed&&u.kind==='unit'&&u.faction==='swarm'&&!u.def.boss&&!u.def.seed&&!u.def.passive&&!(u.emergeT>0)&&!u.burrowed&&(NADE_AI.everywhere||G.side==='swarm');
 const grenadier=e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.type==='trooper'&&!e.quiet&&hasPerk(e)&&hostile(e.faction,'swarm');
 function nadeAITick(dt){

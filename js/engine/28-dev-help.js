@@ -18,7 +18,7 @@ const DEV_HELP = {
   'NADE_AI|reach':'Grenade spread: tiles beyond the soldier\'s throw where the brood starts to keep apart.',
   'NADE_AI|gap':'Grenade spread: tiles the creatures keep between each other there (a grenade needs two within its radius of 1.5 tiles).',
   'NADE_AI|push':'Grenade spread: px per second they drift apart.',
-  'NADE_AI|everywhere':'The Brood minds grenades: 1 = also the Brood the computer leads in Corps missions; 0 = only your own brood when you play the Brood.',
+  'NADE_AI|everywhere':'The Brood minds grenades: 1 = in every campaign, also the Brood the computer leads in Corps and Rogue missions; 0 = only your own brood when you play the Brood.',
   'AI_RANKS|captain':'The computer\'s soldiers (Corps when you play the Brood, loyal Corps in Rogue): 1 = the first Trooper of a group that comes in becomes Captain (leads the squad), while no other Captain of that side stands. Next group.',
   'AI_RANKS|medic':'The computer\'s soldiers: rank of every Medic (0 Private, 1 Corporal, 2 Sergeant, 3 Veteran, 4 Lieutenant: heals everyone around him). Next group.',
   'AI_RANKS|ltShare':'The computer\'s soldiers: share of the other men in a group who are Lieutenants (with their ability, e.g. a Trooper\'s grenade). Next group.',
