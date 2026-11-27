@@ -21,6 +21,14 @@ CODE='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m);
     step(15); const c0=mid(team()), cr=makeUnit('crawler','swarm',c0.x+3*TILE,c0.y-2*TILE); cr.invuln=true; cr.role='brood'; cr.mine=true;
     const mx=f.march&&f.march.x; step(4); fought=team().some(u=>u.target&&u.target.faction==='swarm'); ok(fought,'they fight on the way');
     ok(!f.march||Math.abs(f.march.x-mx)<3*TILE,'the circle stops for the fight'); cr.dead=true;
+    /* a man down on the march: the circle closes round him, the Medic gets him up, then on to the lab */
+    step(2); const vic=team().filter(u=>!isSupport(u)).sort((a,b)=>b.x-a.x)[0], was=G.vars.choir; vic.invuln=false; damage(vic,1e6,null); vic.invuln=true;
+    ok(!!vic.downed&&!vic.dead,'a soldier goes down on the march');
+    step(1); ok(G.vars.choir==='rescue'&&G.vars.rescue===vic,'the team stops for him ('+G.vars.choir+')');
+    const vx=vic.x, vy=vic.y; let gone=0; const up=step(SQUAD.downed.time+6,()=>{ const c=mid(team()); gone=Math.max(gone,Math.hypot(c.x-vx,c.y-vy)/TILE); return !vic.downed; });
+    ok(up&&!vic.dead,'the Medic gets him back up');
+    ok(gone<4,'nobody walks on while he is down (team at most '+gone.toFixed(1)+' tiles from him)');
+    step(1); ok(G.vars.choir===was&&vic.formation===team().find(u=>u!==vic&&!isSupport(u)).formation,'then the circle goes on with him ('+G.vars.choir+')');
     const atLab=step(400,()=>!!G.vars.maas); ok(atLab,'Dr. Maas comes out of the lab ('+Math.round(G.time)+' s)');
     ok(medFar<5,'the Medic stays with the squad (at most '+medFar.toFixed(1)+' tiles from the fighters)');
     step(1); const m=G.vars.maas; us=team(); f=us.find(u=>!isSupport(u)).formation;

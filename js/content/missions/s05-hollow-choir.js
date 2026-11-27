@@ -7,7 +7,8 @@
    Nov 2026: the search team marches as one body in a circle (choirTick, CHOIR_SQUAD): a fight on the way stops the whole circle,
    so the Medic never walks on alone. Once Dr. Maas is out she stands in the middle of the circle. They leave the lab by its east
    side and dig in in the crater south of it: the Engineer sets up a Sentry Gun, they hold (and the nearby hive lies within reach).
-   CHOIR_SQUAD.leaveAt seconds before the dropship lands the Engineer packs the gun up, they march to the pad and he sets it up again there. */
+   CHOIR_SQUAD.leaveAt seconds before the dropship lands the Engineer packs the gun up, they march to the pad and he sets it up again there.
+   A soldier who goes down on the march is never left behind: the circle closes round him until the Medic has him back up (choirRescue). */
 /* CHOIR_SQUAD: east = the spot just outside the lab's east side they march to first · crater = the middle of their circle in the crater
    · sentry / padSentry = tile of the Sentry Gun in the crater and by the Landing Zone · pad = the middle of their circle at the pad
    · leaveAt = seconds on the dropship clock when they leave the crater · resume = seconds a march may stand still (after a fight) before it goes on
@@ -63,12 +64,12 @@ SWARM_MISSIONS.push(
 /* the search team: everyone of the first squad (not the fire team on the pad) who is still standing */
 function choirTeam(g){ return G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.choir); }
 /* march the team in a circle to a stage: lab · east (out by the lab's east side) · crater · pad */
-function choirGo(g,stage){ const C=CHOIR_SQUAD, V=g.vars; V.choir=stage; V.choirIdle=null;
+function choirGo(g,stage,at){ const C=CHOIR_SQUAD, V=g.vars; V.choir=stage; V.choirIdle=null;
   if(!V.choirInit){ V.choirInit=true; for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='corps') u.choir=true; }
   if(V.maas&&!V.maas.dead) V.maas.choir=true;
   for(const u of G.ents) if(u.choir&&!u.dead) u.slotLeash=C.leash;
   const us=choirTeam(g); if(!us.length) return;
-  const p=stage==='lab'?ptWorld('1'):stage==='east'?{x:C.east.x*TILE,y:C.east.y*TILE}:stage==='crater'?{x:C.crater.x*TILE,y:C.crater.y*TILE}:{x:C.pad.x*TILE,y:C.pad.y*TILE};
+  const p=at?{x:at.x,y:at.y}:stage==='lab'?ptWorld('1'):stage==='east'?{x:C.east.x*TILE,y:C.east.y*TILE}:stage==='crater'?{x:C.crater.x*TILE,y:C.crater.y*TILE}:{x:C.pad.x*TILE,y:C.pad.y*TILE};
   V.choirTo=p;
   for(const u of us){ u.stance=null; u.home=null; if(u.order&&(u.order.type==='hold'||u.order.type==='support')) u.order=null; }
   let f=us[0].formation; if(!f||f.shape!=='circle'||!us.every(u=>u.formation===f)){ f={shape:'circle',dir:-Math.PI/2,gap:1,seq:0}; for(const u of us){ u.formation=f; u.slot=null; } }
@@ -80,6 +81,8 @@ function choirTick(g){ const C=CHOIR_SQUAD, V=g.vars, st=V.choir; if(!st||G.over
   /* a soldier back on his feet, or Maas just out: into the circle */
   const loose=us.filter(u=>u.formation!==f&&!(u.order&&(u.order.type==='build'||u.order.type==='pack'||u.order.type==='repair')));
   if(f&&loose.length){ for(const u of loose){ u.formation=f; u.slot=null; u.formSeq=null; } if(marching(f)) reformSquad(choirTeam(g).filter(u=>u.formation===f),f,f.march,false); else if(st==='crater-hold'||st==='pad-hold') choirHold(g); else V.choirIdle=-99; }
+  /* a man down on the way: the circle closes round him and waits until the Medic has him back up (choirRescue) */
+  if(choirRescue(g,us,st)) return;
   const mid=f&&(marching(f)?{x:f.march.x,y:f.march.y}:f.at)||us[0], far=p&&Math.hypot(mid.x-p.x,mid.y-p.y)>TILE*1.5;
   /* the leg is walked: on to the next one */
   if(f&&!marching(f)&&!far){
@@ -99,6 +102,23 @@ function choirTick(g){ const C=CHOIR_SQUAD, V=g.vars, st=V.choir; if(!st||G.over
     if(!eng||eng.downed||eng.carry||!alive(V.choirGun)||g.time-V.packAt>C.packWait) choirGo(g,'pad'); return; }
   if(st==='crater-hold'){ if(!alive(V.choirGun)){ const gun=nearestOf({x:(C.sentry.tx+.5)*TILE,y:(C.sentry.ty+.5)*TILE},e=>e.kind==='building'&&e.type==='sentry'&&e.faction==='corps'&&!e.dead&&dist(e,{x:(C.sentry.tx+.5)*TILE,y:(C.sentry.ty+.5)*TILE})<3*TILE); if(gun){ V.choirGun=gun; V.gunUp=true; const f0=us[0].formation, mem=us.filter(u=>u.formation===f0); if(f0&&mem.length>1){ reformSquad(mem,f0,null,false); choirHold(g); } } }   /* the gun stands where one of them stood: the circle shares out its places again round it */
     const eng=us.find(u=>u.def.builder&&(!u.order||u.order.type==='hold')); if(eng&&!V.gunUp&&!(eng.order&&eng.order.type==='build')) choirBuild(g,eng,C.sentry,false); } }
+/* Nov 2026: nobody is left behind. A soldier of the team goes down on the march: the circle walks to him and stands round him,
+   the Medic gets him back up (his patient first), then the team goes on with the leg it was on. Dug in (crater, pad) the Medic
+   is close enough by himself. No Medic standing: they cannot help him and walk on. */
+function choirRescue(g,us,st){ const V=g.vars, med=us.find(u=>u.def.heal);
+  if(st==='rescue'){ const r=V.rescue;
+    if(!r||r.dead||!r.downed||!med){ const back=V.rescueStage; V.rescue=null;
+      if(r&&!r.dead&&!r.downed) g.say('Sgt. Kessler','He is up. Circle up, keep moving.');
+      choirGo(g,back||'pad'); return true; }
+    if(!med.healTarget||!med.healTarget.downed) med.healTarget=r;
+    if(med.order&&med.order.type==='hold') med.order=null;
+    return true; }
+  if(!med||!['lab','east','crater','pad'].includes(st)) return false;
+  const hurt=G.ents.filter(e=>e.choir&&!e.dead&&e.downed&&e.kind==='unit').sort((a,b)=>a.downed.t-b.downed.t)[0];   /* the one closest to bleeding out first */
+  if(!hurt) return false;
+  V.rescue=hurt; V.rescueStage=st; med.healTarget=hurt;
+  g.say('Sgt. Kessler',hurt.def.escort?'The doctor is down! Medic, now! Everyone round her!':'Man down! Doc, get him up. Circle round him, nobody moves on.');
+  choirGo(g,'rescue',{x:hurt.x,y:hurt.y}); V.choir='rescue'; return true; }
 /* at the crater: hold where they stand (they shoot what comes within reach, also the nest close by) and set up the gun */
 function choirHold(g){ const us=choirTeam(g); for(const u of us){ if(u.order&&(u.order.type==='build'||u.order.type==='repair'||u.order.type==='pack')) continue; u.stance='hold'; } }
 function choirDigIn(g){ const V=g.vars; V.choir='crater-hold'; choirHold(g);
