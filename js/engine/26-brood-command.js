@@ -27,9 +27,9 @@ const SWARM_PLAY = { cap:58, kill:12, tunnel:4, burrow:{ cost:45, cooldown:25, c
    oldEgg: an old egg on the map (mission.oldEggs) wakes into a young nest once the brood has stood by it (within `reach` tiles,
      no soldier within `clear` tiles) for `wake` seconds in all. */
 const SWARM_DIFF = {
-  easy:   { hp:0.85, dmg:0.85, reinforce:0.75 },
-  normal: { hp:1,    dmg:1,    reinforce:1 },
-  hard:   { hp:1.25, dmg:1.15, reinforce:1.35 }
+  easy:   { hp:1,    dmg:0.85, reinforce:0.75 },
+  normal: { hp:1.25, dmg:1,    reinforce:1 },
+  hard:   { hp:1.5,  dmg:1.15, reinforce:1.35 }
 };
 function swarmSide(){ return !!G && G.side==='swarm'; }
 function myBrood(){ return G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction==='swarm'&&e.role==='brood'&&!e.def.seed); }   /* a Seedling is no fighter: A, H and a new gathering point leave it where it is */

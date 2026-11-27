@@ -27,7 +27,7 @@ CASES=[
   ok(sup.length===3&&sup.every(u=>u.vet&&u.vet.rank===J.supRank),'Medics and Engineer are Corporals');
   { let m=99; for(const a of sup) for(const b of sup) if(a!==b) m=Math.min(m,Math.hypot(a.x-b.x,a.y-b.y)/TILE); ok(m>PERKS.trooper.radius+0.3,'Medics and Engineer stand apart: one grenade never catches two of them (closest '+m.toFixed(2)+' tiles)');
     const md=sup.filter(u=>u.def.heal); ok(md.length===2&&Math.hypot(md[0].x-md[1].x,md[0].y-md[1].y)/TILE>=NT_RING.supGap-0.3,'the two Medics are not side by side'); }
-  ok(fight.every(u=>Math.abs(u.maxHp-u.def.hp*RANKS[2].hp)<1&&Math.abs(u.dmgMul-RANKS[2].dmg)<0.01),'rank hp and damage on Normal');
+  ok(fight.every(u=>Math.abs(u.maxHp-u.def.hp*RANKS[2].hp*ROGUE.loyal.hp.normal)<1&&Math.abs(u.dmgMul-RANKS[2].dmg)<0.01),'rank hp and damage on Normal');
   ok(ring.every(u=>u.npc),'never on a roster'); const x0=fight[0].vet.xp; gainXP(fight[0],50); ok(fight[0].vet.xp===x0&&fight[0].vet.rank===J.rank,'they gain no experience');
   ok(G.vars.barricades.length===NT_BARRICADES.length&&G.vars.barricades.every(b=>b.faction==='loyal'&&b.type==='barricade'),'all '+NT_BARRICADES.length+' barricades of theirs');
   ok(G.vars.barricades.filter(b=>b.x>NT_RING.x*TILE).length>G.vars.barricades.length/2,'most on the side of the pad');

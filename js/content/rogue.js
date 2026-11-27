@@ -53,7 +53,7 @@ const ROGUE = {
   stab:{ start:1, amount:35, reach:4, formula:1 },
   veil:{ taint:40, broken:8 },
   dna:{ crawler:0.35, drone:0.3, spitter:0.5, brute:1, husk:1, hive:3, life:90 },
-  loyal:{ help:12, hp:{ easy:0.85, normal:1, hard:1.2 }, dmg:{ easy:0.85, normal:1, hard:1.15 }, xp:2 }
+  loyal:{ help:12, hp:{ easy:1, normal:1.25, hard:1.5 }, dmg:{ easy:0.85, normal:1, hard:1.15 }, xp:2 }
 };
 /* Corps voices heard over the radio in a Rogue mission: shown as an intercept */
 const ROGUE_INTERCEPT = ['Cmdr. Varga','Sgt. Kessler','Dropship Icarus','Dr. Maas','Lt. Van Der Planck','Corps patrol','Outpost Kappa','Corps radio'];

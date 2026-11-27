@@ -254,7 +254,7 @@ function openBriefing(i){ briefIdx=i; const m=briefMission(i), sw=m.side==='swar
   $('#b-text').innerHTML=m.briefing.map(p=>`<p>${p}</p>`).join('');
   const res=resultOf(m.id); $('#b-eyebrow').textContent+= res?` · COMPLETED ON ${DIFFICULTY[res.diff].label.toUpperCase()}`:'';
   const nv=sw||rg?0:ui.roster.active.length; if(rg) $('#b-text').innerHTML+=rogueBriefNote(); $('#b-text').innerHTML+= nv?`<p class="rdim">${nv} veteran${nv>1?'s':''} on the roster will join this mission: ${ui.roster.active.slice(0,6).map(v=>`${RANKS[v.rank].abbr} ${v.name}`).join(', ')}${nv>6?'…':''}.</p>`:'';
-  if(sw) $('#b-text').innerHTML+=`<p class="rdim">Difficulty makes the Lunar Corps tougher: Easy ${Math.round(SWARM_DIFF.easy.hp*100)}%, Hard ${Math.round(SWARM_DIFF.hard.hp*100)}% health, and more reinforcements on Hard.</p>`;
+  if(sw) $('#b-text').innerHTML+=`<p class="rdim">Difficulty makes the Lunar Corps tougher: Easy ${Math.round(SWARM_DIFF.easy.hp*100)}%, Normal ${Math.round(SWARM_DIFF.normal.hp*100)}%, Hard ${Math.round(SWARM_DIFF.hard.hp*100)}% health, and more reinforcements on Hard.</p>`;
   else if(!m.training&&!rg){ const r=resultOf(m.id); if(r&&r.flawless) $('#b-text').innerHTML+=`<p class="rdim">Done flawless (no soldier lost) on ${DIFFICULTY[r.flawless].label}.</p>`; }
   $('#b-obj').innerHTML=m.objectives.map(o=>`<li>${o.text}${o.optional?' (optional)':''}</li>`).join('');
   $('#b-watch').hidden=!m.demo;
