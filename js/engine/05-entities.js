@@ -50,7 +50,7 @@ function takenNames(){ const t=new Set(G.usedNames||[]); for(const e of G.ents) 
 function freshName(){ const t=takenNames(), n=STARTER_NAMES.find(x=>!t.has(x))||uniqueName(t); (G.usedNames=G.usedNames||new Set()).add(n); return n; }
 /* AI_RANKS: every soldier of the computer that came in this frame gets a rank, group by group (one Captain, Lieutenants, the rest lower) */
 function aiRankTick(){ const q=G.rankQ; if(!q||!q.length) return; G.rankQ=[];
-  const P=AI_RANKS[G.diffKey]||AI_RANKS.normal;
+  const M=G.mission.aiRanks, P=(M&&M[G.diffKey])||AI_RANKS[G.diffKey]||AI_RANKS.normal;   /* mission.aiRanks: a mission with its own ranks (The Hollow Choir) */
   for(const fac of ['corps','loyal']){ const us=q.filter(u=>!u.dead&&u.faction===fac&&!u.rankFixed); if(!us.length) continue;
     const set=(u,r)=>{ if(!u.vet) u.vet={ id:'ai'+u.id, name:freshName(), type:u.type, rank:0, xp:0, kills:0, missions:0, healed:0, repaired:0 };
       u.vet.rank=r; u.vet.xp=RANKS[r].xp; u.npc=true; const f=u.maxHp?u.hp/u.maxHp:1; applyRank(u); u.hp=u.maxHp*f; };

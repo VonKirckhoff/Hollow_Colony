@@ -4,7 +4,7 @@
 from playwright.sync_api import sync_playwright
 errs=[]
 CODE='''([d,kind])=>{ const out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+d+' '+m), said=[]; if(!window.__say0) window.__say0=say; say=(w,t,k)=>{ said.push(w+': '+t); return window.__say0(w,t,k); }; try{
-  if(kind==='swarm'){ ui.diff=d; startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-choir')); }
+  if(kind==='swarm'){ ui.diff=d; startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-lights')); }
   else { ui.diff=d; startMission(ROGUE_MISSIONS.find(m=>m.id==='rogue-dead-air')); }
   const G=__hc.G, step=s=>{ for(let i=0;i<s*30&&!G.over;i++) __hc.update(1/30); }; step(3);
   const fac=kind==='swarm'?'corps':'loyal', P=AI_RANKS[d], us=()=>G.ents.filter(e=>!e.dead&&e.kind==='unit'&&e.faction===fac&&isSoldierType(e.type));

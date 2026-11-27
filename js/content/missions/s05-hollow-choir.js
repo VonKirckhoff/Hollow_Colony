@@ -30,6 +30,8 @@ SWARM_MISSIONS.push(
       '<b>She must not leave.</b> Kill her before she is on board. The walls and doors are ours: lure them apart, wait in the halls.',
       'Bring the fallen colonists home: what grows out of them sings. Keep at least one nest alive.'
     ],
+    /* Nov 2026: lower ranks than AI_RANKS: no Captain and no Lieutenant Troopers, so nobody throws grenades (the job was hardly winnable) */
+    aiRanks:{ easy:{ captain:0, medic:1, ltShare:0, lo:0, hi:1 }, normal:{ captain:0, medic:2, ltShare:0, lo:1, hi:2 }, hard:{ captain:0, medic:3, ltShare:0, lo:1, hi:3 } },
     landingZone:{ tx:54, ty:36, scripted:true },   /* Nov 2026: the pad moved in from the corner (the bigger 3D dropship), round waypoint 2 */
     start:{ camera:{x:28,y:20}, rally:{x:28,y:18},
       units:[ ['trooper','P',5], ['gunner','P',1], ['pyro','P',1], ['medic','P',1], ['engineer','P',1] ],
@@ -57,7 +59,7 @@ SWARM_MISSIONS.push(
           choirGo(g,'east'); } },
       { repeat:true, when:g=>!!g.vars.maas&&!g.vars.maas.dead, do:g=>{ maasLead(g); const m=g.vars.maas; G.markers=G.markers.filter(k=>k.id!=='maas'); G.markers.push({id:'maas',x:m.x,y:m.y,label:'Dr. Maas',col:'#ff5a4f'}); } },
       /* a second team holds the pad */
-      { when:g=>g.time>360, do:g=>{ g.say('Dropship Icarus','Icarus dropping a fire team on the pad to hold it open.'); g.airdrop([['trooper',g.n(3)],['gunner',1]],15); } },
+      /* Nov 2026: no fire team on the pad any more: the search team is on its own until the dropship comes for them */
       { when:g=>g.timerLeft()<=60 && g.time>5, do:g=>g.say('Dropship Icarus','One minute out. Get her to the pad.') },
       { repeat:true, when:()=>true, do:g=>{ const f=Math.min(5,g.stat('fed')); g.setText('fed',`Bring 5 of the fallen home (${f}/5)`); if(f>=5) g.complete('fed'); } },
       { when:g=>g.vars.maas && g.vars.maas.dead, do:g=>{ g.unmark('maas'); g.complete('maas'); g.complete('nest'); g.win('The one who studied us lies still in the halls. No one will carry what she knew. The colony sings.'); } },

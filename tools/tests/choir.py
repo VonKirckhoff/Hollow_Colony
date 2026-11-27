@@ -40,6 +40,7 @@ CODE='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m);
     step(2); let us=team(), f=us[0]&&us[0].formation;
     ok(us.length===9&&f&&f.shape==='circle'&&us.every(u=>u.formation===f),'the search team forms one circle ('+us.length+')');
     ok(marching(f),'the circle marches to the lab');
+    { const M=G.mission.aiRanks[G.diffKey]; step(0.2); ok(team().every(u=>u.vet&&!u.leader&&!(u.type==='trooper'&&u.vet.rank>=4)&&(u.def.heal?u.vet.rank===M.medic:u.vet.rank>=M.lo&&u.vet.rank<=M.hi)),'lower ranks: no Captain, no grenades ('+team().map(u=>u.vet&&u.vet.rank).join(',')+')'); }
     /* a fight on the way: a crawler in front of them */
     step(15); const c0=mid(team()), cr=makeUnit('crawler','swarm',c0.x+3*TILE,c0.y-2*TILE); cr.invuln=true; cr.role='brood'; cr.mine=true;
     const mx=f.march&&f.march.x; step(4); fought=team().some(u=>u.target&&u.target.faction==='swarm'); ok(fought,'they fight on the way');
@@ -67,6 +68,7 @@ CODE='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m);
     const h=hc; ok(h&&gapTo(gun,h)<=gun.def.range*TILE,'the nearby hive lies within the Sentry\\'s reach ('+(gapTo(gun,h)/TILE).toFixed(1)+' tiles)');
     const hp0=h.hp; step(10); ok(h.hp<hp0,'they shoot the nest from the crater');
     ok(team().filter(u=>!u.def.builder).every(u=>Math.hypot(u.x/TILE-CHOIR_SQUAD.crater.x,u.y/TILE-CHOIR_SQUAD.crater.y)<4),'nobody leaves the crater to chase the nest');
+    ok(!G.ents.some(e=>!e.dead&&e.faction==='corps'&&e.kind==='unit'&&!e.choir),'no fire team on the pad');
     /* save and load in the crater: they still hold, and still leave in time */
     saveGame(); loadGame(); { const G2=__hc.G; ok(G2!==G&&G2.vars.choir==='crater-hold'&&alive(G2.vars.choirGun)&&G2.ents.filter(e=>e.choir&&!e.dead).every(e=>e.slotLeash>0),'save and load: still dug in, gun and leash kept'); }
     return out.join('\\n')+'\\n@@'; }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
