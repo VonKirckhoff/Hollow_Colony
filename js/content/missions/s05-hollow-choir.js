@@ -8,12 +8,18 @@
    so the Medic never walks on alone. Once Dr. Maas is out she stands in the middle of the circle. They leave the lab by its east
    side and dig in in the crater south of it: the Engineer sets up a Sentry Gun, they hold (and the nearby hive lies within reach).
    CHOIR_SQUAD.leaveAt seconds before the dropship lands the Engineer packs the gun up, they march to the pad and he sets it up again there.
-   A soldier who goes down on the march is never left behind: the circle closes round him until the Medic has him back up (choirRescue). */
+   A soldier who goes down on the march is never left behind: the circle closes round him until the Medic has him back up (choirRescue).
+   A nest on the way (choirNestCheck): they hold their fire on it, walk into its room on the defensive (they still shoot what attacks them)
+   to a spot where the whole circle fits and every gun reaches the nest (choirNestSpot), and only once the circle stands do they burn it
+   (stage nest-fight). Then on with the leg. So they never fight a nest from a doorway, strung out in a file. */
 /* CHOIR_SQUAD: east = the spot just outside the lab's east side they march to first · crater = the middle of their circle in the crater
    · sentry / padSentry = tile of the Sentry Gun in the crater and by the Landing Zone · pad = the middle of their circle at the pad
    · leaveAt = seconds on the dropship clock when they leave the crater · resume = seconds a march may stand still (after a fight) before it goes on
-   · packWait = seconds they wait at most for the Engineer to fold the gun up · leash = tiles a soldier may step out of his place to get a target within reach (no chasing) */
-const CHOIR_SQUAD = { east:{x:61.5,y:8.5}, crater:{x:55.5,y:18.5}, sentry:{tx:54,ty:20}, pad:{x:55.5,y:35}, padSentry:{tx:51,ty:34}, leaveAt:120, resume:3, packWait:12, leash:1.5 };
+   · packWait = seconds they wait at most for the Engineer to fold the gun up · leash = tiles a soldier may step out of his place to get a target within reach (no chasing)
+   · nestSee = tiles from the circle's middle at which a nest on the way is seen (on the legs to the lab and out by the east side)
+   · nestNear / nestFar = tiles between the circle's middle and the nest's edge where they stand to burn it (the circle may squeeze to 70% to fit a small room) · nestWait = seconds they may take
+   getting into the room before they fight from where they are */
+const CHOIR_SQUAD = { east:{x:61.5,y:8.5}, crater:{x:55.5,y:18.5}, sentry:{tx:54,ty:20}, pad:{x:55.5,y:35}, padSentry:{tx:51,ty:34}, leaveAt:120, resume:3, packWait:12, leash:1.5, nestSee:8, nestNear:1, nestFar:3.2, nestWait:60 };
 SWARM_MISSIONS.push(
   {
     id:'swarm-choir', side:'swarm', title:'The Hollow Choir', map:'hollow',
@@ -67,9 +73,10 @@ function choirTeam(g){ return G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='uni
 function choirGo(g,stage,at){ const C=CHOIR_SQUAD, V=g.vars; V.choir=stage; V.choirIdle=null;
   if(!V.choirInit){ V.choirInit=true; for(const u of G.ents) if(!u.dead&&u.kind==='unit'&&u.faction==='corps') u.choir=true; }
   if(V.maas&&!V.maas.dead) V.maas.choir=true;
-  for(const u of G.ents) if(u.choir&&!u.dead) u.slotLeash=C.leash;
+  const hold=['lab','east','crater','pad','nest-in','rescue'].includes(stage);   /* on the way: no shot at a nest until the circle stands in its room */
+  for(const u of G.ents) if(u.choir&&!u.dead){ u.slotLeash=C.leash; u.noNest=hold; }
   const us=choirTeam(g); if(!us.length) return;
-  const p=at?{x:at.x,y:at.y}:stage==='lab'?ptWorld('1'):stage==='east'?{x:C.east.x*TILE,y:C.east.y*TILE}:stage==='crater'?{x:C.crater.x*TILE,y:C.crater.y*TILE}:{x:C.pad.x*TILE,y:C.pad.y*TILE};
+  const p=at?{x:at.x,y:at.y}:stage==='nest-in'&&V.nestSpot?{x:V.nestSpot.x,y:V.nestSpot.y}:stage==='lab'?ptWorld('1'):stage==='east'?{x:C.east.x*TILE,y:C.east.y*TILE}:stage==='crater'?{x:C.crater.x*TILE,y:C.crater.y*TILE}:{x:C.pad.x*TILE,y:C.pad.y*TILE};
   V.choirTo=p;
   for(const u of us){ u.stance=null; u.home=null; if(u.order&&(u.order.type==='hold'||u.order.type==='support')) u.order=null; }
   let f=us[0].formation; if(!f||f.shape!=='circle'||!us.every(u=>u.formation===f)){ f={shape:'circle',dir:-Math.PI/2,gap:1,seq:0}; for(const u of us){ u.formation=f; u.slot=null; } }
@@ -80,17 +87,20 @@ function choirTick(g){ const C=CHOIR_SQUAD, V=g.vars, st=V.choir; if(!st||G.over
   const us=choirTeam(g); if(!us.length) return; const f=us[0].formation, p=V.choirTo;
   /* a soldier back on his feet, or Maas just out: into the circle */
   const loose=us.filter(u=>u.formation!==f&&!(u.order&&(u.order.type==='build'||u.order.type==='pack'||u.order.type==='repair')));
-  if(f&&loose.length){ for(const u of loose){ u.formation=f; u.slot=null; u.formSeq=null; } if(marching(f)) reformSquad(choirTeam(g).filter(u=>u.formation===f),f,f.march,false); else if(st==='crater-hold'||st==='pad-hold') choirHold(g); else V.choirIdle=-99; }
+  if(f&&loose.length){ for(const u of loose){ u.formation=f; u.slot=null; u.formSeq=null; } if(marching(f)) reformSquad(choirTeam(g).filter(u=>u.formation===f),f,f.march,false); else if(st==='crater-hold'||st==='pad-hold'||st==='nest-fight') choirHold(g); else V.choirIdle=-99; }
   /* a man down on the way: the circle closes round him and waits until the Medic has him back up (choirRescue) */
   if(choirRescue(g,us,st)) return;
+  /* a nest on the way: into its room first, in a circle, then burn it */
+  if(choirNestCheck(g,us,st)) return;
   const mid=f&&(marching(f)?{x:f.march.x,y:f.march.y}:f.at)||us[0], far=p&&Math.hypot(mid.x-p.x,mid.y-p.y)>TILE*1.5;
   /* the leg is walked: on to the next one */
   if(f&&!marching(f)&&!far){
     if(st==='east'){ choirGo(g,'crater'); return; }
     if(st==='crater'){ choirDigIn(g); return; }
-    if(st==='pad'){ choirPadDown(g); return; } }
+    if(st==='pad'){ choirPadDown(g); return; }
+    if(st==='nest-in'){ choirNestFight(g); return; } }
   /* stopped (a fight on the way, everyone's orders gone): after a while the circle walks on */
-  if((st==='lab'||st==='east'||st==='crater'||st==='pad')&&far){
+  if((st==='lab'||st==='east'||st==='crater'||st==='pad'||st==='nest-in')&&far){
     const idle=!marching(f)&&us.every(u=>!u.target&&(!u.order||u.order.type==='hold'||u.order.rejoin||(u.order.form&&u.order.form!==f)));
     if(idle){ V.choirIdle=V.choirIdle??g.time; if(g.time-V.choirIdle>=C.resume) choirGo(g,st); } else V.choirIdle=null; }
   /* in the crater: until the dropship is near */
@@ -113,12 +123,53 @@ function choirRescue(g,us,st){ const V=g.vars, med=us.find(u=>u.def.heal);
     if(!med.healTarget||!med.healTarget.downed) med.healTarget=r;
     if(med.order&&med.order.type==='hold') med.order=null;
     return true; }
-  if(!med||!['lab','east','crater','pad'].includes(st)) return false;
+  if(!med||!['lab','east','crater','pad','nest-in'].includes(st)) return false;
   const hurt=G.ents.filter(e=>e.choir&&!e.dead&&e.downed&&e.kind==='unit').sort((a,b)=>a.downed.t-b.downed.t)[0];   /* the one closest to bleeding out first */
   if(!hurt) return false;
   V.rescue=hurt; V.rescueStage=st; med.healTarget=hurt;
   g.say('Sgt. Kessler',hurt.def.escort?'The doctor is down! Medic, now! Everyone round her!':'Man down! Doc, get him up. Circle round him, nobody moves on.');
   choirGo(g,'rescue',{x:hurt.x,y:hurt.y}); V.choir='rescue'; return true; }
+/* Nov 2026: a nest on the legs to the lab and out by the east side. Seen within nestSee tiles: they keep their fire off it and
+   walk into its room on the defensive (stage nest-in, an attack-move: whatever attacks them is shot), to a spot where the whole
+   circle fits. Standing there (stage nest-fight) they hold their places and burn it; once it is gone they go on with the leg.
+   No spot where the circle fits: they fight it as before. Returns true while the nest has them busy. */
+function choirNestCheck(g,us,st){ const C=CHOIR_SQUAD, V=g.vars;
+  if(st==='nest-in'||st==='nest-fight'){ const h=V.nest;
+    if(!alive(h)||h.hidden){ V.nest=null; V.nestSpot=null; g.say('Sgt. Kessler','Nest is down. Circle up, move on.'); choirGo(g,V.nestStage||'lab'); return true; }
+    if(st==='nest-in'&&g.time-V.nestAt>C.nestWait){ choirNestFight(g); return true; }   /* it takes too long getting in: fight from where they are */
+    return false; }
+  if(st!=='lab'&&st!=='east') return false;
+  const f=us[0].formation, mid=f&&marching(f)?{x:f.march.x,y:f.march.y}:{x:us.reduce((a,u)=>a+u.x,0)/us.length,y:us.reduce((a,u)=>a+u.y,0)/us.length};
+  const h=hives().filter(e=>!e.hidden).sort((a,b)=>dist(a,mid)-dist(b,mid))[0];
+  if(!h||dist(h,mid)>C.nestSee*TILE) return false;
+  if((V.nestSkip||[]).includes(h.id)){ for(const u of us) u.noNest=false; return false; }   /* a nest with no room for the circle: as before */
+  const spot=choirNestSpot(us,h,mid);
+  if(!spot){ (V.nestSkip=V.nestSkip||[]).push(h.id); for(const u of us) u.noNest=false; return false; }   /* no room for the circle: as before, they fight it from where they get at it */
+  V.nest=h; V.nestSpot=spot; V.nestStage=st; V.nestAt=g.time;
+  g.say('Sgt. Kessler','Nest ahead. Into the room in a circle, hold your fire on it till we stand. Shoot whatever comes at you.');
+  choirGo(g,'nest-in'); return true; }
+/* the middle of a circle in the nest's room: every place on open ground with a clear line to the middle, none on top of the nest,
+   the middle between nestNear and nestFar tiles from the nest's edge and with a clear line of fire to it; the one the team walks to soonest */
+function choirNestSpot(us,h,from){ const C=CHOIR_SQUAD, f=us[0].formation, F=formPlaces(us,'circle',formSpacing(f)), dir=f?f.dir:-Math.PI/2, c=Math.cos(dir), s=Math.sin(dir);
+  const htx=Math.floor(h.x/TILE), hty=Math.floor(h.y/TILE), R=Math.ceil(C.nestFar+(h.size||1)/2+1), cand=[];
+  for(let dy=-R;dy<=R;dy++) for(let dx=-R;dx<=R;dx++){ const x=(htx+dx+.5)*TILE, y=(hty+dy+.5)*TILE, P={x,y};
+    if(!walkableP(x,y)) continue; const gap=gapTo(P,h); if(gap<C.nestNear*TILE||gap>C.nestFar*TILE) continue;
+    if(fireBlocked(P,h)) continue;
+    for(const k of SQUEEZE.slice(0,3)){ let ok=true;   /* a small room: the circle may squeeze together a little, as it does when it forms up */
+      for(const o of F.places){ const px=x+(o.x*c-o.y*s)*k, py=y+(o.x*s+o.y*c)*k;
+        if(!walkableP(px,py)||!lineClear(x,y,px,py)||gapTo({x:px,y:py},h)<TILE*0.35){ ok=false; break; } }
+      if(ok){ P.k=k; cand.push(P); break; } } }
+  if(!cand.length) return null;
+  cand.sort((a,b)=>dist(a,from)-dist(b,from));
+  let best=null, bl=Infinity;
+  for(const P of cand.slice(0,12)){ const path=findPath(from.x,from.y,P.x,P.y); if(!path||!path.length) continue;
+    let L=0, q=from; for(const w of path){ L+=Math.hypot(w.x-q.x,w.y-q.y); q=w; } L+=gapTo(P,h)*0.5+(1-P.k)*6*TILE;   /* and the full circle beats a squeezed one */   /* a bit nearer the nest is a bit better: every gun reaches it */
+    if(L<bl){ bl=L; best=P; } }
+  return best; }
+/* the circle stands in the nest's room: hold the places and burn it */
+function choirNestFight(g){ const V=g.vars; V.choir='nest-fight';
+  for(const u of G.ents) if(u.choir&&!u.dead) u.noNest=false;
+  choirHold(g); g.say('Sgt. Kessler','Circle is set. Burn that nest!'); }
 /* at the crater: hold where they stand (they shoot what comes within reach, also the nest close by) and set up the gun */
 function choirHold(g){ const us=choirTeam(g); for(const u of us){ if(u.order&&(u.order.type==='build'||u.order.type==='repair'||u.order.type==='pack')) continue; u.stance='hold'; } }
 function choirDigIn(g){ const V=g.vars; V.choir='crater-hold'; choirHold(g);

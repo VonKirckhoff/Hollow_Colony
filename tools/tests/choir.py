@@ -1,9 +1,32 @@
 # The Hollow Choir (Nov 2026): the search team marches as one circle (a fight stops the whole circle, the Medic stays with it),
 # Dr. Maas stands in the middle once she is out, they leave the lab by its east side, dig in in the crater south of it with a
 # Sentry Gun (the nearby hive within its reach), and two minutes before the dropship the Engineer packs the gun, they march to
-# the pad and he sets it up again there. Must end with ALL OK.
+# the pad and he sets it up again there. A nest on the way (the one south-west of the lab): they hold their fire on it, walk into
+# its room in their circle (still shooting what attacks them), and only burn it once the circle stands there. Must end with ALL OK.
 from playwright.sync_api import sync_playwright
 errs=[]
+CODE0='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m);
+  const team=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.choir);
+  const step=(s,w)=>{ for(let i=0;i<s*30&&!G.over;i++){ __hc.update(1/30); if(w&&w()) return true; } return false; };
+  try{ for(const e of G.ents) if(e.kind==='unit') e.invuln=true;
+    const hb=hives().find(h=>Math.abs(h.x/TILE-28.5)<1&&Math.abs(h.y/TILE-23.5)<1); let early=null;
+    const watch=()=>{ if(G.vars.choir!=='nest-fight'&&!early){ const u=team().find(u=>u.target&&NEST_PARTS.has(u.target.type)); if(u) early=G.vars.choir+' '+u.type+'>'+u.target.type; } };
+    const seen=step(30,()=>{ watch(); return G.vars.choir==='nest-in'; }); ok(seen&&G.vars.nest===hb,'they see the nest on the way and head into its room ('+G.time.toFixed(0)+' s)');
+    const sp=G.vars.nestSpot; ok(sp&&sp.x/TILE>23&&sp.x/TILE<34&&sp.y/TILE>20&&sp.y/TILE<28,'their spot lies inside the room ('+(sp?(sp.x/TILE).toFixed(1)+','+(sp.y/TILE).toFixed(1):'-')+')');
+    ok(team().every(u=>u.noNest),'on the way in nobody may fire on the nest');
+    /* something attacks them on the way in: they shoot it */
+    step(2,watch); const us=team(), c0={x:us.reduce((a,u)=>a+u.x,0)/us.length,y:us.reduce((a,u)=>a+u.y,0)/us.length};
+    const cr=makeUnit('crawler','swarm',c0.x-2*TILE,c0.y+TILE); cr.hp=cr.maxHp=1e6; cr.role='brood'; cr.mine=true;   /* not invuln: nobody aims at an invulnerable target */
+    const shot=step(4,()=>{ watch(); return team().some(u=>u.target===cr); }); ok(shot,'on the way in they still shoot what attacks them'); cr.dead=true;
+    const set=step(40,()=>{ watch(); return G.vars.choir==='nest-fight'; }); ok(set,'the circle stands in the room ('+G.time.toFixed(0)+' s)');
+    ok(!early,'nobody fired on the nest before the circle stood'+(early?' ('+early+')':''));
+    step(3); const t2=team(), f=t2[0].formation;
+    ok(t2.every(u=>u.x/TILE>22.6&&u.x/TILE<34.4&&u.y/TILE>19.6&&u.y/TILE<28.2),'all of them stand inside the room, none in the doorway ('+t2.map(u=>(u.x/TILE).toFixed(1)+','+(u.y/TILE).toFixed(1)).join(' ')+')');
+    ok(t2.every(u=>u.formation===f)&&f.shape==='circle','still one circle');
+    const hp0=hb.hp; step(5); ok(hb.hp<hp0,'now they burn the nest');
+    const gone=step(90,()=>hb.dead); ok(gone,'the nest burns ('+G.time.toFixed(0)+' s)');
+    step(2); ok(G.vars.choir==='lab'&&team().every(u=>u.noNest),'then on to the lab, fire off nests again on the way ('+G.vars.choir+')');
+  }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }'''
 CODE='''()=>{ const G=__hc.G, out=[], ok=(c,m)=>out.push((c?'OK   ':'FAIL ')+m);
   const team=()=>G.ents.filter(e=>!e.dead&&!e.downed&&e.kind==='unit'&&e.faction==='corps'&&e.choir);
   const mid=us=>({x:us.reduce((a,u)=>a+u.x,0)/us.length,y:us.reduce((a,u)=>a+u.y,0)/us.length});
@@ -66,6 +89,9 @@ with sync_playwright() as p:
     pg.on('console',lambda m: errs.append(m.text) if m.type=='error' and 'TUNNEL' not in m.text else None)
     pg.goto('file:///home/claude/hollow_colony/index.html'); pg.wait_for_timeout(400); pg.keyboard.press('Enter')
     pg.evaluate("()=>{ startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-choir')); }"); pg.wait_for_timeout(300)
-    out=pg.evaluate(CODE); pg.wait_for_timeout(300); out+='\n'+pg.evaluate(CODE2); pg.screenshot(path='/tmp/choir.png')
+    out0=pg.evaluate(CODE0)
+    pg.evaluate("()=>{ startMission(SWARM_MISSIONS.find(m=>m.id==='swarm-choir')); }"); pg.wait_for_timeout(300)
+    pg.evaluate("()=>{ const hb=hives().find(h=>Math.abs(h.x/TILE-28.5)<1&&Math.abs(h.y/TILE-23.5)<1); __hc.G.vars.nestSkip=[hb.id]; }")   # the old march checks below: no nest in the way
+    out=out0+'\n'+pg.evaluate(CODE); pg.wait_for_timeout(300); out+='\n'+pg.evaluate(CODE2); pg.screenshot(path='/tmp/choir.png')
     b.close()
 out='\n'.join(l for l in out.split('\n') if l.strip() not in ('OK','@@')); print(out); print(errs); print('ALL OK' if 'FAIL' not in out and not errs else 'FAILED')
