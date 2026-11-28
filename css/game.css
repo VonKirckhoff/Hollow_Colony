@@ -419,6 +419,7 @@ canvas.ianim{image-rendering:pixelated;display:block;}
 .intel-detail .icard p{font-size:14px;}
 .intel-detail .icard dl{grid-template-columns:repeat(4,minmax(0,1fr));}
 .intel-detail .icard dd{font-size:16px;}
+@media (max-width:1199px) and (min-width:761px){ .intel-split.dense{grid-template-columns:440px minmax(0,1fr);} .intel-detail .icard{padding:14px;} .intel-detail .icard p{font-size:13px;line-height:1.45;} .intel-detail .icard dd{font-size:14px;} }   /* narrow screens (1024×768): a narrower list and a bit smaller text, so every card fits */
 @media (max-width:760px){ .intel-split,.intel-split.dense{grid-template-columns:1fr;} .intel-list{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));} .intel-detail .icard dl{grid-template-columns:repeat(2,minmax(0,1fr));} }
 #s-intel{padding-block:28px;}
 .music-ctl #btn-auto[aria-pressed="true"]{border-color:var(--corps);color:var(--corps);}

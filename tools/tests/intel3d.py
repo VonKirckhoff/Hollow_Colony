@@ -33,7 +33,7 @@ with sync_playwright() as p:
           ok(!still.length,'every 3D model moves'+(still.length?': not '+still.join(', '):''));
           ok(!bad.length,'no errors'+(bad.length?': '+bad.slice(0,5).join('; '):''));
           ok(!labs.length,'the state line names the state of every unit (and only of units)'+(labs.length?': '+labs.join(', '):''));
-          if(innerWidth>=1366) ok(!fit.length,'every card fits on the screen'+(fit.length?': '+fit.join(', '):'')); else out.push('INFO cards taller than the screen (also without 3D before Nov 2026): '+(fit.join(', ')||'none'));
+          ok(!fit.length,'every card fits on the screen'+(fit.length?': '+fit.join(', '):''));
           intelTab='corps'; buildIntel(); ok(document.querySelectorAll('#intel-list canvas.ianim').length>0&&!document.querySelectorAll('#intel-list canvas.ianim3d').length,'the list stays 2D');
           /* the same clock: walking, shooting, falling */
           const P=iaPlan('trooper'), at=st=>{ let t=0; for(const x of P.L){ if(x.st===st) return t; t+=x.d; } };

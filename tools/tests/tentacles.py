@@ -36,7 +36,7 @@ with sync_playwright() as p:
       return [U.tents.length, U.tents.map(t=>t.length)]; }""")
     check('3D: 8 tentacles of 6 joints', r and r[0]==8 and all(n==6 for n in r[1]), r)
     r=J(pg,"""()=>{ const sd=_sd, U=V3.objs.get(sd).userData, rz=()=>U.tents.map(t=>t.map(j=>j.rotation.z)); const tip=()=>{ const v=new THREE.Vector3(); U.tents[0][5].getWorldPosition(v); return v.y; };
-      const g=V3.objs.get(sd); g.updateMatrixWorld(true); const gy=v3H(sd.x/TILE,sd.y/TILE);
+      const g=V3.objs.get(sd); g.updateMatrixWorld(true); const gy=v3H(sd.x/TILE,sd.y/TILE)+v3CreepAt(sd.x/TILE,sd.y/TILE);   /* the top of the mycel crust: units stand on it (v3CreepAt) */
       sd.moving=false; v3PoseTentacles(sd,U,1,false); const a=rz(); v3PoseTentacles(sd,U,1.3,false); const b=rz();
       sd.moving=true; v3PoseTentacles(sd,U,1,true); const c=rz(); v3PoseTentacles(sd,U,1.1,true); const d=rz();
       const diff=(p,q)=>p.flat().reduce((s,v,i)=>s+Math.abs(v-q.flat()[i]),0);
