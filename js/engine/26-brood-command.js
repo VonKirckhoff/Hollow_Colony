@@ -45,7 +45,17 @@ function broodStay(u,at){ if(!u||u.dead||G.side!=='swarm'||!u.mine||u.avatar||u.
 /* waiting brood stays near the gathering point and fights whatever comes close */
 function broodThink(u){ if(u.rootT!=null) return;   /* a Seedling taking root stays put */ const r=u.post||G.swarm.rally||u.guardAt; if(!r) return; if(u.order&&u.order.type==='move') return;   /* walking to where you sent it */
   if(u.def.seed){ if(!u.order&&Math.hypot(u.x-r.x,u.y-r.y)>TILE){ u.order={type:'move',x:r.x,y:r.y}; setPath(u,r.x,r.y); } return; }   /* a Seedling stands still where you left it, it does not wander about */
-  if(!u.target&&(!u.order||Math.hypot(u.order.x-r.x,u.order.y-r.y)>TILE)){ u.order={type:'guard',x:r.x,y:r.y,wait:rand(0,2)}; setPath(u,r.x,r.y); } }
+  const o=u.order; if(!u.target&&(!o||(o.rx!=null?o.rx!==r.x||o.ry!==r.y:Math.hypot(o.x-r.x,o.y-r.y)>TILE))){ const p=broodSpot(u,r); u.order={type:'guard',x:p.x,y:p.y,rx:r.x,ry:r.y,wait:rand(0,2)}; setPath(u,p.x,p.y); } }
+/* its own place at the gathering point r: r itself if free, else the nearest free spot on a sunflower round it, so the brood
+   waits side by side and never on one tile (BROOD_SPACE.spot between the bodies; a Brute takes more room) */
+function broodOthers(u){ return G.ents.filter(v=>v!==u&&!v.dead&&v.kind==='unit'&&v.faction==='swarm'&&v.order&&v.order.type==='guard'); }
+function broodFree(u,x,y,others,S){ return walkableP(x,y)&&others.every(v=>Math.hypot(v.order.x-x,v.order.y-y)>=u.r+v.r+S&&(v.order.rx!=null||Math.hypot(v.x-x,v.y-y)>=u.r+v.r)); }
+/* a waiting creature only drifts to where it keeps clear of the others' places and bodies */
+function broodRoom(u,x,y){ const os=broodOthers(u); return broodFree(u,x,y,os,0)&&os.every(v=>Math.hypot(v.x-x,v.y-y)>=u.r+v.r+BROOD_SPACE.gap); }
+function broodSpot(u,r){ const S=BROOD_SPACE.spot, others=broodOthers(u), free=(x,y)=>broodFree(u,x,y,others,S);
+  for(let i=0;i<600;i++){ const rad=7*Math.sqrt(i), a=i*2.39996, x=r.x+Math.cos(a)*rad, y=r.y+Math.sin(a)*rad;
+    if(free(x,y)&&(i===0||lineClear(r.x,r.y,x,y))) return {x,y}; }
+  return {x:r.x,y:r.y}; }
 /* Q W E R: an egg in the nest's batch (Shift: several). The batch hatches all at once (see SWARM_PLAY.batch). */
 function swarmBreed(type,n){ const d=UNITS[type], nest=nestHive(); n=n||1;
   if(!nest){ toast('No hive left to hatch from.'); return 0; }
@@ -109,7 +119,8 @@ function swarmRight(x,y){ let us=selSwarm(); if(!us.length&&avatarAlive()&&G.ava
   if(t){ for(const u of us){ freeFromJobs(u); u.role='wave'; u.post=null; u.target=t; u.order={type:'attack',target:t}; u.path=null; } SFX.play('attack'); G.pings.push({x:t.x,y:t.y,t:0,col:'#ff5a4f'}); G.selDirty=true; startFollow(); return; }
   const tm=teamOf(us); if(tm) G.swarm.teamRally[tm]={x,y};   /* a whole team moved: its gathering point moves along */
   for(const u of us){ freeFromJobs(u); u.role='brood'; u.mine=true; u.target=null; u.post={x,y}; }
-  moveGroup(us,x,y,'move'); SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; startFollow(); }   /* the camera follows the squad you steer */
+  moveGroup(us,x,y,'move'); for(const u of us) if(u.order&&u.order.type==='move') u.post={x:u.order.x,y:u.order.y};   /* each keeps its own place from the move, not all the clicked spot */
+  SFX.play('squelch'); G.pings.push({x,y,t:0,col:'#c38bff'}); G.selDirty=true; startFollow(); }   /* the camera follows the squad you steer */
 /* H: your selection goes out to fetch the bodies lying in the field; with nothing selected, the waiting brood,
    and if none is waiting, your brood out in the field (first the ones without a fight, then the ones still fighting) */
 function idleBrood(){ return G.ents.filter(e=>!e.dead&&!e.hidden&&e.kind==='unit'&&e.faction==='swarm'&&!e.avatar&&!e.def.boss&&!e.def.grafter&&!e.def.seed&&(e.role==='brood'||(e.role==='wave'&&e.mine))&&!e.target&&!e.claim&&!e.haul); }

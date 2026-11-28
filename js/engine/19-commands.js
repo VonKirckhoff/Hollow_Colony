@@ -81,9 +81,9 @@ function moveGroup(units,wx,wy,type){
   if(n>1 && form && units.every(u=>u.formation===form)){ marchTo(units,wx,wy,type,null); return; }
   let offs=units.map(u=>({u,dx:u.x-cx,dy:u.y-cy}));
   const spread=Math.max(...offs.map(o=>Math.hypot(o.dx,o.dy)));
-  let tight=false; for(let i=0;i<offs.length&&!tight;i++) for(let j=i+1;j<offs.length;j++) if(Math.hypot(offs[i].dx-offs[j].dx,offs[i].dy-offs[j].dy)<FORMATION.minGap){ tight=true; break; }
+  let tight=false; for(let i=0;i<offs.length&&!tight;i++) for(let j=i+1;j<offs.length;j++) if(Math.hypot(offs[i].dx-offs[j].dx,offs[i].dy-offs[j].dy)<Math.max(FORMATION.minGap,(offs[i].u.r||9)+(offs[j].u.r||9))){ tight=true; break; }
   if(n>1 && (spread>FORMATION.maxRadius*TILE || tight)){
-    const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols), sp=FORMATION.spacing;
+    const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols), sp=Math.max(FORMATION.spacing,2*Math.max(...units.map(u=>u.r||9))+BROOD_SPACE.spot);   /* big beasts (Brute) need more room */
     offs.sort((a,b)=>a.dy-b.dy); const out=[];
     for(let r=0;r<rows;r++){ const row=offs.slice(r*cols,r*cols+cols).sort((a,b)=>a.dx-b.dx);
       row.forEach((o,c)=>out.push({u:o.u,dx:(c-(row.length-1)/2)*sp,dy:(r-(rows-1)/2)*sp})); }

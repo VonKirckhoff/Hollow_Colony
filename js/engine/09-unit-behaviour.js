@@ -83,7 +83,8 @@ function updateUnit(u,dt){
   if(!o) return;
   if(o.type==='move' && u.faction==='corps' && d.damage){ snapFire(u,dt); if(u.order!==o||u.dead||u.downed) return; }   /* keep walking, but shoot back on the way (a shot can end his order: acid blood from his kill can bring him down) */
   if(o.type==='move'||o.type==='amove'){ if(walkOrder(u,dt)&&u.order===o){ u.order=null; if(u.faction==='corps') u.home={x:u.x,y:u.y}; } }
-  else if(o.type==='guard'){ if(stepMove(u,dt)){ o.wait=(o.wait||0)-dt; if(o.wait<=0){ o.wait=rand(3,8); const a=rand(0,Math.PI*2), r=rand(1,3.5)*TILE; setPath(u,o.x+Math.cos(a)*r,o.y+Math.sin(a)*r); } } }
+  else if(o.type==='guard'){ if(stepMove(u,dt)){ o.wait=(o.wait||0)-dt; if(o.wait<=0){ o.wait=rand(3,8); const a=rand(0,Math.PI*2), r=(o.rx!=null?rand(0.2,1)*BROOD_SPACE.wander:rand(1,3.5))*TILE, wx=o.x+Math.cos(a)*r, wy=o.y+Math.sin(a)*r;   /* waiting brood stays near its own place */
+      if(o.rx==null||broodRoom(u,wx,wy)) setPath(u,wx,wy); } } }
 }
 /* distance from a unit to the edge of its target: buildings are square blocks, not circles */
 function gapTo(u,t){ if(t.kind==='building'&&t.size&&!t.def.noBlock){ const h=t.size*TILE/2, dx=Math.max(0,Math.abs(u.x-t.x)-h), dy=Math.max(0,Math.abs(u.y-t.y)-h); return Math.hypot(dx,dy); }

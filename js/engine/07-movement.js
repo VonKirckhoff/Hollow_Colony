@@ -8,13 +8,19 @@ function heavyTurn(u,want,dt){ const B=BRUTE_WALK; if(u.hd==null) u.hd=want;
   u.hw=(u.hw||0)+Math.max(-B.turnAccel*dt,Math.min(B.turnAccel*dt,w-(u.hw||0))); u.hd=Math.atan2(Math.sin(u.hd+u.hw*dt),Math.cos(u.hd+u.hw*dt));
   err=Math.atan2(Math.sin(want-u.hd),Math.cos(want-u.hd)); if(Math.abs(err)>B.inPlace) return 0;
   const c=Math.max(0,Math.cos(err)); return Math.max(B.minK,c*c); }
+/* the Brood keeps a little room between its creatures (Nov 2026): no thirty on one tile, no Brutes hidden in each other.
+   gap: px between two creatures' bodies that separate() keeps (only Brood on Brood); arrive: a creature whose last waypoint
+   is taken by a friend counts as arrived once within its own radius + arrive px, instead of squeezing on (ghost) onto the same spot;
+   spot: px the waiting brood keeps between their places at a gathering point (on top of both radii); wander: tiles a waiting creature
+   drifts from its own place */
+const BROOD_SPACE = { gap:5, arrive:14, spot:6, wander:0.6 };
 function speedOf(u){ return u.def.speed*(u.carry?(u.def.carrySpeed||0.6):1)*(u.haul?SQUAD.body.haulSpeed:1)*(u.speedMul||1)*(u.suppressT>0?SQUAD.suppress.slow:1)*(u.blindT>0?SWARM_LIGHT.slow:1); }   /* blindT: a Swarm creature in the light (Lights Out) */
 function setPath(u,x,y){ u.path=findPath(u.x,u.y,x,y); u.pi=0; u.goal={x,y}; u.repathAt=G.time+1.2; }
 function stepMove(u,dt){
-  if(!u.path||u.pi>=u.path.length) return true;
+  if(!u.path||u.pi>=u.path.length){ u.ghostT=0; return true; }   /* arrived: no more squeezing through friends (a ghost that stood still kept it and never got pushed apart again) */
   const wp=u.path[u.pi]; const dx=wp.x-u.x, dy=wp.y-u.y, d=Math.hypot(dx,dy);
   const last=u.pi===u.path.length-1;
-  if(d<(last?3:8)){ u.pi++; u.stuckN=0; return u.pi>=u.path.length; }
+  if(d<(last?3:8)){ u.pi++; u.stuckN=0; if(u.pi>=u.path.length){ u.ghostT=0; return true; } return false; }
   const tile=tileAt(G.map,Math.floor(u.x/TILE),Math.floor(u.y/TILE));
   const pk=u.pack?packPace(u):0, pace=Math.min((u.order&&u.order.pace)||speedOf(u),pk||Infinity); const turnK=u.def.heavyTurn?heavyTurn(u,Math.atan2(dx,dy),dt):1;
   const sp=Math.min(speedOf(u),pace)*(tile==='~'?0.8:1)*turnK*dt, k=Math.min(1,sp/d);
@@ -26,6 +32,7 @@ function stepMove(u,dt){
   if(u.wpKey!==u.pi+'/'+u.path.length){ u.wpKey=u.pi+'/'+u.path.length; u.bestD=d; u.stuckT=0; }
   if(d<u.bestD-2||turnK<0.5){ u.bestD=Math.min(u.bestD,d); u.stuckT=0; }   /* turning on the spot is not being stuck */
   else { u.stuckT=(u.stuckT||0)+dt;
+    if(last&&u.faction==='swarm'&&u.stuckT>0.35&&d<u.r+BROOD_SPACE.arrive){ u.pi++; u.stuckT=0; u.ghostT=0; return true; }   /* a friend stands on the spot: close enough */
     if(u.stuckT>0.7){ u.stuckT=0; u.stuckN=(u.stuckN||0)+1; u.ghostT=2; const g=u.path[u.path.length-1];
       if(u.stuckN>=2){ const c={x:(Math.floor(u.x/TILE)+.5)*TILE,y:(Math.floor(u.y/TILE)+.5)*TILE};
         if(walkableP(c.x,c.y)){ u.x=c.x; u.y=c.y; } else { const f=nearestWalkable(Math.floor(u.x/TILE),Math.floor(u.y/TILE)); if(f){ u.x=(f.x+.5)*TILE; u.y=(f.y+.5)*TILE; } } }
@@ -50,7 +57,7 @@ function separate(){
     const cx=u.x/cell|0, cy=u.y/cell|0;
     for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){
       const a=grid.get((cx+ox)+','+(cy+oy)); if(!a) continue;
-      for(const v of a){ if(v.id<=u.id) continue; if(u.ghostT>0||v.ghostT>0) continue; const dx=v.x-u.x, dy=v.y-u.y, d=Math.hypot(dx,dy)||0.01, min=(u.r+v.r)*0.95;
+      for(const v of a){ if(v.id<=u.id) continue; if(u.ghostT>0||v.ghostT>0) continue; const dx=v.x-u.x, dy=v.y-u.y, d=Math.hypot(dx,dy)||0.01, min=(u.r+v.r)*0.95+(u.faction==='swarm'&&v.faction==='swarm'?BROOD_SPACE.gap:0);
         if(d<min){ let nx=dx/d, ny=dy/d; if(d<1){ const a=((u.id*7919+v.id*104729)%628)/100; nx=Math.cos(a); ny=Math.sin(a); }
           const push=Math.max(1,(min-d)*0.35), px=nx*push, py=ny*push; moveBy(u,-px,-py); moveBy(v,px,py); } }
     }
