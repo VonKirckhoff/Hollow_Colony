@@ -63,7 +63,9 @@ with sync_playwright() as p:
             ok(Md.ship.userData.ramp.rotation.z>0.5&&Md.man.g.visible,'on the ground the ramp is down and a Trooper walks off');
             ia3Draw(cv2,9.8); ok(!Md.ship.visible,'and it has flown off before the loop starts again'); }
           ok(G===null||G===window.G,'G is put back');
+          ok(document.getElementById('music-ctl').hidden,'the music bar is hidden in Intel, so it covers no card');
           goMenu('menu'); ok(!iaLoopOn||document.getElementById('s-intel').hidden,'the loop stops when Intel closes');
+          ok(!document.getElementById('music-ctl').hidden,'and it is back in the main menu');
         }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }""")
         print('--',vw,vh); print(r); res.append(r)
         # screenshots of a few cards

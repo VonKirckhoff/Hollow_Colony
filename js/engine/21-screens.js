@@ -5,7 +5,7 @@ function show(name){ if(typeof BRIEF_VOICE!=='undefined'&&name!==BRIEF_VOICE.scr
   for(const s of SCREENS) $('#s-'+s).hidden = s!==name; if(name==='menu'&&typeof refreshContinue==='function') refreshContinue();
   const inMission=G&&!G.over&&ui.mode==='pause';   /* the Field Manual opened from the pause menu stays silent */
   if(typeof MUSIC!=='undefined') MUSIC.setScene(inMission||(!name&&G&&ui.mode==='game')?'game':name);   /* menu screens have music; a mission only if you switch it on (top-bar Music) */
-  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || inMission;
+  const mc=document.getElementById('music-ctl'); if(mc) mc.hidden = !name || name==='pause' || name==='intel' || inMission;   /* not over the Intel cards (the music plays on) */
   if(name){ $('#tut-card').hidden=true; $('#tut-open').hidden=true; } else if(G&&G.tutSteps) tutRefresh(); }   /* the training card only shows during play */
 function goMenu(name){
   if(typeof devToggle==='function') devToggle(false);   /* the dev panel belongs to a mission, not to the menu screens */
