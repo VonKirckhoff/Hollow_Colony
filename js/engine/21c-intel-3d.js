@@ -23,7 +23,7 @@ function ia3Init(){ if(IA3.ok||IA3.failed) return IA3.ok;
   const sun=IA3.sun=new THREE.DirectionalLight(0xf0f4ff,INTEL3D.sun); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); sun.shadow.bias=-0.0008; sun.shadow.normalBias=0.02; S.add(sun); S.add(sun.target);
   IA3.fill=new THREE.DirectionalLight(0x9fb4ff,INTEL3D.fill); S.add(IA3.fill); S.add(IA3.fill.target);
   IA3.flashL=new THREE.PointLight(0xffc070,0,4,1.5); S.add(IA3.flashL);
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(40,48).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({ color:0x171920 })); floor.position.set(IA3_X,0,IA3_Z); floor.receiveShadow=true; S.add(floor);
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(400,64).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({ color:0x171920 })); floor.position.set(IA3_X,0,IA3_Z); floor.receiveShadow=true; S.add(floor);
   /* a few pebbles, as on the 2D floor */
   const peb=new THREE.MeshLambertMaterial({ color:0x262934 }); for(let i=0;i<40;i++){ const m=new THREE.Mesh(GEO.lowball,peb), a=iaHash(i,1)*Math.PI*2, d=0.4+iaHash(i,2)*5; m.scale.set(0.03,0.012,0.03); m.position.set(IA3_X+Math.cos(a)*d,0.004,IA3_Z+Math.sin(a)*d); S.add(m); }
   IA3.stage=new THREE.Group(); S.add(IA3.stage); IA3.fxg=new THREE.Group(); S.add(IA3.fxg);
@@ -44,7 +44,7 @@ function ia3Ent(o){ return Object.assign({ id:7, x:IA3_X*TILE, y:IA3_Z*TILE, fac
 const ia3W=x2d=>x2d-24;   /* box x to the offset from the middle, in box pixels (times M.k for tiles) */
 /* ---------- effects: pooled, laid out again every frame ---------- */
 function ia3Get(kind,make){ const P=IA3.pool[kind], i=IA3.n[kind]=(IA3.n[kind]||0)+1; if(!P[i-1]){ P[i-1]=make(); IA3.fxg.add(P[i-1]); } const o=P[i-1]; o.visible=true; return o; }
-function ia3FxBegin(){ for(const k in IA3.n) IA3.n[k]=0; IA3.flashL.intensity=0; }
+function ia3FxBegin(){ for(const k in IA3.n) IA3.n[k]=0; IA3.flashL.intensity=0; IA3.flashL.distance=4; }
 function ia3FxEnd(){ for(const k in IA3.pool) IA3.pool[k].forEach((o,i)=>{ if(i>=(IA3.n[k]||0)) o.visible=false; }); }
 function ia3Glow(x,y,z,s,col,op=1){ const o=ia3Get('glow',()=>new THREE.Sprite(new THREE.SpriteMaterial({ map:V3.glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false })));
   o.position.set(x,y,z); o.scale.setScalar(s); o.material.color.set(col); o.material.opacity=op; return o; }
@@ -78,7 +78,7 @@ function ia3Make(key){ const M={ root:new THREE.Group(), props:{} }, P=iaPlan(ke
 /* the props a unit uses for its special move (the Medic's patient, the Engineer's Sentry Gun, the Matron's egg), made on first use */
 function ia3Prop(M,name,dx){ const p=M.props[name]; if(!p) return null; if(!p.g){ p.g=ia3Add(M,p.e,dx,0); p.g.userData.yaw=-Math.PI/2; } p.g.visible=true; return p; }
 function ia3HideProps(M,keep){ for(const k in M.props){ const p=M.props[k]; if(p.g&&k!==keep) p.g.visible=false; } }
-/* how big the picture is: the same framing as the 2D card (34 box pixels high, the look-at point 14 above the ground) for units,
+/* how big the picture is: the same framing as the 2D card (IA_BOX/IA_CARD.zoom box pixels high, the look-at point 14 above the ground) for units,
    so the model is as big as the sprite; structures are framed round their own size */
 /* the size of what can be seen: hidden parts (rings, glints, a beam) and sprites do not count */
 function ia3Box(obj){ const box=new THREE.Box3(), b=new THREE.Box3(); obj.updateMatrixWorld(true);
@@ -87,15 +87,16 @@ function ia3Box(obj){ const box=new THREE.Box3(), b=new THREE.Box3(); obj.update
   if(box.isEmpty()) box.setFromObject(obj); return box; }
 function ia3Frame(M){ const sz=new THREE.Vector3(), box=ia3Box(M.g||M.root); box.getSize(sz);
   const h=Math.max(0.05,box.max.y), w=Math.max(sz.x,sz.z);
-  if(M.plan){ const spk=iaSprKey(M.plan.key), sp=SPR[spk], sc=iaUnitScale(spk,IA_MAX[M.plan.ty]||26), hp=sp.h*sc; M.k=h/hp; M.V=Math.max(34*M.k,h*1.35,w*1.05)*INTEL3D.frame; M.cy=M.V*14/34; }
+  if(M.plan){ const spk=iaSprKey(M.plan.key), sp=SPR[spk], sc=iaUnitScale(spk,IA_MAX[M.plan.ty]||26), hp=sp.h*sc; M.hp=hp; M.k=h/hp; M.V=Math.max(IA_BOX/IA_CARD.zoom*M.k,h*1.35,w*1.05)*INTEL3D.frame; M.cy=Math.min(M.V*0.45,14*M.k*M.V/(IA_BOX/IA_CARD.zoom*M.k)); }   /* the same framing as the 2D card (IA_CARD.zoom) */
   else { M.k=M.k||h/26; M.V=(M.V||Math.max(h*1.7,w*1.45,0.6))*INTEL3D.frame; M.cy=M.cy||Math.max(h*0.5,M.V*0.36); }
   M.h=h; M.w=w; }
-function ia3Camera(M){ const C=IA3.cam, D=INTEL3D, d=(M.V/2)/Math.tan(D.fov*Math.PI/360), tx=IA3_X+(M.cx||0), tz=IA3_Z+(M.cz||0);
-  C.fov=D.fov; C.aspect=1; C.position.set(tx+Math.sin(D.yaw)*Math.cos(D.pitch)*d,M.cy+Math.sin(D.pitch)*d,tz+Math.cos(D.yaw)*Math.cos(D.pitch)*d); C.lookAt(tx,M.cy,tz); C.near=d*0.1; C.far=d*4; C.updateProjectionMatrix();
+function ia3Camera(M,asp=1){ const C=IA3.cam, D=INTEL3D, d=(M.V/2)/Math.tan(D.fov*Math.PI/360), tx=IA3_X+(M.cx||0), tz=IA3_Z+(M.cz||0);
+  C.fov=D.fov; C.aspect=asp; C.position.set(tx+Math.sin(D.yaw)*Math.cos(D.pitch)*d,M.cy+Math.sin(D.pitch)*d,tz+Math.cos(D.yaw)*Math.cos(D.pitch)*d); C.lookAt(tx,M.cy,tz); C.near=d*0.1; C.far=d*40; C.updateProjectionMatrix();
   const S=IA3.sun, r=Math.max(2,M.V*1.5); S.position.set(tx-r*0.7,r*2.2,tz+r*0.9); S.target.position.set(tx,0,tz); const sc=S.shadow.camera; sc.left=-r; sc.right=r; sc.top=r; sc.bottom=-r; sc.near=0.1; sc.far=r*6; sc.updateProjectionMatrix();
   IA3.fill.position.set(tx+r,r,tz-r); IA3.fill.target.position.set(tx,0,tz); IA3.hemi.intensity=D.hemi; S.intensity=D.sun; IA3.fill.intensity=D.fill; }
 function ia3PoseStill(M,t){ v3Pose(M.e,M.g,t); }
 /* ---------- a unit in its state (the 3D half of iaUnit) ---------- */
+const fight0=st=>st==='attack'||st==='heal'||st==='repair';
 function ia3PoseUnit(M,t){ const P=M.plan, S=iaAt(P,t), e=M.e, g=M.g, U=g.userData, st=S.st, ty=P.ty, K=M.k, pos=iaPos(P,S), soldier=P.kind==='soldier', mat=ty==='broodmother'||ty==='heir';
   const X=x2d=>IA3_X+ia3W(x2d)*K;
   let x2=pos.x; const hk=st==='hit'?iaHits(S):0; if(hk) x2-=1.5*hk;
@@ -112,9 +113,11 @@ function ia3PoseUnit(M,t){ const P=M.plan, S=iaAt(P,t), e=M.e, g=M.g, U=g.userDa
   if(st==='egg') e.bossAnim={ k:'egg', at:S.at+0.4 };
   if(st==='rain') e.bossAnim={ k:'rain', at:S.at+Math.floor(S.s/1.4)*1.4 };
   if(st==='repair') e.order={ type:'repair' };
+  if(soldier&&(st==='down'||st==='up')) x2+=iaFall(S)*M.hp*0.5;   /* he lies across the middle, as in 2D */
   e.x=X(x2)*TILE; e.y=IA3_Z*TILE;
+  if(!e.moving){ U.px=e.x; U.py=e.y; if(!fight0(st)) U.want=Math.PI/2; }   /* a knock-back or a lunge is no walk: it keeps facing right, as in 2D */
   /* the target: a spot in front, so it turns to it and fights (the patient or the Sentry Gun for the special moves) */
-  const fight=st==='attack'||st==='heal'||st==='repair'; e.target=fight?(M.tgt||(M.tgt={ dead:false })):null;
+  const fight=fight0(st); e.target=fight?(M.tgt||(M.tgt={ dead:false })):null;
   if(fight){ M.tgt.x=e.x+30; M.tgt.y=e.y; }
   ia3HideProps(M,st==='heal'?'patient':st==='repair'?'sentry':st==='egg'?'egg':null);
   if(st==='heal'){ const p=ia3Prop(M,'patient',0); p.e.x=X(36)*TILE; p.e.y=e.y; v3Pose(p.e,p.g,t); p.g.rotation.x=-Math.PI/2*0.92; p.g.position.y+=0.1; }
@@ -168,11 +171,25 @@ function ia3Membrane(M){ const g=G, W=g.map.w; g.map.tiles=g.map.tiles||new Arra
   const e=ia3Build('membrane',{ invuln:true, x:(IA3_X+0.5)*TILE, y:(IA3_Z+0.5)*TILE }); e.tx=IA3_X; e.ty=IA3_Z; g.ents.push(e); M.e=e; M.g=ia3Add(M,e);
   const rock=mat('#3b3e48'), rh=Math.min(tileH('#'),1.7); for(const dx of [-1,1]) M.root.add(part(GEO.lowball,rock,0.55,rh,0.7,IA3_X+0.5+dx*1.0,rh*0.45,IA3_Z+0.5));
   M.V=3.6; M.cy=0.8; M.cx=0.5; M.cz=0.5; }
+/* the dropship (the Landing Zone and its own card): the 3D half of iaShipAt/iaShip2D in 21b. It is SHIP.size3d times its 2D art,
+   as in a mission; sc is how big the 2D picture draws the art, so one pixel of art is as far in 2D as in 3D */
+function ia3ShipMake(M,sc,zoom){ const k=SHIP.size3d; M.ship=v3Dropship(); M.ship.scale.setScalar(k); M.ship.traverse(o=>{ if(o.isMesh) o.receiveShadow=true; }); M.root.add(M.ship);
+  M.man={ e:ia3Unit('trooper') }; M.man.g=ia3Add(M,M.man.e); M.man.g.scale.multiplyScalar(1.6);   /* a bit bigger than true size, so he reads next to the ship */ M.g=M.root; M.px=shipPx*k; M.k=M.px/sc; M.V=IA_BOX/zoom*M.k; M.cy=14*M.k; }
+function ia3ShipPose(M,t){ const P=iaShipAt(t), S=M.ship, U=S.userData, k=SHIP.size3d, X=IA3_X+P.x*M.px, y=0.85*k+P.alt*M.px;
+  S.visible=!P.gone; S.position.set(X,y,IA3_Z); S.rotation.set(0,0,P.pitch*0.45);
+  for(const pod of U.pods){ pod.rotation.z=P.tilt*Math.PI/2; const L=(0.4+1.2*P.thrust*(0.85+0.15*Math.sin(t*40)))*(P.tilt>0.5?0.8:1.2); pod.userData.flame.scale.set(0.17,P.thrust>0.02?L:0.001,0.17); pod.userData.core.scale.set(0.08,P.thrust>0.02?L*0.6:0.001,0.08); }
+  for(const l of U.legs3) l.scale.y=Math.max(0.01,P.legs);
+  U.ramp.rotation.z=(1-P.ramp)*-0.62+P.ramp*0.78; U.red.visible=U.green.visible=Math.floor(t*2.5)%2===0;
+  if(!P.gone&&P.thrust>0.4&&P.alt<14){ IA3.flashL.position.set(X,y-0.6*k,IA3_Z); IA3.flashL.intensity=2*P.thrust; IA3.flashL.color.set(0xffa860); IA3.flashL.distance=4*k;
+    if(P.tilt>0.5) ia3Ring(X,0.03,IA3_Z,(10+P.alt)*M.px*1.4*2+Math.sin(t*20)*0.1,'#ffd9a0',0.4*(1-P.alt/14)); }
+  if(P.beams&&P.alt>8) ia3Glow(X+2.2*k+P.alt*M.px*0.4,0.1,IA3_Z,3*k,'#fff0c8',0.3);
+  const G2=M.man; G2.g.visible=P.man!=null&&P.manA>0; if(G2.g.visible){ G2.e.moving=P.walk; G2.e.x=(IA3_X+P.man*M.px)*TILE; G2.e.y=IA3_Z*TILE; if(!P.walk) G2.g.userData.yaw=-Math.PI/2; v3Pose(G2.e,G2.g,t);
+    if(P.manA<1) G2.g.position.y-=(1-P.manA)*1.2; } }
 const ia3Top=(M,f=1)=>ia3V(IA3_X,M.h*f,IA3_Z);
 function ia3Smoke(x,y,z,t,n,K,col='#4a4d55',rise=28,sp=0.35){ for(let i=0;i<n;i++){ const q=(t*sp+i/n)%1; ia3Ball(x+Math.sin(q*4+i)*4*K,y+q*rise*K,z+Math.cos(q*3+i)*2*K,(2+q*5)*K,col,0.5*(1-q)); } }
 const IA3_HOOKS = {
   membrane:{ make:ia3Membrane, pose(M,t){ M.e.flash=0; v3Pose(M.e,M.g,t); } },
-  wreck:{ make(M){ M.e=ia3Build('wreck'); M.g=ia3Add(M,M.e); M.V=12; M.cy=1.4; }, pose(M,t){ v3Pose(M.e,M.g,t); ia3Glow(IA3_X+0.3,0.7,IA3_Z+0.2,1+0.3*Math.sin(t*9),'#ff8c28',0.4); ia3Smoke(IA3_X+0.3,0.8,IA3_Z,t,6,0.08); } },
+  wreck:{ make(M){ M.e=ia3Build('wreck'); M.g=ia3Add(M,M.e); M.V=8; M.cy=1.4; }, pose(M,t){ v3Pose(M.e,M.g,t); ia3Glow(IA3_X+0.3,0.7,IA3_Z+0.2,1+0.3*Math.sin(t*9),'#ff8c28',0.4); ia3Smoke(IA3_X+0.3,0.8,IA3_Z,t,6,0.08); } },
   sentry:{ pose(M,t){ const e=M.e, cy=iaCyc(t,1.9), U=M.g.userData; e.angle=0; e.target=cy.s<0.5?(M.tgt||(M.tgt={ dead:false, x:e.x+60, y:e.y })):null;
     const n=Math.floor(cy.s/0.12), ph=(cy.s%0.12)/0.12, on=cy.s<0.5&&ph<0.5; e.recoil=on?0.08*(1-ph*2):0; v3Pose(e,M.g,t); M.g.updateMatrixWorld(true);
     if(on&&U.muzzle){ const mz=U.muzzle.getWorldPosition(ia3V(0,0,0)), fw=ia3V(1,0,0); ia3Glow(mz.x,mz.y,mz.z,0.35,'#ffdc78',0.9); const end=mz.clone().addScaledVector(fw,4); end.y+=(iaHash(n,cy.k)-0.5)*0.2; ia3Line(mz,end,'#ffe696',0.7);
@@ -191,13 +208,8 @@ const IA3_HOOKS = {
     pose(M,t){ v3Pose(M.e,M.g,t); const T=M.props.tr; v3Pose(T.e,T.g,t); const p=(t%5)/5, n=Math.max(1,Math.round(Math.min(1,p/0.8)*48)), k='ia3arc'+n;
       ia3Ring(IA3_X,0.03,IA3_Z,0.95,'#ffffff',0.15); const o=ia3Ring(IA3_X,0.04,IA3_Z,0.95,p<0.8?'#ffb347':'#5fe3b0',0.9); o.geometry=GEO[k]||(GEO[k]=new THREE.RingGeometry(0.8,1,48,1,Math.PI/2,Math.PI*2*n/48)); o.rotation.set(-Math.PI/2,0,0);
       if(p>=0.8) ia3Glow(IA3_X,0.6,IA3_Z,1.6,'#5fe3b0',0.4); } },
-  lz:{ make(M){ M.e=ia3Build('lz'); M.g=ia3Add(M,M.e); M.ship=v3Dropship(); M.root.add(M.ship); M.props.tr={ e:ia3Unit('trooper') }; M.props.tr.g=ia3Add(M,M.props.tr.e,0.9,0.4); M.V=4.2; M.cy=1.2; M.g=M.root; },
-    pose(M,t){ const e=M.e; v3Pose(e,M.root.children[0],t); const cy=iaCyc(t,6), S=M.ship, T=M.props.tr; let hgt=0, vis=true, a=0;
-      if(cy.s<2.2){ const q=cy.s/2.2; hgt=(1-q)*3; } else if(cy.s<4.2){ hgt=0; } else if(cy.s<5.6){ const q=(cy.s-4.2)/1.4; hgt=q*3; a=q; } else vis=false;
-      S.visible=vis; S.position.set(IA3_X,0.75+hgt,IA3_Z); S.rotation.set(0,0,0); S.scale.setScalar(1);
-      if(vis&&hgt<1.5){ ia3Ring(IA3_X,0.02,IA3_Z,1.2+(cy.s>2.2&&cy.s<2.9?(cy.s-2.2)*3:0),'#d3c3a6',cy.s>2.2&&cy.s<2.9?0.8-(cy.s-2.2):0.2); }
-      for(const s of [-1,1]) if(vis) ia3Glow(IA3_X-1.6,0.75+hgt,IA3_Z+s*0.9,0.5,'#7fc6ff',0.5+0.3*Math.sin(t*30));
-      T.g.visible=cy.s>=2.9&&cy.s<4.2; if(T.g.visible){ T.e.moving=true; T.e.x=(IA3_X+0.6+(cy.s-2.9)*0.6)*TILE; v3Pose(T.e,T.g,t); } } },
+  lz:{ make(M){ ia3ShipMake(M,0.6,1); M.e=ia3Build('lz'); M.pad=ia3Add(M,M.e); }, pose(M,t){ v3Pose(M.e,M.pad,t); M.pad.scale.setScalar(SHIP.size3d); ia3ShipPose(M,t); } },
+  dropship:{ make(M){ ia3ShipMake(M,0.75,IA_CARD.bigZoom.dropship); }, pose:ia3ShipPose },
   medtent:{ pose(M,t){ v3Pose(M.e,M.g,t); ia3Glow(IA3_X,M.h*0.55,IA3_Z+0.5,0.9+0.2*Math.sin(t*1.5),'#ff5a50',0.25+0.15*Math.sin(t*1.5)); } },
   terminal:{ pose(M,t){ v3Pose(M.e,M.g,t); ia3Glow(IA3_X,M.h*0.7,IA3_Z+0.2,0.8,'#5fe3b0',0.15+0.1*Math.sin(t*6)+(iaHash(Math.floor(t*4),1)>0.35?0.15:0)); } },
   door:{ pose(M,t){ v3Pose(M.e,M.g,t); if(Math.sin(t*3)>0.3) ia3Glow(IA3_X+0.3,M.h*0.95,IA3_Z+0.52,0.35,'#ffb446',0.9); } },
@@ -251,14 +263,14 @@ function ia3Draw(cv,t){ if(!ia3Init()) return false; const M=ia3Model(cv._key); 
   const r=IA3.r, W=cv.width, H=cv.height; if(IA3.w!==W||IA3.h!==H){ r.setSize(W,H,false); IA3.w=W; IA3.h=H; }
   for(const [k,m] of IA3.models) if(m) m.root.visible=m===M;
   ia3FxBegin(); const s=ia3Swap(t);
-  try{ M.pose(M,t); ia3FxEnd(); ia3Camera(M); r.render(IA3.scene,IA3.cam); }catch(e){ M.err=e.message; } finally{ ia3Unswap(s); }
+  try{ M.pose(M,t); ia3FxEnd(); ia3Camera(M,W/H); r.render(IA3.scene,IA3.cam); }catch(e){ M.err=e.message; } finally{ ia3Unswap(s); }
   const c=cv.getContext('2d'); c.setTransform(1,0,0,1,0,0); c.drawImage(r.domElement,0,0,W,H); return true; }
 /* the card's picture box gets a second canvas for the 3D model and a line that names the state (intelAnimMount in 21b calls this) */
-function ia3Mount(pic,cv2d){ const key=pic.dataset.anim, card=pic.closest('.icard'); if(!key||!card) return;
-  if(!ia3Init()||!ia3Model(key)) return;
-  card.classList.add('dual3d'); pic.classList.add('dual');
-  const side=parseInt(cv2d.style.width)||80, dpr=Math.min(2,window.devicePixelRatio||1), cv=document.createElement('canvas');
-  cv.className='ianim3d'; cv.width=Math.round(side*dpr); cv.height=Math.round(side*dpr); cv.style.width=side+'px'; cv.style.height=side+'px'; cv.setAttribute('aria-hidden','true'); cv._key=key;
+function ia3Ok(key){ return !!(key&&ia3Init()&&ia3Model(key)); }
+function ia3Mount(pic,cv2d,big){ const key=pic.dataset.anim, card=pic.closest('.icard'); if(!key||!card||!ia3Ok(key)) return;
+  card.classList.add('dual3d'); card.classList.toggle('wide3d',!!big); pic.classList.add('dual');
+  const W=parseInt(cv2d.style.width)||80, H=parseInt(cv2d.style.height)||W, dpr=Math.min(2,window.devicePixelRatio||1), cv=document.createElement('canvas');
+  cv.className='ianim3d'; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); cv.style.width=W+'px'; cv.style.height=H+'px'; cv.setAttribute('aria-hidden','true'); cv._key=key;
   const lab=document.createElement('div'); lab.className='ia-state'; lab.setAttribute('aria-hidden','true'); const P=iaPlan(key); lab.hidden=!P; cv._lab=lab; cv._plan=P;
   pic.appendChild(cv); pic.appendChild(lab); ia3Tick(cv,iaReduce()?1.3:performance.now()/1000); }
 function ia3Tick(cv,t){ ia3Draw(cv,t); const P=cv._plan; if(P&&cv._lab){ const S=iaAt(P,t); if(cv._lab._st!==S.i){ cv._lab._st=S.i;

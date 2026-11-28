@@ -5,7 +5,7 @@
    Every entry moves in Intel: a little looping scene per key, in js/engine/21b-intel-anim.js (INTEL_SCENES). */
 const INTEL_TABS = [
   { id:'corps',  name:'Lunar Corps', units:['trooper','gunner','pyro','medic','engineer','scientist'] },
-  { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','uplink','generator','chargesite','charge','medtent','terminal','door','wreck','rubble'], extras:['relaypad','salvage','stabcase'] },
+  { id:'struct', name:'Structures',  buildings:['hq','relay','sentry','barricade','lz','uplink','generator','chargesite','charge','medtent','terminal','door','wreck','rubble'], extras:['dropship','relaypad','salvage','stabcase'] },
   { id:'swarm',  name:'Brood',       units:['crawler','drone','spitter','brute','seedling','bloater','grafter','husk','broodmother'], buildings:['hive','egg','cocoon','membrane','shaft'], extras:['heart'] },
   { id:'other',  name:'Other',       units:['grazer'], extras:['raiders'] },
   { id:'rogue',  name:'Rogue Strain', rogue:true },   /* the Osprey crew, strains and taint (31-rogue.js); always shown; until the Rogue campaign is open it holds only a lock, no entries */
@@ -50,6 +50,10 @@ const INTEL_NOTES = {
 };
 /* entries that are no unit or building of their own. stats: [label, value]; a function is called when the card is shown */
 const INTEL_EXTRA = {
+  dropship:{ name:'Dropship Icarus', role:'Transport · LC-71', faction:'corps',
+    desc:'Squad Dust\'s dropship, LC-71 on her flanks. She brings replacements down to a Landing Zone and takes the squad home from a pickup: engines down over the pad, legs out, ramp down at her tail.',
+    note:'She cannot be shot in the air. On a pickup she waits only so long: when the Brood breaks her hull or time runs out, she leaves, with or without you.',
+    stats:()=>[['Waits on a pickup',SHIP.wait+' s'],['Boarding','one by one, up the ramp'],['Size','2.5× the pad']] },
   relaypad:{ name:'Relay Pad', role:'2×2 build site', faction:'corps',
     desc:'A yellow-striped pad in the regolith. The only place a Relay Tower can stand.',
     note:'Claim the pads early: every tower pays salvage and adds supply, and the Brood knows it.', stats:()=>[['Tower','Relay Tower'],['Salvage/s',BUILDINGS.relay.income],['Supply','+'+BUILDINGS.relay.supply]] },

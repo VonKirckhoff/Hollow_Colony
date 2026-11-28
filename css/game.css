@@ -403,8 +403,11 @@ h2.h{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,
 .intel-detail .icard{grid-template-columns:96px minmax(0,1fr);gap:6px 18px;padding:18px;background:rgba(17,19,26,.82);}
 .intel-detail .icard .pic{width:96px;height:96px;}
 .intel-detail .icard .pic img{width:80px;height:80px;}
-.intel-detail .icard.dual3d{grid-template-columns:172px minmax(0,1fr);}   /* 2D and 3D side by side (21c-intel-3d.js) */
-.intel-detail .icard .pic.dual{width:172px;height:auto;grid-template-columns:80px 80px;gap:4px;padding:4px;place-items:center;}
+.intel-detail .icard.dual3d{grid-template-columns:252px minmax(0,1fr);}   /* 2D and 3D side by side (21c-intel-3d.js) */
+.intel-detail .icard .pic.dual{width:252px;height:auto;grid-template-columns:120px 120px;gap:4px;padding:4px;place-items:center;}
+.intel-detail .icard.wide3d{grid-template-columns:minmax(0,1fr);}   /* the dropship, the Landing Zone, the wreck: bigger pictures above the text */
+.intel-detail .icard.wide3d .pic.dual{grid-row:auto;width:532px;max-width:100%;grid-template-columns:260px 260px;justify-self:start;}
+@media (max-width:1279px){ .intel-detail .icard.wide3d .pic.dual{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));} .intel-detail .icard.wide3d .pic.dual canvas{width:100%!important;height:auto!important;} }   /* narrow screens: the big pictures shrink with the card */
 .intel-detail .icard .pic.dual canvas{background:#0b0c11;}
 .ia-state{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;width:100%;padding:2px 2px 0;font-family:var(--f-display);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--corps);}
 .ia-state i{font-style:normal;font-size:7px;letter-spacing:1px;color:var(--dim);}

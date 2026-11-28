@@ -70,11 +70,40 @@ function iaUplink(c,t){ const x=24, y=IA_GROUND, p=(t%5)/5; iaArt(c,'uplink',x,y
   c.strokeStyle=col; c.lineWidth=2; c.beginPath(); c.ellipse(x,y-6,16,7,0,-Math.PI/2,-Math.PI/2+Math.min(1,p/0.8)*Math.PI*2); c.stroke(); c.lineWidth=1;
   if(p>=0.8) iaGlow(c,x,y-10,14,'rgba(95,227,176,.4)'); iaShadow(c,10,y,4); iaSprite(c,'trooper',10,y,1.5,1); }
 function iaChargeSite(c,t){ const x=24, y=IA_GROUND; iaArt(c,'chargesite',x,y,22); iaRing(c,x,y-4,6+3*Math.sin(t*3),'#ffb347',0.7); }
-function iaLz(c,t){ const x=24, y=IA_GROUND, cy=iaCyc(t,6); iaArt(c,'lz',x,y+4,40);
-  if(cy.s<2.2){ const q=cy.s/2.2, h=(1-q)*30, a=ARTC.dropship; if(a){ const w=a.width*0.6, hh=a.height*0.6; c.fillStyle='rgba(0,0,0,'+(0.2+q*0.3)+')'; c.beginPath(); c.ellipse(x,y-4,w*0.4,3,0,0,Math.PI*2); c.fill(); c.drawImage(a,x-w/2,y-10-h-hh/2,w,hh); } }
-  else if(cy.s<2.9){ iaRing(c,x,y-4,6+(cy.s-2.2)*30,'#d3c3a6',0.8-(cy.s-2.2)); const a=ARTC.dropship; if(a){ const w=a.width*0.6, hh=a.height*0.6; c.drawImage(a,x-w/2,y-10-hh/2,w,hh); } }
-  else if(cy.s<4.2){ const a=ARTC.dropship; if(a){ const w=a.width*0.6, hh=a.height*0.6; c.drawImage(a,x-w/2,y-10-hh/2,w,hh); } iaSprite(c,'trooper',x+10+(cy.s-2.9)*6,y,1.3,1); }
-  else if(cy.s<5.6){ const q=(cy.s-4.2)/1.4, a=ARTC.dropship; if(a){ const w=a.width*0.6, hh=a.height*0.6; c.globalAlpha=1-q; c.drawImage(a,x-w/2,y-10-q*30-hh/2,w,hh); c.globalAlpha=1; } } }
+/* ---------- the dropship: one landing and take-off, the same in 2D and in 3D (ia3Ship in 21c) ----------
+   iaShipAt(t): where it is on a 10 s loop. x and alt in pixels of the ship's art (56 long, nose to the right): it comes in from the
+   left high up, turns its engines down, lowers its legs and sets down; the ramp at the tail opens, a Trooper walks off to the left,
+   the ramp shuts, it lifts off, turns its engines back and climbs away to the right. man: where the Trooper is (art pixels), or null. */
+const iaSm=(a,b,v)=>iaEase((v-a)/(b-a));
+function iaShipAt(t){ const s=((t%10)+10)%10; let x=0, alt=0, tilt=1, thrust=0.35, legs=1, ramp=0, pitch=0, gone=false, man=null, walk=false, beams=0;
+  if(s<2.6){ const q=s/2.6, k=1-q; x=-62*k*k; alt=6+34*k*k; tilt=iaSm(0.1,0.6,q); thrust=1; legs=iaSm(0.7,1,q); beams=1; }
+  else if(s<3.2){ alt=6*(1-iaSm(2.6,3.2,s)); thrust=1-0.65*iaSm(2.9,3.2,s); }
+  else if(s<6.4){ ramp=iaSm(3.2,3.6,s)*(1-iaSm(5.9,6.3,s)); thrust=0.35; }
+  else if(s<7.2){ const q=iaSm(6.4,7.2,s); alt=8*q; legs=1-q; thrust=1; }
+  else if(s<9.6){ const q=(s-7.2)/2.4; x=72*q*q; alt=8+32*q*q; tilt=1-iaSm(0,0.6,q); pitch=Math.sin(Math.min(1,q*2.2)*Math.PI/2)*(1-0.6*q); thrust=1; legs=0; }
+  else gone=true;
+  if(s>=3.6){ man=-34-Math.min(2.2,s-3.6)*11; walk=s<5.8; }
+  return { s, x, alt, tilt, thrust, legs, ramp, pitch, gone, man, walk, beams, manA:s>9.4?Math.max(0,1-(s-9.4)/0.6):1 }; }
+/* the ship in 2D, side on: art scaled by sc, its middle at box x cx, the ground at gy */
+function iaShip2D(c,t,P,cx,gy,sc){ const a=ARTC.dropship; if(!a||P.gone) return; const w=a.width*sc, h=a.height*sc, x=cx+P.x*sc, by=gy-h*0.5-(P.alt+3*P.legs)*sc;
+  c.globalAlpha=Math.max(0.12,0.5-P.alt/80); c.fillStyle='#000'; c.beginPath(); c.ellipse(x+P.alt*sc*0.3,gy,w*0.42,2+sc*2,0,0,Math.PI*2); c.fill(); c.globalAlpha=1;
+  if(P.tilt>0.5&&P.alt<14&&P.thrust>0.5) iaRing(c,x,gy,(10+P.alt)*sc*1.4+Math.sin(t*20),'#ffd9a0',0.4*(1-P.alt/14));   /* hot air blowing over the ground */
+  if(P.legs>0){ c.fillStyle='#0a0b10'; for(const lx of [-0.3,-0.1,0.18,0.3]) c.fillRect(Math.round(x+lx*w),Math.round(by+h*0.38),Math.max(1,Math.round(1.6*sc)),Math.round(P.legs*5*sc)); }
+  if(P.ramp>0){ c.fillStyle='#1e2028'; c.beginPath(); c.moveTo(x-w*0.42,by+h*0.2); c.lineTo(x-w*0.42-P.ramp*12*sc,by+h*0.2+P.ramp*(gy-by-h*0.2)); c.lineTo(x-w*0.3,by+h*0.42); c.fill();
+    c.fillStyle='#f2c230'; c.fillRect(Math.round(x-w*0.42-P.ramp*12*sc),Math.round(by+h*0.2+P.ramp*(gy-by-h*0.2))-1,Math.max(1,Math.round(2*sc)),2); }
+  c.save(); c.translate(Math.round(x),Math.round(by)); if(P.pitch) c.rotate(-P.pitch*0.25); c.drawImage(a,Math.round(-w/2),Math.round(-h/2),Math.round(w),Math.round(h));
+  const f=0.6+0.4*Math.sin(t*25); c.globalCompositeOperation='lighter';
+  const down=P.tilt*P.thrust, back=(1-P.tilt)*P.thrust;
+  for(const py of [-0.4,0.4]){ if(down>0.02){ const g=c.createRadialGradient(-w*0.09,h*0.45,0,-w*0.09,h*0.45,(4+6*down)*sc*f); g.addColorStop(0,`rgba(255,200,120,${0.8*down})`); g.addColorStop(1,'rgba(255,90,30,0)'); c.fillStyle=g; c.fillRect(-w*0.09-12*sc,h*0.45-12*sc,24*sc,24*sc); }
+    if(back>0.02){ const L=(14+18*back)*sc*f, g=c.createLinearGradient(-w*0.32,py*h*0.5,-w*0.32-L,py*h*0.5); g.addColorStop(0,`rgba(255,200,120,${0.8*back})`); g.addColorStop(1,'rgba(255,90,30,0)'); c.fillStyle=g; c.beginPath(); c.ellipse(-w*0.32-L/2,py*h*0.5,L/2,2.5*sc,0,0,Math.PI*2); c.fill(); } }
+  c.globalCompositeOperation='source-over';
+  if(Math.floor(t*2.5)%2===0){ iaDot(c,-1,-h/2,'#ff5a4f',Math.max(1,Math.round(sc*2))); iaDot(c,-1,h/2-2,'#5fe3b0',Math.max(1,Math.round(sc*2))); }
+  c.restore();
+  if(P.beams&&P.alt>8) iaGlow(c,x+w*0.6+P.alt*sc*0.4,gy,10*sc,'rgba(255,240,200,.25)'); }
+function iaShipMan(c,t,P,cx,gy,sc){ if(P.man==null) return; const x=cx+P.man*sc, ms=Math.max(1,sc*2.2); iaShadow(c,x,gy,5*ms/1.3);
+  iaSprite(c,'trooper',x,gy-(P.walk?Math.floor(t*8)%2:0),ms,-1,{ alpha:P.manA }); }
+function iaLz(c,t){ const x=24, y=IA_GROUND, P=iaShipAt(t), sc=0.6; iaArt(c,'lz',x,y+4,40); iaShip2D(c,t,P,x,y,sc); iaShipMan(c,t,P,x,y,sc); }
+function iaDropship(c,t){ const x=24, y=IA_GROUND, P=iaShipAt(t), sc=0.75; iaShip2D(c,t,P,x,y,sc); iaShipMan(c,t,P,x,y,sc); }
 function iaBarricade(c,t){ const cy=iaCyc(t,2.2), hit=cy.s<0.15; iaShadow(c,24,IA_GROUND,10); iaArt(c,'barricade',24+(hit?1:0),IA_GROUND,26);
   if(cy.s<0.4) for(let i=0;i<5;i++){ const q=cy.s/0.4, a=-Math.PI*(0.2+iaHash(i,cy.k)*0.6); c.globalAlpha=1-q; iaDot(c,32+Math.cos(a)*q*8,IA_GROUND-12+Math.sin(a)*q*8,'#ffd23f'); } c.globalAlpha=1; }
 function iaShaft(c,t){ const x=24, y=IA_GROUND; iaArt(c,'shaft',x,y+2,36); const cy=iaCyc(t,3.4);
@@ -117,11 +146,12 @@ function iaBob(c,t,key){ const y=IA_GROUND-1+Math.sin(t*2)*1.5; iaShadow(c,24,IA
 /* ---------- the units: one loop of states, on the same clock in 2D and in 3D (21c-intel-3d.js) ----------
    Every unit (and every member of the Osprey crew, key crew_<type>) plays the same loop: at rest, walking to and fro, attacking,
    its own special move where it has one (the Medic heals, the Engineer repairs, the Matron screeches, lays eggs and rains acid…),
-   being hit, and going down: a soldier falls and is patched up, a Brood creature dies and the loop starts again as it rises.
+   being hit, and going down: a soldier falls and is patched up, the Sporebag bursts, the Matron burrows and breaks out (no dying
+   otherwise: Von wanted that out, Nov 2026).
    iaPlan(key) says which states and how long (INTEL_LOOP), iaAt(plan,t) where the clock is; the 2D picture (iaUnit) and the 3D
    model (ia3Unit) both read the same state, the same walk (iaPos) and the same beats (iaShots, iaStrike, iaSpit, iaRam, iaHits),
    so a shot, a step or a blow falls at the same moment in both pictures. */
-const INTEL_LOOP = { rest:2.5, walk:3, attack:3, special:2.6, hit:1, down:2.4, up:0.8, walkRange:11 };
+const INTEL_LOOP = { rest:2.5, walk:3, attack:3, special:2.6, hit:1, down:2.4, up:0.8, walkRange:12 };
 const IA_SOLDIER=['trooper','gunner','pyro','medic','engineer','scientist'];
 const IA_MAX={ brute:36, broodmother:40, heir:30, bloater:28, crawler:22, drone:22, grafter:20, grazer:22, seedling:26, spitter:26, husk:26 };
 const IA_GUN={ trooper:{ every:1, burst:0.45, step:0.13 }, gunner:{ every:1.5, burst:1.2, step:0.07 }, pyro:{ flame:true, every:1.5, burst:1 },
@@ -143,7 +173,7 @@ function iaPlan(key){ const ty=iaBaseType(key), d=UNITS[ty], D=INTEL_LOOP, L=[],
     if(ty==='broodmother'||ty==='heir'){ add('screech',D.special*0.7,'Screech'); add('egg',D.special*0.7,'Lays eggs'); add('rain',D.special*0.7,'Acid rain'); }
     add('hit',D.hit,'Hit');
     if(ty==='broodmother'||ty==='heir'){ add('burrow',D.down,'Burrows'); add('rise',D.up*1.5,'Breaks out'); }
-    else add(ty==='bloater'?'burst':'die',D.down,ty==='bloater'?'Bursts':'Dies'); }
+    else if(ty==='bloater') add('burst',D.down,'Bursts'); }
   else return null;
   return { key, ty, kind, L, T:L.reduce((a,x)=>a+x.d,0) }; }
 function iaAt(P,t){ let s=((t%P.T)+P.T)%P.T; const k=Math.floor(t/P.T);
@@ -160,7 +190,7 @@ function iaSpit(S,per=1.5){ const cy=iaCyc(S.s,per), s=cy.s; return { wind:s<0.4
 function iaRam(S){ const cy=iaCyc(S.s,1.5), s=cy.s; return { wind:s<0.5?s/0.5:0, ram:s>=0.5&&s<0.85?(s-0.5)/0.35:-1, dust:s>=0.7&&s<1.3?(s-0.7)/0.6:-1, cd:s<0.5?0.5-s:2-s, k:cy.k }; }
 function iaHits(S){ const s=S.s; return s<0.15?1-s/0.15:s>=0.5&&s<0.65?1-(s-0.5)/0.15:0; }
 function iaFall(S){ return S.st==='down'||S.st==='die'?iaEase(Math.min(1,S.s/0.4)):S.st==='up'?1-iaEase(S.p):0; }
-function iaFade(P,S){ if(S.st==='die') return 1-Math.max(0,(S.p-0.55)/0.45); if(P.kind==='creature'&&S.i===0) return Math.min(1,S.s/0.4); return 1; }
+function iaFade(P,S){ if(S.st==='die') return 1-Math.max(0,(S.p-0.55)/0.45); if(S.i===0&&P.L[P.L.length-1].st==='burst') return Math.min(1,S.s/0.4); return 1; }   /* the Sporebag comes back after it burst */
 function iaDig(S){ return S.st==='burrow'?iaEase(Math.min(1,S.s/1.2)):S.st==='rise'?1-iaEase(Math.min(1,S.s/(S.d*0.6))):0; }
 /* the 2D picture of a unit in its state */
 function iaUnit(c,t,key){ const P=iaPlan(key); if(!P) return; const S=iaAt(P,t), ty=P.ty, st=S.st, spk=iaSprKey(key), sp=SPR[spk], y=IA_GROUND, soldier=P.kind==='soldier';
@@ -169,7 +199,7 @@ function iaUnit(c,t,key){ const P=iaPlan(key); if(!P) return; const S=iaAt(P,t),
   if(st==='walk'||st==='flee') lift=Math.floor(t*(st==='flee'?14:8))%2;
   else if(st==='rest'){ sy=1+0.02*Math.sin(t*2.2); if(ty==='grazer'&&Math.sin(t*4)>0) sy=0.94; }
   const hk=st==='hit'?iaHits(S):0; if(hk){ flash=0.75*hk; x-=face*1.5*hk; }
-  const fall=iaFall(S); if(fall){ if(soldier) rot=-face*Math.PI/2*fall; else { sy*=1-0.55*fall; rot=-face*0.18*fall; } }   /* a soldier falls on his back, a creature collapses on its side */
+  const fall=iaFall(S); if(fall){ if(soldier){ rot=-face*Math.PI/2*fall; x+=face*h*0.5*fall; lift+=w*0.45*fall; }   /* he lies across the middle of the picture */ else { sy*=1-0.55*fall; rot=-face*0.18*fall; } }   /* a soldier falls on his back, a creature collapses on its side */
   let dig=0, burst=null, sh=null, strike=null, spit=null, ram=null;
   if(st==='attack'){
     if(soldier) sh=iaShots(ty,S);
@@ -201,7 +231,7 @@ function iaUnit(c,t,key){ const P=iaPlan(key); if(!P) return; const S=iaAt(P,t),
   /* in front: what it does */
   if(sh&&sh.firing){ if(sh.o.flame){ const fx=x+w*0.4; for(let i=0;i<16;i++){ const q=((t*3+iaHash(i,sh.cy.k))%1), d=q*16, s2=(iaHash(i,7)-0.5)*q*10;
         c.globalAlpha=1-q; iaDot(c,fx+d,my+s2,q<0.3?'#fff2a8':q<0.6?'#ffb347':'#ff5a2a',q<0.5?2:3); } c.globalAlpha=1; iaGlow(c,fx+8,my,12,'rgba(255,150,60,.35)'); }
-    else { if(sh.flash){ iaGlow(c,mx+1,my,6,'rgba(255,220,120,.8)'); iaDot(c,mx,my-1,'#fff6c8',2); c.strokeStyle='rgba(255,230,150,.7)'; c.beginPath(); c.moveTo(mx+3,my); c.lineTo(IA_BOX,my+(iaHash(sh.n,sh.cy.k)-0.5)*3); c.stroke(); }
+    else { if(sh.flash){ iaGlow(c,mx+1,my,6,'rgba(255,220,120,.8)'); iaDot(c,mx,my-1,'#fff6c8',2); c.strokeStyle='rgba(255,230,150,.7)'; c.beginPath(); c.moveTo(mx+3,my); c.lineTo(mx+40,my+(iaHash(sh.n,sh.cy.k)-0.5)*3); c.stroke(); }
       for(let j=0;j<=sh.n;j++){ const a=(sh.cy.s-j*sh.o.step)/0.5; if(a>1) continue; iaDot(c,mx-6-a*5,my-2-a*9+a*a*14,'#ffd23f'); } } }
   if(strike&&strike.on&&ty!=='grafter'){ c.strokeStyle='rgba(255,255,255,'+(1-strike.q)+')'; c.beginPath(); c.arc(x+face*(w*0.5+2),y-h*0.5,4,-1.2,1.2); c.stroke(); }
   if(spit){ const ox=x+w*0.4, oy=top+h*0.35, tx=42, ty2=y-2;
@@ -221,7 +251,7 @@ function iaUnit(c,t,key){ const P=iaPlan(key); if(!P) return; const S=iaAt(P,t),
   if(dig&&S.st==='burrow'&&S.s<1.4||S.st==='rise'&&dig>0){ for(let i=0;i<6;i++){ const q=(t*2+i/6)%1; c.globalAlpha=0.6*(1-q); iaDot(c,x-14+iaHash(i,5)*28,y-1-q*8,'#8a7d68',2); } c.globalAlpha=1; } }
 /* which scene for which key */
 const INTEL_SCENES = {
-  hq:iaHq, relay:iaRelay, sentry:iaSentry, barricade:iaBarricade, lz:iaLz, uplink:iaUplink, generator:iaGenerator, chargesite:iaChargeSite, charge:iaCharge,
+  hq:iaHq, relay:iaRelay, sentry:iaSentry, barricade:iaBarricade, lz:iaLz, dropship:iaDropship, uplink:iaUplink, generator:iaGenerator, chargesite:iaChargeSite, charge:iaCharge,
   medtent:iaTent, terminal:iaTerminal, door:iaDoor, wreck:iaWreck, rubble:iaRubble,
   hive:iaHive, egg:iaEgg, cocoon:(c,t)=>iaPulse(c,t,'cocoon',{ amp:0.1*Math.max(0,Math.sin(t*4.5))**4+0.02, speed:4.5, fit:22 }), membrane:iaMembrane, shaft:iaShaft, choirpod:iaChoir, mortar:iaMortar,
   relaypad:iaPad, salvage:iaCrate, stabcase:iaCase, heart:iaHeart, raiders:iaRaiders, veil:iaVeil, taint:iaTaint
@@ -231,15 +261,18 @@ function intelScene(key){ if(iaPlan(key)) return (c,t)=>iaUnit(c,t,key); if(INTE
   if(/^art:/.test(key)){ const a=key.slice(4); return (c,t)=>iaBob(c,t,a); }
   return (c,t)=>iaBob(c,t,key); }
 /* put a canvas in every picture with a data-anim key (Intel calls this after it builds its list and card) */
+/* the big card's pictures: wider than high, so a unit can walk; the dropship, the Landing Zone and the wreck get more room (21c adds the 3D one) */
+const IA_CARD={ w:120, h:80, zoom:1.25, bigW:260, bigH:140, big:['wreck','lz','dropship'], bigZoom:{ wreck:1.3, lz:1.1, dropship:0.85 } };
 function intelAnimMount(root){ (root||document).querySelectorAll('#s-intel .pic[data-anim]').forEach(p=>{ if(p.querySelector('canvas.ianim')) return;
-  const side=p.closest('.ili')?24:p.closest('.intel-detail')?80:46, dpr=Math.min(2,window.devicePixelRatio||1);   /* the size of the picture it replaces (css: .ili .pic img, .icard .pic img) */
-  const cv=document.createElement('canvas'); cv.className='ianim'; cv.width=Math.round(side*dpr); cv.height=Math.round(side*dpr); cv.style.width=side+'px'; cv.style.height=side+'px'; cv.setAttribute('aria-hidden','true');
-  cv._zoom=p.closest('.ili')?1.6:1.4;   /* the small list pictures zoom in on the subject */
-  cv._scene=intelScene(p.dataset.anim); const img=p.querySelector('img'); if(img) img.style.display='none'; p.appendChild(cv); iaDraw(cv,iaReduce()?1.3:performance.now()/1000);
-  if(side===80&&typeof ia3Mount==='function') ia3Mount(p,cv); });   /* the big card: its 3D model beside it (21c-intel-3d.js) */
+  const key=p.dataset.anim, list=!!p.closest('.ili'), card=!!p.closest('.intel-detail'), dual=card&&typeof ia3Ok==='function'&&ia3Ok(key), big=dual&&IA_CARD.big.includes(key);
+  const W=list?24:card?(dual?(big?IA_CARD.bigW:IA_CARD.w):80):46, H=list?24:card?(dual?(big?IA_CARD.bigH:IA_CARD.h):80):46, dpr=Math.min(2,window.devicePixelRatio||1);   /* the size of the picture it replaces (css: .ili .pic img, .icard .pic img) */
+  const cv=document.createElement('canvas'); cv.className='ianim'; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); cv.style.width=W+'px'; cv.style.height=H+'px'; cv.setAttribute('aria-hidden','true');
+  cv._zoom=list?1.6:big?IA_CARD.bigZoom[key]:dual?IA_CARD.zoom:1.4;   /* the small list pictures zoom in on the subject */
+  cv._scene=intelScene(key); const img=p.querySelector('img'); if(img) img.style.display='none'; p.appendChild(cv); iaDraw(cv,iaReduce()?1.3:performance.now()/1000);
+  if(dual) ia3Mount(p,cv,big); });   /* the big card: its 3D model beside it (21c-intel-3d.js) */
   if(!iaLoopOn){ iaLoopOn=true; requestAnimationFrame(iaLoop); } }
-function iaDraw(cv,t){ const c=cv.getContext('2d'), z=cv._zoom||1, k=cv.width/IA_BOX*z, cx=IA_BOX/2, cy=IA_GROUND-14; c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,cv.width,cv.height);
-  c.setTransform(k,0,0,k,cv.width/2-cx*k,cv.height/2-cy*k); c.imageSmoothingEnabled=false;   /* zoomed in on the subject, round (24, 28) */
+function iaDraw(cv,t){ const c=cv.getContext('2d'), z=cv._zoom||1, k=cv.height/IA_BOX*z, cx=IA_BOX/2, cy=IA_GROUND-14; c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,cv.width,cv.height);
+  c.setTransform(k,0,0,k,cv.width/2-cx*k,cv.height/2-cy*k); c.imageSmoothingEnabled=false;   /* zoomed in on the subject, round (24, 28); a wider canvas shows more to the sides */
   try{ cv._scene(c,t); }catch(e){ /* a scene that fails stands still, it never breaks the screen */ } c.globalAlpha=1; c.globalCompositeOperation='source-over'; }
 let iaLoopOn=false;
 function iaLoop(){ const scr=document.getElementById('s-intel'); if(!scr||scr.hidden){ iaLoopOn=false; return; }

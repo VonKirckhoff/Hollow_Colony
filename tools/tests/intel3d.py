@@ -1,5 +1,6 @@
 # Intel in 3D (21c-intel-3d.js): the big card shows the 2D picture and the 3D model side by side for every entry of every tab
-# (units, structures, extras, the Osprey crew, strains, relics), the 3D model moves, units play the loop of states (INTEL_LOOP)
+# (units, structures, extras, the Osprey crew, strains, relics), the 3D model moves, no unit dies in its loop, the dropship has its
+# own card and it, the Landing Zone and the wreck get bigger pictures, units play the loop of states (INTEL_LOOP)
 # on the same clock in 2D and 3D (walk position, shots, falling), the state line names the state, nothing throws,
 # the list on the left stays 2D, and the 3D view of a mission still works after Intel. Screenshots in /tmp/ia3.
 # Must end with ALL OK.
@@ -46,6 +47,19 @@ with sync_playwright() as p:
           ok(Mm.props.patient&&Mm.props.patient.g&&Mm.props.patient.g.visible,'the Medic patches up a fallen soldier in 3D too');
           const Pb=iaPlan('broodmother'); ok(['screech','egg','rain','burrow','rise'].every(s=>Pb.L.some(x=>x.st===s)),'the Matron: screech, eggs, acid rain, burrow and break out');
           ok(iaPlan('crew_pyro')&&iaPlan('crew_pyro').ty==='pyro'&&!iaPlan('hq'),'the Osprey crew plays the loop too, structures do not');
+          ok(INTEL_TABS.every(T=>(T.units||[]).every(k=>!iaPlan(k)||iaPlan(k).L.every(x=>x.st!=='die'))),'no unit dies in its loop (the Sporebag still bursts)');
+          ok(iaPlan('bloater').L.some(x=>x.st==='burst')&&iaPlan('grazer').L.every(x=>x.st!=='die'),'the Sporebag bursts, the grazer does not die');
+          { intelTab='struct'; const L=INTEL_TABS.find(t=>t.id==='struct'); intelSel.struct=L.buildings.length+L.extras.indexOf('dropship'); buildIntel(); const g=document.querySelector('#intel-grid');
+            ok(/Dropship Icarus/.test(g.textContent)&&g.querySelector('.icard.wide3d canvas.ianim3d'),'Structures: the dropship has its own card, with the big pictures');
+            const c2=g.querySelector('canvas.ianim'), c3=g.querySelector('canvas.ianim3d'); ok(c2.width>c2.height*1.5&&c3.width===c2.width,'the big pictures are wide, 2D and 3D the same size ('+c2.style.width+'×'+c2.style.height+')');
+            intelSel.struct=L.buildings.indexOf('wreck'); buildIntel(); ok(!!document.querySelector('#intel-grid .icard.wide3d'),'the wreck gets the big pictures');
+            intelSel.struct=L.buildings.indexOf('lz'); buildIntel(); ok(!!document.querySelector('#intel-grid .icard.wide3d'),'the Landing Zone too');
+            intelSel.struct=0; buildIntel(); const n2=document.querySelector('#intel-grid canvas.ianim'); ok(!document.querySelector('#intel-grid .icard.wide3d')&&n2.width>n2.height,'other cards: wider than high, so the walk shows'); }
+          { const Md=ia3Model('dropship'), cv2=document.createElement('canvas'); cv2.width=260; cv2.height=140; cv2._key='dropship';
+            ia3Draw(cv2,1); const a1=Md.ship.position.y, x1=Md.ship.position.x-IA3_X; ia3Draw(cv2,4.6); const a2=Md.ship.position.y;
+            ok(a1>a2+1&&Math.abs(x1-iaShipAt(1).x*Md.px)<0.01,'the dropship comes in high and sets down, where the 2D one is');
+            ok(Md.ship.userData.ramp.rotation.z>0.5&&Md.man.g.visible,'on the ground the ramp is down and a Trooper walks off');
+            ia3Draw(cv2,9.8); ok(!Md.ship.visible,'and it has flown off before the loop starts again'); }
           ok(G===null||G===window.G,'G is put back');
           goMenu('menu'); ok(!iaLoopOn||document.getElementById('s-intel').hidden,'the loop stops when Intel closes');
         }catch(e){ out.push('FAIL error '+e.message+' '+(e.stack||'').split('\\n')[1]); } return out.join('\\n'); }""")
