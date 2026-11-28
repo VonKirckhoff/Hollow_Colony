@@ -28,7 +28,7 @@ with sync_playwright() as p:
     check('2D: tentacles drawn on both sides of the pod', r[0]>120 and r[2]>15 and r[3]>15, r)
     check('2D: they move while it walks', r[1]>10, r)
     # Intel picture draws without errors
-    r=J(pg,"()=>{ const c=document.createElement('canvas'); c.width=48; c.height=48; const x=c.getContext('2d'); for(let t=0;t<7;t+=0.5) INTEL_SCENES.seedling(x,t); return true; }")
+    r=J(pg,"()=>{ const c=document.createElement('canvas'); c.width=48; c.height=48; const x=c.getContext('2d'); const sc=intelScene('seedling'); for(let t=0;t<12;t+=0.5) sc(x,t); return true; }")
     check('Intel picture plays', r, r)
     pg.screenshot(path='/tmp/tent2d.png', clip={'x':583,'y':300,'width':200,'height':160})
     pg.keyboard.press('F3'); pg.wait_for_timeout(800)
