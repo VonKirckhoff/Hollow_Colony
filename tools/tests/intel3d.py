@@ -41,8 +41,10 @@ with sync_playwright() as p:
           ia3Draw(cv,tw); const x3=M.g.position.x-IA3_X, x2=iaPos(P,iaAt(P,tw)).x-24; ok(Math.abs(x3-x2*M.k)<0.02&&x2>8,'walking: the 3D soldier stands where the 2D one does ('+x2.toFixed(1)+' px, '+x3.toFixed(2)+' tiles)');
           const ta=at('attack')+0.05; ia3Draw(cv,ta); ok(iaShots('trooper',iaAt(P,ta)).flash&&IA3.flashL.intensity>0&&IA3.n.line>0,'a shot in 2D is a muzzle flash and a tracer in 3D at the same moment');
           const tb=at('attack')+0.7; ia3Draw(cv,tb); ok(!iaShots('trooper',iaAt(P,tb)).firing&&!(IA3.n.line>0),'and between bursts neither fires');
-          const td=at('down')+1; ia3Draw(cv,td); ok(iaFall(iaAt(P,td))===1&&Math.abs(M.g.rotation.x)>1.3,'down: he lies on his back in 3D as in 2D');
-          const tu=at('up')+INTEL_LOOP.up; ia3Draw(cv,tu-0.001); ok(Math.abs(M.g.rotation.x)<0.05,'and stands again when the loop starts over');
+          ok(INTEL_TABS.every(T=>(T.units||[]).every(k=>!iaPlan(k)||iaPlan(k).L.every(x=>x.st!=='down'&&x.st!=='up')))&&iaPlan('crew_trooper').L.every(x=>x.st!=='down'),'no soldier falls and gets patched up in the loop');
+          { intelTab='struct'; const L=INTEL_TABS.find(t=>t.id==='struct'); intelSel.struct=L.buildings.indexOf('hq'); buildIntel(); ok(!!document.querySelector('#intel-grid .icard.wide3d canvas.ianim3d'),'the Command Post gets the big pictures');
+            const Mh=ia3Model('hq'); ok(Mh.root.children.filter(o=>o.isMesh&&o.geometry===GEO.box).length===9,'and stands on its 3×3 tiles in 3D');
+            intelSel.struct=L.buildings.indexOf('wreck'); buildIntel(); ok(/LC-13/.test(document.querySelector('#intel-grid').textContent),'the crashed dropship shows its serial, LC-13'); }
           const Pm=iaPlan('medic'), hm=Pm.L.findIndex(x=>x.st==='heal'); let th=0; for(let i=0;i<hm;i++) th+=Pm.L[i].d; const Mm=ia3Model('medic'); cv._key='medic'; ia3Draw(cv,th+1);
           ok(Mm.props.patient&&Mm.props.patient.g&&Mm.props.patient.g.visible,'the Medic patches up a fallen soldier in 3D too');
           const Pb=iaPlan('broodmother'); ok(['screech','egg','rain','burrow','rise'].every(s=>Pb.L.some(x=>x.st===s)),'the Matron: screech, eggs, acid rain, burrow and break out');
@@ -54,7 +56,7 @@ with sync_playwright() as p:
             const c2=g.querySelector('canvas.ianim'), c3=g.querySelector('canvas.ianim3d'); ok(c2.width>c2.height*1.5&&c3.width===c2.width,'the big pictures are wide, 2D and 3D the same size ('+c2.style.width+'×'+c2.style.height+')');
             intelSel.struct=L.buildings.indexOf('wreck'); buildIntel(); ok(!!document.querySelector('#intel-grid .icard.wide3d'),'the wreck gets the big pictures');
             intelSel.struct=L.buildings.indexOf('lz'); buildIntel(); ok(!!document.querySelector('#intel-grid .icard.wide3d'),'the Landing Zone too');
-            intelSel.struct=0; buildIntel(); const n2=document.querySelector('#intel-grid canvas.ianim'); ok(!document.querySelector('#intel-grid .icard.wide3d')&&n2.width>n2.height,'other cards: wider than high, so the walk shows'); }
+            intelSel.struct=L.buildings.indexOf('relay'); buildIntel(); const n2=document.querySelector('#intel-grid canvas.ianim'); ok(!document.querySelector('#intel-grid .icard.wide3d')&&n2.width>n2.height,'other cards: wider than high, so the walk shows'); }
           { const Md=ia3Model('dropship'), cv2=document.createElement('canvas'); cv2.width=260; cv2.height=140; cv2._key='dropship';
             ia3Draw(cv2,1); const a1=Md.ship.position.y, x1=Md.ship.position.x-IA3_X; ia3Draw(cv2,4.6); const a2=Md.ship.position.y;
             ok(a1>a2+1&&Math.abs(x1-iaShipAt(1).x*Md.px)<0.01,'the dropship comes in high and sets down, where the 2D one is');

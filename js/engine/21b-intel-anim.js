@@ -58,7 +58,10 @@ function iaSentry(c,t){ const x=24, y=IA_GROUND, cy=iaCyc(t,1.9); iaShadow(c,x,y
   c.globalAlpha=0.5+0.3*Math.sin(t*2); iaDot(c,x-1,y-20,'#ff5a4f',2); c.globalAlpha=1; }
 function iaRelay(c,t){ const x=24, y=IA_GROUND; iaShadow(c,x,y,10); const s=iaArt(c,'relay',x,y,34); const top=s?s.top+3:10;
   for(let i=0;i<3;i++){ const q=(t*0.6+i/3)%1; iaRing(c,x,top,2+q*18,'#7fdfff',0.8-q); } }
-function iaHq(c,t){ const x=24, y=IA_GROUND; iaShadow(c,x,y,16); const s=iaArt(c,'hq',x,y,38); const dx=x+8, dy=(s?s.top:6)+4, a=t*1.6;
+/* a building's own tiles under it (n×n), the floor seen at a slant: rows of tiles going back, a dark seam round each */
+function iaTiles(c,cx,gy,n,tw,dh=3){ for(let r=0;r<n;r++){ const y0=gy-(n-r)*dh+dh*0.5, sh=(n-r)*1.2; for(let k=0;k<n;k++){ const x0=cx-n*tw/2+k*tw+sh;
+    c.fillStyle=(r+k)%2?'#2b2e39':'#30333f'; c.beginPath(); c.moveTo(x0+0.5,y0+0.5); c.lineTo(x0+tw-0.5,y0+0.5); c.lineTo(x0+tw-1.7,y0+dh-0.5); c.lineTo(x0-0.7,y0+dh-0.5); c.closePath(); c.fill(); } } }
+function iaHq(c,t){ const x=24, y=IA_GROUND; iaTiles(c,x,y+4,BUILDINGS.hq.size||3,14); iaShadow(c,x,y,16); const s=iaArt(c,'hq',x,y,38); const dx=x+8, dy=(s?s.top:6)+4, a=t*1.6;
   c.strokeStyle='#cfd8e0'; c.beginPath(); c.moveTo(dx-Math.cos(a)*4,dy); c.lineTo(dx+Math.cos(a)*4,dy-2); c.stroke(); iaDot(c,dx+Math.cos(a)*4-0.5,dy-2.5,'#5fe3b0'); }
 function iaGenerator(c,t){ const x=24, y=IA_GROUND; iaShadow(c,x,y,10); iaArt(c,'generator',x,y,30); const cy=iaCyc(t,0.22);
   iaGlow(c,x,y-12,16,'rgba(255,230,140,'+(0.15+0.1*Math.sin(t*20))+')');
@@ -146,8 +149,8 @@ function iaBob(c,t,key){ const y=IA_GROUND-1+Math.sin(t*2)*1.5; iaShadow(c,24,IA
 /* ---------- the units: one loop of states, on the same clock in 2D and in 3D (21c-intel-3d.js) ----------
    Every unit (and every member of the Osprey crew, key crew_<type>) plays the same loop: at rest, walking to and fro, attacking,
    its own special move where it has one (the Medic heals, the Engineer repairs, the Matron screeches, lays eggs and rains acid…),
-   being hit, and going down: a soldier falls and is patched up, the Sporebag bursts, the Matron burrows and breaks out (no dying
-   otherwise: Von wanted that out, Nov 2026).
+   and being hit; then the Sporebag bursts and the Matron burrows and breaks out (no dying and no soldier
+   falling and being patched up: Von wanted those out, Nov 2026; iaFall stays for a state that may come back).
    iaPlan(key) says which states and how long (INTEL_LOOP), iaAt(plan,t) where the clock is; the 2D picture (iaUnit) and the 3D
    model (ia3Unit) both read the same state, the same walk (iaPos) and the same beats (iaShots, iaStrike, iaSpit, iaRam, iaHits),
    so a shot, a step or a blow falls at the same moment in both pictures. */
@@ -163,7 +166,7 @@ function iaPlan(key){ const ty=iaBaseType(key), d=UNITS[ty], D=INTEL_LOOP, L=[],
   if(IA_SOLDIER.includes(ty)){ kind='soldier'; add('rest',D.rest,'At rest'); add('walk',D.walk,'Walking');
     if(ty!=='scientist') add('attack',D.attack,ty==='pyro'?'Flamer':ty==='medic'?'Sidearm':ty==='gunner'?'Machine gun':'Rifle');
     if(ty==='medic') add('heal',D.special,'Patching up'); if(ty==='engineer') add('repair',D.special,'Repairing');
-    add('hit',D.hit,'Hit'); add('down',D.down,'Down'); add('up',D.up,ty==='scientist'?'Back up':'Patched up'); }
+    add('hit',D.hit,'Hit'); }   /* no falling and getting up (Von, Nov 2026) */
   else if(d.faction==='swarm'||ty==='grazer'){ kind='creature'; add('rest',D.rest,ty==='grazer'?'Grazing':'At rest'); add('walk',D.walk,'Walking');
     if(ty==='grazer') add('flee',D.special,'Bolting');
     else if(ty==='seedling') add('root',D.special,'Digging in');
@@ -262,7 +265,7 @@ function intelScene(key){ if(iaPlan(key)) return (c,t)=>iaUnit(c,t,key); if(INTE
   return (c,t)=>iaBob(c,t,key); }
 /* put a canvas in every picture with a data-anim key (Intel calls this after it builds its list and card) */
 /* the big card's pictures: wider than high, so a unit can walk; the dropship, the Landing Zone and the wreck get more room (21c adds the 3D one) */
-const IA_CARD={ w:120, h:80, zoom:1.25, bigW:260, bigH:140, big:['wreck','lz','dropship'], bigZoom:{ wreck:1.3, lz:1.1, dropship:0.85 } };
+const IA_CARD={ w:120, h:80, zoom:1.25, bigW:260, bigH:140, big:['wreck','lz','dropship','hq'], bigZoom:{ wreck:1.3, lz:1.1, dropship:0.85, hq:1 } };
 function intelAnimMount(root){ (root||document).querySelectorAll('#s-intel .pic[data-anim]').forEach(p=>{ if(p.querySelector('canvas.ianim')) return;
   const key=p.dataset.anim, list=!!p.closest('.ili'), card=!!p.closest('.intel-detail'), dual=card&&typeof ia3Ok==='function'&&ia3Ok(key), big=dual&&IA_CARD.big.includes(key);
   const W=list?24:card?(dual?(big?IA_CARD.bigW:IA_CARD.w):80):46, H=list?24:card?(dual?(big?IA_CARD.bigH:IA_CARD.h):80):46, dpr=Math.min(2,window.devicePixelRatio||1);   /* the size of the picture it replaces (css: .ili .pic img, .icard .pic img) */

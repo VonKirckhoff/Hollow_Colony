@@ -118,7 +118,7 @@ const BUILDINGS = {
                desc:'A Corps field hospital tent. Cots, drips, and a cold case of stabilizer.' },
   choirpod:  { name:'Choir Pod', faction:'none', size:1, hp:1, sight:2, art:'choirpod', noBlock:true,
                desc:'A swollen Brood throat that sings to the brood and keeps it awake. Only one of its own can stand at it long enough to quiet it.' },
-  wreck:     { name:'Crashed Dropship', faction:'none', size:3, hp:1, sight:0, art:'wreck', scenery:true, smoke:true,
+  wreck:     { name:'Crashed Dropship', faction:'none', size:3, hp:1, sight:0, art:'wreck', scenery:true, smoke:true, serial:'LC-13',
                desc:'The first rescue dropship that came for Hollow Colony. It never lifted off again. Still smouldering.' },
   rubble:    { name:'Rubble', faction:'none', size:1, hp:1, sight:0, art:'rubble', scenery:true,
                desc:'Collapsed rock.' },

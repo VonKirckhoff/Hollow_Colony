@@ -193,6 +193,7 @@ function intelBuilding(t){ const d=BUILDINGS[t]; if(!d) return ''; const st=[], 
   if(d.income) st.push(intelStat('Salvage/s',d.income));
   if(d.hatch) st.push(intelStat('Hatches in',d.hatch+' s'));
   if(d.fuse) st.push(intelStat('Fuse',d.fuse+' s'));
+  if(d.serial) st.push(intelStat('Serial',d.serial));
   if(d.key&&d.cost) tags.push(`Build: ${d.key}`); if(d.portable) tags.push('Portable'); if(d.regen) tags.push(`Regrows ${d.regen} HP/s`); if(d.needsSite) tags.push('Relay pad only');
   return intelCard(iconUrl(t),d.name,`${d.size}×${d.size} structure`,d.faction,d.desc,INTEL_NOTES[t],st,tags,'',t); }
 /* an entry that is no unit or building of its own (INTEL_EXTRA in js/content/intel.js) */

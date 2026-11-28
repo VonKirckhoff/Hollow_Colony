@@ -188,6 +188,9 @@ function ia3ShipPose(M,t){ const P=iaShipAt(t), S=M.ship, U=S.userData, k=SHIP.s
 const ia3Top=(M,f=1)=>ia3V(IA3_X,M.h*f,IA3_Z);
 function ia3Smoke(x,y,z,t,n,K,col='#4a4d55',rise=28,sp=0.35){ for(let i=0;i<n;i++){ const q=(t*sp+i/n)%1; ia3Ball(x+Math.sin(q*4+i)*4*K,y+q*rise*K,z+Math.cos(q*3+i)*2*K,(2+q*5)*K,col,0.5*(1-q)); } }
 const IA3_HOOKS = {
+  hq:{ make(M){ M.e=ia3Build('hq'); M.g=ia3Add(M,M.e); M.V=4.2; M.cy=0.9; const n=BUILDINGS.hq.size||3, h=(n-1)/2, A=mat('#454a58'), B=mat('#3c404d');   /* its own tiles under it, as in 2D */
+      for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const t=part(GEO.box,(i+j)%2?B:A,0.94,0.04,0.94,IA3_X+i-h,0.02,IA3_Z+j-h); t.castShadow=false; t.receiveShadow=true; M.root.add(t); } },
+    pose:ia3PoseStill },
   membrane:{ make:ia3Membrane, pose(M,t){ M.e.flash=0; v3Pose(M.e,M.g,t); } },
   wreck:{ make(M){ M.e=ia3Build('wreck'); M.g=ia3Add(M,M.e); M.V=8; M.cy=1.4; }, pose(M,t){ v3Pose(M.e,M.g,t); ia3Glow(IA3_X+0.3,0.7,IA3_Z+0.2,1+0.3*Math.sin(t*9),'#ff8c28',0.4); ia3Smoke(IA3_X+0.3,0.8,IA3_Z,t,6,0.08); } },
   sentry:{ pose(M,t){ const e=M.e, cy=iaCyc(t,1.9), U=M.g.userData; e.angle=0; e.target=cy.s<0.5?(M.tgt||(M.tgt={ dead:false, x:e.x+60, y:e.y })):null;

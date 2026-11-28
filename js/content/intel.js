@@ -30,7 +30,7 @@ const INTEL_NOTES = {
   medtent:  'Mission object (Night Shift). Twelve wounded and a case of stabilizer in front of each tent. Nothing shoots at the tents themselves: the raiders want what is in them.',
   terminal: 'Mission object (Night Shift). The raiders\' Medic has to stand right next to it. What she has pulled off it, she keeps: break her off early and often.',
   door:     'Mission object (The Hollow Colony): Dr. Maas locked herself in behind it. It opens when your squad comes close.',
-  wreck:    'The Osprey, at Hollow Colony. The Corps lists her crew as lost with all hands. Look closer at what lies around it.',
+  wreck:    'The Osprey (LC-13), at Hollow Colony. The Corps lists her crew as lost with all hands. Look closer at what lies around it.',
   rubble:   'Left behind where a seismic charge brought the cave down (Dead Signal). It blocks the way for good.',
   shaft:    'Some shafts belong to a hive and take over its guards and waves once you burn it. Others are old mine shafts the Osprey crew uses to get away, and to come back.',
   crawler:  'Fast and fragile, often in numbers. Cheap to lose, so the Brood throws them first.',
