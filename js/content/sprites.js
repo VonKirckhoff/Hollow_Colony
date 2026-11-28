@@ -156,13 +156,16 @@ const SPRITES = {
     "...kAk..kAk.....",
     "...kgk..kgk.....",
     "...kkk..kkk....."],
+  /* the Crawler: a centipede, four linked segments with bone back plates and a green light each, a pale head with a green eye, two feelers and a bone fang, a row of legs */
   crawler:[
-    "......kk....",
-    "..kkkkCpk...",
-    ".kCppCCpbk..",
-    "kCcCCcCmek..",
-    ".kkCkkCkk...",
-    "k.k.k.k.k..."],
+    "...............k.k",
+    "..kkkkkkkkkkkk.kk.",
+    ".kbebkbebkbebkkppk",
+    "kCCCkCCCkCCCkCkpek",
+    "kcCckcCckcCckCkppk",
+    ".kkkkkkkkkkkkkkkbb",
+    ".kk.kk.kk.kk.kk.k.",
+    "k..k..k..k..k..k.."],
   /* the Scuttler: an upright mantis of the dark, two bone scythes folded ready */
   drone:[
     "...........kk...",

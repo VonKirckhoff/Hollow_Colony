@@ -324,11 +324,52 @@ function v3Hoof(par,y,sc,lvl=0){ const h=grp(0,y,0); h.rotation.x=lvl; h.userDat
   for(const k of [-1,1]){ const hf=part(GEO.taper,m,0.03*sc,0.065*sc,0.05*sc,k*0.029*sc,-0.035*sc,0.012*sc); hf.rotation.z=-k*0.1; h.add(hf); const toe=part(GEO.cone,m,0.022*sc,0.04*sc,0.02*sc,k*0.03*sc,-0.05*sc,0.055*sc); toe.rotation.x=Math.PI/2+0.3; h.add(toe); }
   for(const k of [-1,1]){ const dc=part(GEO.cone,m,0.012*sc,0.035*sc,0.012*sc,k*0.025*sc,0.0,-0.045*sc); dc.rotation.x=Math.PI-0.5; h.add(dc); }
   return h; }
+/* ---------- the Crawler: a centipede (Nov 2026) ----------
+   Ten linked segments, each with a small bone back plate, a green light and one pair of legs; a pale head with two eyes,
+   two long feelers and two bone poison fangs; two trailing prongs at the tail. It slithers: the segments ride a sine wave
+   running back from the head, the legs ripple in a wave down the body, the body bends into a turn.
+   In a fight it rears its front up, and on every bite (e.lunge) the front strikes forward and the fangs snap shut. Tunables: CENTI3D. */
+const CENTI3D = { segs:10, spacing:0.058, wave:0.045, waveIdle:0.015, waveLen:0.66, legRate:2.4, legSwing:0.5, legLift:0.4, rear:0.5, rearLift:0.11, strike:0.3, reach:0.08, bend:0.55 };
+/* a two-part leg on a hip: thigh out to the side (splay), shin down (knee). Order YZX: splay first, then yaw sweeps the foot. sweep(+) = foot forward on both sides */
+function v3Leg(par,m,mb,x,y,z,l1,l2,w,splay,yaw,knee){ const s=x<0?-1:1, hip=grp(x,y,z); hip.rotation.order='YZX';
+  hip.add(box(m,w,l1,w,0,-l1/2,0)); const kn=grp(0,-l1,0); kn.add(box(mb,w*0.8,l2,w*0.8,0,-l2/2,0)); kn.add(rotX(part(GEO.cone,mb,w*0.45,l2*0.28,w*0.45,0,-l2*1.12,0),Math.PI)); hip.add(kn); par.add(hip);
+  Object.assign(hip.userData,{ s, splay, yaw, knee, kn }); v3SetLeg(hip,0,0); return hip; }
+function v3SetLeg(h,sweep,lift){ const u=h.userData; h.rotation.y=u.yaw-u.s*sweep; h.rotation.z=u.s*(u.splay+lift); u.kn.rotation.z=-u.s*(u.knee-lift*0.6); }
+/* a feeler of two joints */
+function v3Feeler(par,m,x,y,z,len,up,out){ const f=grp(x,y,z); f.rotation.order='YXZ'; f.rotation.set(-up,out,0); f.add(part(GEO.claw,m,0.007,0.007,len*0.55,0,0,0));
+  const f2=grp(0,0,len*0.52); f2.rotation.x=0.35; f2.add(part(GEO.claw,m,0.005,0.005,len*0.5,0,0,0)); f.add(f2); Object.assign(f.userData,{ up, out, f2 }); return f; }
+function v3Centipede(g,U){ const D=CENTI3D, C=fung(CH.body), Dk=fung(CH.dark), B=fung(CH.bone), L=fung(CH.pale), eye=glow(CH.glow);
+  U.centi=true; U.segs=[]; U.cLegs=[];
+  for(let i=0;i<D.segs;i++){ const sg=grp(0,0.06,0.26-i*D.spacing); g.add(sg); U.segs.push(sg); const w=i===0?0.07:0.085-Math.max(0,i-6)*0.01;
+    if(i===0){ sg.add(ball(L,0.065,0.04,0.06,0,0.01,0)); for(const s of [-1,1]) sg.add(ball(eye,0.012,0.012,0.012,s*0.035,0.03,0.04));
+      U.fangs=[-1,1].map(s=>{ const f=grp(s*0.035,0,0.05); f.add(part(GEO.claw,B,0.014,0.012,0.08,0,0,0)); f.rotation.set(0.15,-s*0.5,0); f.userData.s=s; sg.add(f); return f; });
+      U.feelers2=[-1,1].map(s=>{ const f=v3Feeler(sg,B,s*0.025,0.03,0.05,0.24,0.35,s*0.5); sg.add(f); return f; }); continue; }
+    sg.add(ball(i%2?C:Dk,w,0.035,0.04,0,0,0)); sg.add(part(GEO.half,B,w*0.6,0.03,0.022,0,0.014,-0.012)); sg.add(ball(eye,0.011,0.008,0.011,0,0.045,0));
+    for(const s of [-1,1]){ const l=v3Leg(sg,Dk,B,s*(w-0.012),0,0,0.045,0.06,0.013,1.2,0,1.5); l.userData.seg=i; U.cLegs.push(l); } }
+  U.prongs=[-1,1].map(s=>{ const p=part(GEO.claw,B,0.008,0.008,0.12,s*0.02,0,-0.02); p.rotation.y=Math.PI+s*0.3; U.segs[D.segs-1].add(p); return p; });
+  U.rear=0; U.bend=0; U.top=0.25; return g; }
+function v3PoseCentipede(e,U,T,mv,fight,ph){ const D=CENTI3D, N=U.segs.length, dt=Math.min(0.1,Math.max(0,T-(U.ct??T))); U.ct=T;
+  /* the turn the body bends into, and rearing up while it is in a fight */
+  const yr=U.cyaw==null||!dt?0:Math.atan2(Math.sin(U.yaw-U.cyaw),Math.cos(U.yaw-U.cyaw))/dt; U.cyaw=U.yaw; U.bend+=(clamp(yr,-6,6)-U.bend)*Math.min(1,dt*8);
+  U.rear+=((fight?1:0)-U.rear)*Math.min(1,dt*6);
+  if(e.lunge>0&&!U.biteSeen){ U.biteSeen=true; U.biteT=T; } if(!(e.lunge>0)) U.biteSeen=false;
+  const bt=U.biteT==null?9:(T-U.biteT)/D.strike, strike=bt<1?Math.sin(bt*Math.PI):0, shut=bt>0.25&&bt<0.75;
+  const amp=mv?D.wave:D.waveIdle, wph=mv?ph*1.2:T*1.2+e.id, pt=i=>{ const zz=0.26-i*D.spacing, back=i*D.spacing; return [amp*Math.sin(wph-i*D.waveLen)-U.bend*D.bend*back*back*0.5, zz]; };
+  for(let i=0;i<N;i++){ const sg=U.segs[i], [x,z]=pt(i), [x2,z2]=pt(Math.min(N-1,i+1)), [x0,z0]=pt(Math.max(0,i-1));
+    const up=i<3?U.rear*(D.rearLift-i*D.rearLift/3)+(i===0?strike*0.02:0):0;
+    sg.position.set(x,0.06+up,z+(i<3?strike*D.reach*(1-i/3):0)); sg.rotation.y=Math.atan2(x0-x2,z0-z2); sg.rotation.x=i<3?-U.rear*D.rear+strike*0.4:0; }
+  for(const l of U.cLegs){ const s=l.userData.s, p=ph*D.legRate-l.userData.seg*0.9+(s>0?Math.PI:0);
+    if(l.userData.seg<3&&U.rear>0.3) v3SetLeg(l,0.3,0.6*U.rear);
+    else if(mv) v3SetLeg(l,Math.sin(p)*D.legSwing,Math.max(0,Math.cos(p))*D.legLift); else v3SetLeg(l,Math.sin(T+l.userData.seg+e.id)*0.04,0); }
+  U.fangs.forEach(f=>f.rotation.y=-f.userData.s*(shut?-0.4:0.5+(fight?Math.sin(T*3+e.id)*0.08:0)));
+  U.feelers2.forEach((f,i)=>{ const u=f.userData, a=Math.sin(T*2.6+i*1.4+e.id)*0.2; f.rotation.x=-u.up+a; f.rotation.y=u.out+(mv?Math.sin(ph+i)*0.1:Math.sin(T*1.1+i*2+e.id)*0.35); u.f2.rotation.x=0.35+a*0.8; });
+  U.prongs.forEach((p,i)=>p.rotation.x=Math.sin(T*2+i+e.id)*0.15); }
 function v3Creature(e){
   const t=e.type, g=new THREE.Group(), U=g.userData; U.legs=[]; U.arms=[];
   const C=fung(CH.body), Dk=fung(CH.dark), B=fung(CH.bone), L=fung(CH.pale), eye=glow(CH.glow);
-  if(t==='crawler'||t==='grafter'){ const s=t==='grafter'?0.65:1;
-    /* a tick: a low round shell with a bone rim, six short legs, two feelers, lights on its back */
+  if(t==='crawler') return v3Centipede(g,U);
+  if(t==='grafter'){ const s=0.65;
+    /* the Grafter: a small tick: a low round shell with a bone rim, six short legs, two feelers, lights on its back */
     const shell=grp(0,0.13*s,0); shell.add(part(GEO.half,C,0.22*s,0.13*s,0.24*s,0,0,0)); shell.add(part(GEO.torus,B,0.21*s,0.5*s,0.23*s,0,0.005,0)); spots(shell,5,0.15*s,0.1*s,0.16*s,0,1.3,0.022*s); g.add(shell); U.torso=shell;
     g.add(ball(L,0.07*s,0.05*s,0.06*s,0,0.12*s,0.22*s)); for(const k of [-1,1]){ g.add(ball(eye,0.016*s,0.016*s,0.016*s,k*0.03*s,0.15*s,0.27*s)); const f=part(GEO.claw,B,0.008*s,0.008*s,0.16*s,k*0.03*s,0.14*s,0.26*s); f.rotation.set(-0.5,k*0.5,0); g.add(f); }
     for(let i=0;i<3;i++) for(const k of [-1,1]){ const hip=grp(k*0.17*s,0.12*s,(0.1-i*0.1)*s); hip.rotation.z=k*1.25; hip.rotation.y=k*(i-1)*0.4; hip.add(box(Dk,0.03*s,0.12*s,0.03*s,0,-0.06*s,0));
@@ -1570,8 +1611,8 @@ function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,
         b.rotation.set(Math.atan2(b.position.y,1.4/s-b.position.z),0,0); for(const c of b.children){ c.scale.z=len; c.material.opacity=0.26*a*c.userData.op; } }
       U.lampHalo.visible=on&&VIEW3D.beam>0; if(on) U.lampHalo.material.opacity=Math.min(1,0.9*VIEW3D.beam*Math.min(1.5,VIEW3D.lamp)); }
     if(U.weld) U.weld.visible=!!(e.order&&/repair|build/.test(e.order.type))&&Math.random()<0.7;
-    if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph);
-    if(mv) y+=Math.abs(Math.sin(ph))*0.025;
+    if(U.grazer) v3PoseGrazer(e,U,T,mv); else if(U.matron) y+=v3PoseMatron(e,g,U,T,mv,fight,ph); else if(U.centi) v3PoseCentipede(e,U,T,mv,fight,ph);
+    if(mv&&!U.centi) y+=Math.abs(Math.sin(ph))*0.025;   /* the centipede glides, its legs do the work */
     if(e.downed){ g.rotation.x=-Math.PI/2*0.92; y+=0.12; } else if(e.stunT>0) g.rotation.z=Math.sin(T*9)*0.25;
     const lg=e.lunge>0?0.15:0; g.position.set(x+Math.sin(U.yaw)*lg,y,z+Math.cos(U.yaw)*lg);
     const s0=U.s0||(U.s0=g.scale.x), fl=e.flash>0?1.06:1; if(U.fl!==fl){ U.fl=fl; g.scale.setScalar(s0*fl); } return; }
