@@ -165,6 +165,11 @@ function v3H(x,z){ const NX=V3.NX, NZ=V3.NZ; if(!V3.hv) return 0;
 function v3CreepLift(x,z,rad){ const d=V3.fogData, m=G.map; if(!d||!G.creep) return 0; let r=0;
   for(let j=Math.floor(z-rad-1);j<=Math.ceil(z+rad);j++) for(let i=Math.floor(x-rad-1);i<=Math.ceil(x+rad);i++){ if(i<0||j<0||i>=m.w||j>=m.h) continue; r=Math.max(r,d[(j*m.w+i)*4]); }
   return r/255*0.16; }
+/* how high the mycel crust lifts the ground right here (the terrain shader raises it by the fog texture's R * 0.16, linearly filtered):
+   units and bodies stand on top of it, else a low creature like the Crawler sinks out of sight in it (Nov 2026) */
+function v3CreepAt(x,z){ const d=V3.fogData, m=G.map; if(!d||!G.creep) return 0; const u=x-0.5, v=z-0.5, i0=Math.floor(u), j0=Math.floor(v), fu=u-i0, fv=v-j0;
+  const r=(i,j)=>{ i=clamp(i,0,m.w-1); j=clamp(j,0,m.h-1); return d[(j*m.w+i)*4]; };
+  return ((r(i0,j0)*(1-fu)+r(i0+1,j0)*fu)*(1-fv)+(r(i0,j0+1)*(1-fu)+r(i0+1,j0+1)*fu)*fv)/255*0.16; }
 /* fog texture: R creep, G seen right now, A darkness */
 function v3Fog(){ const m=G.map, d=V3.fogData, seenA=Math.min(250,Math.round((G.mission.dark?232:140)*(ui.fogDark??1))), C=G.creep;
   for(let i=0;i<m.w*m.h;i++){ d[i*4]=C?Math.min(255,(C[i]||0)*300):0; d[i*4+1]=G.vis[i]?255:0; d[i*4+3]=G.vis[i]?0:(G.seen[i]?seenA:250); }
@@ -1406,7 +1411,7 @@ function v3PoseFallen(e,g,T,x,z){ const U=g.userData, F=FALLEN3D, c=e.carrier;
   U.px=e.x; U.py=e.y;
   const drag=!!c, dt=Math.min(0.1,Math.max(0,T-(U.lt??T))); U.lt=T; const k=U.dk=(U.dk||0)+((drag?1:0)-(U.dk||0))*Math.min(1,dt*8);   /* eases between lying and being dragged */
   const bx=x-Math.sin(U.yaw)*F.behind*k, bz=z-Math.cos(U.yaw)*F.behind*k;   /* dragged: he trails behind the carrier, boots at its jaws */
-  g.position.set(bx,v3H(bx,bz),bz); g.rotation.set(0,U.yaw,0);
+  g.position.set(bx,v3H(bx,bz)+v3CreepAt(bx,bz),bz); g.rotation.set(0,U.yaw,0);
   U.tilt.position.y=F.lift*k*0.55; U.tilt.rotation.x=-F.lift*k;   /* feet up, head down on the ground */
   U.S.arms.forEach((a,i)=>{ const s=i?1:-1, tr=2.7+Math.sin(T*6+i*1.7+e.id)*F.sway;   /* dragged: the arms trail over the head */
     a.rotation.x=-0.15*(1-k)+tr*k; a.rotation.z=a.userData.lie*(1-k)+s*0.35*k; });
@@ -1583,7 +1588,7 @@ function pool(arr,make){ return i=>{ if(!arr[i]){ arr[i]=make(); V3.fxg.add(arr[
 function hidePool(arr,n){ for(let i=n;i<arr.length;i++) arr[i].visible=false; }
 function v3Sprite(){ return new THREE.Sprite(new THREE.SpriteMaterial({ map:V3.glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false })); }
 /* animate one entity's model */
-function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,z);
+function v3Pose(e,g,T){ const U=g.userData, x=e.x/TILE, z=e.y/TILE; let y=v3H(x,z)+(e.kind==='unit'?v3CreepAt(x,z):0);   /* on top of the mycel crust */
   if(e.kind==='unit'&&U.brute) return v3PoseBrute(e,g,U,T,x,y,z);
   if(e.kind==='unit'){ const dx=e.x-U.px, dy=e.y-U.py, tg=e.target&&!e.target.dead?e.target:null, fight=!!tg&&Math.hypot(tg.x-e.x,tg.y-e.y)<(e.def.range||1.5)*TILE+40;
     if(fight) U.want=Math.atan2(tg.x-e.x,tg.y-e.y); else if(Math.hypot(dx,dy)>0.4) U.want=Math.atan2(dx,dy);

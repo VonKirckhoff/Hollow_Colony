@@ -40,6 +40,14 @@ with sync_playwright() as p:
       s.x=sx; s.y=sy; cr.target=null; return [+head.toFixed(3), +tilt.toFixed(2), +reach.toFixed(3), +shut.toFixed(2), +f0.toFixed(2)]; }""")
     check('fight: rears its front up', r[0]>0.13 and r[1]<-0.3, r)
     check('bite: strikes forward and the fangs snap shut', r[2]>0.04 and r[3]<0.1, r)
+    # on the mycel round a hive it stands on top of the raised crust (v3CreepAt), not sunk out of sight in it
+    r=J(pg,"""()=>{ const G=__hc.G, {cr}=_t, g=V3.objs.get(cr), U=g.userData; const h=G.ents.find(e=>!e.dead&&e.kind==='building'&&e.type==='hive');
+      const m=G.map; let spot=null; for(let R=2;R<6&&!spot;R++) for(let a=0;a<12&&!spot;a++){ const tx=Math.floor(h.x/TILE+Math.cos(a)*R), ty=Math.floor(h.y/TILE+Math.sin(a)*R); if(m.walk[ty*m.w+tx]&&G.creep[ty*m.w+tx]>0.9) spot={x:(tx+.5)*TILE,y:(ty+.5)*TILE}; }
+      cr.x=spot.x; cr.y=spot.y; cr.moving=false; cr.target=null; centerOn(spot.x,spot.y); for(let i=0;i<4;i++) render(performance.now()+i*16);
+      const x=cr.x/TILE, z=cr.y/TILE, lift=v3CreepAt(x,z), above=g.position.y-v3H(x,z);
+      return [+lift.toFixed(3), +above.toFixed(3), +(U.segs[5].position.y).toFixed(3)]; }""")
+    check('on the mycel: the crust lifts the ground and the Crawler stands on top of it', r[0]>0.1 and r[1]>=r[0]-0.005, r)
+    pg.screenshot(path='/home/claude/shots/crawler-mycel3d.png')
     pg.keyboard.press('F3'); pg.wait_for_timeout(300)
     J(pg,"()=>{ const {cr}=_t; ui.zoom=2.2; centerOn(cr.x,cr.y); }"); pg.wait_for_timeout(300)
     pg.screenshot(path='/home/claude/shots/crawler2d.png')
